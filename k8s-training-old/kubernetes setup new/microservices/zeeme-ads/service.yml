@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: zeeme-ads-service
+  labels:
+    app: zeeme-ads-service
+spec:
+  ports:
+    - port: 8100
+      targetPort: 8100
+  selector:
+    app: zeeme-ads-service
+  type: NodePort

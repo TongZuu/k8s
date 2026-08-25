@@ -1,0 +1,1187 @@
+<title>MyHR Kubernetes Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap">
+
+<style>
+:root{
+  --ground:#F1F3F4; --surface:#FFFFFF; --surface-2:#E9EDEE; --surface-3:#DFE5E6;
+  --ink:#101A1D; --ink-2:#3C4B50; --ink-3:#6C7D83;
+  --rule:#D3DADC; --rule-2:#B4C0C3;
+  --accent:#0B6E77; --accent-2:#095A62; --accent-soft:#D8EBED;
+  --crit:#A2372A; --crit-soft:#F6E1DD;
+  --warn:#87610A; --warn-soft:#F6EBD1;
+  --ok:#3E6A32; --ok-soft:#DEEBD7;
+  --shadow:0 1px 2px rgba(16,26,29,.05), 0 8px 24px -16px rgba(16,26,29,.25);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1315; --surface:#131E21; --surface-2:#1A282C; --surface-3:#223338;
+    --ink:#E7EEEF; --ink-2:#AFBEC2; --ink-3:#7E9095;
+    --rule:#25363B; --rule-2:#3B5057;
+    --accent:#4FC4CE; --accent-2:#7FD8DF; --accent-soft:#0F343B;
+    --crit:#E98D7E; --crit-soft:#3B1F1B; --warn:#E1B75E; --warn-soft:#342A10;
+    --ok:#93C880; --ok-soft:#1E2F19;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1315; --surface:#131E21; --surface-2:#1A282C; --surface-3:#223338;
+  --ink:#E7EEEF; --ink-2:#AFBEC2; --ink-3:#7E9095;
+  --rule:#25363B; --rule-2:#3B5057;
+  --accent:#4FC4CE; --accent-2:#7FD8DF; --accent-soft:#0F343B;
+  --crit:#E98D7E; --crit-soft:#3B1F1B; --warn:#E1B75E; --warn-soft:#342A10;
+  --ok:#93C880; --ok-soft:#1E2F19;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans Thai","Segoe UI",system-ui,sans-serif;
+  font-size:16px; line-height:1.72; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:"Chakra Petch","IBM Plex Sans Thai",system-ui,sans-serif; text-wrap:balance; margin:0; line-height:1.25;}
+code,.mono,.tag,.vnum{font-family:"IBM Plex Mono",ui-monospace,monospace;}
+a{color:var(--accent); text-underline-offset:3px;}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:2px;}
+
+/* ---------- shell ---------- */
+.shell{max-width:1240px; margin:0 auto; padding:0 24px 96px;}
+.grid{display:grid; grid-template-columns:minmax(0,1fr); gap:40px;}
+main{min-width:0;}
+@media(min-width:1060px){ .grid{grid-template-columns:216px minmax(0,1fr); gap:56px;} }
+
+/* ---------- masthead ---------- */
+.mast{border-bottom:2px solid var(--ink); padding:44px 0 22px; margin-bottom:36px;}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); margin:0 0 14px;}
+.mast h1{font-size:clamp(2.1rem,5.2vw,3.4rem); font-weight:700; letter-spacing:-.01em;}
+.mast .lede{max-width:62ch; color:var(--ink-2); margin:16px 0 0; font-size:1.06rem;}
+.meta{display:flex; flex-wrap:wrap; gap:0 32px; margin-top:26px; font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-3);}
+.meta b{display:block; color:var(--ink); font-weight:500; font-size:.82rem; letter-spacing:.01em;}
+
+/* ---------- nav rail ---------- */
+.rail{display:none;}
+@media(min-width:1060px){
+  .rail{display:block; position:sticky; top:28px; align-self:start; max-height:calc(100vh - 56px); overflow-y:auto;}
+}
+.rail p{font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); margin:0 0 10px;}
+.rail ol{list-style:none; margin:0 0 26px; padding:0; display:flex; flex-direction:column; gap:1px;}
+.rail a{display:flex; gap:9px; padding:4px 0; text-decoration:none; color:var(--ink-2); font-size:.86rem; line-height:1.4;}
+.rail a:hover{color:var(--accent);}
+.rail a span{font-family:"IBM Plex Mono",monospace; font-size:.7rem; color:var(--ink-3); padding-top:2px; min-width:26px;}
+
+/* ---------- sections ---------- */
+section{margin:0 0 64px; scroll-margin-top:24px;}
+.sec-head{display:flex; align-items:baseline; gap:14px; border-bottom:1px solid var(--rule-2); padding-bottom:10px; margin-bottom:24px;}
+.sec-num{font-family:"IBM Plex Mono",monospace; font-size:.78rem; color:var(--accent); font-weight:500;}
+.sec-head h2{font-size:1.5rem; font-weight:600;}
+p{margin:0 0 16px; max-width:74ch;}
+.dim{color:var(--ink-2);}
+ul,ol.n{margin:0 0 18px; padding-left:1.15rem; max-width:74ch;}
+li{margin-bottom:7px;}
+li::marker{color:var(--ink-3);}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto; margin:0 0 22px; border:1px solid var(--rule); border-radius:3px; background:var(--surface);}
+table{border-collapse:collapse; width:100%; min-width:600px; font-size:.875rem;}
+th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--rule); vertical-align:top; line-height:1.55;}
+thead th{background:var(--surface-2); font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-2); font-weight:500; white-space:nowrap;}
+tbody tr:last-child td{border-bottom:none;}
+td.num,th.num{font-variant-numeric:tabular-nums; white-space:nowrap;}
+tr.pick td{background:var(--ok-soft);}
+tr.pick td:first-child{box-shadow:inset 3px 0 0 var(--ok);}
+code{background:var(--surface-2); padding:.1em .38em; border-radius:2px; font-size:.86em; border:1px solid var(--rule);}
+td code,li code,p code{white-space:nowrap;}
+
+/* ---------- layer cards ---------- */
+.layer{background:var(--surface); border:1px solid var(--rule); border-radius:4px; margin-bottom:22px; box-shadow:var(--shadow); overflow:hidden;}
+.layer-head{display:flex; align-items:flex-start; gap:16px; padding:18px 22px; border-bottom:1px solid var(--rule); background:var(--surface-2);}
+.layer-id{font-family:"IBM Plex Mono",monospace; font-size:.78rem; font-weight:600; color:var(--surface); background:var(--accent); padding:3px 8px; border-radius:2px; margin-top:3px; letter-spacing:.02em;}
+.layer-head h3{font-size:1.14rem; font-weight:600;}
+.layer-head .sub{font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--ink-3); margin:4px 0 0; line-height:1.5;}
+.layer-body{padding:22px;}
+.blk{margin-bottom:22px;}
+.blk:last-child{margin-bottom:0;}
+.blk > h4{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3); font-weight:500; margin-bottom:10px; padding-bottom:6px; border-bottom:1px dotted var(--rule-2);}
+.blk p:last-child,.blk ul:last-child,.blk .tw:last-child{margin-bottom:0;}
+
+/* ---------- callouts ---------- */
+.rec,.gapbox,.note{border-radius:3px; padding:14px 16px; margin:0 0 18px; font-size:.92rem; line-height:1.65;}
+.rec{background:var(--ok-soft); border-left:3px solid var(--ok);}
+.gapbox{background:var(--crit-soft); border-left:3px solid var(--crit);}
+.note{background:var(--warn-soft); border-left:3px solid var(--warn);}
+.rec b,.gapbox b,.note b{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; display:block; margin-bottom:6px; font-weight:600;}
+.rec b{color:var(--ok);} .gapbox b{color:var(--crit);} .note b{color:var(--warn);}
+.rec p:last-child,.gapbox p:last-child,.note p:last-child,.rec ul:last-child{margin-bottom:0;}
+.rec ul,.gapbox ul{margin-bottom:0;}
+
+/* ---------- pills ---------- */
+.pill{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.05em; padding:2px 7px; border-radius:2px; white-space:nowrap; font-weight:500; border:1px solid transparent;}
+.p-ok{background:var(--ok-soft); color:var(--ok); border-color:var(--ok);}
+.p-crit{background:var(--crit-soft); color:var(--crit); border-color:var(--crit);}
+.p-warn{background:var(--warn-soft); color:var(--warn); border-color:var(--warn);}
+.p-neu{background:var(--surface-2); color:var(--ink-3); border-color:var(--rule-2);}
+
+/* ---------- figures ---------- */
+figure{margin:0 0 26px; background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:22px 20px 16px; box-shadow:var(--shadow);}
+.svgscroll{overflow-x:auto;}
+.svgscroll svg{display:block; max-width:100%; height:auto; margin:0 auto; color:var(--ink);}
+.dg-crit{fill:var(--crit)!important}
+.dg-warn{fill:var(--warn)!important}
+.dg-acc{fill:var(--accent)!important}
+.dg-crit-s{stroke:var(--crit)!important}
+.dg-acc-s{stroke:var(--accent)!important}
+figcaption{margin-top:16px; padding-top:12px; border-top:1px dotted var(--rule-2); font-size:.82rem; color:var(--ink-2); line-height:1.6; max-width:80ch;}
+figcaption b{color:var(--ink); font-weight:600;}
+
+/* ---------- decision cards ---------- */
+.dec{border:1px solid var(--rule); border-radius:4px; background:var(--surface); margin-bottom:16px; overflow:hidden;}
+.dec > summary{cursor:pointer; padding:13px 18px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; list-style:none; background:var(--surface-2); font-weight:600; font-size:.95rem;}
+.dec > summary::-webkit-details-marker{display:none}
+.dec > summary::after{content:"+"; margin-left:auto; font-family:"IBM Plex Mono",monospace; color:var(--ink-3); font-size:1.1rem;}
+.dec[open] > summary::after{content:"–";}
+.dec[open] > summary{border-bottom:1px solid var(--rule);}
+.dec .did{font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--accent); font-weight:500;}
+.dec .inner{padding:18px;}
+.dec .inner > *:last-child{margin-bottom:0;}
+
+/* ---------- toc / phases ---------- */
+.chap{display:grid; grid-template-columns:auto 1fr; gap:0 18px; border-top:1px solid var(--rule); padding:14px 0;}
+.chap:last-of-type{border-bottom:1px solid var(--rule);}
+.chap .cn{font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--accent); font-weight:500; padding-top:3px;}
+.chap h4{font-size:1rem; font-weight:600; margin-bottom:5px;}
+.chap p{margin:0; font-size:.88rem; color:var(--ink-2); max-width:76ch;}
+.chap .who{font-family:"IBM Plex Mono",monospace; font-size:.68rem; color:var(--ink-3); margin-top:6px; display:block;}
+
+.phase{border-left:2px solid var(--rule-2); padding:0 0 24px 22px; position:relative; margin-left:6px;}
+.phase:last-child{padding-bottom:0;}
+.phase::before{content:""; position:absolute; left:-6px; top:6px; width:10px; height:10px; border-radius:50%; background:var(--accent); border:2px solid var(--surface);}
+.phase h4{font-size:1rem; font-weight:600; margin-bottom:4px;}
+.phase .dur{font-family:"IBM Plex Mono",monospace; font-size:.7rem; color:var(--ink-3); letter-spacing:.05em;}
+.phase p{margin:8px 0 0; font-size:.9rem;}
+
+.foot{border-top:2px solid var(--ink); margin-top:64px; padding-top:20px; font-size:.82rem; color:var(--ink-3);}
+.foot a{color:var(--ink-2);}
+@media (max-width:760px){
+  body{font-size:15.5px;}
+  table{font-size:.82rem;}
+  th,td{padding:9px 11px;}
+  .shell{padding:0 18px 72px;}
+  figure{padding:16px 14px 12px;}
+  .svgscroll svg{min-width:640px;}
+
+}
+@media (prefers-reduced-motion: reduce){*{animation:none !important; transition:none !important;}}
+</style>
+
+<div class="shell">
+
+<header class="mast">
+  <p class="eyebrow">ข้อเสนอเชิงสถาปัตยกรรม · เพื่อพิจารณา</p>
+  <h1>คู่มือติดตั้ง Kubernetes<br>ฉบับปรับปรุง 2026</h1>
+  <p class="lede">ข้อเสนอโครงสร้างเอกสารและสถาปัตยกรรมเต็มระบบ สำหรับสร้าง on-prem HA cluster ชุดใหม่แทนของเดิมที่อิง Kubernetes 1.30 ซึ่งหมดระยะ support ไปแล้ว — ไล่ทีละชั้นว่าแต่ละองค์ประกอบทำหน้าที่อะไร มีทางเลือกอะไรบ้าง และควรเลือกอะไรเพราะอะไร</p>
+  <div class="meta">
+    <div><b>เป้าหมาย</b>Kubernetes 1.36 · kubeadm HA</div>
+    <div><b>ฐานเดิม</b>k8s 1.30 · containerd 1.7 · Helm 3</div>
+    <div><b>สถานะ</b>ยังไม่เคาะ · รอตัดสินใจ 10 ข้อ</div>
+    <div><b>วันที่</b>25 ส.ค. 2026</div>
+  </div>
+</header>
+
+<div class="grid">
+
+<nav class="rail" aria-label="สารบัญ">
+  <p>ส่วนหลัก</p>
+  <ol>
+    <li><a href="#scope"><span>00</span>ขอบเขต</a></li>
+    <li><a href="#decisions"><span>01</span>สิ่งที่ต้องเคาะ</a></li>
+    <li><a href="#stack"><span>02</span>ภาพรวมชั้น</a></li>
+    <li><a href="#toc"><span>03</span>โครงเอกสาร</a></li>
+    <li><a href="#versions"><span>04</span>Version matrix</a></li>
+    <li><a href="#plan"><span>05</span>แผนดำเนินการ</a></li>
+    <li><a href="#risk"><span>06</span>ความเสี่ยง</a></li>
+  </ol>
+  <p>ชั้นสถาปัตยกรรม</p>
+  <ol>
+    <li><a href="#l0"><span>L00</span>Infra &amp; Network</a></li>
+    <li><a href="#l1"><span>L01</span>OS Baseline</a></li>
+    <li><a href="#l2"><span>L02</span>Container Runtime</a></li>
+    <li><a href="#l3"><span>L03</span>Control Plane</a></li>
+    <li><a href="#l4"><span>L04</span>HA &amp; VIP</a></li>
+    <li><a href="#l5"><span>L05</span>Cluster Network</a></li>
+    <li><a href="#l6"><span>L06</span>North-South</a></li>
+    <li><a href="#l7"><span>L07</span>Storage</a></li>
+    <li><a href="#l8"><span>L08</span>Registry</a></li>
+    <li><a href="#l9"><span>L09</span>Observability</a></li>
+    <li><a href="#l10"><span>L10</span>Security</a></li>
+    <li><a href="#l11"><span>L11</span>App Delivery</a></li>
+    <li><a href="#l12"><span>L12</span>Day-2 Ops</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ============ 00 ============ -->
+<section id="scope">
+  <div class="sec-head"><span class="sec-num">00</span><h2>ขอบเขตและหลักการออกแบบ</h2></div>
+
+  <p>เอกสารชุดใหม่ไม่ใช่แค่การอัปเดตเลขเวอร์ชันจากของเดิม แต่เป็นการเขียนใหม่โดยเพิ่มสิ่งที่ของเดิมไม่มีเลย — โดยเฉพาะ <b>day-2 operations</b> (backup / upgrade / cert renewal) ซึ่งเป็นสาเหตุที่ทำให้ cluster เดิมเดินต่อไม่ได้และต้องมาตั้งใหม่ทั้งชุดในรอบนี้</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>หลักการ</th><th>ความหมายในทางปฏิบัติ</th></tr></thead>
+    <tbody>
+      <tr><td><b>Reproducible</b></td><td>ทุกเวอร์ชันถูก pin ไว้ในไฟล์เดียว (<code>versions.env</code>) ไม่มีคำว่า “latest” ในคู่มือ คนอ่านคนละเดือนต้องได้ cluster เหมือนกัน</td></tr>
+      <tr><td><b>ไม่มีความลับในเอกสาร</b></td><td>ทุก password / token / key เป็น placeholder ล้วน ค่าจริงอยู่ในที่เก็บ secret แยก คู่มือชุดเดิมมี root password และ cluster-admin token ฝังอยู่ในไฟล์ <span class="pill p-crit">ต้องไม่เกิดซ้ำ</span></td></tr>
+      <tr><td><b>ทุกขั้นตอนมี verify</b></td><td>แต่ละคำสั่งตามด้วย “ผลลัพธ์ที่ควรเห็น” — ของเดิมมีแต่คำสั่ง คนทำตามไม่รู้ว่าพลาดตอนไหนจนไปพังทีหลัง</td></tr>
+      <tr><td><b>แยก “ทำอะไร” จาก “ทำไม”</b></td><td>ตัวคู่มือเป็น runbook สั้น ตรงไปตรงมา ส่วนเหตุผล/ทางเลือกอยู่ในเอกสารสถาปัตยกรรม (ฉบับนี้) คนทำงานตอนตีสองไม่ต้องอ่านเหตุผล</td></tr>
+      <tr><td><b>Upgrade เป็นพลเมืองชั้นหนึ่ง</b></td><td>Kubernetes ออก 3 minor/ปี และ support ~1 ปี แปลว่า <b>ต้อง upgrade อย่างน้อยปีละครั้ง</b> คู่มือต้องรองรับเรื่องนี้ ไม่ใช่คู่มือ “ติดตั้งครั้งเดียวจบ”</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note"><b>ข้อสมมติที่ยังต้องยืนยัน</b>
+  <p>ผมสมมติจากเอกสารเดิมว่า: node เป็น VM บน VMware (interface ชื่อ <code>ens192</code>), OS เป็นตระกูล RHEL (ใช้ <code>yum</code> + <code>firewalld</code> + SELinux), มี private registry ที่ <code>registry.myhr.co.th</code>, และ workload หลักเป็น Spring Boot microservices ถ้าข้อไหนไม่ตรง บอกได้ครับ จะมีผลกับ L00, L02 และ L07 โดยตรง</p></div>
+</section>
+
+<!-- ============ 01 ============ -->
+<section id="decisions">
+  <div class="sec-head"><span class="sec-num">01</span><h2>สิ่งที่ต้องเคาะก่อนลงมือเขียน</h2></div>
+
+  <p>10 ข้อนี้กำหนดหน้าตาของคู่มือทั้งชุด ถ้าเปลี่ยนทีหลังจะต้องรื้อหลายบท เรียงจากผลกระทบมากไปน้อย <span class="pill p-ok">แนะนำ</span> คือตัวที่ผมเสนอ</p>
+
+  <details class="dec" open>
+    <summary><span class="did">D1</span> เวอร์ชัน Kubernetes ที่จะ pin</summary>
+    <div class="inner">
+      <div class="tw"><table>
+        <thead><tr><th>ตัวเลือก</th><th>EOL</th><th>เหตุผล</th></tr></thead>
+        <tbody>
+          <tr class="pick"><td><b>1.36</b> <span class="pill p-ok">แนะนำ</span></td><td class="num">มิ.ย. 2027</td><td>runway ยาวสุด ~10 เดือน ก่อนต้อง upgrade รอบแรก คุ้มกับแรงที่ลงไปเขียนคู่มือ</td></tr>
+          <tr><td>1.35</td><td class="num">ก.พ. 2027</td><td>สุกกว่า patch เยอะกว่า แต่เหลือเวลาแค่ ~6 เดือน จะต้อง upgrade แทบจะทันทีที่เขียนคู่มือเสร็จ</td></tr>
+          <tr><td>1.34</td><td class="num">ต.ค. 2026</td><td><span class="pill p-crit">ไม่ควร</span> เหลือ 2 เดือน เท่ากับตั้ง cluster ที่ EOL ตั้งแต่วันแรก</td></tr>
+        </tbody>
+      </table></div>
+      <p class="dim">หมายเหตุ: ตั้งใจไม่ใช้ patch ล่าสุดสุดขั้ว — pin ที่ <code>1.36.x</code> ตัวที่ทดสอบใน lab แล้ว และเลื่อน patch ตามรอบ maintenance ไม่ใช่ตามวันที่ออก</p>
+    </div>
+  </details>
+
+  <details class="dec">
+    <summary><span class="did">D2</span> ระบบปฏิบัติการฐาน</summary>
+    <div class="inner">
+      <div class="tw"><table>
+        <thead><tr><th>ตัวเลือก</th><th>ข้อดี</th><th>ข้อควรระวัง</th></tr></thead>
+        <tbody>
+          <tr class="pick"><td><b>Rocky / AlmaLinux 9</b> <span class="pill p-ok">แนะนำ</span></td><td>cgroup v2 by default, ecosystem นิ่ง, คำสั่งเหมือน RHEL ที่ทีมคุ้นอยู่แล้ว, support ยาว</td><td>ต้องใช้ <code>dnf</code> แทน <code>yum</code> (alias ยังใช้ได้)</td></tr>
+          <tr><td>Rocky / AlmaLinux 10</td><td>kernel ใหม่กว่า (รองรับ nftables mode สบาย), อายุยาวที่สุด</td><td>ecosystem บางตัว (CSI, agent เก่า) ยังตามไม่ทัน ต้องเทสเยอะกว่า</td></tr>
+          <tr><td>Ubuntu 24.04 LTS</td><td>เอกสาร community เยอะสุด, ไม่ต้องยุ่งกับ SELinux</td><td>ทีมต้องเปลี่ยนชุดคำสั่งทั้งหมด — ไม่คุ้มถ้าไม่มีเหตุผลอื่น</td></tr>
+          <tr><td>CentOS 7 (ของเดิม)</td><td>—</td><td><span class="pill p-crit">EOL แล้ว</span> ไม่มี security patch ตั้งแต่ มิ.ย. 2024</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </details>
+
+  <details class="dec">
+    <summary><span class="did">D3</span> วิธีทำ HA ให้ control-plane endpoint <span class="pill p-warn">ผลกระทบสูง</span></summary>
+    <div class="inner"><p class="dim">รายละเอียดเต็มอยู่ที่ <a href="#l4">ชั้น L04</a> — ตัวเลือกคือ static pod (ของเดิม) / systemd service / kube-vip / hardware LB สรุปคือ <b>แนะนำ systemd service</b> เพราะ static pod จะหายไปพร้อม <code>/etc/kubernetes/manifests</code> ตอน <code>kubeadm reset</code> ซึ่งคือช่วงที่ต้องการมันที่สุด</p></div>
+  </details>
+
+  <details class="dec">
+    <summary><span class="did">D4</span> CNI plugin <span class="pill p-warn">ผลกระทบสูง</span></summary>
+    <div class="inner"><p class="dim">Flannel (ของเดิม) / Calico / Cilium — รายละเอียดที่ <a href="#l5">ชั้น L05</a> ตัวชี้ขาดคือ <b>ต้องการ NetworkPolicy หรือไม่</b> ซึ่งสำหรับระบบที่เก็บข้อมูลพนักงานน่าจะตอบว่าต้องการ</p></div>
+  </details>
+
+  <details class="dec">
+    <summary><span class="did">D5</span> โหมด kube-proxy</summary>
+    <div class="inner"><p class="dim">iptables (default) / IPVS (<span class="pill p-crit">deprecated ใน 1.35</span>) / nftables (GA ตั้งแต่ 1.33) / ไม่ใช้เลย (Cilium kube-proxy replacement) — ผูกกับ D4 ดูที่ <a href="#l5">L05</a></p></div>
+  </details>
+
+  <details class="dec">
+    <summary><span class="did">D6</span> ทางเข้าจากนอก cluster</summary>
+    <div class="inner"><p class="dim">ingress-nginx ปิดโปรเจกต์ไปแล้วเมื่อ มี.ค. 2026 จึงเป็นโอกาสเริ่มที่ Gateway API เลย ไม่ต้องย้ายสองรอบ ดูที่ <a href="#l6">L06</a></p></div>
+  </details>
+
+  <details class="dec">
+    <summary><span class="did">D7</span> จะมี <code>type: LoadBalancer</code> ใช้ไหม</summary>
+    <div class="inner"><p class="dim">on-prem ไม่มี cloud LB ให้ ทางเลือกคืออยู่กับ NodePort ต่อ (ของเดิม) หรือใส่ MetalLB ดูที่ <a href="#l6">L06</a></p></div>
+  </details>
+
+  <details class="dec">
+    <summary><span class="did">D8</span> จะรองรับ stateful workload ไหม</summary>
+    <div class="inner"><p class="dim">ถ้าตอบว่า “ไม่ ฐานข้อมูลอยู่นอก cluster” จะตัดงานออกไปได้เยอะมาก ถ้าตอบว่า “ใช่” ต้องเลือก CSI ดูที่ <a href="#l7">L07</a> — <b>ควรตอบข้อนี้ให้ชัดตั้งแต่แรก</b> เพราะเปลี่ยนใจทีหลังแพงที่สุดในบรรดา 10 ข้อ</p></div>
+  </details>
+
+  <details class="dec">
+    <summary><span class="did">D9</span> วิธี deploy application</summary>
+    <div class="inner"><p class="dim"><code>kubectl apply</code> มือ (ของเดิม) / Helm chart / GitOps ด้วย Argo CD — ดูที่ <a href="#l11">L11</a></p></div>
+  </details>
+
+  <details class="dec">
+    <summary><span class="did">D10</span> etcd แบบ stacked หรือ external</summary>
+    <div class="inner"><p class="dim">ของเดิมเป็น stacked (etcd อยู่บน master เดียวกัน) ซึ่งเหมาะกับขนาดนี้ external etcd เพิ่มความทนทานแต่เพิ่มเครื่องอีก 3 ตัวและงานดูแลอีกชุด ดูที่ <a href="#l3">L03</a></p></div>
+  </details>
+</section>
+
+<!-- ============ 02 ============ -->
+<section id="stack">
+  <div class="sec-head"><span class="sec-num">02</span><h2>สถาปัตยกรรมเต็มระบบ — 13 ชั้น</h2></div>
+
+  <p>ลำดับชั้นนี้คือลำดับการ build ด้วย: ชั้นล่างต้องเสร็จและ verify ผ่านก่อนขึ้นชั้นบน ถ้าข้ามลำดับจะไปเจอปัญหาที่ debug ยากมาก (เช่น pod ข้าม node ไม่ได้ ทั้งที่จริงแล้วเป็นเรื่อง firewall ที่ L01)</p>
+
+  <figure>
+    <div class="svgscroll"><svg viewBox="0 0 860 560" role="img" aria-label="แผนภาพชั้นสถาปัตยกรรม 13 ชั้น ตั้งแต่ Infrastructure ขึ้นไปถึง Day-2 Operations พร้อมทำเครื่องหมายชั้นที่คู่มือเดิมขาด">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">
+
+        <!-- build order arrow -->
+        <line x1="26" y1="510" x2="26" y2="46" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)" opacity=".45"/>
+        <text x="18" y="300" font-size="10.5" opacity=".6" transform="rotate(-90 18 300)" text-anchor="middle">ลำดับการ build</text>
+
+        <!-- layers: y positions -->
+        <!-- L12 -->
+        <rect x="48" y="30" width="600" height="42" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".85" rx="2"/>
+        <text x="60" y="49" font-size="10" opacity=".55">L12</text>
+        <text x="98" y="50" font-size="12.5" font-weight="600">Day-2 Operations</text>
+        <text x="98" y="64" font-size="10.5" opacity=".7">etcd backup · cert renewal · cluster upgrade · DR drill</text>
+        <text x="662" y="56" font-size="10" class="dg-crit" font-weight="600">ของเดิมไม่มีเลย</text>
+
+        <!-- L10-11 pair -->
+        <rect x="48" y="80" width="292" height="42" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".85" rx="2"/>
+        <text x="60" y="99" font-size="10" opacity=".55">L11</text>
+        <text x="98" y="100" font-size="12.5" font-weight="600">App Delivery</text>
+        <text x="98" y="114" font-size="10.5" opacity=".7">Helm 4 · GitOps · quota</text>
+
+        <rect x="356" y="80" width="292" height="42" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".85" rx="2"/>
+        <text x="368" y="99" font-size="10" opacity=".55">L10</text>
+        <text x="406" y="100" font-size="12.5" font-weight="600">Security &amp; Governance</text>
+        <text x="406" y="114" font-size="10.5" opacity=".7">RBAC · PSA · NetPol · secrets</text>
+        <text x="662" y="106" font-size="10" class="dg-crit" font-weight="600">ของเดิมไม่มีเลย</text>
+
+        <!-- L9 -->
+        <rect x="48" y="130" width="600" height="42" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".85" rx="2"/>
+        <text x="60" y="149" font-size="10" opacity=".55">L09</text>
+        <text x="98" y="150" font-size="12.5" font-weight="600">Observability</text>
+        <text x="98" y="164" font-size="10.5" opacity=".7">metrics-server · Prometheus · Loki · Grafana · alerting</text>
+        <text x="662" y="156" font-size="10" class="dg-warn" font-weight="600">มีแค่ metrics-server</text>
+
+        <!-- L7 L8 -->
+        <rect x="48" y="180" width="292" height="42" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".85" rx="2"/>
+        <text x="60" y="199" font-size="10" opacity=".55">L07</text>
+        <text x="98" y="200" font-size="12.5" font-weight="600">Storage / CSI</text>
+        <text x="98" y="214" font-size="10.5" opacity=".7">StorageClass · PV/PVC</text>
+
+        <rect x="356" y="180" width="292" height="42" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".85" rx="2"/>
+        <text x="368" y="199" font-size="10" opacity=".55">L08</text>
+        <text x="406" y="200" font-size="12.5" font-weight="600">Registry</text>
+        <text x="406" y="214" font-size="10.5" opacity=".7">registry.myhr.co.th · pull secret</text>
+        <text x="662" y="206" font-size="10" class="dg-crit" font-weight="600">L07 ไม่มีเลย</text>
+
+        <!-- L6 -->
+        <rect x="48" y="230" width="600" height="42" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".85" rx="2"/>
+        <text x="60" y="249" font-size="10" opacity=".55">L06</text>
+        <text x="98" y="250" font-size="12.5" font-weight="600">North-South Traffic</text>
+        <text x="98" y="264" font-size="10.5" opacity=".7">MetalLB · Gateway API · cert-manager · TLS</text>
+        <text x="662" y="256" font-size="10" class="dg-crit" font-weight="600">เดิมใช้ NodePort ล้วน</text>
+
+        <!-- L5 -->
+        <rect x="48" y="280" width="600" height="42" fill="none" stroke="currentColor" stroke-width="1.6" rx="2"/>
+        <text x="60" y="299" font-size="10" opacity=".55">L05</text>
+        <text x="98" y="300" font-size="12.5" font-weight="600">Cluster Networking</text>
+        <text x="98" y="314" font-size="10.5" opacity=".7">CNI · kube-proxy mode · CoreDNS · CIDR &amp; MTU</text>
+
+        <!-- L4 -->
+        <rect x="48" y="330" width="600" height="42" fill="none" stroke="currentColor" stroke-width="1.6" rx="2"/>
+        <text x="60" y="349" font-size="10" opacity=".55">L04</text>
+        <text x="98" y="350" font-size="12.5" font-weight="600">HA &amp; Virtual IP</text>
+        <text x="98" y="364" font-size="10.5" opacity=".7">keepalived (VRRP) · HAProxy · control-plane endpoint</text>
+        <text x="662" y="356" font-size="10" class="dg-warn" font-weight="600">ต้องรื้อ design</text>
+
+        <!-- L3 -->
+        <rect x="48" y="380" width="600" height="42" fill="none" stroke="currentColor" stroke-width="1.6" rx="2"/>
+        <text x="60" y="399" font-size="10" opacity=".55">L03</text>
+        <text x="98" y="400" font-size="12.5" font-weight="600">Control Plane (kubeadm)</text>
+        <text x="98" y="414" font-size="10.5" opacity=".7">etcd · apiserver · scheduler · controller-manager · kubelet</text>
+
+        <!-- L2 -->
+        <rect x="48" y="430" width="600" height="42" fill="none" stroke="currentColor" stroke-width="1.6" rx="2"/>
+        <text x="60" y="449" font-size="10" opacity=".55">L02</text>
+        <text x="98" y="450" font-size="12.5" font-weight="600">Container Runtime</text>
+        <text x="98" y="464" font-size="10.5" opacity=".7">containerd · runc · CNI binaries · SystemdCgroup</text>
+        <text x="662" y="456" font-size="10" class="dg-crit" font-weight="600">config.toml ไม่เคยถูกสร้าง</text>
+
+        <!-- L1 -->
+        <rect x="48" y="480" width="600" height="34" fill="none" stroke="currentColor" stroke-width="1.6" rx="2"/>
+        <text x="60" y="500" font-size="10" opacity=".55">L01</text>
+        <text x="98" y="501" font-size="12.5" font-weight="600">OS Baseline <tspan font-size="10.5" font-weight="400" opacity=".7">— kernel modules · sysctl · swap · SELinux · firewall</tspan></text>
+
+        <!-- L0 -->
+        <rect x="48" y="522" width="600" height="30" fill="currentColor" opacity=".08" rx="2"/>
+        <rect x="48" y="522" width="600" height="30" fill="none" stroke="currentColor" stroke-width="1.6" rx="2"/>
+        <text x="60" y="541" font-size="10" opacity=".55">L00</text>
+        <text x="98" y="542" font-size="12.5" font-weight="600">Infrastructure <tspan font-size="10.5" font-weight="400" opacity=".7">— VM · subnet · DNS · NTP · disk</tspan></text>
+      </g>
+    </svg></div>
+    <figcaption><b>13 ชั้น เรียงตามลำดับการ build</b> — กรอบหนาคือชั้นที่คู่มือเดิมครอบคลุมแล้ว (แต่ต้องแก้) กรอบบางคือชั้นที่ต้องเขียนขึ้นใหม่ทั้งหมด สังเกตว่าชั้นที่ขาดหายทั้งหมดกระจุกอยู่ครึ่งบน — คือส่วนที่ทำให้ cluster “อยู่ได้ยาว” ไม่ใช่ส่วนที่ทำให้ “ติดตั้งสำเร็จ”</figcaption>
+  </figure>
+
+  <!-- ===== L0 ===== -->
+  <article class="layer" id="l0">
+    <header class="layer-head"><span class="layer-id">L00</span><div><h3>Infrastructure &amp; Network</h3><p class="sub">VM sizing · subnet · DNS · NTP · disk latency</p></div></header>
+    <div class="layer-body">
+      <div class="blk"><h4>หน้าที่</h4>
+        <p>ฐานที่ทุกอย่างวางอยู่ ถ้าชั้นนี้ผิด อาการจะโผล่ที่ชั้นบนสุดแบบไม่มีเบาะแส — ตัวอย่างคลาสสิกคือ etcd ที่ disk ช้าจะทำให้ทั้ง cluster ตอบช้าและ leader election สะดุด แต่ log จะไปโผล่ที่ apiserver</p>
+      </div>
+      <div class="blk"><h4>สเปกที่เสนอ</h4>
+        <div class="tw"><table>
+          <thead><tr><th>บทบาท</th><th class="num">จำนวน</th><th class="num">vCPU / RAM</th><th>Disk</th></tr></thead>
+          <tbody>
+            <tr><td><b>Control plane</b></td><td class="num">3</td><td class="num">4 / 8 GB</td><td>OS 60 GB + <b>disk แยกสำหรับ etcd 50 GB SSD</b></td></tr>
+            <tr><td><b>Worker</b></td><td class="num">4+</td><td class="num">8 / 16 GB</td><td>OS 100 GB SSD (พื้นที่ image สำคัญกว่าที่คิด)</td></tr>
+          </tbody>
+        </table></div>
+        <p class="dim">จำนวน control plane ต้องเป็นเลขคี่เสมอ (3 หรือ 5) เพราะ etcd ใช้ quorum — 3 ตัวทน node ตายได้ 1, 4 ตัวก็ยังทนได้แค่ 1 เท่าเดิม แต่เสี่ยงกว่า</p>
+      </div>
+      <div class="blk"><h4>สิ่งที่ต้องมีก่อนเริ่ม</h4>
+        <div class="tw"><table>
+          <thead><tr><th>รายการ</th><th>ทำไม</th><th>ทางเลือก</th></tr></thead>
+          <tbody>
+            <tr><td><b>DNS record จริง</b></td><td>ชื่อ node และ VIP ต้อง resolve ได้จากทุกเครื่อง</td><td>ของเดิมใช้ <code>/etc/hosts</code> คัดลอกไปทุกเครื่อง — ใช้ได้แต่เปราะมาก เพิ่ม node ทีต้องไปแก้ทุกเครื่อง <span class="pill p-warn">แนะนำย้ายไป DNS</span></td></tr>
+            <tr><td><b>NTP / chrony</b></td><td>TLS cert และ etcd raft พังทันทีถ้าเวลาเพี้ยน</td><td>ไม่มีทางเลือก — บังคับ และต้องมีขั้นตอน verify (<code>chronyc tracking</code>)</td></tr>
+            <tr><td><b>Anti-affinity ระดับ hypervisor</b></td><td>ถ้า master ทั้ง 3 อยู่ ESXi host เดียวกัน HA ที่ทำมาไม่มีความหมาย</td><td>DRS rule “separate virtual machines” บน vCenter</td></tr>
+            <tr><td><b>etcd disk latency</b></td><td>etcd ต้องการ fsync p99 ต่ำกว่า ~10 ms — datastore ที่แชร์กับ VM อื่นเยอะ ๆ มักไม่ผ่าน</td><td>วัดด้วย <code>fio</code> ก่อนตั้ง cluster และใส่ผลลงคู่มือเป็น baseline</td></tr>
+            <tr><td><b>แผน IP</b></td><td>node subnet, pod CIDR, service CIDR ห้ามทับกัน</td><td>ดูตารางที่ <a href="#l5">L05</a></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="gapbox"><b>ช่องว่างจากของเดิม</b>
+        <p>node ของ cluster เดิมกระจายอยู่สอง subnet (192.168.30.x และ 192.168.40.x) โดยไม่มีบันทึกว่าตั้งใจหรือเป็นผลจากการค่อย ๆ เพิ่มเครื่อง — ควรตัดสินใจรอบนี้ว่าจะรวมให้อยู่ subnet เดียว เพราะมีผลกับ VRRP (keepalived ทำงานใน L2 domain เดียวเท่านั้น) และกับ latency ของ etcd</p>
+      </div>
+    </div>
+  </article>
+
+  <!-- ===== L1 ===== -->
+  <article class="layer" id="l1">
+    <header class="layer-head"><span class="layer-id">L01</span><div><h3>OS Baseline</h3><p class="sub">kernel modules · sysctl · swap · SELinux · firewalld</p></div></header>
+    <div class="layer-body">
+      <div class="blk"><h4>หน้าที่</h4>
+        <p>ปรับ kernel ให้ทำ container networking ได้ และเปิดพอร์ตที่ component ต้องใช้ ชั้นนี้ดูน่าเบื่อแต่เป็นต้นเหตุของ “pod ข้าม node ไม่ได้” เกือบทุกเคส</p>
+      </div>
+      <div class="blk"><h4>รายการที่ต้องมี</h4>
+        <div class="tw"><table>
+          <thead><tr><th>รายการ</th><th>หน้าที่</th><th>สถานะในคู่มือเดิม</th></tr></thead>
+          <tbody>
+            <tr><td><code>modprobe overlay</code></td><td>overlayfs สำหรับ container filesystem</td><td><span class="pill p-crit">ไม่มี</span></td></tr>
+            <tr><td><code>modprobe br_netfilter</code></td><td>ให้ traffic ที่ผ่าน bridge ถูก iptables/nftables เห็น</td><td><span class="pill p-crit">ไม่มี</span> — และ sysctl ด้านล่างจะ set ไม่ติดถ้าไม่โหลด module นี้ก่อน</td></tr>
+            <tr><td><code>/etc/modules-load.d/k8s.conf</code></td><td>ให้ทั้งสองโหลดอัตโนมัติหลัง reboot</td><td><span class="pill p-crit">ไม่มี</span> — reboot แล้วพัง</td></tr>
+            <tr><td><code>net.ipv4.ip_forward=1</code></td><td>routing ระหว่าง pod</td><td><span class="pill p-ok">มี</span></td></tr>
+            <tr><td><code>net.bridge.bridge-nf-call-iptables=1</code></td><td>Service/NetworkPolicy ทำงานกับ pod ที่ต่อผ่าน bridge</td><td><span class="pill p-warn">มี แต่ set ไม่ติด</span></td></tr>
+            <tr><td><code>net.bridge.bridge-nf-call-ip6tables=1</code></td><td>เช่นเดียวกันฝั่ง IPv6</td><td><span class="pill p-crit">ไม่มี</span></td></tr>
+            <tr><td>ปิด swap</td><td>kubelet คำนวณ memory pressure จากสมมติฐานว่าไม่มี swap</td><td><span class="pill p-ok">มี</span> — NodeSwap มีแล้วแต่ยังเป็น beta แนะนำปิดต่อ</td></tr>
+            <tr><td>SELinux permissive</td><td>เลี่ยง denial ตอน container เขียน volume</td><td><span class="pill p-ok">มี</span> — เป็นแนวทางมาตรฐานของ kubeadm แต่คู่มือควรระบุชัดว่าเป็นการยอมรับความเสี่ยง ไม่ใช่ best practice</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="blk"><h4>Firewall port matrix</h4>
+        <div class="tw"><table>
+          <thead><tr><th>พอร์ต</th><th>บทบาท</th><th>ใช้ทำอะไร</th><th>เดิม</th></tr></thead>
+          <tbody>
+            <tr><td class="num"><code>6443/tcp</code></td><td>control plane</td><td>kube-apiserver</td><td><span class="pill p-ok">มี</span></td></tr>
+            <tr><td class="num"><code>2379-2380/tcp</code></td><td>control plane</td><td>etcd client + peer</td><td><span class="pill p-ok">มี</span></td></tr>
+            <tr><td class="num"><code>10250/tcp</code></td><td>ทุก node</td><td>kubelet API (<code>logs</code>, <code>exec</code>, metrics)</td><td><span class="pill p-ok">มี</span></td></tr>
+            <tr><td class="num"><code>10257/tcp</code></td><td>control plane</td><td>controller-manager</td><td><span class="pill p-ok">มี</span></td></tr>
+            <tr><td class="num"><code>10259/tcp</code></td><td>control plane</td><td>scheduler</td><td><span class="pill p-ok">มี</span></td></tr>
+            <tr><td class="num"><code>10256/tcp</code></td><td>ทุก node</td><td>kube-proxy health</td><td><span class="pill p-warn">มีแค่ worker</span></td></tr>
+            <tr><td class="num"><code>30000-32767/tcp</code></td><td>worker</td><td>NodePort range</td><td><span class="pill p-ok">มี</span></td></tr>
+            <tr><td class="num"><code>8472/udp</code></td><td>ทุก node</td><td><b>VXLAN ของ Flannel</b></td><td><span class="pill p-crit">ไม่มี</span></td></tr>
+            <tr><td class="num"><code>112 (VRRP)</code></td><td>control plane</td><td>keepalived คุยกันเลือก master</td><td><span class="pill p-crit">ไม่มี</span></td></tr>
+            <tr><td class="num"><code>179/tcp</code></td><td>ทุก node</td><td>BGP — ถ้าเลือก Calico หรือ MetalLB BGP mode</td><td>—</td></tr>
+            <tr><td class="num"><code>4240/tcp</code></td><td>ทุก node</td><td>Cilium health — ถ้าเลือก Cilium</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="gapbox"><b>ช่องว่างจากของเดิม</b>
+        <p>ขาด <code>8472/udp</code> และ VRRP ซึ่งเป็นสองพอร์ตที่ถ้าไม่เปิด HA และ pod networking จะไม่ทำงาน — เดาว่า cluster เดิมรอดเพราะ firewalld ถูกปิดไว้ ซึ่งถ้าจริง คู่มือใหม่ควรเลือกอย่างชัดเจนระหว่าง “ปิด firewalld แล้วพึ่ง firewall ระดับ network” หรือ “เปิดและระบุ port ให้ครบ” ไม่ใช่ปล่อยให้คลุมเครือเหมือนเดิม</p>
+      </div>
+    </div>
+  </article>
+
+  <!-- ===== L2 ===== -->
+  <article class="layer" id="l2">
+    <header class="layer-head"><span class="layer-id">L02</span><div><h3>Container Runtime</h3><p class="sub">containerd · runc · CNI binaries · cgroup driver</p></div></header>
+    <div class="layer-body">
+      <div class="blk"><h4>ใครทำอะไร</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ตัว</th><th>หน้าที่</th></tr></thead>
+          <tbody>
+            <tr><td><b>containerd</b></td><td>รับคำสั่งจาก kubelet ผ่าน CRI socket จัดการ image, snapshot, lifecycle ของ container</td></tr>
+            <tr><td><b>runc</b></td><td>ตัวที่สร้าง namespace/cgroup จริง ๆ ตามมาตรฐาน OCI — containerd เรียกใช้อีกที</td></tr>
+            <tr><td><b>CNI plugin binaries</b></td><td>ไฟล์ executable ใน <code>/opt/cni/bin</code> ที่ทำหน้าที่ต่อ network ให้ pod แต่ละตัว <b>คนละเรื่องกับ CNI ที่ L05</b> — ตัวนั้นคือ controller ที่เรียกใช้ binaries เหล่านี้</td></tr>
+            <tr><td><b>crictl</b></td><td>เครื่องมือ debug ระดับ CRI ใช้ตอน pod ไม่ยอมขึ้นและ <code>kubectl</code> ยังไม่มีข้อมูล</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="blk"><h4>ตัวเลือก</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ตัวเลือก</th><th>ข้อดี</th><th>ข้อเสีย</th></tr></thead>
+          <tbody>
+            <tr class="pick"><td><b>containerd 2.2 จาก tarball</b> <span class="pill p-ok">แนะนำ</span></td><td>คุมเวอร์ชันได้เป๊ะ (ตรงหลัก reproducible), ตรงกับที่ทีมทำอยู่แล้ว, ไม่ผูกกับ repo ของ distro</td><td>ต้องอัปเดตเองด้วยมือ ไม่มี <code>dnf update</code> ให้</td></tr>
+            <tr><td>containerd จาก repo ของ distro</td><td>อัปเดตตาม OS อัตโนมัติ</td><td>เวอร์ชันตามหลัง และอาจถูกอัปเดตโดยไม่ตั้งใจ ทำให้ node สองเครื่องไม่เหมือนกัน</td></tr>
+            <tr><td>CRI-O</td><td>ผูกเวอร์ชันกับ Kubernetes 1:1 ทำให้เลือกเวอร์ชันง่าย, ออกแบบมาเพื่อ k8s อย่างเดียว</td><td>ทีมไม่คุ้น, เอกสาร community น้อยกว่า, ต้องเรียนใหม่หมด</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="blk"><h4>สิ่งที่คู่มือใหม่ต้องมีเพิ่ม</h4>
+        <ul>
+          <li><b>สร้าง <code>/etc/containerd/config.toml</code></b> จาก <code>containerd config default</code> — คู่มือเดิมข้ามขั้นนี้ไปเลย</li>
+          <li><b>ตั้ง <code>SystemdCgroup = true</code></b> ให้ตรงกับ kubelet ถ้าไม่ตรง node จะดูปกติแต่ evict pod มั่วตอนโหลดสูง</li>
+          <li>containerd 2.x ใช้ config <b>version 3</b> และ key เปลี่ยนเป็น <code>io.containerd.cri.v1.runtime</code> (เดิม <code>io.containerd.grpc.v1.cri</code>)</li>
+          <li><b>sandbox image</b> ต้องตรงกับที่ kubeadm คาด — ตรวจด้วย <code>kubeadm config images list</code></li>
+          <li><b><code>/etc/containerd/certs.d/registry.myhr.co.th/hosts.toml</code></b> สำหรับ private registry — ถ้า cert เป็น self-signed หรือ registry เป็น HTTP ต้องประกาศตรงนี้ ไม่งั้น pull ไม่ได้ (ดู <a href="#l8">L08</a>)</li>
+          <li>ขั้นตอน verify: <code>crictl info | grep -i cgroup</code> และ pull image ทดสอบจาก registry จริง</li>
+        </ul>
+      </div>
+      <div class="gapbox"><b>ช่องว่างที่ใหญ่ที่สุดในชั้นนี้</b>
+        <p>cluster เดิมรันโดยไม่มี <code>config.toml</code> เลย แปลว่า containerd ใช้ค่า default ซึ่งเป็น <b>cgroupfs</b> ขณะที่ kubelet ถูกตั้งเป็น <b>systemd</b> — เป็น mismatch ที่เอกสาร Kubernetes เตือนไว้ชัดเจนว่าทำให้ node ไม่เสถียรภายใต้แรงกดดันด้าน resource</p>
+      </div>
+    </div>
+  </article>
+
+  <!-- ===== L3 ===== -->
+  <article class="layer" id="l3">
+    <header class="layer-head"><span class="layer-id">L03</span><div><h3>Control Plane</h3><p class="sub">kubeadm · etcd · apiserver · scheduler · controller-manager</p></div></header>
+    <div class="layer-body">
+      <div class="blk"><h4>ใครทำอะไร</h4>
+        <div class="tw"><table>
+          <thead><tr><th>Component</th><th>หน้าที่</th><th>ถ้าตัวนี้ตาย</th></tr></thead>
+          <tbody>
+            <tr><td><b>etcd</b></td><td>ฐานข้อมูล key-value ที่เก็บ “สถานะที่ต้องการ” ของทั้ง cluster</td><td>เสีย quorum = cluster จบ กู้ได้จาก backup เท่านั้น</td></tr>
+            <tr><td><b>kube-apiserver</b></td><td>ประตูเดียวเข้าถึง etcd ทำ authn/authz/admission ทุก component คุยผ่านตัวนี้</td><td>อ่าน/เขียนอะไรไม่ได้ แต่ pod ที่รันอยู่ยังรันต่อ</td></tr>
+            <tr><td><b>kube-scheduler</b></td><td>ตัดสินว่า pod ใหม่ควรไป node ไหน</td><td>pod ใหม่ค้าง Pending ของเก่าไม่กระทบ</td></tr>
+            <tr><td><b>controller-manager</b></td><td>วน reconcile ให้สถานะจริงตรงกับที่ต้องการ (ReplicaSet, Node, Endpoint ฯลฯ)</td><td>ไม่มีการ self-heal — pod ตายแล้วไม่มีคนสร้างใหม่</td></tr>
+            <tr><td><b>kubelet</b></td><td>agent บนทุก node สั่ง containerd ให้รัน pod ตามที่ได้รับมอบหมาย</td><td>node กลายเป็น NotReady, pod ถูก evict หลัง grace period</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="blk"><h4>ตัวเลือก — โครงสร้าง etcd</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ตัวเลือก</th><th>ข้อดี</th><th>ข้อเสีย</th></tr></thead>
+          <tbody>
+            <tr class="pick"><td><b>Stacked etcd</b> <span class="pill p-ok">แนะนำ</span></td><td>3 เครื่องจบ, kubeadm จัดการให้หมด, ตรงกับของเดิม</td><td>เสีย control plane node = เสีย etcd member ไปด้วยพร้อมกัน</td></tr>
+            <tr><td>External etcd</td><td>แยก failure domain, tune disk แยกได้, scale แยกได้</td><td>+3 เครื่อง, ต้องจัดการ cert เอง, งานดูแลเพิ่มอีกชุด — ไม่คุ้มที่ขนาดนี้</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="blk"><h4>โครง kubeadm config ที่เสนอ (v1beta4)</h4>
+        <p>เลิกใช้ <code>kubeadm init</code> แบบใส่ flag ยาว ๆ แล้วเปลี่ยนมาใช้ไฟล์ config ซึ่ง <b>เก็บเข้า git ได้ และเป็นเอกสารในตัวมันเอง</b> ประกอบด้วย 4 ส่วนในไฟล์เดียว:</p>
+        <div class="tw"><table>
+          <thead><tr><th>kind</th><th>คุมอะไร</th><th>จุดสำคัญ</th></tr></thead>
+          <tbody>
+            <tr><td><code>InitConfiguration</code></td><td>ค่าเฉพาะของ node แรก</td><td><code>localAPIEndpoint</code>, bootstrap token TTL (ตั้งให้สั้น)</td></tr>
+            <tr><td><code>ClusterConfiguration</code></td><td>ค่าระดับ cluster</td><td><code>kubernetesVersion</code>, <code>controlPlaneEndpoint</code>, pod/service CIDR, <b><code>apiServer.certSANs</code> ต้องมีทั้ง VIP, hostname และ FQDN</b>, <code>etcd.local.dataDir</code></td></tr>
+            <tr><td><code>KubeletConfiguration</code></td><td>พฤติกรรม kubelet ทุก node</td><td><code>cgroupDriver: systemd</code>, eviction threshold, <code>serializeImagePulls</code></td></tr>
+            <tr><td><code>KubeProxyConfiguration</code></td><td>โหมด kube-proxy</td><td><code>mode: nftables</code> (ดู D5)</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note"><b>certSANs คือจุดที่พลาดบ่อย</b><p>ถ้าลืมใส่ VIP หรือ FQDN ลงใน <code>certSANs</code> จะเจอ error x509 ตอนต่อผ่าน VIP และแก้ทีหลังต้องออก cert ใหม่ทั้งชุด — ควรเป็นรายการ checklist ในคู่มือ</p></div>
+      </div>
+      <div class="blk"><h4>เรื่องที่เปลี่ยนตั้งแต่ 1.29 และคู่มือเดิมไม่ได้พูดถึง</h4>
+        <ul>
+          <li><code>admin.conf</code> ตอนนี้ผูกกับกลุ่ม <code>kubeadm:cluster-admins</code> ไม่ใช่ super user ดิบ ๆ อีกต่อไป</li>
+          <li>มีไฟล์ <code>super-admin.conf</code> แยกออกมาสำหรับกรณีฉุกเฉิน — คู่มือควรอธิบายว่าเก็บที่ไหนและใช้เมื่อไหร่ (คำตอบคือ: เก็บออฟไลน์ ใช้เฉพาะตอนกู้ RBAC ที่พังตัวเอง)</li>
+          <li>kubeadm config เป็น <code>v1beta4</code> เท่านั้น — <code>v1beta3</code> ที่ไฟล์เดิมใช้ถูกถอดออกไปแล้ว</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  <!-- ===== L4 ===== -->
+  <article class="layer" id="l4">
+    <header class="layer-head"><span class="layer-id">L04</span><div><h3>HA &amp; Virtual IP</h3><p class="sub">keepalived (VRRP) · HAProxy · control-plane endpoint</p></div></header>
+    <div class="layer-body">
+      <div class="blk"><h4>หน้าที่</h4>
+        <p>ทำให้ <code>controlPlaneEndpoint</code> เป็นชื่อเดียวที่ไม่มีวันตาย ทุก kubelet, ทุก <code>kubectl</code> และทุก controller ชี้มาที่นี่ <b>keepalived</b> ใช้ VRRP ย้าย virtual IP ไปหา master ที่ยังมีชีวิต ส่วน <b>HAProxy</b> กระจาย connection ไปยัง apiserver ทั้ง 3 ตัว — สองตัวนี้แก้คนละปัญหา ต้องมีทั้งคู่</p>
+      </div>
+
+      <figure>
+        <div class="svgscroll"><svg viewBox="0 0 840 360" role="img" aria-label="เปรียบเทียบเส้นทางเดิมที่ HAProxy เป็น static pod บนพอร์ต 80 กับแบบที่เสนอซึ่ง HAProxy เป็น systemd service บนพอร์ต 8443">
+          <defs>
+            <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor">
+
+            <!-- divider -->
+            <line x1="420" y1="20" x2="420" y2="344" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4" opacity=".35"/>
+
+            <!-- LEFT: current -->
+            <text x="24" y="26" font-size="11.5" font-weight="600" class="dg-crit">แบบเดิม — static pod บน :80</text>
+
+            <rect x="24" y="46" width="150" height="34" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/>
+            <text x="99" y="67" text-anchor="middle">kubectl / kubelet</text>
+
+            <line x1="99" y1="80" x2="99" y2="106" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar2)"/>
+            <text x="107" y="97" font-size="10" opacity=".75">keepalived-vir:80</text>
+
+            <rect x="24" y="108" width="150" height="34" rx="2" fill="none" class="dg-crit-s" stroke-width="1.6"/>
+            <text x="99" y="129" text-anchor="middle" class="dg-crit">VIP :80</text>
+
+            <line x1="99" y1="142" x2="99" y2="168" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar2)"/>
+
+            <!-- kubelet boundary box -->
+            <rect x="14" y="168" width="330" height="112" rx="3" fill="currentColor" opacity=".06"/>
+            <rect x="14" y="168" width="330" height="112" rx="3" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="4 3" opacity=".6"/>
+            <text x="24" y="185" font-size="10" opacity=".7">ขอบเขต kubelet · /etc/kubernetes/manifests</text>
+
+            <rect x="24" y="194" width="150" height="34" rx="2" fill="none" class="dg-crit-s" stroke-width="1.6"/>
+            <text x="99" y="208" text-anchor="middle" class="dg-crit" font-size="10.5">haproxy static pod</text>
+            <text x="99" y="221" text-anchor="middle" class="dg-crit" font-size="9.5">timeout 20s</text>
+
+            <line x1="174" y1="211" x2="212" y2="211" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar2)"/>
+
+            <rect x="212" y="194" width="120" height="34" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/>
+            <text x="272" y="215" text-anchor="middle">apiserver :6443</text>
+
+            <text x="24" y="252" font-size="10" class="dg-crit">✕ kubeadm reset ล้าง manifests</text>
+            <text x="24" y="266" font-size="10" class="dg-crit">✕ LB ตายพร้อม cluster ตอนที่ต้องใช้มันที่สุด</text>
+
+            <text x="24" y="302" font-size="10" opacity=".8">✕ :80 ถูกยึดไว้ ใช้ทำ ingress ไม่ได้</text>
+            <text x="24" y="316" font-size="10" opacity=".8">✕ timeout 20s ตัด logs -f และ exec</text>
+            <text x="24" y="330" font-size="10" opacity=".8">✕ ssl-hello-chk ทับ httpchk — เช็ค health ไม่จริง</text>
+
+            <!-- RIGHT: proposed -->
+            <text x="448" y="26" font-size="11.5" font-weight="600" class="dg-acc">ที่เสนอ — systemd service บน :8443</text>
+
+            <rect x="448" y="46" width="150" height="34" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/>
+            <text x="523" y="67" text-anchor="middle">kubectl / kubelet</text>
+
+            <line x1="523" y1="80" x2="523" y2="106" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar2)"/>
+            <text x="531" y="97" font-size="10" opacity=".75">k8s-api.myhr:8443</text>
+
+            <rect x="448" y="108" width="150" height="34" rx="2" fill="none" class="dg-acc-s" stroke-width="1.6"/>
+            <text x="523" y="129" text-anchor="middle" class="dg-acc">VIP :8443</text>
+
+            <line x1="523" y1="142" x2="523" y2="168" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar2)"/>
+
+            <!-- host boundary -->
+            <rect x="438" y="168" width="330" height="112" rx="3" fill="currentColor" opacity=".06"/>
+            <rect x="438" y="168" width="330" height="112" rx="3" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="4 3" opacity=".6"/>
+            <text x="448" y="185" font-size="10" opacity=".7">ขอบเขต systemd · เป็นอิสระจาก cluster</text>
+
+            <rect x="448" y="194" width="150" height="34" rx="2" fill="none" class="dg-acc-s" stroke-width="1.6"/>
+            <text x="523" y="208" text-anchor="middle" class="dg-acc" font-size="10.5">haproxy.service</text>
+            <text x="523" y="221" text-anchor="middle" class="dg-acc" font-size="9.5">timeout 4h</text>
+
+            <line x1="598" y1="211" x2="636" y2="211" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar2)"/>
+
+            <rect x="636" y="194" width="120" height="34" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/>
+            <text x="696" y="215" text-anchor="middle">apiserver :6443</text>
+
+            <text x="448" y="252" font-size="10" class="dg-acc">✓ reset / upgrade ไม่แตะ LB</text>
+            <text x="448" y="266" font-size="10" class="dg-acc">✓ debug ด้วย journalctl ได้ก่อน cluster ขึ้น</text>
+
+            <text x="448" y="302" font-size="10" opacity=".8">✓ :80 และ :443 ว่างไว้ให้ Gateway</text>
+            <text x="448" y="316" font-size="10" opacity=".8">✓ watch / exec / port-forward ไม่ถูกตัด</text>
+            <text x="448" y="330" font-size="10" opacity=".8">✓ httpchk /readyz + check-ssl verify none</text>
+          </g>
+        </svg></div>
+        <figcaption><b>ความต่างที่แท้จริงคือเส้นประ</b> — กล่องเส้นประคือขอบเขตที่ LB อาศัยอยู่ ในแบบเดิม LB อยู่ในขอบเขตที่ <code>kubeadm reset</code> และบางเส้นทางของ upgrade เข้าไปล้าง แปลว่าเครื่องมือที่ใช้กู้ cluster จะทำลาย LB ที่จำเป็นต่อการกู้ไปด้วย ในแบบที่เสนอ LB อยู่ใต้ systemd ซึ่งไม่มีคำสั่ง kubeadm ไหนแตะต้อง</figcaption>
+      </figure>
+
+      <div class="blk"><h4>ตัวเลือก</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ตัวเลือก</th><th>ข้อดี</th><th>ข้อเสีย</th></tr></thead>
+          <tbody>
+            <tr class="pick"><td><b>keepalived + HAProxy เป็น systemd</b> <span class="pill p-ok">แนะนำ</span></td><td>อยู่รอดข้าม <code>kubeadm reset</code>/upgrade, debug ด้วย <code>journalctl</code> ได้ตั้งแต่ก่อนมี cluster, ลำดับ bootstrap ตรงไปตรงมา</td><td>ต้อง update config ด้วยมือทั้ง 3 เครื่อง (แก้ด้วย Ansible ได้)</td></tr>
+            <tr><td>keepalived + HAProxy เป็น static pod <span class="pill p-neu">ของเดิม</span></td><td>config อยู่ที่เดียวกับ manifest อื่น, ไม่ต้องลง package บน host</td><td>หายไปพร้อม <code>/etc/kubernetes/manifests</code>, ลำดับ bootstrap งง, ต้องพึ่ง image ภายนอกที่ตอนนี้ไม่มีคนดูแลแล้ว (<code>osixia/keepalived</code>)</td></tr>
+            <tr><td>kube-vip</td><td>ตัวเดียวจบทั้ง VIP และ LB, มี ARP และ BGP mode, ทำ Service LoadBalancer ได้ด้วย</td><td>เป็น static pod เหมือนกัน จึงมีข้อเสียข้อเดียวกัน, ทีมยังไม่คุ้น</td></tr>
+            <tr><td>Hardware LB (เช่น FortiGate/F5)</td><td>ไม่ต้องดูแลอะไรบน node เลย, ทน node ตายพร้อมกันหลายตัว</td><td>ต้องประสานทีม network ทุกครั้งที่เพิ่ม/ลด master, มักเป็นคอขวดเชิงกระบวนการ</td></tr>
+            <tr><td>DNS round-robin</td><td>ง่ายสุด</td><td><span class="pill p-crit">ไม่ควรใช้</span> — DNS ไม่รู้ว่า node ตาย client จะค้างจนกว่า TTL หมด</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="blk"><h4>ค่าที่ต้องแก้จากของเดิม</h4>
+        <div class="tw"><table>
+          <thead><tr><th>รายการ</th><th>ของเดิม</th><th>ที่เสนอ</th></tr></thead>
+          <tbody>
+            <tr><td>พอร์ต endpoint</td><td class="num"><code>80</code></td><td class="num"><code>8443</code> (หรือ <code>6443</code>) — คืนพอร์ต 80/443 ให้ ingress</td></tr>
+            <tr><td>timeout client/server</td><td class="num"><code>20s</code></td><td class="num"><code>4h</code> — ต่ำกว่านี้ <code>logs -f</code>, <code>exec</code>, และ watch ของ controller จะถูกตัด</td></tr>
+            <tr><td>health check</td><td><code>httpchk</code> + <code>ssl-hello-chk</code> พร้อมกัน</td><td><code>option httpchk GET /readyz</code> + <code>check-ssl verify none</code> อย่างเดียว</td></tr>
+            <tr><td><code>virtual_router_id</code></td><td class="num"><code>51</code> (ค่า default)</td><td>เลือกเลขที่ไม่ซ้ำใน L2 domain และจดไว้ในคู่มือ</td></tr>
+            <tr><td>VRRP peer</td><td>multicast</td><td><code>unicast_peer</code> — เชื่อถือได้กว่าในเครือข่ายองค์กรที่มักบล็อก multicast</td></tr>
+            <tr><td>check script</td><td><code>curl https://localhost:80</code></td><td>ยิงไปที่ <code>/readyz</code> ของ apiserver ตรง ๆ ที่ 6443</td></tr>
+            <tr><td>ความสอดคล้อง 3 เครื่อง</td><td>master1 ต่างจาก master2/3</td><td>ไฟล์เดียวกันทุกเครื่อง ต่างแค่ <code>priority</code> และ <code>state</code></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ===== L5 ===== -->
+  <article class="layer" id="l5">
+    <header class="layer-head"><span class="layer-id">L05</span><div><h3>Cluster Networking</h3><p class="sub">CNI · kube-proxy mode · CoreDNS · CIDR &amp; MTU</p></div></header>
+    <div class="layer-body">
+      <div class="blk"><h4>หน้าที่</h4>
+        <p>ทำให้ทุก pod มี IP ของตัวเองและคุยกันข้าม node ได้โดยไม่ต้อง NAT (<b>CNI</b>), ทำให้ Service IP ที่เป็นของสมมติชี้ไปยัง pod จริง (<b>kube-proxy</b>), และทำให้เรียกกันด้วยชื่อได้ (<b>CoreDNS</b>)</p>
+      </div>
+      <div class="blk"><h4>แผน CIDR</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ช่วง</th><th>ใช้ทำอะไร</th><th>ข้อควรระวัง</th></tr></thead>
+          <tbody>
+            <tr><td class="num"><code>192.168.30.0/24</code>, <code>192.168.40.0/24</code></td><td>node IP</td><td>ของเดิมกระจายสอง subnet — ดู L00</td></tr>
+            <tr><td class="num"><code>10.242.0.0/16</code></td><td>pod CIDR (ของเดิม)</td><td><b>ต้องยืนยันว่าไม่ชนกับ route ใดในองค์กร</b> ถ้าชนจะเจออาการแปลก ๆ ที่ debug ยากมาก</td></tr>
+            <tr><td class="num"><code>10.96.0.0/12</code></td><td>service CIDR (ค่า default)</td><td>ห้ามทับ pod CIDR และ node subnet</td></tr>
+            <tr><td class="num">TBD</td><td>MetalLB pool (ถ้าเลือกใช้)</td><td>ต้องขอ IP ว่างจากทีม network ล่วงหน้า</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note"><b>MTU — เรื่องที่ลืมกันบ่อยที่สุด</b>
+          <p>VXLAN ห่อ packet เพิ่มอีก 50 bytes ถ้า node MTU = 1500 แล้วปล่อย pod MTU ไว้ที่ 1500 ด้วย จะเจออาการ “ping ผ่าน แต่ HTTP request ใหญ่ ๆ ค้าง” หรือ “TLS handshake ล้มเป็นบางครั้ง” — เป็นอาการที่หลอกให้ไปไล่หาปัญหาที่ application คู่มือใหม่ต้องมีขั้นตอนตั้ง MTU และวิธีทดสอบด้วย <code>ping -M do -s</code></p>
+        </div>
+      </div>
+      <div class="blk"><h4>ตัวเลือก CNI</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ตัวเลือก</th><th>NetworkPolicy</th><th>จุดเด่น</th><th>ต้นทุน</th></tr></thead>
+          <tbody>
+            <tr><td><b>Flannel</b> <span class="pill p-neu">ของเดิม</span></td><td><span class="pill p-crit">ไม่รองรับ</span></td><td>ง่ายที่สุด ชิ้นส่วนน้อย พังยาก ทีมคุ้นแล้ว</td><td>ไม่มี policy, ไม่มี encryption, ไม่มี observability</td></tr>
+            <tr><td><b>Calico</b></td><td><span class="pill p-ok">รองรับ</span></td><td>policy engine ที่สุกงอมที่สุด, มี BGP mode ทำ routing จริงได้, แนวคิดยังใกล้ Flannel</td><td>ชิ้นส่วนเพิ่มขึ้นปานกลาง เรียนรู้ไม่นาน</td></tr>
+            <tr class="pick"><td><b>Cilium</b> <span class="pill p-ok">แนะนำ</span></td><td><span class="pill p-ok">รองรับ + L7</span></td><td>eBPF, แทน kube-proxy ได้ทั้งตัว, Hubble ให้เห็น flow ระหว่าง pod จริง ๆ, มี Gateway API ในตัว, transparent encryption</td><td>ชันที่สุด, debug ต้องใช้เครื่องมือของ Cilium เอง, ต้อง kernel ใหม่</td></tr>
+          </tbody>
+        </table></div>
+        <div class="rec"><b>เหตุผลที่เสนอ Cilium</b>
+          <p>ระบบนี้เก็บข้อมูลส่วนบุคคลของพนักงาน ซึ่งทำให้ <b>NetworkPolicy แบบ default-deny กลายเป็นข้อกำหนด ไม่ใช่ของเล่น</b> — Flannel ทำไม่ได้เลย ต้องเปลี่ยนอยู่ดี และเมื่อจะเปลี่ยน Cilium ให้ของแถมที่แก้ปัญหาอื่นในเอกสารนี้ไปพร้อมกัน: แทน kube-proxy ได้ (ตัดประเด็น D5 ทิ้ง), มี Gateway API ในตัว (ช่วย L06), และ Hubble ทำให้ตอบคำถาม “pod นี้คุยกับใครบ้าง” ได้ ซึ่งเป็นคำถามที่ต้องตอบเวลา audit</p>
+          <p><b>ทางสายกลาง:</b> ถ้าประเมินว่าความชันของ Cilium เสี่ยงเกินสำหรับรอบนี้ ให้เลือก <b>Calico</b> — ได้ NetworkPolicy ครบ โดยที่แนวคิดยังใกล้ของเดิมพอที่ทีมจะ debug ได้ในคืนแรกที่มีปัญหา</p>
+        </div>
+      </div>
+      <div class="blk"><h4>โหมด kube-proxy</h4>
+        <div class="tw"><table>
+          <thead><tr><th>โหมด</th><th>สถานะ</th><th>หมายเหตุ</th></tr></thead>
+          <tbody>
+            <tr><td><code>iptables</code></td><td>default</td><td>ยังใช้ได้ แต่ rule จะบวมตามจำนวน Service และ resync ช้าลงเรื่อย ๆ</td></tr>
+            <tr><td><code>ipvs</code></td><td><span class="pill p-crit">deprecated ใน 1.35</span></td><td>อย่าเริ่มใหม่กับโหมดนี้</td></tr>
+            <tr class="pick"><td><code>nftables</code></td><td>GA ตั้งแต่ 1.33 <span class="pill p-ok">แนะนำ</span></td><td>เป็นโหมดที่แนะนำสำหรับ Linux แล้ว update เป็น O(n) ของสิ่งที่เปลี่ยนจริง ต้องการ kernel ≥ 5.13</td></tr>
+            <tr><td>ไม่ใช้ kube-proxy</td><td>ถ้าเลือก Cilium</td><td>Cilium ทำหน้าที่นี้ด้วย eBPF — ชิ้นส่วนน้อยลงหนึ่งชิ้น</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="blk"><h4>CoreDNS</h4>
+        <p>kubeadm ติดตั้งให้อยู่แล้ว สิ่งที่คู่มือควรเพิ่มคือ: ปรับ replica ให้เหมาะกับจำนวน node, ใส่ PodDisruptionBudget, และพิจารณา <b>NodeLocal DNSCache</b> ถ้าเจอ DNS timeout เป็นระยะ (เป็นอาการยอดฮิตของ cluster ที่มี microservices เรียกกันเยอะ ซึ่งตรงกับ workload ของที่นี่)</p>
+      </div>
+    </div>
+  </article>
+
+  <!-- ===== L6 ===== -->
+  <article class="layer" id="l6">
+    <header class="layer-head"><span class="layer-id">L06</span><div><h3>North-South Traffic</h3><p class="sub">Service · MetalLB · Gateway API · cert-manager</p></div></header>
+    <div class="layer-body">
+      <div class="blk"><h4>หน้าที่</h4>
+        <p>พา traffic จากผู้ใช้ภายนอกเข้ามาถึง pod พร้อมทำ TLS termination, routing ตาม host/path และ load balancing</p>
+      </div>
+
+      <figure>
+        <div class="svgscroll"><svg viewBox="0 0 820 250" role="img" aria-label="เปรียบเทียบเส้นทาง NodePort แบบเดิมกับเส้นทางผ่าน MetalLB และ Gateway API แบบที่เสนอ">
+          <defs>
+            <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor">
+            <!-- top: current -->
+            <text x="20" y="24" font-size="11.5" font-weight="600" class="dg-crit">เดิม — NodePort</text>
+
+            <rect x="20" y="38" width="104" height="32" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/>
+            <text x="72" y="58" text-anchor="middle">browser</text>
+            <line x1="124" y1="54" x2="166" y2="54" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar3)"/>
+            <text x="145" y="46" text-anchor="middle" font-size="9" opacity=".7">ต้องรู้ IP</text>
+
+            <rect x="166" y="38" width="132" height="32" rx="2" fill="none" class="dg-crit-s" stroke-width="1.5"/>
+            <text x="232" y="58" text-anchor="middle" class="dg-crit">node:31234</text>
+            <line x1="298" y1="54" x2="340" y2="54" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar3)"/>
+
+            <rect x="340" y="38" width="104" height="32" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/>
+            <text x="392" y="58" text-anchor="middle">Service</text>
+            <line x1="444" y1="54" x2="486" y2="54" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar3)"/>
+
+            <rect x="486" y="38" width="104" height="32" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/>
+            <text x="538" y="58" text-anchor="middle">Pod</text>
+
+            <text x="614" y="49" font-size="9.5" class="dg-crit">✕ ไม่มี TLS</text>
+            <text x="614" y="62" font-size="9.5" class="dg-crit">✕ node ตาย = URL ตาย</text>
+            <text x="614" y="75" font-size="9.5" class="dg-crit">✕ พอร์ตสุ่ม จำไม่ได้</text>
+
+            <line x1="20" y1="104" x2="800" y2="104" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4" opacity=".35"/>
+
+            <!-- bottom: proposed -->
+            <text x="20" y="130" font-size="11.5" font-weight="600" class="dg-acc">ที่เสนอ — MetalLB + Gateway API</text>
+
+            <rect x="20" y="146" width="104" height="32" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/>
+            <text x="72" y="166" text-anchor="middle">browser</text>
+            <line x1="124" y1="162" x2="166" y2="162" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar3)"/>
+            <text x="145" y="154" text-anchor="middle" font-size="9" opacity=".7">DNS</text>
+
+            <rect x="166" y="146" width="132" height="32" rx="2" fill="none" class="dg-acc-s" stroke-width="1.5"/>
+            <text x="232" y="160" text-anchor="middle" class="dg-acc" font-size="10">MetalLB VIP</text>
+            <text x="232" y="172" text-anchor="middle" class="dg-acc" font-size="9">:443</text>
+            <line x1="298" y1="162" x2="340" y2="162" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar3)"/>
+
+            <rect x="340" y="146" width="104" height="32" rx="2" fill="none" class="dg-acc-s" stroke-width="1.5"/>
+            <text x="392" y="160" text-anchor="middle" class="dg-acc" font-size="10">Gateway</text>
+            <text x="392" y="172" text-anchor="middle" class="dg-acc" font-size="9">TLS ที่นี่</text>
+            <line x1="444" y1="162" x2="486" y2="162" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar3)"/>
+            <text x="465" y="154" text-anchor="middle" font-size="9" opacity=".7">HTTPRoute</text>
+
+            <rect x="486" y="146" width="104" height="32" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/>
+            <text x="538" y="166" text-anchor="middle">Service</text>
+            <line x1="590" y1="162" x2="614" y2="162" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar3)"/>
+
+            <rect x="614" y="146" width="80" height="32" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/>
+            <text x="654" y="166" text-anchor="middle">Pod</text>
+
+            <text x="20" y="208" font-size="9.5" class="dg-acc">✓ ชื่อโดเมนคงที่ ไม่ผูกกับ node ตัวใดตัวหนึ่ง</text>
+            <text x="20" y="222" font-size="9.5" class="dg-acc">✓ cert-manager ต่ออายุ TLS ให้อัตโนมัติที่ Gateway</text>
+            <text x="20" y="236" font-size="9.5" class="dg-acc">✓ เพิ่ม service ใหม่ = เพิ่ม HTTPRoute ไม่ต้องแตะ firewall</text>
+          </g>
+        </svg></div>
+        <figcaption><b>สิ่งที่เพิ่มเข้ามาคือสองกล่องกลาง</b> — MetalLB ทำให้มี IP เดียวที่ไม่ผูกกับ node ตัวใดตัวหนึ่ง และ Gateway ทำให้ TLS กับ routing อยู่ที่เดียว แทนที่จะกระจายไปตาม NodePort ของแต่ละ service เหมือนที่ <code>zeeme-ads</code> ทำอยู่ตอนนี้</figcaption>
+      </figure>
+
+      <div class="blk"><h4>ตัวเลือก — ตัวให้ IP (LoadBalancer)</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ตัวเลือก</th><th>ข้อดี</th><th>ข้อเสีย</th></tr></thead>
+          <tbody>
+            <tr><td>NodePort <span class="pill p-neu">ของเดิม</span></td><td>ไม่ต้องลงอะไรเพิ่ม</td><td>พอร์ตสุ่มจำยาก, ผูกกับ node, ไม่มี TLS, client ต้องรู้ IP node</td></tr>
+            <tr class="pick"><td><b>MetalLB — L2 mode</b> <span class="pill p-ok">แนะนำ</span></td><td>ตั้งง่ายที่สุด ขอแค่ IP pool ว่างใน subnet เดียวกัน ได้ <code>type: LoadBalancer</code> ใช้จริง</td><td>traffic เข้าทาง node เดียวต่อ service (ไม่ใช่ load balance จริง) แต่พอสำหรับปริมาณระดับนี้</td></tr>
+            <tr><td>MetalLB — BGP mode</td><td>กระจาย traffic จริงหลาย node, failover เร็ว</td><td>ต้องให้ทีม network ตั้ง BGP peer ให้</td></tr>
+            <tr><td>Cilium LB-IPAM</td><td>ถ้าเลือก Cilium อยู่แล้ว ไม่ต้องลง MetalLB เพิ่ม</td><td>ผูกกับการตัดสินใจ D4</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="blk"><h4>ตัวเลือก — ตัวจัดการ routing</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ตัวเลือก</th><th>สถานะ</th><th>หมายเหตุ</th></tr></thead>
+          <tbody>
+            <tr><td>ingress-nginx</td><td><span class="pill p-crit">ปิดโปรเจกต์ มี.ค. 2026</span></td><td>ไม่มี security patch อีกแล้ว และตัวที่ตั้งใจให้มาแทน (InGate) ก็ถูกยกเลิกไปด้วย — ห้ามเริ่มใหม่กับตัวนี้</td></tr>
+            <tr class="pick"><td><b>Envoy Gateway</b> <span class="pill p-ok">แนะนำ</span></td><td>Gateway API เต็มรูปแบบ</td><td>implementation อ้างอิงของ Gateway API, Envoy เป็น data plane ที่พิสูจน์แล้ว</td></tr>
+            <tr><td>Cilium Gateway API</td><td>มาพร้อม Cilium</td><td>ถ้าเลือก Cilium ที่ D4 ตัวนี้แทบไม่มีต้นทุนเพิ่ม</td></tr>
+            <tr><td>Traefik v3</td><td>รองรับ Gateway API</td><td>ตั้งง่าย มี dashboard ในตัว เหมาะถ้าอยากได้อะไรที่เห็นภาพเร็ว</td></tr>
+            <tr><td>Istio</td><td>รองรับ Gateway API</td><td>ได้ mTLS ระหว่าง service ด้วย แต่ overhead สูง — เกินความจำเป็นสำหรับรอบนี้</td></tr>
+          </tbody>
+        </table></div>
+        <div class="rec"><b>ทำไมควรข้ามไป Gateway API เลย</b>
+          <p>เพราะ Ingress กำลังจะกลายเป็นของเก่าอยู่แล้ว ถ้าเลือก ingress controller ตัวอื่นตอนนี้ จะต้องย้ายสองรอบ (ingress-nginx → ตัวใหม่ → Gateway API) ในเมื่อรอบนี้กำลังจะเขียนคู่มือใหม่หมดอยู่แล้ว การเริ่มที่ Gateway API เลยแทบไม่มีต้นทุนเพิ่ม</p>
+        </div>
+      </div>
+      <div class="blk"><h4>TLS</h4>
+        <p><b>cert-manager</b> จัดการวงจรชีวิตของ cert ทั้งหมด สำหรับระบบภายในให้ตั้ง internal CA เป็น <code>ClusterIssuer</code> แล้วกระจาย root CA ไปที่เครื่อง client — ดีกว่า self-signed รายตัวมาก เพราะไม่ต้องกด “ยอมรับความเสี่ยง” ทุกครั้ง และ cert ต่ออายุเองอัตโนมัติ</p>
+      </div>
+    </div>
+  </article>
+
+  <!-- ===== L7 ===== -->
+  <article class="layer" id="l7">
+    <header class="layer-head"><span class="layer-id">L07</span><div><h3>Storage</h3><p class="sub">CSI driver · StorageClass · PV/PVC · backup</p></div></header>
+    <div class="layer-body">
+      <div class="blk"><h4>หน้าที่</h4>
+        <p><b>CSI driver</b> คือสะพานระหว่าง Kubernetes กับระบบเก็บข้อมูลจริง <b>StorageClass</b> คือ “เมนู” ที่บอกว่ามีที่เก็บแบบไหนให้เลือกบ้าง เมื่อ pod ขอ <b>PVC</b> ระบบจะสร้าง <b>PV</b> ให้อัตโนมัติตามเมนูนั้น</p>
+      </div>
+      <div class="blk"><h4>ตัวเลือก</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ตัวเลือก</th><th>เหมาะกับ</th><th>ข้อควรระวัง</th></tr></thead>
+          <tbody>
+            <tr><td><b>ไม่มีเลย</b> <span class="pill p-neu">ของเดิม</span></td><td>ถ้า workload เป็น stateless ล้วน ฐานข้อมูลอยู่นอก cluster</td><td>ต้องประกาศให้ชัดในคู่มือ ไม่ใช่ปล่อยให้เป็นความบังเอิญ — วันหนึ่งจะมีคนอยากลง Redis แล้วติด</td></tr>
+            <tr class="pick"><td><b>vSphere CSI</b> <span class="pill p-ok">ถ้าอยู่บน VMware</span></td><td>ใช้ datastore เดิมที่มีอยู่ ไม่ต้องซื้อของใหม่</td><td>ต้องได้สิทธิ์ vCenter และต้องดูแลเวอร์ชันให้เข้ากับ vSphere</td></tr>
+            <tr><td><b>NFS CSI driver</b></td><td>ต้องการ RWX (หลาย pod เขียนพร้อมกัน) เช่นที่เก็บไฟล์แนบ</td><td>NFS server กลายเป็น single point of failure และ latency สูงกว่า block</td></tr>
+            <tr><td><b>local-path-provisioner</b></td><td>ต้องการความเร็ว ยอมให้ข้อมูลผูกกับ node</td><td>pod ย้าย node ไม่ได้ ต้องมี backup ระดับ application เอง</td></tr>
+            <tr><td><b>Longhorn</b></td><td>อยากได้ replicated block storage ในตัว cluster พร้อม snapshot</td><td>กิน CPU/RAM/disk ของ worker และเพิ่มสิ่งที่ต้องดูแลอีกระบบหนึ่ง</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="rec"><b>คำแนะนำ</b>
+        <p>เคาะ D8 ให้ชัดก่อน ถ้าคำตอบคือ “ฐานข้อมูลอยู่นอก cluster ตลอด” ให้เขียนบทนี้สั้น ๆ ว่า <b>ไม่มี StorageClass โดยเจตนา</b> พร้อมเหตุผล — นั่นคือคำตอบที่ใช้ได้และประหยัดงานมหาศาล ถ้าคำตอบคือ “อาจมี” และอยู่บน VMware ให้ลง vSphere CSI ตั้งแต่แรกจะง่ายกว่ามาไล่ทำทีหลังตอนมีคนรออยู่</p>
+      </div>
+    </div>
+  </article>
+
+  <!-- ===== L8 ===== -->
+  <article class="layer" id="l8">
+    <header class="layer-head"><span class="layer-id">L08</span><div><h3>Registry &amp; Image Supply Chain</h3><p class="sub">private registry · pull secret · tag policy</p></div></header>
+    <div class="layer-body">
+      <div class="blk"><h4>หน้าที่</h4>
+        <p>เก็บ image ของ microservices ทั้งหมด และเป็นด่านที่ควบคุมว่า image อะไรได้เข้า cluster บ้าง</p>
+      </div>
+      <div class="blk"><h4>ประเด็นที่ต้องแก้จากของเดิม</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ประเด็น</th><th>สถานะเดิม</th><th>ที่เสนอ</th></tr></thead>
+          <tbody>
+            <tr><td>TLS ของ registry</td><td>ไม่ได้ระบุ — ไม่มี config ใน containerd เลย</td><td>ใช้ cert ที่ trust ได้ หรือประกาศใน <code>/etc/containerd/certs.d/</code> ให้ชัด</td></tr>
+            <tr><td>imagePullSecret</td><td>สร้างแค่ namespace <code>default</code></td><td>secret ไม่ข้าม namespace — ต้องมีขั้นตอนสร้างทุก namespace หรือใช้ operator ที่ replicate ให้</td></tr>
+            <tr><td>password</td><td><span class="pill p-crit">อยู่ใน markdown</span> และเป็นรหัสเดียวกับ root</td><td>แยก account สำหรับ pull ที่มีสิทธิ์อ่านอย่างเดียว รหัสไม่ซ้ำกับที่อื่น</td></tr>
+            <tr><td>tag</td><td><code>:0.0.5</code> — ดีกว่า <code>latest</code> แล้ว</td><td>ไปต่อที่ pin ด้วย digest (<code>@sha256:...</code>) จะได้ deploy ซ้ำแล้วได้ image เดิมแน่นอน</td></tr>
+            <tr><td>rate limit ของ Docker Hub</td><td>ไม่ได้จัดการ</td><td>ตั้ง pull-through cache — ไม่งั้นวันที่โดน limit จะ scale up ไม่ได้พร้อมกันทั้ง cluster</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="blk"><h4>ตัวเลือก</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ตัวเลือก</th><th>ได้อะไร</th></tr></thead>
+          <tbody>
+            <tr><td>Docker registry เปล่า <span class="pill p-neu">น่าจะเป็นของเดิม</span></td><td>เก็บ image ได้ จบ</td></tr>
+            <tr class="pick"><td><b>Harbor</b> <span class="pill p-ok">พิจารณา</span></td><td>vulnerability scanning, RBAC ต่อ project, replication, retention policy, pull-through cache — ครอบคลุมทุกช่องในตารางด้านบนด้วยของชิ้นเดียว</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ===== L9 ===== -->
+  <article class="layer" id="l9">
+    <header class="layer-head"><span class="layer-id">L09</span><div><h3>Observability</h3><p class="sub">metrics · logs · dashboard · alerting</p></div></header>
+    <div class="layer-body">
+      <div class="blk"><h4>ชั้นย่อย</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ตัว</th><th>หน้าที่</th><th>จำเป็นแค่ไหน</th></tr></thead>
+          <tbody>
+            <tr><td><b>metrics-server</b></td><td>ป้อนตัวเลข CPU/RAM ให้ <code>kubectl top</code> และ HPA</td><td><span class="pill p-crit">บังคับ</span> ถ้าจะใช้ autoscaling</td></tr>
+            <tr><td><b>kube-prometheus-stack</b></td><td>เก็บ metric ย้อนหลัง + alert rule + Grafana</td><td><span class="pill p-ok">ควรมี</span> — ไม่มีตัวนี้จะตอบไม่ได้ว่า “เมื่อคืนตอนตีสามเกิดอะไรขึ้น”</td></tr>
+            <tr><td><b>Loki + Alloy</b></td><td>รวม log จากทุก pod ค้นหาย้อนหลังได้</td><td><span class="pill p-ok">ควรมี</span> — pod ตายแล้ว log หายไปด้วย ถ้าไม่มีที่รวม</td></tr>
+            <tr><td><b>Alertmanager</b></td><td>ส่ง alert เข้า LINE / email / Slack</td><td><span class="pill p-ok">ควรมี</span> — dashboard ที่ไม่มีคนดูไม่ช่วยอะไร</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="blk"><h4>Alert ขั้นต่ำที่ต้องมี</h4>
+        <ul>
+          <li><b>Certificate ใกล้หมดอายุ (&lt; 30 วัน)</b> — คือสาเหตุที่ cluster เดิมไปต่อไม่ได้ ถ้ามี alert ตัวนี้ตัวเดียวก็อาจไม่ต้องมาตั้งใหม่ทั้งชุด</li>
+          <li>etcd fsync latency สูง / etcd ไม่มี leader</li>
+          <li>Node NotReady, disk pressure, memory pressure</li>
+          <li>Pod CrashLoopBackOff ต่อเนื่อง, PVC เต็ม</li>
+          <li>เวอร์ชัน Kubernetes ใกล้ EOL (ตั้ง reminder ล่วงหน้า 3 เดือน)</li>
+        </ul>
+      </div>
+      <div class="blk"><h4>ตัวเลือก — UI</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ตัวเลือก</th><th>ข้อดี</th><th>ข้อเสีย</th></tr></thead>
+          <tbody>
+            <tr><td>Kubernetes Dashboard <span class="pill p-neu">ของเดิม</span></td><td>เป็นทางการ ทีมคุ้นแล้ว</td><td>v7 ขึ้นไปพ่วง Kong เข้ามาด้วย ทำให้ชิ้นส่วนเยอะกว่าที่คิด และวิธี auth เดิมที่ใช้ static token ไม่ควรทำต่อ</td></tr>
+            <tr><td><b>Headlamp</b></td><td>เบากว่า, extension ได้, เป็นโปรเจกต์ใน CNCF</td><td>ทีมต้องเรียนรู้ใหม่</td></tr>
+            <tr class="pick"><td><b>k9s</b> (บนเครื่อง admin) <span class="pill p-ok">แนะนำคู่กัน</span></td><td>ไม่ต้องลงอะไรใน cluster เลย = ไม่มี attack surface เพิ่ม, ใช้สิทธิ์ตาม kubeconfig ของแต่ละคน, เร็วกว่า UI มาก</td><td>เป็น terminal UI คนที่ไม่ถนัด CLI จะไม่ชอบ</td></tr>
+            <tr><td>Rancher</td><td>จัดการหลาย cluster, มี user management ในตัว</td><td>เป็นระบบใหญ่อีกระบบที่ต้องดูแลและ upgrade ตาม (ไฟล์ <code>rancher.md</code> ของเดิมว่างเปล่า — เดาว่าเคยคิดจะทำแล้วไม่ได้ทำ)</td></tr>
+          </tbody>
+        </table></div>
+        <div class="rec"><b>คำแนะนำ</b><p>ให้ <b>k9s + kubeconfig รายบุคคล</b> เป็นทางหลักสำหรับทีม ops และเก็บ Dashboard ไว้เป็นทางเลือกสำหรับคนที่ต้องการ UI โดย<b>ต้องผูกกับ RBAC จริง ไม่ใช่ token ของ cluster-admin ตัวเดียวที่แชร์กันทั้งทีมเหมือนของเดิม</b></p></div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ===== L10 ===== -->
+  <article class="layer" id="l10">
+    <header class="layer-head"><span class="layer-id">L10</span><div><h3>Security &amp; Governance</h3><p class="sub">RBAC · Pod Security · NetworkPolicy · secrets · audit</p></div></header>
+    <div class="layer-body">
+      <div class="gapbox"><b>ชั้นนี้ไม่มีอยู่ในคู่มือเดิมเลย</b>
+        <p>และเป็นชั้นที่สำคัญที่สุดสำหรับระบบที่เก็บข้อมูลส่วนบุคคลของพนักงาน ทุก account ที่ปรากฏในเอกสารเดิมเป็น <code>cluster-admin</code> ทั้งหมด และ deployment ตัวอย่างรันด้วย <code>runAsUser: 0</code></p>
+      </div>
+      <div class="blk"><h4>องค์ประกอบ</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ตัว</th><th>หน้าที่</th><th>ที่เสนอ</th></tr></thead>
+          <tbody>
+            <tr><td><b>RBAC</b></td><td>ใครทำอะไรได้บ้าง</td><td>สร้าง role ตามหน้าที่จริง: <code>developer</code> (อ่าน + ดู log ใน namespace ตัวเอง), <code>deployer</code>, <code>cluster-ops</code> — <code>cluster-admin</code> สงวนไว้ให้ break-glass เท่านั้น</td></tr>
+            <tr><td><b>Pod Security Admission</b></td><td>กันไม่ให้ pod ขอสิทธิ์เกินจำเป็น</td><td>ติด label <code>restricted</code> ทุก namespace ของ application, <code>privileged</code> เฉพาะ namespace ของ CNI/system</td></tr>
+            <tr><td><b>NetworkPolicy</b></td><td>ควบคุมว่า pod ไหนคุยกับ pod ไหนได้</td><td>default-deny ทุก namespace แล้วค่อยเปิดเฉพาะเส้นทางที่จำเป็น — ต้องใช้ CNI ที่รองรับ (ดู D4)</td></tr>
+            <tr><td><b>etcd encryption at rest</b></td><td>เข้ารหัส Secret ที่เก็บใน etcd</td><td>ตั้ง <code>EncryptionConfiguration</code> <b>ตั้งแต่วัน init</b> — ทำทีหลังต้องไล่ re-encrypt ทุก resource</td></tr>
+            <tr><td><b>Secret management</b></td><td>เก็บรหัสของ application</td><td>Secret ของ Kubernetes เป็นแค่ base64 ไม่ใช่การเข้ารหัส — ทางเลือก: Sealed Secrets (ง่าย เก็บใน git ได้) หรือ External Secrets + Vault (ครบกว่า)</td></tr>
+            <tr><td><b>Audit log</b></td><td>บันทึกว่าใครทำอะไรกับ cluster</td><td>เปิด audit policy ที่ apiserver ตั้งแต่แรกและส่งเข้า Loki — ถ้าต้องตอบคำถามผู้ตรวจสอบ นี่คือหลักฐานชิ้นเดียวที่มี</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="note"><b>ข้อสังเกตเรื่อง PDPA</b>
+        <p>ระบบ HR เก็บข้อมูลส่วนบุคคลของพนักงาน ซึ่งโดยทั่วไปมาพร้อมข้อกำหนดเรื่องการควบคุมการเข้าถึงและร่องรอยการตรวจสอบ ผมไม่ทราบว่าองค์กรตีความข้อกำหนดไว้อย่างไร แต่รายการในตารางข้างบน (RBAC แยกตามหน้าที่, NetworkPolicy, encryption at rest, audit log) เป็นชุดพื้นฐานที่มักถูกถามหา — <b>ควรให้ฝ่ายที่ดูแลเรื่อง compliance ช่วยยืนยันก่อนเคาะ D4</b> เพราะถ้าต้องมี NetworkPolicy จริง จะตัดตัวเลือก Flannel ทิ้งทันที</p>
+      </div>
+    </div>
+  </article>
+
+  <!-- ===== L11 ===== -->
+  <article class="layer" id="l11">
+    <header class="layer-head"><span class="layer-id">L11</span><div><h3>Application Delivery</h3><p class="sub">Helm 4 · GitOps · namespace · quota · HPA</p></div></header>
+    <div class="layer-body">
+      <div class="blk"><h4>ตัวเลือก — วิธี deploy</h4>
+        <div class="tw"><table>
+          <thead><tr><th>ตัวเลือก</th><th>ข้อดี</th><th>ข้อเสีย</th></tr></thead>
+          <tbody>
+            <tr><td><code>kubectl apply</code> มือ <span class="pill p-neu">ของเดิม</span></td><td>ง่าย ไม่มีอะไรต้องเรียน</td><td>ไม่มีร่องรอยว่าใคร deploy อะไรเมื่อไหร่, สถานะจริงกับใน git ไม่ตรงกันเรื่อย ๆ, rollback ต้องพึ่งความจำ</td></tr>
+            <tr><td>Helm chart</td><td>ทำ template ได้ มี rollback ในตัว จัดการ values ต่อ environment ได้</td><td>ยังต้องมีคนรันคำสั่ง ยังไม่แก้ปัญหา drift</td></tr>
+            <tr class="pick"><td><b>Argo CD</b> <span class="pill p-ok">แนะนำ</span></td><td>git คือแหล่งความจริงเดียว, เห็น drift ทันที, rollback = revert commit, มี UI ที่ให้สิทธิ์ dev ดู deployment ตัวเองได้โดยไม่ต้องให้ <code>kubectl</code></td><td>เป็นระบบเพิ่มอีกหนึ่งที่ต้องดูแล และทีมต้องเปลี่ยนนิสัยการทำงาน</td></tr>
+            <tr><td>Flux CD</td><td>เบากว่า Argo, เป็น GitOps เหมือนกัน</td><td>ไม่มี UI ในตัว ซึ่งเป็นข้อดีของ Argo ที่ทีม dev จะได้ประโยชน์มากที่สุด</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="blk"><h4>มาตรฐาน manifest ที่ควรบังคับ</h4>
+        <p>ดูจาก <code>zeeme-ads/deployment.yml</code> ของเดิมแล้ว มีหลายอย่างที่ควรเป็นแม่แบบใหม่:</p>
+        <div class="tw"><table>
+          <thead><tr><th>รายการ</th><th>ของเดิม</th><th>ที่ควรเป็น</th></tr></thead>
+          <tbody>
+            <tr><td>ผู้ใช้ที่รัน</td><td><code>runAsUser: 0</code></td><td>non-root + <code>readOnlyRootFilesystem</code> + drop capabilities ทั้งหมด</td></tr>
+            <tr><td>resources</td><td>ไม่มี</td><td>ตั้ง <code>requests</code>/<code>limits</code> ทุกตัว — ไม่มีแล้ว scheduler ตัดสินใจมั่วและ node ล้มได้</td></tr>
+            <tr><td>probes</td><td>ไม่มี</td><td><code>readinessProbe</code> + <code>livenessProbe</code> + <code>startupProbe</code> (Spring Boot เริ่มช้า ต้องมีตัวหลัง)</td></tr>
+            <tr><td>PodDisruptionBudget</td><td>ไม่มี</td><td>มีทุก service — ไม่งั้นตอน drain node เพื่อ upgrade จะดับพร้อมกันหมด</td></tr>
+            <tr><td>anti-affinity</td><td>ไม่มี</td><td>กระจาย replica ข้าม node ด้วย <code>topologySpreadConstraints</code></td></tr>
+            <tr><td>ResourceQuota / LimitRange</td><td>ไม่มี</td><td>ต่อ namespace กัน namespace เดียวกินทั้ง cluster</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="note"><b>Helm 4</b><p>Helm 3 หยุด bugfix ไปแล้วเมื่อ ก.ค. 2026 และ security patch จะหยุด ก.พ. 2027 คู่มือใหม่ควรอิง Helm 4 ตั้งแต่แรก แต่ต้องเผื่อเวลาทดสอบ chart เดิม เพราะ Helm 4 เปลี่ยนมาใช้ Server-Side Apply เป็นค่าเริ่มต้นและต้องการสิทธิ์ RBAC เพิ่มสำหรับ kstatus</p></div>
+    </div>
+  </article>
+
+  <!-- ===== L12 ===== -->
+  <article class="layer" id="l12">
+    <header class="layer-head"><span class="layer-id">L12</span><div><h3>Day-2 Operations</h3><p class="sub">backup · cert renewal · upgrade · DR</p></div></header>
+    <div class="layer-body">
+      <div class="gapbox"><b>นี่คือชั้นที่ทำให้ต้องมาตั้ง cluster ใหม่ในรอบนี้</b>
+        <p>คู่มือเดิมพา cluster ขึ้นมาได้ แต่ไม่มีบทไหนบอกวิธีทำให้มันอยู่ต่อ ไม่มี backup, ไม่มีการต่ออายุ cert, ไม่มีวิธี upgrade — พอ cert หมดอายุและเวอร์ชัน EOL ทางเดียวที่เหลือคือรื้อทำใหม่ <b>ถ้าเลือกได้แค่บทเดียวที่จะเขียนให้ดีที่สุด ให้เลือกบทนี้</b></p>
+      </div>
+      <div class="blk"><h4>สิ่งที่ต้องมี</h4>
+        <div class="tw"><table>
+          <thead><tr><th>งาน</th><th>ความถี่</th><th>รายละเอียด</th></tr></thead>
+          <tbody>
+            <tr><td><b>etcd snapshot</b></td><td>ทุกวัน + ก่อนแตะอะไรก็ตาม</td><td><code>etcdctl snapshot save</code> ผ่าน CronJob เก็บออกนอก cluster และ<b>ต้องมี checksum</b></td></tr>
+            <tr><td><b>ซ้อมกู้จริง</b></td><td>ทุกไตรมาส</td><td>backup ที่ไม่เคยกู้สำเร็จ = ไม่มี backup — ซ้อมบน cluster ทดสอบและบันทึกเวลาที่ใช้จริง</td></tr>
+            <tr><td><b>ตรวจอายุ certificate</b></td><td>ทุกเดือน + alert อัตโนมัติ</td><td><code>kubeadm certs check-expiration</code> → ถ้าเหลือ &lt; 60 วันให้ <code>kubeadm certs renew all</code> แล้ว restart static pod</td></tr>
+            <tr><td><b>Patch upgrade</b></td><td>ทุก 1-2 เดือน</td><td>ภายใน minor เดียวกัน ทำได้เร็ว ความเสี่ยงต่ำ</td></tr>
+            <tr><td><b>Minor upgrade</b></td><td>ปีละ 1-2 ครั้ง</td><td>ห้ามข้าม minor — ต้องไปทีละขั้น (1.36 → 1.37 → 1.38) ลำดับคือ control plane แรกก่อน แล้วที่เหลือ แล้วค่อย worker ทีละตัวพร้อม drain</td></tr>
+            <tr><td><b>เพิ่ม/ถอด node</b></td><td>ตามต้องการ</td><td>รวมถึงวิธีออก bootstrap token ใหม่ (ของเก่าหมดอายุใน 24 ชม.) และวิธี <code>drain</code> ให้ปลอดภัย</td></tr>
+            <tr><td><b>ทบทวน capacity</b></td><td>ทุกไตรมาส</td><td>ดู request vs usage จริงจาก Prometheus แล้วปรับ</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="rec"><b>ก่อนอื่นเลย — ตรวจ cluster เดิมก่อน</b>
+        <p>ถ้า cluster เดิมยังรันอยู่ ให้รัน <code>kubeadm certs check-expiration</code> บนทุก master ก่อนทำอะไรทั้งสิ้น cert ของ kubeadm มีอายุ 1 ปี และจะต่ออายุอัตโนมัติเมื่อ upgrade เท่านั้น — cluster ที่ตั้งเมื่อ 2-3 ปีก่อนและไม่เคย upgrade มีโอกาสสูงที่ cert หมดอายุไปแล้ว ซึ่งจะเปลี่ยนแผนการย้าย workload ทั้งหมด</p>
+      </div>
+    </div>
+  </article>
+</section>
+
+<!-- ============ 03 ============ -->
+<section id="toc">
+  <div class="sec-head"><span class="sec-num">03</span><h2>โครงเอกสารที่เสนอ</h2></div>
+  <p>13 บท แยกเป็นสามกลุ่ม: <b>เตรียม</b> (00-01), <b>สร้าง</b> (02-08), <b>ใช้งานและดูแล</b> (09-12) แต่ละบทเป็นไฟล์ markdown แยก อยู่ใน git repo เดียวกับ <code>versions.env</code> และไฟล์ config ตัวอย่าง</p>
+
+  <div class="chap"><span class="cn">00</span><div><h4>ภาพรวมและสถาปัตยกรรม</h4><p>สิ่งที่จะสร้าง แผนภาพ ตารางตัดสินใจพร้อมเหตุผล และ version matrix — คือฉบับปรับปรุงของเอกสารที่คุณกำลังอ่านอยู่นี้<span class="who">ผู้อ่าน: ทุกคน · อ่านครั้งเดียวก่อนเริ่ม</span></p></div></div>
+
+  <div class="chap"><span class="cn">01</span><div><h4>เตรียม Infrastructure</h4><p>สเปก VM, แผน IP/CIDR, DNS, NTP, anti-affinity, การวัด disk latency ของ etcd พร้อม checklist ที่ต้องผ่านก่อนแตะเครื่องแรก<span class="who">ผู้อ่าน: infra/network · L00</span></p></div></div>
+
+  <div class="chap"><span class="cn">02</span><div><h4>เตรียม OS ทุก node</h4><p>kernel modules, sysctl, swap, SELinux, firewall port matrix, hostname, time sync — บทนี้รันเหมือนกันทุกเครื่อง เหมาะทำเป็น Ansible playbook<span class="who">ผู้อ่าน: ops · L01</span></p></div></div>
+
+  <div class="chap"><span class="cn">03</span><div><h4>ติดตั้ง Container Runtime</h4><p>containerd + runc + CNI binaries, สร้างและแก้ <code>config.toml</code> (SystemdCgroup!), registry config, verify ด้วย <code>crictl</code><span class="who">ผู้อ่าน: ops · L02</span></p></div></div>
+
+  <div class="chap"><span class="cn">04</span><div><h4>ตั้ง HA Layer</h4><p>keepalived + HAProxy เป็น systemd, ไฟล์ config เต็มทั้ง 3 master, วิธีทดสอบ failover ก่อนสร้าง cluster<span class="who">ผู้อ่าน: ops · L04 · ต้องเสร็จก่อนบทถัดไป</span></p></div></div>
+
+  <div class="chap"><span class="cn">05</span><div><h4>สร้าง Cluster</h4><p>ไฟล์ kubeadm v1beta4 เต็ม, <code>kubeadm init</code>, join master 2-3, join worker, จัดการ kubeconfig, อธิบาย <code>admin.conf</code> vs <code>super-admin.conf</code><span class="who">ผู้อ่าน: ops · L03</span></p></div></div>
+
+  <div class="chap"><span class="cn">06</span><div><h4>ติดตั้ง CNI</h4><p>ติดตั้ง CNI ที่เลือกไว้ที่ D4, ตั้ง MTU, ทดสอบ pod-to-pod ข้าม node, ทดสอบ DNS, ทดสอบ NetworkPolicy<span class="who">ผู้อ่าน: ops · L05</span></p></div></div>
+
+  <div class="chap"><span class="cn">07</span><div><h4>Ingress และ TLS</h4><p>MetalLB pool, Gateway controller, cert-manager + internal CA, HTTPRoute ตัวอย่าง<span class="who">ผู้อ่าน: ops · L06</span></p></div></div>
+
+  <div class="chap"><span class="cn">08</span><div><h4>Storage</h4><p>CSI ที่เลือกไว้ที่ D8 และ StorageClass — <b>หรือระบุชัดว่าไม่มี พร้อมเหตุผล</b><span class="who">ผู้อ่าน: ops · L07</span></p></div></div>
+
+  <div class="chap"><span class="cn">09</span><div><h4>Add-ons และ Observability</h4><p>metrics-server, kube-prometheus-stack, Loki, Grafana, alert rules ขั้นต่ำ, k9s/Dashboard<span class="who">ผู้อ่าน: ops · L09</span></p></div></div>
+
+  <div class="chap"><span class="cn">10</span><div><h4>Security Baseline</h4><p>RBAC ตามหน้าที่, PSA labels, NetworkPolicy default-deny, etcd encryption, secret management, audit log<span class="who">ผู้อ่าน: ops + security · L10</span></p></div></div>
+
+  <div class="chap"><span class="cn">11</span><div><h4>Deploy Application</h4><p>โครงสร้าง namespace, แม่แบบ manifest ที่ผ่านมาตรฐาน, Helm values ต่อ environment, Argo CD, ตัวอย่างจริงด้วย <code>zeeme-*</code> service<span class="who">ผู้อ่าน: dev + ops · L11</span></p></div></div>
+
+  <div class="chap"><span class="cn">12</span><div><h4>Day-2 Operations</h4><p>backup, restore, cert renewal, patch/minor upgrade, add/remove node, capacity review — แต่ละหัวข้อเป็น runbook ที่ทำตามได้ตอนตีสาม<span class="who">ผู้อ่าน: ops · L12 · บทที่สำคัญที่สุด</span></p></div></div>
+
+  <div class="chap"><span class="cn">13</span><div><h4>Troubleshooting</h4><p>เรียงตามอาการที่เห็น ไม่ใช่ตามชื่อ component: “pod Pending”, “pod ข้าม node ไม่ได้”, “DNS ไม่ตอบ”, “node NotReady”, “x509 error”, “image pull ไม่ผ่าน” — แต่ละอาการมี decision tree สั้น ๆ<span class="who">ผู้อ่าน: ทุกคน · เปิดตอนมีปัญหา</span></p></div></div>
+
+  <div class="note" style="margin-top:22px"><b>ภาคผนวก</b>
+    <p><code>A</code> — <code>versions.env</code> ไฟล์เดียวที่คุม version ทุกตัว &nbsp;·&nbsp; <code>B</code> — Ansible playbook สำหรับบท 02-03 &nbsp;·&nbsp; <code>C</code> — checklist ก่อนขึ้น production &nbsp;·&nbsp; <code>D</code> — บันทึกความต่างจาก cluster เดิมและเหตุผล</p>
+  </div>
+</section>
+
+<!-- ============ 04 ============ -->
+<section id="versions">
+  <div class="sec-head"><span class="sec-num">04</span><h2>Version matrix</h2></div>
+  <p>ทุกค่าในตารางนี้ควรอยู่ในไฟล์ <code>versions.env</code> ไฟล์เดียว และคู่มือทุกบทอ้างตัวแปรแทนการเขียนเลขตรง ๆ เวลา upgrade จะได้แก้ที่เดียว</p>
+  <div class="tw"><table>
+    <thead><tr><th>Component</th><th>ของเดิม</th><th>ที่เสนอ</th><th>หมายเหตุ</th></tr></thead>
+    <tbody>
+      <tr><td>Kubernetes</td><td class="num">1.30</td><td class="num"><b>1.36.x</b></td><td>EOL มิ.ย. 2027 · repo <code>pkgs.k8s.io/core:/stable:/v1.36/</code></td></tr>
+      <tr><td>kubeadm config API</td><td class="num">v1beta3</td><td class="num"><b>v1beta4</b></td><td>v1beta3 ถูกถอดออกแล้ว</td></tr>
+      <tr><td>containerd</td><td class="num">1.7.16</td><td class="num"><b>2.2.x</b></td><td>config version 3 · ตรวจ release ล่าสุดตอนเขียนจริง</td></tr>
+      <tr><td>runc</td><td>ไม่ระบุ</td><td class="num"><b>pin เลขให้ชัด</b></td><td>ดึงเลขล่าสุดจาก opencontainers/runc releases</td></tr>
+      <tr><td>CNI plugins</td><td class="num">1.4.1</td><td class="num"><b>pin เลขให้ชัด</b></td><td>ดึงเลขล่าสุดจาก containernetworking/plugins releases</td></tr>
+      <tr><td>Helm</td><td class="num">3.15.1</td><td class="num"><b>4.1.x</b></td><td>Helm 3 security patch หมด ก.พ. 2027</td></tr>
+      <tr><td>CNI (controller)</td><td>Flannel 0.25.1</td><td><b>ตาม D4</b></td><td>Cilium (แนะนำ) หรือ Calico</td></tr>
+      <tr><td>kube-proxy mode</td><td>iptables</td><td><b>nftables</b></td><td>หรือไม่ใช้เลยถ้าเลือก Cilium</td></tr>
+      <tr><td>metrics-server</td><td>ไม่ pin</td><td class="num"><b>0.8.x</b></td><td>ผ่าน Helm chart 3.14.x</td></tr>
+      <tr><td>HAProxy</td><td class="num">2.1.4 (2020)</td><td class="num"><b>3.x LTS</b></td><td>ลงเป็น package ของ OS แทน container image</td></tr>
+      <tr><td>keepalived</td><td>osixia/keepalived 2.0.17</td><td><b>package ของ OS</b></td><td>image เดิมไม่มีคนดูแลแล้ว</td></tr>
+      <tr><td>OS</td><td>ตระกูล RHEL (ไม่ระบุ)</td><td><b>ตาม D2</b></td><td>Rocky/Alma 9 (แนะนำ)</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============ 05 ============ -->
+<section id="plan">
+  <div class="sec-head"><span class="sec-num">05</span><h2>แผนดำเนินการ</h2></div>
+  <p>หัวใจของแผนนี้อยู่ที่ <b>Phase 3</b> — การรื้อ lab แล้วสร้างใหม่จากคู่มือที่เขียนโดยให้คนที่ไม่ได้เขียนเป็นคนทำ นั่นคือขั้นตอนเดียวที่พิสูจน์ได้ว่าคู่มือใช้งานได้จริง ไม่ใช่แค่บันทึกความจำของคนเขียน</p>
+
+  <div class="phase">
+    <h4>Phase 0 — เคาะและสำรวจ</h4>
+    <span class="dur">~1 สัปดาห์</span>
+    <p>ตอบ D1-D10 · ตรวจ cert ของ cluster เดิม (<code>kubeadm certs check-expiration</code>) · หมุน credential ที่รั่วในเอกสารเดิม · ยืนยันข้อสมมติเรื่อง OS/VMware/registry · ขอ IP pool จากทีม network</p>
+  </div>
+  <div class="phase">
+    <h4>Phase 1 — Lab</h4>
+    <span class="dur">~2 สัปดาห์</span>
+    <p>สร้าง lab 2 master + 2 worker (ใช้ชุดเดิมที่ subnet 192.168.50.x ได้) · เดินทีละชั้น L00→L06 · <b>จดทุกอย่างที่ติดขัดขณะทำ</b> — บันทึกนี้จะกลายเป็นบทที่ 13 โดยตรง</p>
+  </div>
+  <div class="phase">
+    <h4>Phase 2 — เขียนคู่มือฉบับร่าง</h4>
+    <span class="dur">~2 สัปดาห์</span>
+    <p>เขียนบท 00-08 จากสิ่งที่ทำจริงใน Phase 1 · ใส่ verify step ทุกขั้น · ทำ <code>versions.env</code> และ Ansible playbook</p>
+  </div>
+  <div class="phase">
+    <h4>Phase 3 — ทดสอบคู่มือ <span class="pill p-ok">ขั้นตอนสำคัญ</span></h4>
+    <span class="dur">~1 สัปดาห์</span>
+    <p><b>รื้อ lab ทิ้งแล้วสร้างใหม่ตามคู่มือ โดยให้คนที่ไม่ได้เขียนเป็นคนทำ</b> · ทุกจุดที่คนทำต้องถามคนเขียน = ช่องโหว่ในคู่มือ ต้องแก้ · เกณฑ์ผ่านคือ ทำจนจบได้โดยไม่ต้องถาม</p>
+  </div>
+  <div class="phase">
+    <h4>Phase 4 — Production</h4>
+    <span class="dur">~2 สัปดาห์</span>
+    <p>สร้าง cluster จริง 3 master + worker ตามคู่มือที่ผ่าน Phase 3 · เพิ่มบท 09-12 (observability, security, delivery, day-2) · ตั้ง backup และ alert ให้ทำงานจริงก่อนรับ workload</p>
+  </div>
+  <div class="phase">
+    <h4>Phase 5 — ย้าย workload และส่งมอบ</h4>
+    <span class="dur">~2-3 สัปดาห์</span>
+    <p>ย้าย microservices ทีละตัวตามแม่แบบใหม่ (แก้ <code>runAsUser</code>, ใส่ probes/resources/PDB) · ซ้อมกู้ etcd หนึ่งรอบ · อบรมทีมด้วยคู่มือชุดใหม่ · ปลด cluster เดิม</p>
+  </div>
+</section>
+
+<!-- ============ 06 ============ -->
+<section id="risk">
+  <div class="sec-head"><span class="sec-num">06</span><h2>ความเสี่ยงและสิ่งที่ต้องยืนยัน</h2></div>
+  <div class="tw"><table>
+    <thead><tr><th>ความเสี่ยง</th><th>ผลกระทบ</th><th>วิธีรับมือ</th></tr></thead>
+    <tbody>
+      <tr><td><b>cert ของ cluster เดิมหมดอายุแล้ว</b></td><td>ย้าย workload แบบค่อยเป็นค่อยไปไม่ได้ ต้องเร่งสร้างของใหม่</td><td>ตรวจใน Phase 0 ทันที ถ้าหมดจริงยังกู้ได้ด้วย <code>kubeadm certs renew all</code> ตราบใดที่ CA ยังไม่หมด (CA อายุ 10 ปี)</td></tr>
+      <tr><td>เลือก Cilium แล้วทีม debug ไม่ไหว</td><td>เวลาเกิดปัญหา network จะแก้ช้ากว่าเดิมมาก</td><td>ตัดสินใจจากผลจริงใน Phase 1 ไม่ใช่จากเอกสาร · มี Calico เป็นแผนสำรองที่เปลี่ยนได้ก่อนจบ Phase 3</td></tr>
+      <tr><td>pod CIDR <code>10.242.0.0/16</code> ชนกับ route ในองค์กร</td><td>อาการประหลาดที่หาสาเหตุยากมาก</td><td>ให้ทีม network ยืนยันเป็นลายลักษณ์อักษรใน Phase 0</td></tr>
+      <tr><td>Gateway API ใหม่เกินไปสำหรับทีม</td><td>ติดขัดตอนตั้ง ingress</td><td>Traefik v3 รองรับทั้ง Ingress และ Gateway API — เริ่มด้วย Ingress ก่อนแล้วค่อยย้ายได้ ถ้าจำเป็น</td></tr>
+      <tr><td>ขอบเขตบานปลาย (Argo CD + Harbor + Cilium + Prometheus พร้อมกัน)</td><td>โครงการยืดจนไม่จบ</td><td>บังคับลำดับ: cluster ต้องขึ้นและมี backup ก่อน (Phase 4) แล้วค่อยเพิ่มของอื่นทีละอย่าง · ทุกตัวใน L08-L11 เลื่อนออกไปได้ ยกเว้น backup</td></tr>
+      <tr><td>ไม่มีเวลาทำ Phase 3</td><td>ได้คู่มือที่อ่านรู้เรื่องเฉพาะคนเขียน — ซ้ำรอยเดิม</td><td>ตัดขอบเขตอย่างอื่นก่อน อย่าตัด Phase 3</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note"><b>ต้องยืนยันจากทีม</b>
+    <p>1 · Hypervisor เป็น VMware ใช่ไหม (มีผลกับ L07) &nbsp; 2 · OS ปัจจุบันเป็นอะไร (มีผลกับ D2) &nbsp; 3 · firewalld บน node เดิมเปิดอยู่หรือปิด (มีผลกับ L01) &nbsp; 4 · มี workload ที่ต้องการ persistent storage ไหม (D8) &nbsp; 5 · <code>registry.myhr.co.th</code> เป็น registry อะไรและ TLS เป็นแบบไหน (L08) &nbsp; 6 · มีข้อกำหนด compliance ที่ระบุเรื่อง network segmentation หรือ audit trail ไหม (มีผลกับ D4 และ L10)</p>
+  </div>
+</section>
+
+<footer class="foot">
+  <p>ข้อเสนอนี้ประเมินจากเอกสารชุด <code>k8s-training-old</code> เทียบกับสถานะ upstream ณ 25 ส.ค. 2026 · เลขเวอร์ชันของ runc และ CNI plugins ยังไม่ได้ยืนยันและควรตรวจอีกครั้งตอนลงมือเขียน · ทุกตัวเลือกที่ทำเครื่องหมาย “แนะนำ” เป็นข้อเสนอเพื่อพิจารณา ไม่ใช่ข้อสรุป</p>
+</footer>
+
+</main>
+</div>
+</div>

@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zeeme-ads-deployment
+spec:
+  selector:
+    matchLabels:
+      app: zeeme-ads-service
+  replicas: 2 # tells deployment to run 3 pods matching the template
+  template: # create pods using pod definition in this template
+    metadata:
+      labels:
+        app: zeeme-ads-service
+    spec:
+      securityContext:
+        runAsUser: 0
+      containers:
+        - name: zeeme-ads-service
+          image: registry.myhr.co.th/zeeme-ads-service:0.0.5
+          ports:
+            - containerPort: 8100
+          env:
+            - name: TZ
+              value: "Asia/Bangkok"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+      imagePullSecrets:
+        - name: regcred
+

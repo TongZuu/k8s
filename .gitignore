@@ -1,0 +1,26 @@
+# ---------------------------------------------------------------
+# ไฟล์ติดตั้งขนาดใหญ่ — ให้ดาวน์โหลดจาก upstream ตาม versions.env แทน
+# "install file.zip" มีขนาด 110 MB ซึ่งเกินลิมิต 100 MB ต่อไฟล์ของ GitHub
+# ---------------------------------------------------------------
+k8s-training-old/install file/
+*.zip
+*.tgz
+*.tar.gz
+runc.amd64
+
+# ---------------------------------------------------------------
+# ไฟล์ที่มีความลับแบบ plaintext — ยังไม่นำเข้า git
+# (root/VPN password, registry password, cluster-admin token, client key)
+# ต้อง redact ก่อน หรือเก็บไว้นอก repo — ดูหัวข้อ Security ใน blueprint
+# ---------------------------------------------------------------
+k8s-training-old/readme.txt
+k8s-training-old/kubernetes setup new/2. setup_cluster.md
+k8s-training-old/kubernetes setup new/install_dashboard/install dashboard.md
+k8s-training-old/kubernetes setup new/config/admin.conf
+
+# ---------------------------------------------------------------
+# ทั่วไป
+# ---------------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
