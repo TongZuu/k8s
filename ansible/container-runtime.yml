@@ -10,11 +10,20 @@
 #     ตรวจด้วย:  curl -sI https://registry.myhr.co.th/v2/ || curl -sI http://registry.myhr.co.th/v2/
 # =============================================================================
 ---
-- name: โหลด versions.env
-  hosts: localhost
-  gather_facts: false
-  tasks:
-    - name: source versions.env ด้วย bash
+- name: ติดตั้ง container runtime
+  hosts: k8s_nodes
+  gather_facts: true
+  vars:
+    dl: /root/k8s/dl
+
+  # ---------------------------------------------------------------------------
+  #  โหลด versions.env ก่อนทุกอย่าง
+  # ---------------------------------------------------------------------------
+  #  ต้องอยู่ใน play เดียวกับ node ไม่ใช่แยก play ที่ hosts: localhost
+  #  เพราะ --limit จะตัด play ของ localhost ทิ้งไปด้วย แล้ว v จะไม่มีอยู่จริง
+  # ---------------------------------------------------------------------------
+  pre_tasks:
+    - name: อ่าน versions.env ด้วย bash — ใช้ semantics เดียวกับคู่มือ
       ansible.builtin.shell:
         executable: /bin/bash
         cmd: |
@@ -22,28 +31,22 @@
           set -a && source "{{ versions_env }}" && set +a
           grep -oE '^[A-Z][A-Z0-9_]*=' "{{ versions_env }}" | tr -d '=' | sort -u \
             | while read -r k; do printf '%s: "%s"\n' "$k" "${!k}"; done
+      delegate_to: localhost
+      run_once: true
+      become: false
       register: _ver_raw
       changed_when: false
-      # อ่านอย่างเดียว — ต้องรันแม้ใน --check ไม่งั้นตัวแปรที่ register หายทั้งชุด
+      # อ่านอย่างเดียว — ต้องรันแม้ใน --check ไม่งั้นตัวแปรหายทั้งชุด
       check_mode: false
 
-    - name: แปลงเป็นตัวแปร
+    - name: แปลงเป็นตัวแปร v
       ansible.builtin.set_fact:
         v: "{{ _ver_raw.stdout | from_yaml }}"
-        cacheable: true
 
-    - name: แสดงเวอร์ชันที่จะติดตั้ง
+    - name: แสดงค่าที่โหลดได้
       ansible.builtin.debug:
-        msg: >-
-          containerd={{ v.CONTAINERD_VERSION }} runc={{ v.RUNC_VERSION }}
-          cni={{ v.CNI_PLUGINS_VERSION }} k8s={{ v.K8S_VERSION }}
-
-- name: ติดตั้ง container runtime
-  hosts: k8s_nodes
-  gather_facts: true
-  vars:
-    v: "{{ hostvars['localhost']['v'] }}"
-    dl: /root/k8s/dl
+        msg: "K8S={{ v.K8S_VERSION }} VIP={{ v.VIP }} IFACE={{ v.NODE_IFACE }}"
+      run_once: true
 
   tasks:
     # -------------------------------------------------------------------------

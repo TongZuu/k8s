@@ -119,6 +119,10 @@ ansible-playbook prepare-os.yml --check --diff --limit k8s-master01 --skip-tags 
 | `changed=N` | **playbook ไม่ตรงกับคู่มือ** อ่าน `--diff` ว่ามันอยากเปลี่ยนอะไร แล้วตัดสินว่าใครผิด |
 | `failed` | assert ไม่ผ่าน — อ่านข้อความ มักเป็นเรื่อง versionlock หรือ partition |
 
+> **ทำไม `versions.env` ถึงโหลดใน `pre_tasks` ไม่ใช่ play แยก** — `--limit` มีผลกับ *ทุก* play
+> ถ้าแยก play ที่ `hosts: localhost` ไว้ต่างหาก พอสั่ง `--limit k8s-master01` มันจะตัด play นั้นทิ้ง
+> แล้วตัวแปรจะไม่มีอยู่จริงตอน play ถัดไปทำงาน (เจอจริงตอนทดสอบครั้งแรก)
+
 > ⚠️ ใส่ `--skip-tags reboot` เสมอในขั้นนี้ ไม่งั้นมันจะ reboot เครื่องที่เพิ่งทำเสร็จ
 
 > **`changed=N` ไม่ได้แปลว่า playbook ผิดเสมอไป** — บาง task รายงาน changed ทุกครั้งโดยธรรมชาติ

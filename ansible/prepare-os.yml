@@ -11,11 +11,17 @@
 #     ทั้งสองข้อมี task ตรวจให้ว่าทำมาแล้วหรือยัง ถ้ายังจะหยุดทันที
 # =============================================================================
 ---
-- name: โหลด versions.env (แหล่งความจริงเดียว)
-  hosts: localhost
-  gather_facts: false
-  tasks:
-    - name: อ่านและ source versions.env ด้วย bash — ใช้ semantics เดียวกับคู่มือ
+- name: เตรียม OS ทุกเครื่อง
+  hosts: k8s_nodes
+  gather_facts: true
+  # ---------------------------------------------------------------------------
+  #  โหลด versions.env ก่อนทุกอย่าง
+  # ---------------------------------------------------------------------------
+  #  ต้องอยู่ใน play เดียวกับ node ไม่ใช่แยก play ที่ hosts: localhost
+  #  เพราะ --limit จะตัด play ของ localhost ทิ้งไปด้วย แล้ว v จะไม่มีอยู่จริง
+  # ---------------------------------------------------------------------------
+  pre_tasks:
+    - name: อ่าน versions.env ด้วย bash — ใช้ semantics เดียวกับคู่มือ
       ansible.builtin.shell:
         executable: /bin/bash
         cmd: |
@@ -23,25 +29,22 @@
           set -a && source "{{ versions_env }}" && set +a
           grep -oE '^[A-Z][A-Z0-9_]*=' "{{ versions_env }}" | tr -d '=' | sort -u \
             | while read -r k; do printf '%s: "%s"\n' "$k" "${!k}"; done
+      delegate_to: localhost
+      run_once: true
+      become: false
       register: _ver_raw
       changed_when: false
-      # อ่านอย่างเดียว — ต้องรันแม้ใน --check ไม่งั้นตัวแปรที่ register หายทั้งชุด
+      # อ่านอย่างเดียว — ต้องรันแม้ใน --check ไม่งั้นตัวแปรหายทั้งชุด
       check_mode: false
 
-    - name: แปลงเป็นตัวแปรให้ทุก host ใช้ร่วมกัน
+    - name: แปลงเป็นตัวแปร v
       ansible.builtin.set_fact:
         v: "{{ _ver_raw.stdout | from_yaml }}"
-        cacheable: true
 
-    - name: แสดงค่าที่โหลดได้ — ตรวจด้วยตาก่อนไปต่อ
+    - name: แสดงค่าที่โหลดได้
       ansible.builtin.debug:
-        msg: "K8S={{ v.K8S_VERSION }} VIP={{ v.VIP }} IFACE={{ v.NODE_IFACE }} kernel={{ v.KERNEL_UEK }}"
-
-- name: เตรียม OS ทุกเครื่อง
-  hosts: k8s_nodes
-  gather_facts: true
-  vars:
-    v: "{{ hostvars['localhost']['v'] }}"
+        msg: "K8S={{ v.K8S_VERSION }} VIP={{ v.VIP }} IFACE={{ v.NODE_IFACE }}"
+      run_once: true
 
   tasks:
     # -------------------------------------------------------------------------
@@ -50,13 +53,13 @@
     - name: kernel ต้องเป็น UEK และตรงกับ versions.env
       ansible.builtin.assert:
         that:
-          - "'uek' in ansible_kernel"
-          - ansible_kernel.startswith(v.KERNEL_UEK)
+          - "'uek' in ansible_facts['kernel']"
+          - ansible_facts['kernel'].startswith(v.KERNEL_UEK)
         fail_msg: >-
-          kernel บนเครื่องนี้คือ {{ ansible_kernel }}
+          kernel บนเครื่องนี้คือ {{ ansible_facts['kernel'] }}
           แต่ versions.env ระบุ {{ v.KERNEL_UEK }} (ต้องเป็น uek)
           → แก้ที่ VM template ก่อน อย่าให้ playbook สลับ kernel ให้
-        success_msg: "kernel {{ ansible_kernel }} ถูกต้อง"
+        success_msg: "kernel {{ ansible_facts['kernel'] }} ถูกต้อง"
 
     - name: kernel ต้องถูก versionlock ไว้แล้ว
       ansible.builtin.shell:
@@ -71,7 +74,7 @@
         _want: "{{ '/var/lib/etcd' if inventory_hostname in groups['masters'] else '/var/lib/containerd' }}"
       ansible.builtin.assert:
         that:
-          - _want in (ansible_mounts | map(attribute='mount') | list)
+          - _want in (ansible_facts['mounts'] | map(attribute='mount') | list)
         fail_msg: >-
           ยังไม่มี partition แยกสำหรับ {{ _want }}
           → ทำใน VM template หรือทำมือตามบท 01 ข้อ 5 · playbook ไม่แตะ fstab ให้
@@ -184,7 +187,7 @@
     # -------------------------------------------------------------------------
     - name: ปิด swap เดี๋ยวนี้
       ansible.builtin.command: swapoff -a
-      when: ansible_swaptotal_mb | int > 0
+      when: ansible_facts['swaptotal_mb'] | int > 0
       changed_when: true
 
     - name: คอมเมนต์บรรทัด swap ใน fstab ไม่ให้กลับมาหลัง reboot
@@ -248,8 +251,6 @@
   hosts: k8s_nodes
   gather_facts: false
   serial: 1
-  vars:
-    v: "{{ hostvars['localhost']['v'] }}"
   tags: reboot
   tasks:
     - name: reboot ทีละเครื่อง
