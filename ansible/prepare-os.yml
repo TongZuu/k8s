@@ -112,9 +112,10 @@
           before=$(md5sum /etc/hosts | cut -d' ' -f1)
           sed -i -E '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/!{/^[0-9.]+[[:space:]]+(k8s-(vip|master0[1-3]|worker0[1-3])|\S+\.myhr\.co\.th)[[:space:]]*$/d}' /etc/hosts
           after=$(md5sum /etc/hosts | cut -d' ' -f1)
-          if [ "$before" = "$after" ]; then echo unchanged; else echo changed; fi
+          # ห้ามใช้คำที่เป็น substring ของกันและกัน — "unchanged" มี "changed" อยู่ข้างใน
+          if [ "$before" = "$after" ]; then echo NOOP; else echo REMOVED; fi
       register: _hosts_clean
-      changed_when: "'changed' in _hosts_clean.stdout"
+      changed_when: "'REMOVED' in _hosts_clean.stdout"
 
     - name: วาง /etc/hosts — บล็อกเดียวกันทุกเครื่อง
       ansible.builtin.blockinfile:
