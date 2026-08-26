@@ -34,7 +34,11 @@ hostnamectl set-hostname k8s-worker03    # บน 192.168.50.106
 จากนั้นวาง `/etc/hosts` ชุดเดียวกันนี้ลง **ทุกเครื่อง**:
 
 ```bash
+# ลบบล็อกเดิมก่อน — ทำให้รันซ้ำได้โดยไม่มีบรรทัดซ้ำ
+sed -i '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/d' /etc/hosts
+
 cat >> /etc/hosts <<EOF
+# BEGIN k8s cluster
 ${VIP}  ${VIP_HOSTNAME}
 ${MASTER01_IP}  ${MASTER01_NAME}
 ${MASTER02_IP}  ${MASTER02_NAME}
@@ -43,8 +47,20 @@ ${WORKER01_IP}  ${WORKER01_NAME}
 ${WORKER02_IP}  ${WORKER02_NAME}
 ${WORKER03_IP}  ${WORKER03_NAME}
 ${REGISTRY_IP}  ${REGISTRY_HOST}
+# END k8s cluster
 EOF
 ```
+
+> **บล็อกนี้รันซ้ำได้** — `sed` ลบของเดิมก่อนทุกครั้ง และ Ansible ก็ใช้ marker
+> `# BEGIN k8s cluster` ชุดเดียวกัน ทำมือแล้วรัน playbook ทับได้เลย ไม่ซ้ำ
+>
+> ถ้าเครื่องไหนเคยรันด้วย `cat >>` แบบเดิมมาก่อน จะมีบรรทัดค้างอยู่นอกบล็อก
+> ล้างทีเดียวด้วย (ทำครั้งเดียวพอ):
+> ```bash
+> cp /etc/hosts /etc/hosts.bak
+> sed -i -E '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/!{/^[0-9.]+[[:space:]]+(k8s-(vip|master0[1-3]|worker0[1-3])|registry\.myhr\.co\.th)[[:space:]]*$/d}' /etc/hosts
+> grep -c k8s-master01 /etc/hosts    # ต้องได้ 1
+> ```
 
 > `/etc/hosts` ใช้ได้แต่เปราะ — เพิ่ม node ทีต้องไปแก้ทุกเครื่อง
 > ถ้าทีม network ทำ DNS record ให้ได้ ให้ย้ายไป DNS แล้วลบบล็อกนี้ทิ้ง

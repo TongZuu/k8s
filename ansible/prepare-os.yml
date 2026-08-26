@@ -89,7 +89,8 @@
     - name: วาง /etc/hosts — บล็อกเดียวกันทุกเครื่อง
       ansible.builtin.blockinfile:
         path: /etc/hosts
-        marker: "# {mark} k8s cluster — จัดการโดย ansible"
+        # marker ต้องตรงกับที่บท 01 เขียนเป๊ะ — ทำมือแล้วรัน playbook ทับจะได้ changed=0
+        marker: "# {mark} k8s cluster"
         block: |
           {{ v.VIP }}  {{ v.VIP_HOSTNAME }}
           {{ v.MASTER01_IP }}  {{ v.MASTER01_NAME }}
