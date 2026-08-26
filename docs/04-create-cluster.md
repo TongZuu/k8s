@@ -49,12 +49,11 @@ mkdir -p /var/log/kubernetes    # ปลายทางของ audit log ท�
 kubeadm init phase preflight --config=/root/k8s/config/kubeadm/kubeadm-config.yaml --dry-run 2>&1 | tail -20
 ```
 
-**สร้าง bootstrap token แล้วใส่ลง config** (หรือลบบล็อก `bootstrapTokens` ออกให้ kubeadm สร้างเอง):
-
-```bash
-TOKEN=$(kubeadm token generate)
-sed -i "s|<BOOTSTRAP_TOKEN>|${TOKEN}|" /root/k8s/config/kubeadm/kubeadm-config.yaml
-```
+> **ไม่ต้องสร้าง token เอง** — [`kubeadm-config.yaml`](../config/kubeadm/kubeadm-config.yaml) ตั้ง `token: ""` ไว้
+> ซึ่งแปลว่าให้ kubeadm สร้างให้เองตอน `init` และมีอายุตาม `ttl: 2h` ที่ระบุไว้
+>
+> token ที่ได้จะโผล่ในคำสั่ง join ท้าย log · ถ้าหมดอายุแล้วออกใหม่ได้ตลอดด้วย
+> `kubeadm token create --print-join-command` (ดูข้อ 4)
 
 ### 🔴 คำสั่ง init
 

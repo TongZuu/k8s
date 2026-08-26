@@ -81,6 +81,16 @@ if [ -n "${REGISTRY_IP:-}" ]; then
 fi
 [ $DRIFT -eq 0 ] && ok "IP ของ registry ตรงกันทุกไฟล์ ($REGISTRY_IP)"
 
+if [ -f config/kubeadm/kubeadm-config.yaml ]; then
+    K=config/kubeadm/kubeadm-config.yaml
+    grep -q "kubernetesVersion: v${K8S_VERSION}" "$K" || { fail "$K: kubernetesVersion ไม่ใช่ v$K8S_VERSION"; FAILED=1; }
+    grep -q "controlPlaneEndpoint: \"${VIP}:${VIP_PORT}\"" "$K" || { fail "$K: controlPlaneEndpoint ไม่ใช่ $VIP:$VIP_PORT"; FAILED=1; }
+    grep -q "podSubnet: \"${POD_CIDR}\"" "$K" || { fail "$K: podSubnet ไม่ใช่ $POD_CIDR"; FAILED=1; }
+    grep -q "serviceSubnet: \"${SVC_CIDR}\"" "$K" || { fail "$K: serviceSubnet ไม่ใช่ $SVC_CIDR"; FAILED=1; }
+    grep -q "advertiseAddress: ${MASTER01_IP}" "$K" || { fail "$K: advertiseAddress ไม่ใช่ $MASTER01_IP"; FAILED=1; }
+    [ "${FAILED:-0}" -eq 0 ] && ok "kubeadm-config.yaml ตรงกับ versions.env"
+fi
+
 echo "6 · ความลับที่ไม่ควรอยู่ในrepo"
 LEAK=0
 # placeholder ต้องยังเป็น placeholder — ไม่ใช่ค่าจริง

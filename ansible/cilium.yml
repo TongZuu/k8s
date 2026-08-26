@@ -1,0 +1,287 @@
+# =============================================================================
+#  cilium.yml — แทนบทที่ 05
+# =============================================================================
+#  รัน:   ansible-playbook cilium.yml
+#
+#  ต้องผ่าน create-cluster.yml — node ทั้ง 6 ต้องขึ้นครบในสถานะ NotReady
+#
+#  ทำงานบน master01 เครื่องเดียว (Helm กระจายไปทุก node ให้เอง)
+#
+#  ⚠️ ขั้นที่ playbook นี้ "ไม่ทำ" ให้ — บท 05 ข้อ 5 และ 7
+#     · cilium connectivity test  (ใช้เวลานาน ต้องมีคนอ่านผล)
+#     · ทดสอบ LoadBalancer จากเครื่องนอก cluster
+#     ข้อ 7 คือขั้นที่พิสูจน์ว่า L2 announcement ผ่าน switch จริง
+#     ถ้าองค์กรเปิด ARP inspection ไว้จะพังตรงนั้น — ต้องมีคนดูของจริง
+# =============================================================================
+---
+- name: ติดตั้ง Cilium
+  hosts: "{{ groups['masters'][0] }}"
+  gather_facts: true
+  vars:
+    dl: /root/k8s/dl
+
+  pre_tasks:
+    - name: อ่าน versions.env
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -euo pipefail
+          set -a && source "{{ versions_env }}" && set +a
+          grep -oE '^[A-Z][A-Z0-9_]*=' "{{ versions_env }}" | tr -d '=' | sort -u \
+            | while read -r k; do printf '%s: "%s"\n' "$k" "${!k}"; done
+      delegate_to: localhost
+      run_once: true
+      become: false
+      register: _ver_raw
+      changed_when: false
+      check_mode: false
+
+    - name: แปลงเป็นตัวแปร v
+      ansible.builtin.set_fact:
+        v: "{{ _ver_raw.stdout | from_yaml }}"
+
+    - name: node ต้องขึ้นครบก่อนลง CNI
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: kubectl get nodes --no-headers 2>/dev/null | wc -l
+      register: _n
+      changed_when: false
+      check_mode: false
+
+    - name: ยืนยันจำนวน node
+      ansible.builtin.assert:
+        that:
+          - _n.stdout | int == (groups['k8s_nodes'] | length)
+        fail_msg: >-
+          เห็น node {{ _n.stdout }} ตัว แต่ inventory มี {{ groups['k8s_nodes'] | length }}
+          → ยังไม่ควรลง Cilium กลับไปดูบท 04 ก่อน
+        quiet: true
+
+  tasks:
+    # -------------------------------------------------------------------------
+    #  1 · Helm + Cilium CLI
+    # -------------------------------------------------------------------------
+    - name: Helm ที่ติดตั้งอยู่เป็นเวอร์ชันไหน
+      ansible.builtin.command: helm version --short
+      register: _helm_cur
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: ดาวน์โหลด Helm
+      ansible.builtin.get_url:
+        url: "https://get.helm.sh/helm-v{{ v.HELM_VERSION }}-linux-amd64.tar.gz"
+        dest: "{{ dl }}/helm.tar.gz"
+        mode: "0644"
+      when: "'v' ~ v.HELM_VERSION not in (_helm_cur.stdout | default(''))"
+
+    - name: แตกและติดตั้ง Helm
+      ansible.builtin.unarchive:
+        src: "{{ dl }}/helm.tar.gz"
+        dest: "{{ dl }}"
+        remote_src: true
+      when: "'v' ~ v.HELM_VERSION not in (_helm_cur.stdout | default(''))"
+
+    - name: วาง helm ลง /usr/local/bin
+      ansible.builtin.copy:
+        src: "{{ dl }}/linux-amd64/helm"
+        dest: /usr/local/bin/helm
+        mode: "0755"
+        remote_src: true
+      when: "'v' ~ v.HELM_VERSION not in (_helm_cur.stdout | default(''))"
+
+    - name: มี cilium CLI แล้วหรือยัง
+      ansible.builtin.stat:
+        path: /usr/local/bin/cilium
+      register: _cli
+      check_mode: false
+
+    # ตั้งใจไม่ pin เวอร์ชัน CLI — เป็นเครื่องมือ debug ไม่ใช่ของที่รันใน cluster
+    # และ upstream แนะนำให้ใช้ตัวล่าสุดเสมอ
+    - name: ดาวน์โหลด Cilium CLI (เวอร์ชัน stable ล่าสุด)
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -euo pipefail
+          ver=$(curl -fsSL https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
+          curl -fsSL -o "{{ dl }}/cilium-cli.tar.gz" \
+            "https://github.com/cilium/cilium-cli/releases/download/${ver}/cilium-linux-amd64.tar.gz"
+          tar -C /usr/local/bin -xzf "{{ dl }}/cilium-cli.tar.gz"
+          cilium version --client
+      when: not _cli.stat.exists
+      changed_when: true
+
+    # -------------------------------------------------------------------------
+    #  2 · ตรวจ values ก่อนติดตั้ง — ต้องตรงกับ versions.env
+    # -------------------------------------------------------------------------
+    - name: ส่ง values และ CR ของ Cilium ขึ้นเครื่อง
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../config/cilium/{{ item }}"
+        dest: "/root/k8s/config/cilium/{{ item }}"
+        mode: "0644"
+      loop:
+        - values.yaml
+        - lb-ippool.yaml
+        - l2-announcement-policy.yaml
+
+    - name: อ่านค่าสำคัญจาก values.yaml
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -uo pipefail
+          f=/root/k8s/config/cilium/values.yaml
+          echo "kpr=$(grep -E '^ *kubeProxyReplacement:' $f | awk '{print $2}')"
+          echo "host=$(grep -E '^ *k8sServiceHost:' $f | awk '{print $2}' | tr -d '\"')"
+          echo "port=$(grep -E '^ *k8sServicePort:' $f | awk '{print $2}' | tr -d '\"')"
+          echo "podcidr=$(grep -A2 clusterPoolIPv4PodCIDRList $f | grep -oE '10\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+' | head -1)"
+      register: _vals
+      changed_when: false
+      check_mode: false
+
+    - name: values.yaml ต้องตรงกับ versions.env
+      ansible.builtin.assert:
+        that:
+          - "'kpr=true' in _vals.stdout"
+          - "'host=' ~ v.VIP in _vals.stdout"
+          - "'port=' ~ v.VIP_PORT in _vals.stdout"
+          - "'podcidr=' ~ v.POD_CIDR in _vals.stdout"
+        fail_msg: >-
+          values.yaml ไม่ตรงกับ versions.env — {{ _vals.stdout }}
+          · k8sServiceHost ต้องเป็น VIP ไม่ใช่ IP ของ master01
+            ไม่งั้นวันที่ master01 ตาย Cilium ทั้ง cluster จะหลุด
+        quiet: true
+
+    - name: ชื่อ interface ใน L2 policy ต้องตรงกับของจริง
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: grep -c '{{ v.NODE_IFACE }}' /root/k8s/config/cilium/l2-announcement-policy.yaml || true
+      register: _iface
+      changed_when: false
+      failed_when: _iface.stdout | int == 0
+      check_mode: false
+
+    # -------------------------------------------------------------------------
+    #  3 · ติดตั้ง Cilium
+    # -------------------------------------------------------------------------
+    # ใช้ shell ไม่ใช่ kubernetes.core.helm_repository เพื่อไม่ต้องเพิ่ม collection
+    # ที่ยังไม่ได้ลง — helm repo add/update idempotent อยู่แล้ว
+    - name: เพิ่ม helm repo ของ Cilium
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -uo pipefail
+          helm repo add cilium https://helm.cilium.io/ >/dev/null 2>&1 || true
+          helm repo update >/dev/null
+          echo DONE
+      changed_when: false
+
+    - name: Cilium ถูกติดตั้งไปแล้วหรือยัง
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: helm -n kube-system list -o json 2>/dev/null | jq -r '.[]|select(.name=="cilium")|.app_version' || true
+      register: _cil_cur
+      changed_when: false
+      check_mode: false
+
+    - name: ติดตั้ง Cilium
+      ansible.builtin.command:
+        cmd: >-
+          helm install cilium cilium/cilium
+          --version {{ v.CILIUM_VERSION }}
+          --namespace kube-system
+          -f /root/k8s/config/cilium/values.yaml
+      when: (_cil_cur.stdout | trim) == ''
+      changed_when: true
+
+    - name: บอกให้รู้ว่าข้ามการติดตั้งเพราะมีอยู่แล้ว
+      ansible.builtin.debug:
+        msg: >-
+          Cilium {{ _cil_cur.stdout | trim }} ติดตั้งอยู่แล้ว — ข้าม helm install
+          · การ upgrade มีขั้นตอนของตัวเองในบท 12 ข้อ 6 (ต้อง pre-flight ก่อน)
+            playbook นี้ไม่ทำ upgrade ให้โดยเจตนา
+      when: (_cil_cur.stdout | trim) != ''
+
+    - name: รอ cilium DaemonSet ขึ้นครบ
+      ansible.builtin.command:
+        cmd: kubectl -n kube-system rollout status ds/cilium --timeout=5m
+      changed_when: false
+
+    - name: รอ cilium-operator ขึ้น
+      ansible.builtin.command:
+        cmd: kubectl -n kube-system rollout status deploy/cilium-operator --timeout=5m
+      changed_when: false
+
+    # -------------------------------------------------------------------------
+    #  4 · ยืนยัน kube-proxy replacement ทำงานจริง
+    # -------------------------------------------------------------------------
+    - name: ตรวจสถานะ Cilium
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -uo pipefail
+          echo "kpr=$(kubectl -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg status 2>/dev/null | grep -i KubeProxyReplacement | awk '{print $2}')"
+          echo "ready=$(kubectl get nodes --no-headers 2>/dev/null | grep -c ' Ready ')"
+          echo "total=$(kubectl get nodes --no-headers 2>/dev/null | wc -l)"
+      register: _cst
+      changed_when: false
+      check_mode: false
+      retries: 10
+      delay: 15
+      until: "'ready=' ~ (groups['k8s_nodes'] | length) in _cst.stdout"
+
+    - name: สถานะหลังลง Cilium
+      ansible.builtin.debug:
+        var: _cst.stdout_lines
+
+    - name: node ต้องเป็น Ready ครบ และ kube-proxy replacement ต้องเปิด
+      ansible.builtin.assert:
+        that:
+          - "'ready=' ~ (groups['k8s_nodes'] | length) in _cst.stdout"
+          - "'kpr=True' in _cst.stdout or 'kpr=Strict' in _cst.stdout"
+        fail_msg: "Cilium ขึ้นแล้วแต่ยังไม่ครบ — {{ _cst.stdout }}"
+        quiet: true
+
+    # -------------------------------------------------------------------------
+    #  6 · LoadBalancer IP pool + L2 announcement
+    # -------------------------------------------------------------------------
+    #  สอง CR นี้คนละ apiVersion กัน — LB-IPAM เป็น cilium.io/v2
+    #  ส่วน L2AnnouncementPolicy ยังเป็น cilium.io/v2alpha1
+    # -------------------------------------------------------------------------
+    - name: apply LB IP pool และ L2 policy
+      ansible.builtin.command:
+        cmd: kubectl apply -f /root/k8s/config/cilium/{{ item }}
+      loop:
+        - lb-ippool.yaml
+        - l2-announcement-policy.yaml
+      register: _apply
+      changed_when: "'unchanged' not in _apply.stdout"
+
+    - name: ตรวจว่า pool มี IP ว่างครบ
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -uo pipefail
+          kubectl get ciliumloadbalancerippool --no-headers 2>/dev/null
+          kubectl get ciliuml2announcementpolicy --no-headers 2>/dev/null
+      register: _pool
+      changed_when: false
+      check_mode: false
+
+    - name: LB pool และ L2 policy
+      ansible.builtin.debug:
+        var: _pool.stdout_lines
+
+    # -------------------------------------------------------------------------
+    #  ที่เหลือต้องทำมือ
+    # -------------------------------------------------------------------------
+    - name: ขั้นที่ playbook ไม่ทำให้ — ต้องมีคนดูของจริง
+      ansible.builtin.debug:
+        msg:
+          - "บท 05 ข้อ 5 · cilium connectivity test — ใช้เวลานาน ต้องมีคนอ่านผล"
+          - "    cilium connectivity test"
+          - "บท 05 ข้อ 7 · ทดสอบ LoadBalancer จากเครื่องนอก cluster 🔴 สำคัญที่สุด"
+          - "    kubectl create deployment lbtest --image=nginx:alpine --replicas=2"
+          - "    kubectl expose deployment lbtest --type=LoadBalancer --port=80"
+          - "    kubectl get svc lbtest -w        # ต้องได้ EXTERNAL-IP จาก pool"
+          - "    แล้ว curl จากเครื่องนอก cluster — ถ้าองค์กรเปิด ARP inspection จะพังตรงนี้"
+          - "    เสร็จแล้วลบทิ้ง: kubectl delete deploy,svc lbtest"
