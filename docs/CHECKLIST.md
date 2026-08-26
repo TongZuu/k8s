@@ -20,6 +20,9 @@
 - [ ] เพิ่มไฟล์ [`config/monitoring/alertmanager-config.yaml`](../config/monitoring) — บท 09 อ้างถึงแต่ไฟล์ยังไม่มี
       ([09-observability.md:192](09-observability.md:192)) และวิธีที่เขียนไว้ตอนนี้คือ `kubectl edit secret`
       ซึ่งขัดกับกติกาข้อ 4 ของคู่มือ
+- [x] **เพิ่ม `config/audit-node.sh`** (26 ส.ค. 2026) — ตรวจว่าเครื่องทำบท 01/02 ไปถึงไหน
+      อ่านอย่างเดียว ใช้ก่อนรันขั้นตอนซ้ำบนเครื่องที่ทำค้างไว้
+- [x] **เพิ่ม `.gitattributes` บังคับ LF** — กัน CRLF ตอน clone บน Windows แล้ว scp ไป Linux
 - [ ] เตรียมช่องทางแจ้งเตือนจริง (email / Teams / Line) ให้ทีม แล้วใส่ลง alertmanager config
 - [x] 🔴 **แก้ `versions.env` บั๊ก `<` ที่ทำให้ `source` แตก** — `LOKI_CHART=<PIN_AT_INSTALL>` และ
       `ALLOY_CHART=<PIN_AT_INSTALL>` ไม่ได้ใส่ quote ทำให้ bash อ่าน `<` เป็น input redirection
