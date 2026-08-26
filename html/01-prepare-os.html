@@ -216,7 +216,12 @@ EOF
 <strong>ห้ามผสม UEK กับ RHCK ใน cluster เดียวกัน</strong> เด็ดขาด</p>
 <div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">uname -r
 </code></pre></div>
-<p><strong>ควรเห็น:</strong> ลงท้ายด้วย <code>uek</code> เช่น <code>6.12.0-203.76.7.3.el9uek.x86_64</code></p>
+<p><strong>ควรเห็น:</strong> <code>6.12.0-204.92.4.3.1.el9uek.x86_64</code> — <strong>ต้องตรงกับ <code>$KERNEL_UEK</code> เป๊ะ</strong></p>
+<blockquote>
+<p>ถ้าเครื่องนี้ได้เลขอื่น แปลว่า ISO/template ที่ใช้ให้ kernel คนละ patch level
+<strong>หยุดแล้วตัดสินใจก่อน</strong> ว่าจะยึดเลขไหนทั้งโปรเจกต์ แล้วแก้ที่ <code>versions.env</code> ที่เดียว
+อย่าปล่อยให้แต่ละเครื่องเป็นคนละเลข</p>
+</blockquote>
 <p>ถ้าเครื่องบูต RHCK อยู่ (ไม่มีคำว่า <code>uek</code>) ให้สลับกลับ:</p>
 <div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">grubby --info=ALL | grep -E '^(index|kernel)' | grep -B1 uek
 grubby --set-default /boot/vmlinuz-*uek*.x86_64

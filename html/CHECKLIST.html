@@ -188,6 +188,10 @@ img{max-width:100%}
 ซึ่งขัดกับกติกาข้อ 4 ของคู่มือ</li>
 <li>[x] <strong>เพิ่ม <code>config/audit-node.sh</code></strong> (26 ส.ค. 2026) — ตรวจว่าเครื่องทำบท 01/02 ไปถึงไหน
 อ่านอย่างเดียว ใช้ก่อนรันขั้นตอนซ้ำบนเครื่องที่ทำค้างไว้</li>
+<li>[x] <strong>สร้างคู่มือเวอร์ชัน HTML</strong> (27 ส.ค. 2026) — <code>python tools/build-html.py</code> → <code>html/index.html</code>
+ปุ่มคัดลอกทุก code block · ทำเครื่องหมาย &quot;ทำแล้ว&quot; รายขั้น (เปลี่ยนสีพื้นหลัง) ·
+ปุ่มลอยกระโดดไปขั้นที่ค้าง · ทดสอบด้วยเบราว์เซอร์จริงแล้ว</li>
+<li>[ ] <strong>แก้ <code>.md</code> แล้วอย่าลืมรัน <code>python tools/build-html.py</code> ใหม่</strong> — <code>html/</code> ไม่ได้ sync เอง</li>
 <li>[x] <strong>เพิ่ม <code>.gitattributes</code> บังคับ LF</strong> — กัน CRLF ตอน clone บน Windows แล้ว scp ไป Linux</li>
 <li>[ ] เตรียมช่องทางแจ้งเตือนจริง (email / Teams / Line) ให้ทีม แล้วใส่ลง alertmanager config</li>
 <li>[x] 🔴 <strong>แก้ <code>versions.env</code> บั๊ก <code>&lt;</code> ที่ทำให้ <code>source</code> แตก</strong> — <code>LOKI_CHART=&lt;PIN_AT_INSTALL&gt;</code> และ
