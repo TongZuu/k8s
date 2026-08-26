@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>บทที่ 01 — เตรียม OS — MyHR Kubernetes</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#f6f7f9; --panel:#fff; --ink:#1c1f24; --dim:#5d6570; --line:#e0e4e9;
+  --accent:#2d6ae0; --accent-soft:#eaf1fe;
+  --done-bg:#eaf7ee; --done-line:#8fd3a8; --done-ink:#1c6b3c;
+  --code-bg:#1e2530; --code-ink:#e6edf3; --warn:#b4530a;
+  --radius:10px;
+  --font:"Segoe UI","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;
+  --mono:"Cascadia Mono",Consolas,"Noto Sans Thai Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151a; --panel:#181c23; --ink:#e5e9ef; --dim:#98a2b0; --line:#272d37;
+    --accent:#6ea3ff; --accent-soft:#1b2740;
+    --done-bg:#152a1e; --done-line:#2f6b47; --done-ink:#7fd9a3;
+    --code-bg:#0d1117; --code-ink:#e6edf3; --warn:#e0913f;
+  }
+}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
+     font-size:15.5px;line-height:1.75}
+
+/* ---------- sidebar ---------- */
+.sidebar{position:fixed;inset:0 auto 0 0;width:260px;background:var(--panel);
+  border-right:1px solid var(--line);overflow-y:auto;padding:14px 0;z-index:40}
+.brand{display:block;padding:8px 18px 14px;font-weight:700;font-size:15px;
+  color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);margin-bottom:8px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 18px;text-decoration:none;
+  color:var(--dim);font-size:13.5px;border-left:3px solid transparent}
+.nav-item:hover{background:var(--accent-soft);color:var(--ink)}
+.nav-item.cur{border-left-color:var(--accent);color:var(--ink);font-weight:600;
+  background:var(--accent-soft)}
+.nav-num{font-family:var(--mono);font-size:11.5px;opacity:.65;min-width:18px}
+.nav-t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-p{font-size:11px;font-family:var(--mono);opacity:.8}
+.nav-p.full{color:var(--done-ink);font-weight:700}
+
+/* ---------- layout ---------- */
+.wrap{margin-left:260px;min-height:100vh}
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;
+  padding:12px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
+.top-t{flex:1;min-width:0}
+.top h1{margin:0;font-size:19px;line-height:1.3}
+.sub{margin:2px 0 0;font-size:12.5px;color:var(--dim)}
+.top-p{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--dim);
+  font-family:var(--mono);white-space:nowrap}
+.bar{width:96px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.reset{border:1px solid var(--line);background:transparent;color:var(--dim);
+  border-radius:6px;padding:3px 9px;font-size:11.5px;cursor:pointer;font-family:var(--font)}
+.reset:hover{border-color:var(--accent);color:var(--accent)}
+.burger{display:none;border:0;background:transparent;color:var(--ink);font-size:20px;cursor:pointer}
+main{max-width:920px;padding:24px 30px 120px}
+
+/* ---------- steps ---------- */
+.intro{padding:0 2px 6px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
+.step.done{background:var(--done-bg);border-color:var(--done-line)}
+.step.done .step-body{opacity:.62}
+.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
+.step.done .step-head h2{color:var(--done-ink)}
+.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  border:1px solid var(--line);background:transparent;color:var(--dim);
+  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
+  transition:all .2s;margin-top:3px}
+.done-btn:hover{border-color:var(--accent);color:var(--accent)}
+.done-btn .tick{opacity:.35;font-weight:700}
+.step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
+.step.done .done-btn .tick{opacity:1}
+
+/* ---------- เนื้อหา ---------- */
+h3{font-size:15.5px;margin:22px 0 8px}
+h4{font-size:14px;margin:18px 0 6px;color:var(--dim)}
+p{margin:10px 0}
+a{color:var(--accent)}
+ul,ol{padding-left:22px;margin:10px 0}
+li{margin:4px 0}
+blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--warn);
+  background:var(--accent-soft);border-radius:0 6px 6px 0;color:var(--ink)}
+blockquote p{margin:5px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--accent-soft);
+  padding:1.5px 5px;border-radius:4px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px;display:block;
+  overflow-x:auto;white-space:nowrap}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);font-weight:600}
+tbody tr:nth-child(even){background:rgba(128,128,128,.045)}
+hr{border:0;border-top:1px solid var(--line);margin:22px 0}
+img{max-width:100%}
+
+/* ---------- code block ---------- */
+.cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.cb-bar{display:flex;align-items:center;justify-content:space-between;
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+.cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
+  letter-spacing:.5px}
+.cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:5px;padding:3px 11px;font-size:11.5px;cursor:pointer;font-family:var(--font);
+  transition:all .15s}
+.cb-copy:hover{border-color:var(--accent);color:var(--accent)}
+.cb-copy.ok{background:var(--done-line);border-color:var(--done-line);color:#08301b}
+.cb pre{margin:0;padding:13px 15px;background:var(--code-bg);color:var(--code-ink);
+  overflow-x:auto;font-size:13px;line-height:1.65}
+.cb pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+/* ---------- prev/next ---------- */
+.pn-row{display:flex;justify-content:space-between;gap:14px;margin-top:34px;
+  padding-top:18px;border-top:1px solid var(--line)}
+.pn{color:var(--accent);text-decoration:none;font-size:14px}
+.pn.dim{color:var(--dim);opacity:.6}
+
+/* ---------- ปุ่มลอย ---------- */
+.fab{position:fixed;right:24px;bottom:24px;z-index:50;display:inline-flex;align-items:center;
+  gap:9px;border:0;border-radius:26px;padding:13px 20px;cursor:pointer;
+  background:var(--accent);color:#fff;font-family:var(--font);font-size:14px;font-weight:600;
+  box-shadow:0 5px 18px rgba(0,0,0,.28);transition:transform .18s,opacity .18s,background .18s}
+.fab:hover{transform:translateY(-2px)}
+.fab.alldone{background:var(--done-line);color:#08301b}
+.fab-ico{font-size:16px;line-height:1}
+
+.toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,26px);z-index:60;
+  background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:13px;
+  opacity:0;pointer-events:none;transition:all .25s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);transition:transform .22s}
+  .sidebar.open{transform:none}
+  .wrap{margin-left:0}
+  .burger{display:block}
+  main{padding:18px 16px 120px}
+  .top{padding:10px 14px}
+  .top h1{font-size:16px}
+  .top-p .bar{display:none}
+  .fab-txt{display:none}
+  .fab{padding:15px;border-radius:50%}
+}
+@media print{
+  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
+  .wrap{margin-left:0}
+}
+</style>
+</head>
+<body data-chapter="01-prepare-os.md" data-total="12">
+
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item cur" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="9"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="16"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="9"></span></a></nav>
+</aside>
+
+<div class="wrap">
+  <header class="top">
+    <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
+    <div class="top-t">
+      <h1>บทที่ 01 — เตรียม OS</h1>
+      <p class="sub">รันที่: 🖥️ ทุกเครื่อง (ทั้ง 6 เครื่อง) · เวลาที่ใช้: ~20 นาที/เครื่อง · reboot 1 ครั้ง · บทนี้เหมือนกันหมดทุกเครื่อง ยกเว้น ขั้นที่ 1 (hostname) และ ขั้นที่ 5 (partition)</p>
+    </div>
+    <div class="top-p">
+      <span id="pcount">0/12</span>
+      <div class="bar"><i id="pbar"></i></div>
+      <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="intro"><hr />
+</div>
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>0 · โหลดตัวแปร</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+echo "K8S=$K8S_VERSION  VIP=$VIP  IFACE=$NODE_IFACE"
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> <code>K8S=1.36.3  VIP=192.168.50.100  IFACE=ens192</code>
+ถ้าค่าไหนว่าง แปลว่ายังไม่ได้ source — หยุดแล้วแก้ก่อน</p>
+<hr />
+</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · Hostname และ /etc/hosts</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>รันเฉพาะบรรทัดที่ตรงกับเครื่องที่กำลังทำอยู่:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">hostnamectl set-hostname k8s-master01    # บน 192.168.50.101
+hostnamectl set-hostname k8s-master02    # บน 192.168.50.102
+hostnamectl set-hostname k8s-master03    # บน 192.168.50.103
+hostnamectl set-hostname k8s-worker01    # บน 192.168.50.104
+hostnamectl set-hostname k8s-worker02    # บน 192.168.50.105
+hostnamectl set-hostname k8s-worker03    # บน 192.168.50.106
+</code></pre></div>
+<p>จากนั้นวาง <code>/etc/hosts</code> ชุดเดียวกันนี้ลง <strong>ทุกเครื่อง</strong>:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cat &gt;&gt; /etc/hosts &lt;&lt;'EOF'
+192.168.50.100  k8s-vip
+192.168.50.101  k8s-master01
+192.168.50.102  k8s-master02
+192.168.50.103  k8s-master03
+192.168.50.104  k8s-worker01
+192.168.50.105  k8s-worker02
+192.168.50.106  k8s-worker03
+192.168.30.207  registry.myhr.co.th
+EOF
+</code></pre></div>
+<blockquote>
+<p><code>/etc/hosts</code> ใช้ได้แต่เปราะ — เพิ่ม node ทีต้องไปแก้ทุกเครื่อง
+ถ้าทีม network ทำ DNS record ให้ได้ ให้ย้ายไป DNS แล้วลบบล็อกนี้ทิ้ง</p>
+</blockquote>
+<p><strong>ตรวจ:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">hostname &amp;&amp; ping -c1 k8s-master01 &amp;&amp; ping -c1 registry.myhr.co.th
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> ชื่อเครื่องถูกต้อง และ ping ทั้งสองปลายทางได้</p>
+<hr />
+</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · ยืนยัน kernel และตรึงไว้</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>Oracle Linux ให้ kernel มาสองตัว เราใช้ <strong>UEK 8U2</strong> ตามค่า default
+<strong>ห้ามผสม UEK กับ RHCK ใน cluster เดียวกัน</strong> เด็ดขาด</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">uname -r
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> ลงท้ายด้วย <code>uek</code> เช่น <code>6.12.0-203.76.7.3.el9uek.x86_64</code></p>
+<p>ถ้าเครื่องบูต RHCK อยู่ (ไม่มีคำว่า <code>uek</code>) ให้สลับกลับ:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">grubby --info=ALL | grep -E '^(index|kernel)' | grep -B1 uek
+grubby --set-default /boot/vmlinuz-*uek*.x86_64
+reboot
+</code></pre></div>
+<p><strong>ตรึงเวอร์ชันไม่ให้ <code>dnf update</code> ยก kernel เอง:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">dnf install -y python3-dnf-plugin-versionlock
+dnf versionlock add kernel-uek kernel-uek-core kernel-uek-modules
+dnf versionlock list
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> รายการ <code>kernel-uek-*</code> โผล่ในลิสต์ versionlock</p>
+<blockquote>
+<p><strong>สำคัญ:</strong> ตอน patch kernel ตามรอบ (บทที่ 12) ต้อง <code>dnf versionlock delete</code> ชั่วคราว
+แล้ว <strong>ล็อกกลับทันทีหลัง reboot</strong> ไม่งั้น node จะค่อย ๆ ไหลไปคนละเวอร์ชันโดยไม่มีใครรู้</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · จัดการ repo</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>ปิด repo ที่จะไปทับของที่เราติดตั้งเอง:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># ol9_addons มี containerd ของ Oracle ซึ่งจะไปทับตัวที่เราลงจาก tarball ในบทที่ 02
+dnf config-manager --disable ol9_addons 2&gt;/dev/null || true
+
+# เปิดเฉพาะที่ต้องใช้
+dnf config-manager --enable ol9_baseos_latest ol9_appstream ol9_UEKR8
+
+dnf repolist enabled
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> มีแค่ <code>ol9_baseos_latest</code>, <code>ol9_appstream</code>, <code>ol9_UEKR8</code> (+ repo ของ Kubernetes ที่จะเพิ่มในขั้นที่ 8)
+<strong>ต้องไม่เห็น</strong> <code>ol9_addons</code></p>
+<p><strong>ปิด Ksplice</strong> — เราใช้ Oracle Linux แบบฟรีจึงไม่มีสิทธิ์ใช้ ปล่อยไว้จะได้แค่ log error รกทุกวัน:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">systemctl disable --now ksplice-uptrack.service 2&gt;/dev/null || true
+</code></pre></div>
+<hr />
+</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · ลง package พื้นฐาน</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">dnf install -y \
+  chrony open-vm-tools tar curl wget \
+  iproute-tc socat conntrack-tools ethtool \
+  bash-completion jq
+
+systemctl enable --now chronyd
+</code></pre></div>
+<p><strong>ตรวจเวลา — ข้อนี้ห้ามข้าม เพราะ TLS cert และ etcd raft พังทันทีถ้าเวลาเพี้ยน:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">chronyc tracking | grep -E 'Reference ID|System time|Leap status'
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> <code>Leap status : Normal</code> และ <code>System time</code> ต่างไม่เกินหลัก <strong>มิลลิวินาที</strong>
+ถ้าเห็น <code>Not synchronised</code> ให้หยุดแล้วแก้ NTP ก่อน</p>
+<hr />
+</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · ย้าย partition /home</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>Kubernetes ไม่ใช้ <code>/home</code> เลย ขณะที่ของที่โตเร็วทั้งหมดไปกองใต้ <code>/var</code>
+ย้าย partition 100 GB นี้ไปรับงานที่มีประโยชน์แทน</p>
+<blockquote>
+<p>⚠️ ทำ <strong>ก่อน</strong> ติดตั้ง containerd และก่อน <code>kubeadm init</code> — ย้ายทีหลังต้องหยุด service</p>
+</blockquote>
+<p><strong>ดูก่อนว่า <code>/home</code> คือ device อะไร:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">lsblk -f
+findmnt /home
+</code></pre></div>
+<h3>🎩 บน master ทั้ง 3 เครื่อง — ย้ายไปเป็น <code>/var/lib/etcd</code></h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">HOME_DEV=$(findmnt -no SOURCE /home)
+echo "จะย้าย $HOME_DEV ไปเป็น /var/lib/etcd"
+
+umount /home
+mkdir -p /var/lib/etcd
+sed -i 's|[[:space:]]/home[[:space:]]|  /var/lib/etcd  |' /etc/fstab
+mount -a
+chmod 700 /var/lib/etcd
+</code></pre></div>
+<h3>⚙️ บน worker ทั้ง 3 เครื่อง — ย้ายไปเป็น <code>/var/lib/containerd</code></h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">HOME_DEV=$(findmnt -no SOURCE /home)
+echo "จะย้าย $HOME_DEV ไปเป็น /var/lib/containerd"
+
+umount /home
+mkdir -p /var/lib/containerd
+sed -i 's|[[:space:]]/home[[:space:]]|  /var/lib/containerd  |' /etc/fstab
+mount -a
+</code></pre></div>
+<p><strong>ตรวจทั้งสองแบบ:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">findmnt /var/lib/etcd || findmnt /var/lib/containerd
+grep -v '^#' /etc/fstab | grep -E 'etcd|containerd'
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> mount point ใหม่ขึ้นมา และไม่มีบรรทัด <code>/home</code> เหลือใน fstab แล้ว</p>
+<blockquote>
+<p><strong>ทำไมต้องแยก</strong> — บน master ถ้า image กิน root จนเต็ม etcd จะเขียนไม่ได้และ <strong>ทั้ง cluster หยุด</strong>
+บน worker ถ้า image เต็ม root จะทำให้ <code>/var/log</code> เขียนไม่ได้จน node กลายเป็น <code>NotReady</code> ทั้งเครื่อง</p>
+<p><strong>หมายเหตุ:</strong> ถ้า 400/500 GB เป็น VMDK ลูกเดียวแบ่ง partition จะได้แค่ <strong>แยกพื้นที่</strong> ไม่ได้แยก I/O
+ให้วัด fsync ในขั้นที่ 9 แล้วตัดสินว่าต้องขอ VMDK แยกให้ etcd ไหม</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · kernel module และ sysctl</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cat &gt; /etc/modules-load.d/k8s.conf &lt;&lt;'EOF'
+overlay
+br_netfilter
+EOF
+
+modprobe overlay
+modprobe br_netfilter
+
+cat &gt; /etc/sysctl.d/99-kubernetes.conf &lt;&lt;'EOF'
+net.ipv4.ip_forward                 = 1
+net.bridge.bridge-nf-call-iptables  = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+EOF
+
+sysctl --system &gt;/dev/null
+</code></pre></div>
+<p><strong>ตรวจ:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">lsmod | grep -E '^overlay|^br_netfilter'
+sysctl net.ipv4.ip_forward net.bridge.bridge-nf-call-iptables
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> ทั้งสอง module โหลดอยู่ และ sysctl ทั้งสองค่าเป็น <code>= 1</code></p>
+<blockquote>
+<p>ต้องโหลด <code>br_netfilter</code> <strong>ก่อน</strong> ตั้ง sysctl ไม่งั้น <code>net.bridge.*</code> จะ set ไม่ติด
+ไฟล์ <code>/etc/modules-load.d/k8s.conf</code> คือสิ่งที่ทำให้มันยังอยู่หลัง reboot
+— คู่มือชุดเดิมไม่มีไฟล์นี้ พอ reboot แล้ว pod จึงคุยข้าม node ไม่ได้</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>7 · ปิด swap และตั้ง SELinux</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">swapoff -a
+sed -i '/[[:space:]]swap[[:space:]]/s/^/#/' /etc/fstab
+
+setenforce 0
+sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
+</code></pre></div>
+<p><strong>ตรวจ:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">free -h | grep -i swap
+getenforce
+grep -i '^SELINUX=' /etc/selinux/config
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> swap ทุกช่องเป็น <code>0B</code> · <code>getenforce</code> คืน <code>Permissive</code> · ไฟล์ config เป็น <code>SELINUX=permissive</code></p>
+<blockquote>
+<p><strong>SELinux permissive คือการยอมรับความเสี่ยง ไม่ใช่ best practice</strong>
+เป็นแนวทางมาตรฐานของ kubeadm เพื่อเลี่ยง denial ตอน container เขียน volume
+ถ้าองค์กรมีข้อกำหนดว่าต้อง <code>enforcing</code> ต้องทำ policy module เพิ่มและทดสอบใน lab ก่อน</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>8 · firewalld</h2><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>firewalld <strong>เปิดอยู่</strong> ตามที่ทีมยืนยัน จึงต้องเปิดพอร์ตให้ครบ
+ถ้าขาดข้อใดข้อหนึ่ง อาการจะไปโผล่ตอน <code>kubeadm init</code> หรือตอน pod คุยข้าม node</p>
+<h3>🎩 บน master ทั้ง 3 เครื่อง</h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">firewall-cmd --permanent --add-port=6443/tcp          # kube-apiserver
+firewall-cmd --permanent --add-port=8443/tcp          # HAProxy frontend (VIP)
+firewall-cmd --permanent --add-port=2379-2380/tcp     # etcd client + peer
+firewall-cmd --permanent --add-port=10250/tcp         # kubelet API
+firewall-cmd --permanent --add-port=10257/tcp         # controller-manager
+firewall-cmd --permanent --add-port=10259/tcp         # scheduler
+firewall-cmd --permanent --add-protocol=vrrp          # keepalived เลือก master
+firewall-cmd --permanent --add-port=8472/udp          # Cilium VXLAN
+firewall-cmd --permanent --add-port=4240/tcp          # Cilium health
+firewall-cmd --permanent --add-port=4244-4245/tcp     # Hubble
+firewall-cmd --reload
+</code></pre></div>
+<h3>⚙️ บน worker ทั้ง 3 เครื่อง</h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">firewall-cmd --permanent --add-port=10250/tcp         # kubelet API
+firewall-cmd --permanent --add-port=30000-32767/tcp   # NodePort range
+firewall-cmd --permanent --add-port=8472/udp          # Cilium VXLAN
+firewall-cmd --permanent --add-port=4240/tcp          # Cilium health
+firewall-cmd --permanent --add-port=4244-4245/tcp     # Hubble
+firewall-cmd --reload
+</code></pre></div>
+<p><strong>ตรวจทั้งสองแบบ:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">firewall-cmd --list-all
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> พอร์ตครบตามรายการของบทบาทนั้น และ master ต้องมี <code>protocols: vrrp</code></p>
+<blockquote>
+<p><strong>ไม่ต้องเปิด <code>10256/tcp</code></strong> (kube-proxy health) เพราะเราไม่ติดตั้ง kube-proxy
+<strong>ไม่ต้องเปิด <code>179/tcp</code></strong> (BGP) เพราะใช้ L2 announcement ไม่ใช่ BGP mode</p>
+</blockquote>
+<h3>หมายเหตุ — interface ของ Cilium กับ firewalld</h3>
+<p>หลังลง Cilium ในบทที่ 05 ถ้าเจอว่า pod ข้าม node ไม่ได้ ให้ลองเพิ่ม interface ของ Cilium
+เข้า zone <code>trusted</code> แล้วทดสอบซ้ำ:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">firewall-cmd --permanent --zone=trusted --add-interface=cilium_host
+firewall-cmd --permanent --zone=trusted --add-interface=cilium_net
+firewall-cmd --permanent --zone=trusted --add-interface=cilium_vxlan
+firewall-cmd --reload
+</code></pre></div>
+<blockquote>
+<p><strong>ต้องทดสอบใน lab ว่าจำเป็นจริงไหม</strong> — อย่าใส่ไว้ล่วงหน้าโดยไม่รู้เหตุผล
+และต้องทดสอบด้วยว่า <code>firewall-cmd --reload</code> ตอน Cilium รันอยู่แล้ว pod ยังคุยกันได้
+เพราะ firewalld เขียนกฎ nftables ใหม่ทั้งชุดตอน reload · <strong>จดผลลง บทที่ 13 ไม่ว่าจะผ่านหรือไม่</strong></p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-10" data-step="10"><div class="step-head"><h2>9 · วัด disk latency ของ etcd</h2><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<blockquote>
+<p><strong>🎩 รันเฉพาะ master ทั้ง 3 เครื่อง</strong></p>
+</blockquote>
+<p>etcd ต้องการ fsync p99 ต่ำกว่า ~10 ms ถ้าไม่ผ่าน cluster จะตอบช้าและ leader election สะดุด
+โดยที่ log ไปโผล่ที่ apiserver ทำให้ไล่หาสาเหตุยากมาก</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">dnf install -y fio
+fio --rw=write --ioengine=sync --fdatasync=1 --directory=/var/lib/etcd \
+    --size=22m --bs=2300 --name=etcd-fsync-test
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> บรรทัด <code>fsync/fdatasync/sync_file_range:</code> แล้วดูค่า <code>99.00th</code> ใน <code>sync percentiles</code>
+<strong>ต้องต่ำกว่า 10000 (µs) = 10 ms</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">rm -f /var/lib/etcd/etcd-fsync-test*
+</code></pre></div>
+<blockquote>
+<p><strong>บันทึกตัวเลขที่วัดได้ลงคู่มือเป็น baseline</strong> เวลา cluster ช้าในอนาคตจะได้เทียบได้ว่า disk แย่ลงหรือเปล่า
+ถ้าไม่ผ่าน 10 ms ให้ขอ VMDK แยกสำหรับ etcd หรือย้ายไป datastore ที่ไม่แชร์กับ VM อื่นเยอะ</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-11" data-step="11"><div class="step-head"><h2>10 · Reboot แล้วตรวจซ้ำ</h2><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p><strong>ข้อนี้ห้ามข้าม</strong> — จุดประสงค์คือพิสูจน์ว่าทุกอย่างยังอยู่หลัง reboot
+ซึ่งเป็นสิ่งที่คู่มือชุดเดิมพลาด</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">reboot
+</code></pre></div>
+<p>หลังเครื่องกลับมา:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">uname -r                                          # ต้องลงท้าย uek และตรงกับ versions.env
+lsmod | grep -E '^overlay|^br_netfilter'          # ต้องมีทั้งสอง
+sysctl net.ipv4.ip_forward                        # ต้องเป็น 1
+free -h | grep -i swap                            # ต้องเป็น 0B
+getenforce                                        # ต้องเป็น Permissive
+findmnt /var/lib/etcd || findmnt /var/lib/containerd   # partition ต้องยัง mount อยู่
+firewall-cmd --list-ports                         # ต้องครบ
+chronyc tracking | grep 'Leap status'             # ต้อง Normal
+</code></pre></div>
+<hr />
+</div></section><section class="step" id="step-12" data-step="12"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="12"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>รันบน <strong>ทุกเครื่อง</strong> แล้วเทียบกัน — ทั้ง 6 เครื่องต้องได้ผลเหมือนกันทุกข้อ</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">echo "=== $(hostname) ==="
+echo "kernel : $(uname -r)"
+echo "swap   : $(free -h | awk '/Swap/{print $2}')"
+echo "selinux: $(getenforce)"
+echo "modules: $(lsmod | grep -cE '^overlay|^br_netfilter')/2"
+echo "fwd    : $(sysctl -n net.ipv4.ip_forward)"
+echo "time   : $(chronyc tracking | awk -F': ' '/Leap status/{print $2}')"
+</code></pre></div>
+<p><strong>ต้องได้:</strong> kernel เลขเดียวกันทั้ง 6 เครื่อง · swap <code>0B</code> · selinux <code>Permissive</code> · modules <code>2/2</code> · fwd <code>1</code> · time <code>Normal</code></p>
+<blockquote>
+<p>ถ้า kernel ไม่ตรงกันแม้แต่เครื่องเดียว <strong>ให้หยุดแล้วแก้ก่อน</strong> อย่าไปบทที่ 02
+node ที่ kernel ต่างกันจะให้อาการ network ต่างกันเป็นราย node ซึ่งเป็นบั๊กที่หาสาเหตุยากที่สุดแบบหนึ่ง</p>
+</blockquote>
+<p><strong>➡️ ต่อที่ <a href="02-container-runtime.html">บทที่ 02 — Container Runtime</a></strong></p>
+</div></section>
+    <div class="pn-row"><a class="pn" href="00-overview.html">← ภาพรวมและลำดับงาน</a><a class="pn" href="02-container-runtime.html">Container Runtime →</a></div>
+  </main>
+</div>
+
+<button class="fab" id="fab" type="button">
+  <span class="fab-ico">↓</span><span class="fab-txt">ขั้นที่ต้องทำ</span>
+</button>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var CH    = document.body.dataset.chapter;
+  var TOTAL = +document.body.dataset.total;
+  var KEY   = 'myhr-k8s-progress';
+
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ return {}; } }
+  function save(o){ try{ localStorage.setItem(KEY, JSON.stringify(o)); }catch(e){} }
+  function mine(){ var a=load(); return (a[CH]||[]); }
+  function setMine(list){ var a=load(); a[CH]=list; save(a); }
+
+  var toastEl=document.getElementById('toast'), toastT;
+  function toast(msg){
+    toastEl.textContent=msg; toastEl.classList.add('show');
+    clearTimeout(toastT); toastT=setTimeout(function(){toastEl.classList.remove('show');},1600);
+  }
+
+  /* ---------- ทำแล้ว / ยังไม่ทำ ---------- */
+  function paint(){
+    var done=mine();
+    document.querySelectorAll('.step').forEach(function(s){
+      var n=+s.dataset.step, is=done.indexOf(n)>=0;
+      s.classList.toggle('done', is);
+      var b=s.querySelector('.done-btn');
+      if(b) b.querySelector('.lbl').textContent = is ? 'ทำแล้ว' : 'ทำแล้ว';
+    });
+    var n=done.length;
+    document.getElementById('pcount').textContent=n+'/'+TOTAL;
+    document.getElementById('pbar').style.width=(TOTAL?100*n/TOTAL:0)+'%';
+    paintFab();
+    paintNav();
+  }
+
+  document.querySelectorAll('.done-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      if(i>=0){ done.splice(i,1); } else { done.push(n); }
+      setMine(done); paint();
+    });
+  });
+
+  document.getElementById('reset').addEventListener('click', function(){
+    if(!confirm('ล้างสถานะ "ทำแล้ว" ทั้งหมดของบทนี้?')) return;
+    setMine([]); paint(); toast('ล้างแล้ว');
+  });
+
+  /* ---------- ขั้นที่ต้องทำต่อไป ---------- */
+  function nextStep(){
+    var done=mine(), out=null;
+    document.querySelectorAll('.step').forEach(function(s){
+      if(out) return;
+      if(done.indexOf(+s.dataset.step)<0) out=s;
+    });
+    return out;
+  }
+  function paintFab(){
+    var fab=document.getElementById('fab'), s=nextStep();
+    if(s){
+      fab.classList.remove('alldone');
+      fab.querySelector('.fab-ico').textContent='↓';
+      fab.querySelector('.fab-txt').textContent='ขั้นที่ต้องทำ';
+      fab.title='ไปที่: '+s.querySelector('h2').textContent.trim();
+    }else{
+      fab.classList.add('alldone');
+      fab.querySelector('.fab-ico').textContent='✓';
+      fab.querySelector('.fab-txt').textContent='บทนี้เสร็จแล้ว';
+      fab.title='ไปบทถัดไป';
+    }
+  }
+  document.getElementById('fab').addEventListener('click', function(){
+    var s=nextStep();
+    if(s){
+      s.scrollIntoView({behavior:'smooth', block:'start'});
+      s.animate([{outline:'2px solid var(--accent)'},{outline:'2px solid transparent'}],
+                {duration:1100});
+    }else{
+      var nx=document.querySelector('.pn-row a:last-child');
+      if(nx && nx.classList.contains('pn')) nx.click(); else toast('ครบทุกขั้นแล้ว');
+    }
+  });
+
+  /* ---------- ความคืบหน้าใน sidebar ---------- */
+  function paintNav(){
+    var all=load();
+    document.querySelectorAll('[data-progress-for]').forEach(function(el){
+      var f=el.dataset.progressFor, d=(all[f]||[]).length, t=+el.dataset.total||0;
+      el.textContent = d ? (d+'/'+t) : '';
+      el.classList.toggle('full', t>0 && d>=t);
+    });
+  }
+
+  /* ---------- ปุ่มคัดลอก ---------- */
+  function copyText(t){
+    if(navigator.clipboard && window.isSecureContext){
+      return navigator.clipboard.writeText(t);
+    }
+    return new Promise(function(res,rej){
+      var ta=document.createElement('textarea');
+      ta.value=t; ta.setAttribute('readonly','');
+      ta.style.cssText='position:fixed;top:-1000px;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy') ? res() : rej(); }
+      catch(e){ rej(e); }
+      finally{ document.body.removeChild(ta); }
+    });
+  }
+  document.querySelectorAll('.cb-copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var code=btn.closest('.cb').querySelector('code');
+      copyText(code.innerText).then(function(){
+        btn.textContent='คัดลอกแล้ว'; btn.classList.add('ok');
+        setTimeout(function(){ btn.textContent='คัดลอก'; btn.classList.remove('ok'); },1400);
+      }).catch(function(){
+        // คัดลอกอัตโนมัติไม่ได้ (เบราว์เซอร์บล็อก) — เลือกข้อความให้เลย เหลือแค่กด Ctrl+C
+        try{
+          var sel=window.getSelection(), rng=document.createRange();
+          rng.selectNodeContents(code); sel.removeAllRanges(); sel.addRange(rng);
+          toast('เบราว์เซอร์บล็อกการคัดลอก — เลือกให้แล้ว กด Ctrl+C ได้เลย');
+        }catch(e){ toast('คัดลอกไม่สำเร็จ — ลากเลือกข้อความแล้วกด Ctrl+C'); }
+      });
+    });
+  });
+
+  /* ---------- เมนูบนจอเล็ก ---------- */
+  var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');
+  if(burger) burger.addEventListener('click', function(){ sb.classList.toggle('open'); });
+
+  paint();
+})();
+</script>
+</body>
+</html>

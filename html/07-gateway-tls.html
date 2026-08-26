@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>บทที่ 07 — Envoy Gateway และ TLS — MyHR Kubernetes</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#f6f7f9; --panel:#fff; --ink:#1c1f24; --dim:#5d6570; --line:#e0e4e9;
+  --accent:#2d6ae0; --accent-soft:#eaf1fe;
+  --done-bg:#eaf7ee; --done-line:#8fd3a8; --done-ink:#1c6b3c;
+  --code-bg:#1e2530; --code-ink:#e6edf3; --warn:#b4530a;
+  --radius:10px;
+  --font:"Segoe UI","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;
+  --mono:"Cascadia Mono",Consolas,"Noto Sans Thai Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151a; --panel:#181c23; --ink:#e5e9ef; --dim:#98a2b0; --line:#272d37;
+    --accent:#6ea3ff; --accent-soft:#1b2740;
+    --done-bg:#152a1e; --done-line:#2f6b47; --done-ink:#7fd9a3;
+    --code-bg:#0d1117; --code-ink:#e6edf3; --warn:#e0913f;
+  }
+}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
+     font-size:15.5px;line-height:1.75}
+
+/* ---------- sidebar ---------- */
+.sidebar{position:fixed;inset:0 auto 0 0;width:260px;background:var(--panel);
+  border-right:1px solid var(--line);overflow-y:auto;padding:14px 0;z-index:40}
+.brand{display:block;padding:8px 18px 14px;font-weight:700;font-size:15px;
+  color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);margin-bottom:8px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 18px;text-decoration:none;
+  color:var(--dim);font-size:13.5px;border-left:3px solid transparent}
+.nav-item:hover{background:var(--accent-soft);color:var(--ink)}
+.nav-item.cur{border-left-color:var(--accent);color:var(--ink);font-weight:600;
+  background:var(--accent-soft)}
+.nav-num{font-family:var(--mono);font-size:11.5px;opacity:.65;min-width:18px}
+.nav-t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-p{font-size:11px;font-family:var(--mono);opacity:.8}
+.nav-p.full{color:var(--done-ink);font-weight:700}
+
+/* ---------- layout ---------- */
+.wrap{margin-left:260px;min-height:100vh}
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;
+  padding:12px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
+.top-t{flex:1;min-width:0}
+.top h1{margin:0;font-size:19px;line-height:1.3}
+.sub{margin:2px 0 0;font-size:12.5px;color:var(--dim)}
+.top-p{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--dim);
+  font-family:var(--mono);white-space:nowrap}
+.bar{width:96px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.reset{border:1px solid var(--line);background:transparent;color:var(--dim);
+  border-radius:6px;padding:3px 9px;font-size:11.5px;cursor:pointer;font-family:var(--font)}
+.reset:hover{border-color:var(--accent);color:var(--accent)}
+.burger{display:none;border:0;background:transparent;color:var(--ink);font-size:20px;cursor:pointer}
+main{max-width:920px;padding:24px 30px 120px}
+
+/* ---------- steps ---------- */
+.intro{padding:0 2px 6px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
+.step.done{background:var(--done-bg);border-color:var(--done-line)}
+.step.done .step-body{opacity:.62}
+.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
+.step.done .step-head h2{color:var(--done-ink)}
+.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  border:1px solid var(--line);background:transparent;color:var(--dim);
+  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
+  transition:all .2s;margin-top:3px}
+.done-btn:hover{border-color:var(--accent);color:var(--accent)}
+.done-btn .tick{opacity:.35;font-weight:700}
+.step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
+.step.done .done-btn .tick{opacity:1}
+
+/* ---------- เนื้อหา ---------- */
+h3{font-size:15.5px;margin:22px 0 8px}
+h4{font-size:14px;margin:18px 0 6px;color:var(--dim)}
+p{margin:10px 0}
+a{color:var(--accent)}
+ul,ol{padding-left:22px;margin:10px 0}
+li{margin:4px 0}
+blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--warn);
+  background:var(--accent-soft);border-radius:0 6px 6px 0;color:var(--ink)}
+blockquote p{margin:5px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--accent-soft);
+  padding:1.5px 5px;border-radius:4px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px;display:block;
+  overflow-x:auto;white-space:nowrap}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);font-weight:600}
+tbody tr:nth-child(even){background:rgba(128,128,128,.045)}
+hr{border:0;border-top:1px solid var(--line);margin:22px 0}
+img{max-width:100%}
+
+/* ---------- code block ---------- */
+.cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.cb-bar{display:flex;align-items:center;justify-content:space-between;
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+.cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
+  letter-spacing:.5px}
+.cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:5px;padding:3px 11px;font-size:11.5px;cursor:pointer;font-family:var(--font);
+  transition:all .15s}
+.cb-copy:hover{border-color:var(--accent);color:var(--accent)}
+.cb-copy.ok{background:var(--done-line);border-color:var(--done-line);color:#08301b}
+.cb pre{margin:0;padding:13px 15px;background:var(--code-bg);color:var(--code-ink);
+  overflow-x:auto;font-size:13px;line-height:1.65}
+.cb pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+/* ---------- prev/next ---------- */
+.pn-row{display:flex;justify-content:space-between;gap:14px;margin-top:34px;
+  padding-top:18px;border-top:1px solid var(--line)}
+.pn{color:var(--accent);text-decoration:none;font-size:14px}
+.pn.dim{color:var(--dim);opacity:.6}
+
+/* ---------- ปุ่มลอย ---------- */
+.fab{position:fixed;right:24px;bottom:24px;z-index:50;display:inline-flex;align-items:center;
+  gap:9px;border:0;border-radius:26px;padding:13px 20px;cursor:pointer;
+  background:var(--accent);color:#fff;font-family:var(--font);font-size:14px;font-weight:600;
+  box-shadow:0 5px 18px rgba(0,0,0,.28);transition:transform .18s,opacity .18s,background .18s}
+.fab:hover{transform:translateY(-2px)}
+.fab.alldone{background:var(--done-line);color:#08301b}
+.fab-ico{font-size:16px;line-height:1}
+
+.toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,26px);z-index:60;
+  background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:13px;
+  opacity:0;pointer-events:none;transition:all .25s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);transition:transform .22s}
+  .sidebar.open{transform:none}
+  .wrap{margin-left:0}
+  .burger{display:block}
+  main{padding:18px 16px 120px}
+  .top{padding:10px 14px}
+  .top h1{font-size:16px}
+  .top-p .bar{display:none}
+  .fab-txt{display:none}
+  .fab{padding:15px;border-radius:50%}
+}
+@media print{
+  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
+  .wrap{margin-left:0}
+}
+</style>
+</head>
+<body data-chapter="07-gateway-tls.md" data-total="9">
+
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item cur" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="9"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="16"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="9"></span></a></nav>
+</aside>
+
+<div class="wrap">
+  <header class="top">
+    <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
+    <div class="top-t">
+      <h1>บทที่ 07 — Envoy Gateway และ TLS</h1>
+      <p class="sub">รันที่: 👑 master01 · เวลาที่ใช้: ~40 นาที · ต้องผ่านบทที่ 05-06 — โดยเฉพาะการ curl เข้า LoadBalancer IP จากนอก cluster ได้</p>
+    </div>
+    <div class="top-p">
+      <span id="pcount">0/9</span>
+      <div class="bar"><i id="pbar"></i></div>
+      <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="intro"><hr />
+</div>
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ทำไมเป็น Gateway API ไม่ใช่ Ingress</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p><code>ingress-nginx</code> <strong>ปิดโปรเจกต์ไปแล้วเมื่อ มี.ค. 2026</strong> ไม่มี security patch อีกและตัวที่ตั้งใจให้มาแทนก็ถูกยกเลิก
+ในเมื่อรอบนี้เขียนคู่มือใหม่หมดอยู่แล้ว การเริ่มที่ Gateway API เลยแทบไม่มีต้นทุนเพิ่ม
+และตัดปัญหาต้องย้ายสองรอบ</p>
+<p><strong>ภาพรวมที่จะได้ — 1 IP รองรับทุก service:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">ads.myhr.co.th ─┐
+hr.myhr.co.th  ─┼─→ 192.168.50.200 ─→ Envoy Gateway ─┬─→ zeeme-ads  (ClusterIP)
+api.myhr.co.th ─┘      LB IP เดียว    (แยกด้วย host)  ├─→ zeeme-hr   (ClusterIP)
+                                                     └─→ zeeme-api  (ClusterIP)
+</code></pre></div>
+<p>microservice ทุกตัวเป็น <code>ClusterIP</code> ธรรมดา <strong>ไม่กิน IP ของ LAN เลย</strong></p>
+<hr />
+</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · ติดตั้ง Gateway API CRD</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>Envoy Gateway ต้องการ CRD ชุดนี้ก่อน — เป็นของกลางไม่ผูกกับ implementation ไหน</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+
+kubectl apply -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/v${GATEWAY_API_VERSION}/standard-install.yaml"
+kubectl get crd | grep gateway.networking.k8s.io
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> <code>gatewayclasses</code>, <code>gateways</code>, <code>httproutes</code>, <code>grpcroutes</code>, <code>referencegrants</code></p>
+<blockquote>
+<p>ใช้ <code>standard-install.yaml</code> ไม่ใช่ <code>experimental</code> — <code>TCPRoute</code>/<code>UDPRoute</code> อยู่ใน experimental
+ถ้าวันหนึ่งต้องเปิด TCP ตรง ๆ ค่อยมาเปลี่ยน แต่ตอนนี้ยังไม่มีความจำเป็น</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · ติดตั้ง cert-manager</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">helm repo add jetstack https://charts.jetstack.io &amp;&amp; helm repo update
+
+helm install cert-manager jetstack/cert-manager \
+  --namespace cert-manager --create-namespace \
+  --version "v${CERT_MANAGER_VERSION}" \
+  --set crds.enabled=true \
+  --set replicaCount=2 \
+  --set webhook.replicaCount=2 \
+  --set cainjector.replicaCount=2
+
+kubectl -n cert-manager rollout status deploy/cert-manager --timeout=3m
+kubectl -n cert-manager get pods
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> 3 deployment (<code>cert-manager</code>, <code>cert-manager-webhook</code>, <code>cert-manager-cainjector</code>) <code>Running</code> อย่างละ 2 pod</p>
+<blockquote>
+<p><strong><code>replicaCount=2</code> ไม่ใช่ของแถม</strong> — เราต้อง drain node ทุก 1-2 เดือน
+ถ้า webhook เหลือ pod เดียวแล้ว node นั้นถูก drain การสร้าง Certificate ทุกอันจะค้าง</p>
+</blockquote>
+<p><strong>เพิ่ม PDB:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/cert-manager/pdb.yaml
+kubectl -n cert-manager get pdb
+</code></pre></div>
+<hr />
+</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · สร้าง internal CA</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>ระบบภายในไม่ต้องใช้ cert จาก public CA — ออก CA เองแล้วกระจาย root ไปเครื่อง client
+ดีกว่า self-signed รายตัวมาก เพราะไม่ต้องกด &quot;ยอมรับความเสี่ยง&quot; ทุกครั้ง และ cert ต่ออายุเองอัตโนมัติ</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/cert-manager/internal-ca.yaml
+
+kubectl -n cert-manager get certificate myhr-internal-ca
+kubectl get clusterissuer myhr-internal-ca-issuer
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> Certificate <code>READY=True</code> และ ClusterIssuer <code>READY=True</code></p>
+<p><strong>ดึง root CA ออกมาแจกให้เครื่อง client:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n cert-manager get secret myhr-internal-ca-key-pair \
+  -o jsonpath='{.data.tls\.crt}' | base64 -d &gt; /root/k8s/myhr-root-ca.crt
+
+openssl x509 -in /root/k8s/myhr-root-ca.crt -noout -subject -dates
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> subject เป็น <code>CN=MyHR Internal CA</code> และหมดอายุอีก ~10 ปี</p>
+<blockquote>
+<p>📋 <strong>งานที่ต้องทำต่อ (ไม่ใช่งานของ cluster):</strong> เอา <code>myhr-root-ca.crt</code> ไปลงเป็น trusted root
+บนเครื่อง client ทุกเครื่องที่จะเรียก service ผ่าน HTTPS — ทำผ่าน GPO หรือ MDM ที่องค์กรใช้อยู่
+ถ้าข้ามข้อนี้ ทุกคนจะเจอ cert warning และจะเริ่มกด &quot;ผ่าน ๆ ไป&quot; ซึ่งอันตรายกว่าไม่มี TLS</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · ติดตั้ง Envoy Gateway</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">helm install envoy-gateway oci://docker.io/envoyproxy/gateway-helm \
+  --version "v${ENVOY_GATEWAY_VERSION}" \
+  --namespace envoy-gateway-system --create-namespace
+
+kubectl -n envoy-gateway-system rollout status deploy/envoy-gateway --timeout=5m
+kubectl get gatewayclass
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> GatewayClass <code>eg</code> สถานะ <code>ACCEPTED=True</code></p>
+<hr />
+</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · สร้าง Gateway</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/gateway/gateway.yaml
+kubectl -n envoy-gateway-system get gateway myhr-gateway
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> <code>PROGRAMMED=True</code> และคอลัมน์ <code>ADDRESS</code> เป็น IP จาก pool เช่น <code>192.168.50.200</code></p>
+<blockquote>
+<p>Envoy Gateway จะสร้าง Service <code>type: LoadBalancer</code> ให้อัตโนมัติ
+ซึ่ง Cilium LB-IPAM จะจ่าย IP ให้ — <strong>นี่คือ IP เดียวที่กินจาก pool ทั้ง 10 ตัว</strong></p>
+</blockquote>
+<p><strong>ถ้า <code>ADDRESS</code> ว่าง:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n envoy-gateway-system get svc
+kubectl get ciliumloadbalancerippool default-pool -o yaml | grep -A5 status
+</code></pre></div>
+<p>แปลว่า pool หมดหรือ LB-IPAM มีปัญหา — กลับไปดูบทที่ 05</p>
+<p><strong>ตรวจจากเครื่องนอก cluster:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
+echo "Gateway IP = $GW_IP"
+curl -I "http://${GW_IP}"
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> <code>404 Not Found</code> จาก Envoy ← <strong>ถูกต้องแล้ว</strong> เพราะยังไม่มี HTTPRoute
+ถ้า <code>connection refused</code> หรือ timeout ให้กลับไปดูเรื่อง ARP ที่บทที่ 05</p>
+<hr />
+</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ทดสอบด้วย HTTPRoute จริง</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl create ns demo
+kubectl -n demo create deployment echo --image=nginx:alpine --replicas=2
+kubectl -n demo expose deployment echo --port=80
+
+kubectl apply -f /root/k8s/config/gateway/httproute-example.yaml
+kubectl -n demo get httproute echo-route
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> <code>PARENTS</code> ผูกกับ <code>myhr-gateway</code> และ <code>ACCEPTED=True</code></p>
+<p><strong>ทดสอบ hostname routing จากเครื่องนอก cluster:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">curl -I -H 'Host: echo.myhr.co.th' "http://${GW_IP}"          # ต้องได้ 200
+curl -I -H 'Host: ไม่มีจริง.myhr.co.th' "http://${GW_IP}"      # ต้องได้ 404
+</code></pre></div>
+<p><strong>ทดสอบ HTTPS:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">curl -I --cacert /root/k8s/myhr-root-ca.crt \
+     --resolve "echo.myhr.co.th:443:${GW_IP}" \
+     https://echo.myhr.co.th
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> <code>HTTP/2 200</code> <strong>ไม่มี</strong> cert warning</p>
+<blockquote>
+<p>ถ้าเจอ <code>x509: certificate signed by unknown authority</code> แปลว่า root CA ไม่ถูกต้อง
+ถ้าเจอ <code>certificate is valid for ... not echo.myhr.co.th</code> แปลว่า <code>hostname</code> ใน Gateway
+ไม่ตรงกับที่ curl เรียก</p>
+</blockquote>
+<p><strong>เก็บกวาด:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl delete ns demo
+</code></pre></div>
+<hr />
+</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>7 · บังคับ HTTPS</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/gateway/https-redirect.yaml
+</code></pre></div>
+<p>ทำให้ทุก request ที่เข้ามาทาง HTTP ถูก redirect เป็น HTTPS อัตโนมัติ</p>
+<p><strong>ตรวจ:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">curl -I -H 'Host: echo.myhr.co.th' "http://${GW_IP}"
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> <code>301 Moved Permanently</code> และ header <code>location: https://...</code></p>
+<hr />
+</div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<ul>
+<li>[ ] Gateway API CRD ครบ (<code>standard-install</code>)</li>
+<li>[ ] cert-manager 3 deployment × 2 replica + PDB</li>
+<li>[ ] ClusterIssuer <code>myhr-internal-ca-issuer</code> <strong>READY=True</strong></li>
+<li>[ ] Gateway <code>myhr-gateway</code> <strong>PROGRAMMED=True</strong> และมี <code>ADDRESS</code></li>
+<li>[ ] curl HTTP เข้า Gateway IP จากนอก cluster ได้ (404 ถือว่าผ่าน)</li>
+<li>[ ] HTTPRoute ทดสอบทำงาน — host ถูกได้ 200 · host ผิดได้ 404</li>
+<li>[ ] HTTPS ผ่านโดยไม่มี cert warning (ด้วย <code>--cacert</code>)</li>
+<li>[ ] HTTP redirect ไป HTTPS</li>
+<li>[ ] <strong>เอา root CA ไปลงเครื่อง client แล้ว</strong> (หรือมี ticket ค้างอยู่)</li>
+<li>[ ] ลบ namespace <code>demo</code> แล้ว</li>
+</ul>
+<blockquote>
+<p><strong>จด IP ที่ Gateway ได้ไปลง DNS</strong> — ต้องให้ทีม network ทำ record ชี้
+<code>*.myhr.co.th</code> (หรือรายตัว) มาที่ IP นี้ ไม่งั้นต้องใช้ <code>--resolve</code> ตลอดไป</p>
+</blockquote>
+<p><strong>➡️ ต่อที่ <a href="08-storage.html">บทที่ 08 — Storage</a></strong></p>
+</div></section>
+    <div class="pn-row"><a class="pn" href="06-verify.html">← ตรวจรับระบบ</a><a class="pn" href="08-storage.html">Storage →</a></div>
+  </main>
+</div>
+
+<button class="fab" id="fab" type="button">
+  <span class="fab-ico">↓</span><span class="fab-txt">ขั้นที่ต้องทำ</span>
+</button>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var CH    = document.body.dataset.chapter;
+  var TOTAL = +document.body.dataset.total;
+  var KEY   = 'myhr-k8s-progress';
+
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ return {}; } }
+  function save(o){ try{ localStorage.setItem(KEY, JSON.stringify(o)); }catch(e){} }
+  function mine(){ var a=load(); return (a[CH]||[]); }
+  function setMine(list){ var a=load(); a[CH]=list; save(a); }
+
+  var toastEl=document.getElementById('toast'), toastT;
+  function toast(msg){
+    toastEl.textContent=msg; toastEl.classList.add('show');
+    clearTimeout(toastT); toastT=setTimeout(function(){toastEl.classList.remove('show');},1600);
+  }
+
+  /* ---------- ทำแล้ว / ยังไม่ทำ ---------- */
+  function paint(){
+    var done=mine();
+    document.querySelectorAll('.step').forEach(function(s){
+      var n=+s.dataset.step, is=done.indexOf(n)>=0;
+      s.classList.toggle('done', is);
+      var b=s.querySelector('.done-btn');
+      if(b) b.querySelector('.lbl').textContent = is ? 'ทำแล้ว' : 'ทำแล้ว';
+    });
+    var n=done.length;
+    document.getElementById('pcount').textContent=n+'/'+TOTAL;
+    document.getElementById('pbar').style.width=(TOTAL?100*n/TOTAL:0)+'%';
+    paintFab();
+    paintNav();
+  }
+
+  document.querySelectorAll('.done-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      if(i>=0){ done.splice(i,1); } else { done.push(n); }
+      setMine(done); paint();
+    });
+  });
+
+  document.getElementById('reset').addEventListener('click', function(){
+    if(!confirm('ล้างสถานะ "ทำแล้ว" ทั้งหมดของบทนี้?')) return;
+    setMine([]); paint(); toast('ล้างแล้ว');
+  });
+
+  /* ---------- ขั้นที่ต้องทำต่อไป ---------- */
+  function nextStep(){
+    var done=mine(), out=null;
+    document.querySelectorAll('.step').forEach(function(s){
+      if(out) return;
+      if(done.indexOf(+s.dataset.step)<0) out=s;
+    });
+    return out;
+  }
+  function paintFab(){
+    var fab=document.getElementById('fab'), s=nextStep();
+    if(s){
+      fab.classList.remove('alldone');
+      fab.querySelector('.fab-ico').textContent='↓';
+      fab.querySelector('.fab-txt').textContent='ขั้นที่ต้องทำ';
+      fab.title='ไปที่: '+s.querySelector('h2').textContent.trim();
+    }else{
+      fab.classList.add('alldone');
+      fab.querySelector('.fab-ico').textContent='✓';
+      fab.querySelector('.fab-txt').textContent='บทนี้เสร็จแล้ว';
+      fab.title='ไปบทถัดไป';
+    }
+  }
+  document.getElementById('fab').addEventListener('click', function(){
+    var s=nextStep();
+    if(s){
+      s.scrollIntoView({behavior:'smooth', block:'start'});
+      s.animate([{outline:'2px solid var(--accent)'},{outline:'2px solid transparent'}],
+                {duration:1100});
+    }else{
+      var nx=document.querySelector('.pn-row a:last-child');
+      if(nx && nx.classList.contains('pn')) nx.click(); else toast('ครบทุกขั้นแล้ว');
+    }
+  });
+
+  /* ---------- ความคืบหน้าใน sidebar ---------- */
+  function paintNav(){
+    var all=load();
+    document.querySelectorAll('[data-progress-for]').forEach(function(el){
+      var f=el.dataset.progressFor, d=(all[f]||[]).length, t=+el.dataset.total||0;
+      el.textContent = d ? (d+'/'+t) : '';
+      el.classList.toggle('full', t>0 && d>=t);
+    });
+  }
+
+  /* ---------- ปุ่มคัดลอก ---------- */
+  function copyText(t){
+    if(navigator.clipboard && window.isSecureContext){
+      return navigator.clipboard.writeText(t);
+    }
+    return new Promise(function(res,rej){
+      var ta=document.createElement('textarea');
+      ta.value=t; ta.setAttribute('readonly','');
+      ta.style.cssText='position:fixed;top:-1000px;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy') ? res() : rej(); }
+      catch(e){ rej(e); }
+      finally{ document.body.removeChild(ta); }
+    });
+  }
+  document.querySelectorAll('.cb-copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var code=btn.closest('.cb').querySelector('code');
+      copyText(code.innerText).then(function(){
+        btn.textContent='คัดลอกแล้ว'; btn.classList.add('ok');
+        setTimeout(function(){ btn.textContent='คัดลอก'; btn.classList.remove('ok'); },1400);
+      }).catch(function(){
+        // คัดลอกอัตโนมัติไม่ได้ (เบราว์เซอร์บล็อก) — เลือกข้อความให้เลย เหลือแค่กด Ctrl+C
+        try{
+          var sel=window.getSelection(), rng=document.createRange();
+          rng.selectNodeContents(code); sel.removeAllRanges(); sel.addRange(rng);
+          toast('เบราว์เซอร์บล็อกการคัดลอก — เลือกให้แล้ว กด Ctrl+C ได้เลย');
+        }catch(e){ toast('คัดลอกไม่สำเร็จ — ลากเลือกข้อความแล้วกด Ctrl+C'); }
+      });
+    });
+  });
+
+  /* ---------- เมนูบนจอเล็ก ---------- */
+  var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');
+  if(burger) burger.addEventListener('click', function(){ sb.classList.toggle('open'); });
+
+  paint();
+})();
+</script>
+</body>
+</html>

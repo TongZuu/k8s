@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>บทที่ 12 — Day-2 Operations — MyHR Kubernetes</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#f6f7f9; --panel:#fff; --ink:#1c1f24; --dim:#5d6570; --line:#e0e4e9;
+  --accent:#2d6ae0; --accent-soft:#eaf1fe;
+  --done-bg:#eaf7ee; --done-line:#8fd3a8; --done-ink:#1c6b3c;
+  --code-bg:#1e2530; --code-ink:#e6edf3; --warn:#b4530a;
+  --radius:10px;
+  --font:"Segoe UI","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;
+  --mono:"Cascadia Mono",Consolas,"Noto Sans Thai Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151a; --panel:#181c23; --ink:#e5e9ef; --dim:#98a2b0; --line:#272d37;
+    --accent:#6ea3ff; --accent-soft:#1b2740;
+    --done-bg:#152a1e; --done-line:#2f6b47; --done-ink:#7fd9a3;
+    --code-bg:#0d1117; --code-ink:#e6edf3; --warn:#e0913f;
+  }
+}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
+     font-size:15.5px;line-height:1.75}
+
+/* ---------- sidebar ---------- */
+.sidebar{position:fixed;inset:0 auto 0 0;width:260px;background:var(--panel);
+  border-right:1px solid var(--line);overflow-y:auto;padding:14px 0;z-index:40}
+.brand{display:block;padding:8px 18px 14px;font-weight:700;font-size:15px;
+  color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);margin-bottom:8px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 18px;text-decoration:none;
+  color:var(--dim);font-size:13.5px;border-left:3px solid transparent}
+.nav-item:hover{background:var(--accent-soft);color:var(--ink)}
+.nav-item.cur{border-left-color:var(--accent);color:var(--ink);font-weight:600;
+  background:var(--accent-soft)}
+.nav-num{font-family:var(--mono);font-size:11.5px;opacity:.65;min-width:18px}
+.nav-t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-p{font-size:11px;font-family:var(--mono);opacity:.8}
+.nav-p.full{color:var(--done-ink);font-weight:700}
+
+/* ---------- layout ---------- */
+.wrap{margin-left:260px;min-height:100vh}
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;
+  padding:12px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
+.top-t{flex:1;min-width:0}
+.top h1{margin:0;font-size:19px;line-height:1.3}
+.sub{margin:2px 0 0;font-size:12.5px;color:var(--dim)}
+.top-p{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--dim);
+  font-family:var(--mono);white-space:nowrap}
+.bar{width:96px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.reset{border:1px solid var(--line);background:transparent;color:var(--dim);
+  border-radius:6px;padding:3px 9px;font-size:11.5px;cursor:pointer;font-family:var(--font)}
+.reset:hover{border-color:var(--accent);color:var(--accent)}
+.burger{display:none;border:0;background:transparent;color:var(--ink);font-size:20px;cursor:pointer}
+main{max-width:920px;padding:24px 30px 120px}
+
+/* ---------- steps ---------- */
+.intro{padding:0 2px 6px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
+.step.done{background:var(--done-bg);border-color:var(--done-line)}
+.step.done .step-body{opacity:.62}
+.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
+.step.done .step-head h2{color:var(--done-ink)}
+.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  border:1px solid var(--line);background:transparent;color:var(--dim);
+  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
+  transition:all .2s;margin-top:3px}
+.done-btn:hover{border-color:var(--accent);color:var(--accent)}
+.done-btn .tick{opacity:.35;font-weight:700}
+.step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
+.step.done .done-btn .tick{opacity:1}
+
+/* ---------- เนื้อหา ---------- */
+h3{font-size:15.5px;margin:22px 0 8px}
+h4{font-size:14px;margin:18px 0 6px;color:var(--dim)}
+p{margin:10px 0}
+a{color:var(--accent)}
+ul,ol{padding-left:22px;margin:10px 0}
+li{margin:4px 0}
+blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--warn);
+  background:var(--accent-soft);border-radius:0 6px 6px 0;color:var(--ink)}
+blockquote p{margin:5px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--accent-soft);
+  padding:1.5px 5px;border-radius:4px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px;display:block;
+  overflow-x:auto;white-space:nowrap}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);font-weight:600}
+tbody tr:nth-child(even){background:rgba(128,128,128,.045)}
+hr{border:0;border-top:1px solid var(--line);margin:22px 0}
+img{max-width:100%}
+
+/* ---------- code block ---------- */
+.cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.cb-bar{display:flex;align-items:center;justify-content:space-between;
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+.cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
+  letter-spacing:.5px}
+.cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:5px;padding:3px 11px;font-size:11.5px;cursor:pointer;font-family:var(--font);
+  transition:all .15s}
+.cb-copy:hover{border-color:var(--accent);color:var(--accent)}
+.cb-copy.ok{background:var(--done-line);border-color:var(--done-line);color:#08301b}
+.cb pre{margin:0;padding:13px 15px;background:var(--code-bg);color:var(--code-ink);
+  overflow-x:auto;font-size:13px;line-height:1.65}
+.cb pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+/* ---------- prev/next ---------- */
+.pn-row{display:flex;justify-content:space-between;gap:14px;margin-top:34px;
+  padding-top:18px;border-top:1px solid var(--line)}
+.pn{color:var(--accent);text-decoration:none;font-size:14px}
+.pn.dim{color:var(--dim);opacity:.6}
+
+/* ---------- ปุ่มลอย ---------- */
+.fab{position:fixed;right:24px;bottom:24px;z-index:50;display:inline-flex;align-items:center;
+  gap:9px;border:0;border-radius:26px;padding:13px 20px;cursor:pointer;
+  background:var(--accent);color:#fff;font-family:var(--font);font-size:14px;font-weight:600;
+  box-shadow:0 5px 18px rgba(0,0,0,.28);transition:transform .18s,opacity .18s,background .18s}
+.fab:hover{transform:translateY(-2px)}
+.fab.alldone{background:var(--done-line);color:#08301b}
+.fab-ico{font-size:16px;line-height:1}
+
+.toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,26px);z-index:60;
+  background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:13px;
+  opacity:0;pointer-events:none;transition:all .25s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);transition:transform .22s}
+  .sidebar.open{transform:none}
+  .wrap{margin-left:0}
+  .burger{display:block}
+  main{padding:18px 16px 120px}
+  .top{padding:10px 14px}
+  .top h1{font-size:16px}
+  .top-p .bar{display:none}
+  .fab-txt{display:none}
+  .fab{padding:15px;border-radius:50%}
+}
+@media print{
+  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
+  .wrap{margin-left:0}
+}
+</style>
+</head>
+<body data-chapter="12-day2-operations.md" data-total="11">
+
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="9"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item cur" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="16"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="9"></span></a></nav>
+</aside>
+
+<div class="wrap">
+  <header class="top">
+    <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
+    <div class="top-t">
+      <h1>บทที่ 12 — Day-2 Operations</h1>
+      <p class="sub">ผู้อ่าน: ops · บทที่สำคัญที่สุดในคู่มือทั้งชุด · ทุกหัวข้อเป็น runbook ที่ต้องทำตามได้ตอนตีสาม</p>
+    </div>
+    <div class="top-p">
+      <span id="pcount">0/11</span>
+      <div class="bar"><i id="pbar"></i></div>
+      <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="intro"><hr />
+</div>
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>🔴 ทำไมบทนี้คือเหตุผลของการรื้อทำใหม่ทั้งหมด</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>คู่มือชุดเดิมพา cluster ขึ้นมาได้ แต่<strong>ไม่มีบทไหนบอกวิธีทำให้มันอยู่ต่อ</strong> —
+ไม่มี backup, ไม่มีการต่ออายุ cert, ไม่มีวิธี upgrade</p>
+<p>พอ cert หมดอายุและเวอร์ชัน EOL ทางเดียวที่เหลือคือรื้อทำใหม่ ซึ่งคือสิ่งที่กำลังทำอยู่ตอนนี้</p>
+<p><strong>ถ้าเลือกได้แค่บทเดียวที่จะทำให้ดีที่สุด เลือกบทนี้</strong></p>
+<hr />
+</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>ตารางงานประจำ</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<table>
+<thead>
+<tr>
+<th>งาน</th>
+<th>ความถี่</th>
+<th>ใครทำ</th>
+<th>หัวข้อ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>etcd snapshot</td>
+<td><strong>ทุกวัน</strong> (อัตโนมัติ) + ก่อนแตะอะไรก็ตาม</td>
+<td>CronJob</td>
+<td><a href="#1--etcd-backup">1</a></td>
+</tr>
+<tr>
+<td>ตรวจ backup กู้ได้จริง</td>
+<td>ทุกไตรมาส</td>
+<td>ops</td>
+<td><a href="#2--%E0%B8%81%E0%B8%B9%E0%B9%89-etcd">2</a></td>
+</tr>
+<tr>
+<td>ตรวจอายุ certificate</td>
+<td>ทุกเดือน + alert</td>
+<td>ops</td>
+<td><a href="#3--%E0%B8%95%E0%B9%88%E0%B8%AD%E0%B8%AD%E0%B8%B2%E0%B8%A2%E0%B8%B8-certificate">3</a></td>
+</tr>
+<tr>
+<td><strong>Patch kernel / rolling reboot</strong></td>
+<td><strong>ทุก 1-2 เดือน</strong></td>
+<td>ops</td>
+<td><a href="#4--rolling-reboot-patch-kernel">4</a></td>
+</tr>
+<tr>
+<td>Patch upgrade Kubernetes</td>
+<td>ทุก 1-2 เดือน</td>
+<td>ops</td>
+<td><a href="#5--upgrade-kubernetes">5</a></td>
+</tr>
+<tr>
+<td>Minor upgrade Kubernetes</td>
+<td>ปีละ 1-2 ครั้ง</td>
+<td>ops</td>
+<td><a href="#5--upgrade-kubernetes">5</a></td>
+</tr>
+<tr>
+<td>Cilium upgrade</td>
+<td>ตามรอบ</td>
+<td>ops</td>
+<td><a href="#6--upgrade-cilium">6</a></td>
+</tr>
+<tr>
+<td>เพิ่ม/ถอด node</td>
+<td>ตามต้องการ</td>
+<td>ops</td>
+<td><a href="#7--%E0%B9%80%E0%B8%9E%E0%B8%B4%E0%B9%88%E0%B8%A1-%E0%B8%AB%E0%B8%A3%E0%B8%B7%E0%B8%AD-%E0%B8%96%E0%B8%AD%E0%B8%94-node">7</a></td>
+</tr>
+<tr>
+<td>ทบทวน capacity + cluster-admin</td>
+<td>ทุกไตรมาส</td>
+<td>ops</td>
+<td><a href="#8--%E0%B8%87%E0%B8%B2%E0%B8%99%E0%B8%97%E0%B8%9A%E0%B8%97%E0%B8%A7%E0%B8%99%E0%B8%A3%E0%B8%B2%E0%B8%A2%E0%B9%84%E0%B8%95%E0%B8%A3%E0%B8%A1%E0%B8%B2%E0%B8%AA">8</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>1 · etcd backup</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<h3>ตั้งอัตโนมัติ</h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/day2/etcd-backup-cronjob.yaml
+kubectl -n kube-system get cronjob etcd-backup
+</code></pre></div>
+<p><strong>ทดสอบทันทีอย่ารอถึงพรุ่งนี้:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n kube-system create job --from=cronjob/etcd-backup etcd-backup-test
+kubectl -n kube-system logs job/etcd-backup-test
+</code></pre></div>
+<h3>backup ด้วยมือ — ทำก่อนแตะอะไรก็ตาม</h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">TS=$(date +%Y%m%d-%H%M%S)
+kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key \
+  snapshot save "/var/lib/etcd/snap-${TS}.db"
+
+# ตรวจว่าไฟล์ใช้ได้จริง
+kubectl -n kube-system exec etcd-k8s-master01 -- \
+  etcdutl --write-out=table snapshot status "/var/lib/etcd/snap-${TS}.db"
+
+# 🔴 คัดลอกออกนอก cluster ทันที
+scp root@192.168.50.101:/var/lib/etcd/snap-${TS}.db /backup/etcd/
+sha256sum "/backup/etcd/snap-${TS}.db" &gt; "/backup/etcd/snap-${TS}.db.sha256"
+</code></pre></div>
+<blockquote>
+<p>🔴 <strong>snapshot ที่อยู่บนเครื่องเดียวกับ etcd ไม่ช่วยอะไรตอนเครื่องพัง</strong>
+ต้องออกไปอยู่นอก cluster และ<strong>ต้องมี checksum</strong> ไม่งั้นจะไม่รู้ว่าไฟล์เสียจนถึงวันที่ต้องกู้</p>
+<p>⚠️ <strong>snapshot มี Secret ที่เข้ารหัสด้วย encryption key อยู่ข้างใน</strong>
+ถ้า key หายจะถอดรหัสไม่ได้เลย — เก็บ key แยกจาก backup และเก็บสำเนาออฟไลน์</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>2 · กู้ etcd</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<blockquote>
+<p><strong>ซ้อมใน lab เท่านั้น</strong> ห้ามซ้อมบน production
+จดเวลาที่ใช้จริงเป็น RTO baseline</p>
+</blockquote>
+<h3>กรณี A — เสีย master 1 ตัว (quorum ยังอยู่)</h3>
+<p><strong>ไม่ต้องกู้จาก backup</strong> ให้ถอด member เดิมออกแล้ว join ใหม่ (ดูหัวข้อ 7)</p>
+<h3>กรณี B — เสีย quorum (master ตาย 2 ใน 3)</h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># 1. หยุด control plane ทุกเครื่อง
+mv /etc/kubernetes/manifests /etc/kubernetes/manifests.off      # ทำทั้ง 3 master
+crictl ps | grep -E 'etcd|apiserver'                            # ต้องไม่เหลือ
+
+# 2. กู้บน master01
+mv /var/lib/etcd /var/lib/etcd.broken
+etcdutl snapshot restore /backup/etcd/snap-XXXX.db \
+  --name k8s-master01 \
+  --initial-cluster k8s-master01=https://192.168.50.101:2380 \
+  --initial-advertise-peer-urls https://192.168.50.101:2380 \
+  --data-dir /var/lib/etcd
+
+# 3. เปิด control plane เฉพาะ master01
+mv /etc/kubernetes/manifests.off /etc/kubernetes/manifests
+kubectl get nodes                       # ต้องกลับมาใช้งานได้
+
+# 4. master02/03 ล้างแล้ว join ใหม่เป็น control plane (ดูหัวข้อ 7)
+</code></pre></div>
+<p><strong>ตรวจหลังกู้:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get nodes &amp;&amp; kubectl get pods -A | grep -v Running
+kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl \
+  --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key \
+  endpoint status --cluster -w table
+</code></pre></div>
+<hr />
+</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>3 · ต่ออายุ certificate</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p><strong>cert ของ kubeadm อายุ 1 ปี</strong> และต่ออายุอัตโนมัติ<strong>เฉพาะตอน upgrade เท่านั้น</strong>
+cluster ที่ตั้งไว้แล้วไม่เคย upgrade จะมี cert หมดอายุเงียบ ๆ</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># ตรวจทุกเดือน — ทำบนทุก master
+kubeadm certs check-expiration
+</code></pre></div>
+<p><strong>ต่ออายุ — ทำทีละ master:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># 1. backup ก่อนเสมอ
+cp -r /etc/kubernetes/pki /root/k8s/pki-backup-$(date +%Y%m%d)
+
+# 2. ต่ออายุทั้งชุด
+kubeadm certs renew all
+
+# 3. restart control plane โดยขยับไฟล์ manifest ออกแล้วใส่กลับ
+cd /etc/kubernetes/manifests
+mv kube-apiserver.yaml kube-controller-manager.yaml kube-scheduler.yaml etcd.yaml /tmp/
+sleep 20
+mv /tmp/{kube-apiserver,kube-controller-manager,kube-scheduler,etcd}.yaml .
+
+# 4. รอจน healthz ผ่านก่อนไปเครื่องถัดไป
+until kubectl get --raw='/healthz' 2&gt;/dev/null | grep -q ok; do sleep 3; done
+
+# 5. อัปเดต kubeconfig ของ admin ด้วย (cert ในนั้นก็หมดอายุเหมือนกัน)
+cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
+
+kubeadm certs check-expiration
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> ทุกบรรทัดกลับไปเป็น ~364 วัน</p>
+<blockquote>
+<p><strong>CA มีอายุ 10 ปี</strong> ตราบใดที่ CA ยังไม่หมด cert อื่นต่ออายุได้เสมอ
+แม้จะหมดอายุไปแล้วก็ตาม — <strong>cert หมดไม่ใช่จุดจบ</strong> แต่ก็อย่าปล่อยให้ถึงจุดนั้น</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>4 · Rolling reboot (patch kernel)</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<blockquote>
+<p>🔴 <strong>งานประจำที่หนักที่สุดของ cluster ชุดนี้</strong>
+เราใช้ Oracle Linux แบบฟรีจึงไม่มี Ksplice — ปะ kernel ต้อง reboot ทุกครั้ง</p>
+</blockquote>
+<h3>ก่อนเริ่ม — ตรวจ 3 ข้อ</h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># 1. ทุก Deployment มี PDB และ replica &gt;= 2
+kubectl get deploy -A -o json | jq -r '.items[]
+  | select(.spec.replicas &lt; 2)
+  | "\(.metadata.namespace)/\(.metadata.name): replicas=\(.spec.replicas)"'
+# ต้องไม่คืนอะไรเลย (นอกจาก namespace ระบบ)
+
+# 2. capacity พอให้ drain 1 เครื่อง
+kubectl describe nodes | grep -A5 'Allocated resources'
+# ผลรวม requests ต้องไม่เกิน 32 vCPU / 96 GB
+
+# 3. ไม่มี pod ที่ผิดปกติค้างอยู่
+kubectl get pods -A | grep -v -E 'Running|Completed'
+</code></pre></div>
+<h3>ลำดับ — สำคัญ</h3>
+<blockquote>
+<p><strong>เริ่มจาก <code>k8s-worker03</code> เสมอ</strong> เพราะเป็นเครื่องที่ถือ local PV ของ monitoring
+ทำเครื่องนี้ก่อนจะได้มี monitoring ครบตอนทำเครื่องที่เหลือ</p>
+</blockquote>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">worker03 → worker01 → worker02 → master02 → master03 → master01
+</code></pre></div>
+<p>master01 ทำท้ายสุดเพราะถือ VIP อยู่ (priority สูงสุด)</p>
+<h3>ทำทีละเครื่อง</h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">NODE=k8s-worker03
+
+# --- 1. ย้าย pod ออก -------------------------------------------------------
+kubectl cordon "$NODE"
+kubectl drain "$NODE" --ignore-daemonsets --delete-emptydir-data --timeout=600s
+</code></pre></div>
+<p><strong>ถ้า drain ค้าง:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get pods -o wide --field-selector spec.nodeName="$NODE" -A
+kubectl get pdb -A     # ดูว่า ALLOWED DISRUPTIONS เป็น 0 ตัวไหน
+</code></pre></div>
+<p>สาเหตุที่พบบ่อย: PDB ที่ <code>minAvailable</code> เท่ากับ <code>replicas</code> → <strong>ไม่มีวันปล่อย</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># --- 2. patch แล้ว reboot (บนเครื่องนั้น) ----------------------------------
+ssh root@&lt;NODE_IP&gt;
+set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+
+dnf versionlock delete kernel-uek kernel-uek-core kernel-uek-modules
+dnf update -y
+dnf versionlock add kernel-uek kernel-uek-core kernel-uek-modules   # 🔴 ล็อกกลับทันที
+dnf versionlock list | grep kernel-uek                              # ยืนยัน
+
+reboot
+</code></pre></div>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># --- 3. ตรวจหลังกลับมา -----------------------------------------------------
+uname -r                                    # ต้องลงท้าย uek
+systemctl is-active containerd kubelet
+findmnt /var/lib/containerd || findmnt /var/lib/etcd    # partition ยัง mount
+
+# บน master ต้องเช็คเพิ่ม
+systemctl is-active keepalived haproxy
+
+# --- 4. เปิดรับ pod กลับ ---------------------------------------------------
+kubectl uncordon "$NODE"
+kubectl get nodes                           # ต้องกลับเป็น Ready
+</code></pre></div>
+<p><strong>รอจน <code>Ready</code> และ pod กลับมาครบก่อนไปเครื่องถัดไป — ห้ามทำสองเครื่องพร้อมกัน</strong></p>
+<h3>หลังจบทุกเครื่อง</h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># kernel ต้องตรงกันทั้ง 6 เครื่อง
+for ip in 101 102 103 104 105 106; do
+  echo -n "192.168.50.$ip: "; ssh "root@192.168.50.$ip" uname -r
+done
+</code></pre></div>
+<p><strong>อัปเดตเลข <code>KERNEL_UEK</code> ใน <code>versions.env</code> ถ้ามีการเปลี่ยน</strong></p>
+<blockquote>
+<p>alert <code>NodeKernelVersionMismatch</code> จะดังระหว่างทำ — <strong>เป็นเรื่องปกติ</strong>
+แต่ถ้ายังดังหลังจบงานแล้ว แปลว่ามีเครื่องที่ patch ไม่สำเร็จ</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>5 · Upgrade Kubernetes</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<h3>Patch upgrade (1.36.3 → 1.36.x) — ความเสี่ยงต่ำ</h3>
+<p>รวมกับ rolling reboot ในหัวข้อ 4 ได้เลย ประหยัดรอบ drain</p>
+<p><strong>บน master01:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">NEW=1.36.5
+dnf install -y --disableexcludes=kubernetes "kubeadm-${NEW}"
+kubeadm upgrade plan
+kubeadm upgrade apply "v${NEW}"
+</code></pre></div>
+<p><strong>บน master02/03:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">dnf install -y --disableexcludes=kubernetes "kubeadm-${NEW}"
+kubeadm upgrade node
+</code></pre></div>
+<p><strong>ทุกเครื่อง (รวม worker) — ทีละเครื่องพร้อม drain:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl drain "$NODE" --ignore-daemonsets --delete-emptydir-data
+dnf install -y --disableexcludes=kubernetes "kubelet-${NEW}" "kubectl-${NEW}"
+systemctl daemon-reload &amp;&amp; systemctl restart kubelet
+kubectl uncordon "$NODE"
+</code></pre></div>
+<p><strong>อัปเดต <code>versions.env</code> แล้ว <code>dnf versionlock</code> ใหม่ทุกเครื่อง</strong></p>
+<h3>Minor upgrade (1.36 → 1.37) — ต้องวางแผน</h3>
+<blockquote>
+<p>🔴 <strong>อ่าน release note ของเวอร์ชันปลายทางก่อนเสมอ</strong> ไม่ใช่ทำตามแบบปิดตา
+แต่ละ release มี deprecation และ gotcha ของตัวเอง</p>
+</blockquote>
+<p><strong>ห้ามข้าม minor</strong> — ต้องไป 1.36 → 1.37 → 1.38 ทีละขั้น</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># 1. backup etcd ก่อนเสมอ (หัวข้อ 1)
+
+# 2. เปลี่ยน repo เป็น minor ใหม่ — ขั้นที่คนลืมบ่อยที่สุด
+sed -i 's|/v1.36/|/v1.37/|g' /etc/yum.repos.d/kubernetes.repo
+dnf clean all &amp;&amp; dnf makecache
+
+# 3. ที่เหลือเหมือน patch upgrade
+</code></pre></div>
+<p><strong>ตรวจหลัง upgrade:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get nodes            # version ต้องตรงกันทั้ง 6
+kubeadm certs check-expiration   # upgrade ต่ออายุ cert ให้อัตโนมัติ — ควรกลับเป็น ~364 วัน
+cilium status
+</code></pre></div>
+<blockquote>
+<p><strong>ข้อดีที่มักถูกมองข้าม:</strong> <code>kubeadm upgrade</code> ต่ออายุ certificate ให้อัตโนมัติ
+การ upgrade อย่างน้อยปีละครั้งจึงแก้ปัญหา cert หมดอายุไปในตัว</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>6 · Upgrade Cilium</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<blockquote>
+<p>🔴 <strong>เสี่ยงกว่า Kubernetes upgrade สำหรับ cluster ชุดนี้</strong>
+Cilium ทำทั้ง CNI + kube-proxy + LB-IPAM — พลาดทีเดียวดับหมดทั้ง 3 อย่าง
+และ <strong>ไม่มี kube-proxy ให้ถอยกลับ</strong></p>
+</blockquote>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># 0. กำหนดเวอร์ชันปลายทาง แล้วเขียนกลับลง versions.env เมื่อ upgrade เสร็จ
+NEW_CILIUM=1.20.2          # ← แก้เป็นเวอร์ชันที่จะขึ้นจริง
+
+# 1. อ่าน upgrade note ของเวอร์ชันปลายทางก่อน — บังคับ
+# 2. backup etcd
+# 3. ดู values ปัจจุบัน
+helm -n kube-system get values cilium &gt; /root/k8s/cilium-values-current.yaml
+
+# 4. รัน pre-flight ที่ Cilium เตรียมไว้ให้ (ดึง image ล่วงหน้า ลด downtime)
+helm install cilium-preflight cilium/cilium --version "${NEW_CILIUM}" \
+  --namespace kube-system \
+  --set preflight.enabled=true --set agent=false --set operator.enabled=false
+kubectl -n kube-system get ds cilium-pre-flight-check
+helm uninstall cilium-preflight -n kube-system
+
+# 5. upgrade จริง
+helm upgrade cilium cilium/cilium --version "${NEW_CILIUM}" \
+  --namespace kube-system -f /root/k8s/config/cilium/values.yaml
+
+kubectl -n kube-system rollout status ds/cilium --timeout=10m
+</code></pre></div>
+<p><strong>ตรวจทันทีหลังเสร็จ:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
+cilium status --wait
+kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep KubeProxyReplacement
+kubectl get svc -A | grep LoadBalancer        # EXTERNAL-IP ต้องยังอยู่
+curl -I "http://${GW_IP}"                     # จากเครื่องนอก cluster
+cilium connectivity test
+</code></pre></div>
+<p><strong>ถ้าพัง — rollback:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">helm rollback cilium -n kube-system
+kubectl -n kube-system rollout status ds/cilium
+</code></pre></div>
+<hr />
+</div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>7 · เพิ่ม หรือ ถอด node</h2><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<h3>เพิ่ม worker</h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># บน master01 — token เดิมหมดอายุแล้วแน่นอน ต้องออกใหม่
+kubeadm token create --print-join-command
+</code></pre></div>
+<p>บนเครื่องใหม่: ทำ<strong>บทที่ 01 และ 02 ให้ครบก่อน</strong> แล้วค่อย join</p>
+<h3>เพิ่ม control plane</h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># บน master01 — ต้องได้ทั้ง certificate-key และ token ใหม่
+kubeadm init phase upload-certs --upload-certs      # certificate-key อายุ 2 ชม.
+kubeadm token create --print-join-command
+</code></pre></div>
+<p>แล้วต่อท้ายด้วย <code>--control-plane --certificate-key &lt;KEY&gt;</code></p>
+<h3>ถอด node</h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl drain "$NODE" --ignore-daemonsets --delete-emptydir-data
+kubectl delete node "$NODE"
+
+# บนเครื่องที่ถอด
+kubeadm reset -f
+rm -rf /etc/cni/net.d /var/lib/cni
+iptables -F &amp;&amp; iptables -t nat -F 2&gt;/dev/null || true
+</code></pre></div>
+<p><strong>ถ้าถอด control plane ต้องเอา etcd member ออกด้วย:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl \
+  --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key \
+  member list
+
+kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl ... member remove &lt;MEMBER_ID&gt;
+</code></pre></div>
+<blockquote>
+<p>⚠️ <strong>keepalived/HAProxy เป็น systemd จึงอยู่รอด <code>kubeadm reset</code></strong>
+ถ้าถอด master ออกถาวร ต้องไปแก้ <code>haproxy.cfg</code> บนเครื่องที่เหลือให้เอา backend นั้นออกด้วย
+และแก้ <code>priority</code> ของ keepalived ให้ยังเรียงกันถูก</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-10" data-step="10"><div class="step-head"><h2>8 · งานทบทวนรายไตรมาส</h2><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># 1. capacity — เทียบ requests กับที่ใช้จริง
+kubectl top nodes
+kubectl describe nodes | grep -A5 'Allocated resources'
+
+# 2. ใครเป็น cluster-admin บ้าง — ลบคนที่ไม่ได้อยู่แล้ว
+kubectl get clusterrolebinding -o json | jq -r '.items[]
+  | select(.roleRef.name=="cluster-admin") | .metadata.name as $n
+  | (.subjects // [])[] | "\($n)\t\(.kind)/\(.name)"'
+
+# 3. ซ้อมกู้ etcd ใน lab — จดเวลาที่ใช้จริง
+
+# 4. ตรวจ image ที่ยังใช้ tag ไม่ pin digest
+kubectl get pods -A -o json | jq -r '.items[].spec.containers[].image' \
+  | grep -v '@sha256:' | sort -u
+
+# 5. registry garbage collection
+#    Docker Registry เปล่าไม่มี retention policy — disk จะโตไปเรื่อย ๆ จนเต็ม
+ssh root@192.168.30.207 'registry garbage-collect /etc/docker/registry/config.yml'
+</code></pre></div>
+<hr />
+</div></section><section class="step" id="step-11" data-step="11"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<ul>
+<li>[ ] CronJob backup etcd ทำงานและ<strong>ทดสอบรันแล้ว</strong></li>
+<li>[ ] snapshot ออกไปอยู่นอก cluster พร้อม checksum</li>
+<li>[ ] encryption key เก็บ<strong>แยกจาก backup</strong> และมีสำเนาออฟไลน์</li>
+<li>[ ] 🔴 <strong>ซ้อมกู้ etcd ใน lab สำเร็จแล้ว และจด RTO ไว้</strong></li>
+<li>[ ] alert cert ใกล้หมดอายุทำงาน · จดวันหมดอายุลงปฏิทินทีมแล้ว</li>
+<li>[ ] 🔴 <strong>ซ้อม rolling reboot ครบ 6 เครื่องโดยไม่มี service ดับ</strong></li>
+<li>[ ] ทีมรู้ลำดับ <strong>worker03 ก่อนเสมอ · master01 ท้ายสุด</strong></li>
+<li>[ ] ซ้อม patch upgrade อย่างน้อย 1 ครั้ง</li>
+<li>[ ] ซ้อม Cilium upgrade <strong>ใน lab</strong> อย่างน้อย 1 ครั้ง</li>
+<li>[ ] runbook ทุกหัวข้อมีคนที่ไม่ได้เขียนทำตามได้จริง</li>
+</ul>
+<p><strong>➡️ ต่อที่ <a href="13-troubleshooting.html">บทที่ 13 — Troubleshooting</a></strong></p>
+</div></section>
+    <div class="pn-row"><a class="pn" href="11-deploy-app.html">← Deploy App</a><a class="pn" href="13-troubleshooting.html">Troubleshooting →</a></div>
+  </main>
+</div>
+
+<button class="fab" id="fab" type="button">
+  <span class="fab-ico">↓</span><span class="fab-txt">ขั้นที่ต้องทำ</span>
+</button>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var CH    = document.body.dataset.chapter;
+  var TOTAL = +document.body.dataset.total;
+  var KEY   = 'myhr-k8s-progress';
+
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ return {}; } }
+  function save(o){ try{ localStorage.setItem(KEY, JSON.stringify(o)); }catch(e){} }
+  function mine(){ var a=load(); return (a[CH]||[]); }
+  function setMine(list){ var a=load(); a[CH]=list; save(a); }
+
+  var toastEl=document.getElementById('toast'), toastT;
+  function toast(msg){
+    toastEl.textContent=msg; toastEl.classList.add('show');
+    clearTimeout(toastT); toastT=setTimeout(function(){toastEl.classList.remove('show');},1600);
+  }
+
+  /* ---------- ทำแล้ว / ยังไม่ทำ ---------- */
+  function paint(){
+    var done=mine();
+    document.querySelectorAll('.step').forEach(function(s){
+      var n=+s.dataset.step, is=done.indexOf(n)>=0;
+      s.classList.toggle('done', is);
+      var b=s.querySelector('.done-btn');
+      if(b) b.querySelector('.lbl').textContent = is ? 'ทำแล้ว' : 'ทำแล้ว';
+    });
+    var n=done.length;
+    document.getElementById('pcount').textContent=n+'/'+TOTAL;
+    document.getElementById('pbar').style.width=(TOTAL?100*n/TOTAL:0)+'%';
+    paintFab();
+    paintNav();
+  }
+
+  document.querySelectorAll('.done-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      if(i>=0){ done.splice(i,1); } else { done.push(n); }
+      setMine(done); paint();
+    });
+  });
+
+  document.getElementById('reset').addEventListener('click', function(){
+    if(!confirm('ล้างสถานะ "ทำแล้ว" ทั้งหมดของบทนี้?')) return;
+    setMine([]); paint(); toast('ล้างแล้ว');
+  });
+
+  /* ---------- ขั้นที่ต้องทำต่อไป ---------- */
+  function nextStep(){
+    var done=mine(), out=null;
+    document.querySelectorAll('.step').forEach(function(s){
+      if(out) return;
+      if(done.indexOf(+s.dataset.step)<0) out=s;
+    });
+    return out;
+  }
+  function paintFab(){
+    var fab=document.getElementById('fab'), s=nextStep();
+    if(s){
+      fab.classList.remove('alldone');
+      fab.querySelector('.fab-ico').textContent='↓';
+      fab.querySelector('.fab-txt').textContent='ขั้นที่ต้องทำ';
+      fab.title='ไปที่: '+s.querySelector('h2').textContent.trim();
+    }else{
+      fab.classList.add('alldone');
+      fab.querySelector('.fab-ico').textContent='✓';
+      fab.querySelector('.fab-txt').textContent='บทนี้เสร็จแล้ว';
+      fab.title='ไปบทถัดไป';
+    }
+  }
+  document.getElementById('fab').addEventListener('click', function(){
+    var s=nextStep();
+    if(s){
+      s.scrollIntoView({behavior:'smooth', block:'start'});
+      s.animate([{outline:'2px solid var(--accent)'},{outline:'2px solid transparent'}],
+                {duration:1100});
+    }else{
+      var nx=document.querySelector('.pn-row a:last-child');
+      if(nx && nx.classList.contains('pn')) nx.click(); else toast('ครบทุกขั้นแล้ว');
+    }
+  });
+
+  /* ---------- ความคืบหน้าใน sidebar ---------- */
+  function paintNav(){
+    var all=load();
+    document.querySelectorAll('[data-progress-for]').forEach(function(el){
+      var f=el.dataset.progressFor, d=(all[f]||[]).length, t=+el.dataset.total||0;
+      el.textContent = d ? (d+'/'+t) : '';
+      el.classList.toggle('full', t>0 && d>=t);
+    });
+  }
+
+  /* ---------- ปุ่มคัดลอก ---------- */
+  function copyText(t){
+    if(navigator.clipboard && window.isSecureContext){
+      return navigator.clipboard.writeText(t);
+    }
+    return new Promise(function(res,rej){
+      var ta=document.createElement('textarea');
+      ta.value=t; ta.setAttribute('readonly','');
+      ta.style.cssText='position:fixed;top:-1000px;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy') ? res() : rej(); }
+      catch(e){ rej(e); }
+      finally{ document.body.removeChild(ta); }
+    });
+  }
+  document.querySelectorAll('.cb-copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var code=btn.closest('.cb').querySelector('code');
+      copyText(code.innerText).then(function(){
+        btn.textContent='คัดลอกแล้ว'; btn.classList.add('ok');
+        setTimeout(function(){ btn.textContent='คัดลอก'; btn.classList.remove('ok'); },1400);
+      }).catch(function(){
+        // คัดลอกอัตโนมัติไม่ได้ (เบราว์เซอร์บล็อก) — เลือกข้อความให้เลย เหลือแค่กด Ctrl+C
+        try{
+          var sel=window.getSelection(), rng=document.createRange();
+          rng.selectNodeContents(code); sel.removeAllRanges(); sel.addRange(rng);
+          toast('เบราว์เซอร์บล็อกการคัดลอก — เลือกให้แล้ว กด Ctrl+C ได้เลย');
+        }catch(e){ toast('คัดลอกไม่สำเร็จ — ลากเลือกข้อความแล้วกด Ctrl+C'); }
+      });
+    });
+  });
+
+  /* ---------- เมนูบนจอเล็ก ---------- */
+  var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');
+  if(burger) burger.addEventListener('click', function(){ sb.classList.toggle('open'); });
+
+  paint();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>บทที่ 11 — Deploy Application — MyHR Kubernetes</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#f6f7f9; --panel:#fff; --ink:#1c1f24; --dim:#5d6570; --line:#e0e4e9;
+  --accent:#2d6ae0; --accent-soft:#eaf1fe;
+  --done-bg:#eaf7ee; --done-line:#8fd3a8; --done-ink:#1c6b3c;
+  --code-bg:#1e2530; --code-ink:#e6edf3; --warn:#b4530a;
+  --radius:10px;
+  --font:"Segoe UI","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;
+  --mono:"Cascadia Mono",Consolas,"Noto Sans Thai Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151a; --panel:#181c23; --ink:#e5e9ef; --dim:#98a2b0; --line:#272d37;
+    --accent:#6ea3ff; --accent-soft:#1b2740;
+    --done-bg:#152a1e; --done-line:#2f6b47; --done-ink:#7fd9a3;
+    --code-bg:#0d1117; --code-ink:#e6edf3; --warn:#e0913f;
+  }
+}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
+     font-size:15.5px;line-height:1.75}
+
+/* ---------- sidebar ---------- */
+.sidebar{position:fixed;inset:0 auto 0 0;width:260px;background:var(--panel);
+  border-right:1px solid var(--line);overflow-y:auto;padding:14px 0;z-index:40}
+.brand{display:block;padding:8px 18px 14px;font-weight:700;font-size:15px;
+  color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);margin-bottom:8px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 18px;text-decoration:none;
+  color:var(--dim);font-size:13.5px;border-left:3px solid transparent}
+.nav-item:hover{background:var(--accent-soft);color:var(--ink)}
+.nav-item.cur{border-left-color:var(--accent);color:var(--ink);font-weight:600;
+  background:var(--accent-soft)}
+.nav-num{font-family:var(--mono);font-size:11.5px;opacity:.65;min-width:18px}
+.nav-t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-p{font-size:11px;font-family:var(--mono);opacity:.8}
+.nav-p.full{color:var(--done-ink);font-weight:700}
+
+/* ---------- layout ---------- */
+.wrap{margin-left:260px;min-height:100vh}
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;
+  padding:12px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
+.top-t{flex:1;min-width:0}
+.top h1{margin:0;font-size:19px;line-height:1.3}
+.sub{margin:2px 0 0;font-size:12.5px;color:var(--dim)}
+.top-p{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--dim);
+  font-family:var(--mono);white-space:nowrap}
+.bar{width:96px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.reset{border:1px solid var(--line);background:transparent;color:var(--dim);
+  border-radius:6px;padding:3px 9px;font-size:11.5px;cursor:pointer;font-family:var(--font)}
+.reset:hover{border-color:var(--accent);color:var(--accent)}
+.burger{display:none;border:0;background:transparent;color:var(--ink);font-size:20px;cursor:pointer}
+main{max-width:920px;padding:24px 30px 120px}
+
+/* ---------- steps ---------- */
+.intro{padding:0 2px 6px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
+.step.done{background:var(--done-bg);border-color:var(--done-line)}
+.step.done .step-body{opacity:.62}
+.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
+.step.done .step-head h2{color:var(--done-ink)}
+.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  border:1px solid var(--line);background:transparent;color:var(--dim);
+  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
+  transition:all .2s;margin-top:3px}
+.done-btn:hover{border-color:var(--accent);color:var(--accent)}
+.done-btn .tick{opacity:.35;font-weight:700}
+.step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
+.step.done .done-btn .tick{opacity:1}
+
+/* ---------- เนื้อหา ---------- */
+h3{font-size:15.5px;margin:22px 0 8px}
+h4{font-size:14px;margin:18px 0 6px;color:var(--dim)}
+p{margin:10px 0}
+a{color:var(--accent)}
+ul,ol{padding-left:22px;margin:10px 0}
+li{margin:4px 0}
+blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--warn);
+  background:var(--accent-soft);border-radius:0 6px 6px 0;color:var(--ink)}
+blockquote p{margin:5px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--accent-soft);
+  padding:1.5px 5px;border-radius:4px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px;display:block;
+  overflow-x:auto;white-space:nowrap}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);font-weight:600}
+tbody tr:nth-child(even){background:rgba(128,128,128,.045)}
+hr{border:0;border-top:1px solid var(--line);margin:22px 0}
+img{max-width:100%}
+
+/* ---------- code block ---------- */
+.cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.cb-bar{display:flex;align-items:center;justify-content:space-between;
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+.cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
+  letter-spacing:.5px}
+.cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:5px;padding:3px 11px;font-size:11.5px;cursor:pointer;font-family:var(--font);
+  transition:all .15s}
+.cb-copy:hover{border-color:var(--accent);color:var(--accent)}
+.cb-copy.ok{background:var(--done-line);border-color:var(--done-line);color:#08301b}
+.cb pre{margin:0;padding:13px 15px;background:var(--code-bg);color:var(--code-ink);
+  overflow-x:auto;font-size:13px;line-height:1.65}
+.cb pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+/* ---------- prev/next ---------- */
+.pn-row{display:flex;justify-content:space-between;gap:14px;margin-top:34px;
+  padding-top:18px;border-top:1px solid var(--line)}
+.pn{color:var(--accent);text-decoration:none;font-size:14px}
+.pn.dim{color:var(--dim);opacity:.6}
+
+/* ---------- ปุ่มลอย ---------- */
+.fab{position:fixed;right:24px;bottom:24px;z-index:50;display:inline-flex;align-items:center;
+  gap:9px;border:0;border-radius:26px;padding:13px 20px;cursor:pointer;
+  background:var(--accent);color:#fff;font-family:var(--font);font-size:14px;font-weight:600;
+  box-shadow:0 5px 18px rgba(0,0,0,.28);transition:transform .18s,opacity .18s,background .18s}
+.fab:hover{transform:translateY(-2px)}
+.fab.alldone{background:var(--done-line);color:#08301b}
+.fab-ico{font-size:16px;line-height:1}
+
+.toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,26px);z-index:60;
+  background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:13px;
+  opacity:0;pointer-events:none;transition:all .25s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);transition:transform .22s}
+  .sidebar.open{transform:none}
+  .wrap{margin-left:0}
+  .burger{display:block}
+  main{padding:18px 16px 120px}
+  .top{padding:10px 14px}
+  .top h1{font-size:16px}
+  .top-p .bar{display:none}
+  .fab-txt{display:none}
+  .fab{padding:15px;border-radius:50%}
+}
+@media print{
+  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
+  .wrap{margin-left:0}
+}
+</style>
+</head>
+<body data-chapter="11-deploy-app.md" data-total="8">
+
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="9"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item cur" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="16"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="9"></span></a></nav>
+</aside>
+
+<div class="wrap">
+  <header class="top">
+    <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
+    <div class="top-t">
+      <h1>บทที่ 11 — Deploy Application</h1>
+      <p class="sub">รันที่: 👑 master01 หรือเครื่อง admin ที่มี kubeconfig · ผู้อ่าน: dev + ops · ต้องผ่านบทที่ 10 — PSA restricted และ NetworkPolicy ต้องทำงานแล้ว</p>
+    </div>
+    <div class="top-p">
+      <span id="pcount">0/8</span>
+      <div class="bar"><i id="pbar"></i></div>
+      <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="intro"><hr />
+</div>
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>🔴 อ่านตรงนี้ก่อน — เราไม่มี GitOps</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>D9 เลือก <code>kubectl apply</code> มือ ซึ่งเป็นการตัดสินใจที่สมเหตุสมผลในรอบนี้
+(ของใหม่เยอะพออยู่แล้ว) แต่แลกมาด้วยว่า <strong>ไม่มีอะไรบังคับให้ manifest ผ่านมาตรฐาน</strong></p>
+<p>และมันไปชนกับข้อเท็จจริงจากบทที่ 12 พอดี:</p>
+<blockquote>
+<p>เราไม่มี Ksplice จึงต้อง drain ทุก node ทุก 1-2 เดือน
+<strong>ถ้ามี Deployment สักตัวที่ไม่มี PDB หรือมี replica เดียว rolling reboot จะทำ service ล่มจริง</strong></p>
+</blockquote>
+<p>จึงต้องมี 3 อย่างนี้มาแทนตัวบังคับที่หายไป:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>ทำอะไร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1. apply จาก git เท่านั้น</strong></td>
+<td>ห้าม <code>kubectl edit</code> บน cluster ตรง ๆ เด็ดขาด</td>
+</tr>
+<tr>
+<td><strong>2. policy check ที่ CI</strong></td>
+<td>ตกทันทีถ้า manifest ไม่ครบมาตรฐาน</td>
+</tr>
+<tr>
+<td><strong>3. alert จับ Deployment ที่ไม่มี PDB</strong></td>
+<td>ตั้งไว้แล้วในบทที่ 09</td>
+</tr>
+</tbody>
+</table>
+<hr />
+</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · โครงสร้าง repo ของ manifest</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">myhr-k8s-manifests/
+├── prod/
+│   ├── zeeme-ads/{deployment.yaml, service.yaml, pdb.yaml, httproute.yaml}
+│   ├── zeeme-hr/...
+│   └── kustomization.yaml
+├── uat/
+│   └── ...
+└── .gitlab-ci.yml          หรือ .github/workflows/validate.yaml
+</code></pre></div>
+<p><strong>กติกา:</strong> ทุกอย่างที่อยู่บน cluster ต้องมีต้นฉบับในนี้
+ถ้าของบน cluster ไม่ตรงกับ git ให้ถือว่า <strong>git ถูก</strong> แล้ว apply ทับ</p>
+<hr />
+</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · แม่แบบ manifest</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cp /root/k8s/config/app/deployment-template.yaml ./zeeme-ads.yaml
+sed -i 's/APPNAME/zeeme-ads/g' ./zeeme-ads.yaml
+</code></pre></div>
+<p>แล้วแก้ image digest, พอร์ต และ resources ให้ตรงกับ service จริง</p>
+<h3>สิ่งที่เปลี่ยนจาก <code>zeeme-ads/deployment.yml</code> เดิม</h3>
+<table>
+<thead>
+<tr>
+<th>รายการ</th>
+<th>ของเดิม</th>
+<th>แม่แบบใหม่</th>
+<th>ทำไม</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ผู้ใช้ที่รัน</td>
+<td><code>runAsUser: 0</code></td>
+<td><code>runAsNonRoot</code> + uid 10001</td>
+<td>PSA <code>restricted</code> บล็อก root</td>
+</tr>
+<tr>
+<td>filesystem</td>
+<td>เขียนได้ทั้งหมด</td>
+<td><code>readOnlyRootFilesystem</code> + emptyDir ที่ <code>/tmp</code></td>
+<td>ลดผลกระทบถ้าถูกเจาะ</td>
+</tr>
+<tr>
+<td>capabilities</td>
+<td>ครบตาม default</td>
+<td><code>drop: [&quot;ALL&quot;]</code></td>
+<td>ไม่มี container ไหนต้องใช้</td>
+</tr>
+<tr>
+<td><code>resources</code></td>
+<td><strong>ไม่มี</strong></td>
+<td>มีครบ requests + limits.memory</td>
+<td>ไม่มี = scheduler มั่ว + quota บล็อกทั้ง namespace</td>
+</tr>
+<tr>
+<td><code>probes</code></td>
+<td><strong>ไม่มี</strong></td>
+<td>ครบ 3 ตัว</td>
+<td>Spring Boot เริ่มช้า ต้องมี <code>startupProbe</code></td>
+</tr>
+<tr>
+<td><strong><code>PodDisruptionBudget</code></strong></td>
+<td><strong>ไม่มี</strong></td>
+<td><code>minAvailable: 1</code></td>
+<td><strong>drain node แล้วดับถ้าไม่มี</strong></td>
+</tr>
+<tr>
+<td><code>replicas</code></td>
+<td>1</td>
+<td><strong>≥ 2</strong></td>
+<td>PDB ช่วยไม่ได้ถ้ามีตัวเดียว</td>
+</tr>
+<tr>
+<td>anti-affinity</td>
+<td><strong>ไม่มี</strong></td>
+<td><code>topologySpreadConstraints</code></td>
+<td>replica 2 ตัวบน node เดียว = ไร้ความหมาย</td>
+</tr>
+<tr>
+<td>image tag</td>
+<td><code>:0.0.5</code></td>
+<td><code>:1.0.0@sha256:...</code></td>
+<td>tag เขียนทับได้ digest ไม่ได้</td>
+</tr>
+<tr>
+<td>Service type</td>
+<td>NodePort</td>
+<td><strong>ClusterIP</strong></td>
+<td>เข้าผ่าน Gateway ตัวเดียว</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong><code>limits.cpu</code> ตั้งใจไม่ใส่</strong> — CPU throttling ทำให้ latency แย่ลงโดยไม่ช่วยอะไร
+ถ้าคุม <code>requests</code> ดีแล้ว ส่วน <code>limits.memory</code> <strong>ต้องมี</strong> เพราะ memory ไม่มี throttling
+มีแต่ OOM kill</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · Deploy</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f zeeme-ads.yaml
+kubectl -n myhr-prod rollout status deploy/zeeme-ads --timeout=5m
+</code></pre></div>
+<p><strong>ตรวจครบ 5 ข้อ:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n myhr-prod get deploy,svc,pdb,httproute -l app.kubernetes.io/name=zeeme-ads
+kubectl -n myhr-prod get pods -l app.kubernetes.io/name=zeeme-ads -o wide
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> pod <strong>กระจายคนละ node</strong> · PDB มี <code>ALLOWED DISRUPTIONS = 1</code> · HTTPRoute <code>ACCEPTED=True</code></p>
+<p><strong>ทดสอบจากนอก cluster:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
+curl -I --cacert /root/k8s/myhr-root-ca.crt \
+     --resolve "zeeme-ads.myhr.co.th:443:${GW_IP}" https://zeeme-ads.myhr.co.th
+</code></pre></div>
+<hr />
+</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · ถ้า deploy ไม่ผ่าน — 3 สาเหตุที่พบบ่อยที่สุด</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<h3><code>violates PodSecurity &quot;restricted&quot;</code></h3>
+<p>manifest ยังใช้ <code>runAsUser: 0</code> หรือขาด <code>securityContext</code> — เทียบกับแม่แบบ</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n myhr-prod get events --sort-by=.lastTimestamp | tail -10
+</code></pre></div>
+<h3>pod ค้าง <code>Pending</code></h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n myhr-prod describe pod &lt;ชื่อ&gt; | tail -20
+</code></pre></div>
+<ul>
+<li><code>Insufficient cpu/memory</code> → ชน ResourceQuota หรือ cluster เต็ม</li>
+<li><code>didn't match pod topology spread constraints</code> → replica มากกว่าจำนวน node</li>
+<li><code>persistentvolumeclaim not found</code> → <strong>cluster นี้ไม่มี dynamic storage (D8)</strong></li>
+</ul>
+<h3>pod <code>Running</code> แต่เรียกไม่ได้</h3>
+<p>เกือบทุกครั้งเป็น NetworkPolicy — ดูของจริงอย่าเดา:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n kube-system exec -it ds/cilium -- \
+  hubble observe --namespace myhr-prod --verdict DROPPED --last 50
+</code></pre></div>
+<p>แล้วเปิดเฉพาะเส้นที่ถูก drop จริง</p>
+<hr />
+</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · 🔴 Policy check ที่ CI</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p><strong>นี่คือสิ่งที่มาแทน GitOps</strong> ถ้าข้ามข้อนี้ ข้อ 1-4 จะไร้ความหมายภายในไม่กี่เดือน</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cp /root/k8s/config/app/validate-manifests.sh ./scripts/
+</code></pre></div>
+<p>ตัวสคริปต์ตรวจ 6 ข้อและ <strong>exit 1 ถ้าไม่ผ่าน</strong>:</p>
+<ol>
+<li>schema ถูกต้องตาม Kubernetes 1.36 (<code>kubeconform</code>)</li>
+<li>ทุก Deployment มี <strong>PDB คู่กัน</strong></li>
+<li><code>replicas &gt;= 2</code></li>
+<li>มี <code>resources.requests</code> ครบทุก container</li>
+<li>มี <code>readinessProbe</code> และ <code>livenessProbe</code></li>
+<li>ไม่มี <code>runAsUser: 0</code> และไม่มี image ที่เป็น <code>:latest</code></li>
+</ol>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-yaml"># .gitlab-ci.yml
+validate:
+  stage: test
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache bash curl yq
+    - curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz -C /usr/local/bin
+  script:
+    - ./scripts/validate-manifests.sh prod/
+</code></pre></div>
+<blockquote>
+<p><strong>ถูกกว่า Argo CD มากและได้ประโยชน์หลักไปแล้ว</strong>
+ถ้าภายหลังอยากได้ Argo CD ให้ทำหลัง Phase 5 ตอน manifest ทุกตัวอยู่ใน git เรียบร้อยแล้ว
+ตอนนั้นจะเหลือแค่ชี้ Argo ไปที่ repo ที่มีอยู่ ไม่ใช่โครงการใหญ่</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ย้าย workload จาก cluster เดิม — ทีละตัว</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p><strong>อย่าย้ายทีเดียวหมด</strong> ลำดับที่ปลอดภัย:</p>
+<ol>
+<li>เลือก service ที่<strong>ไม่มีใครพึ่ง</strong>ก่อน (leaf service)</li>
+<li>แปลง manifest ตามแม่แบบ แล้ว deploy ลง <code>myhr-uat</code> ก่อน</li>
+<li>ทดสอบจน uat ผ่าน</li>
+<li>deploy ลง <code>myhr-prod</code> แต่<strong>ยังไม่ตัด DNS</strong></li>
+<li>ทดสอบ prod ผ่าน <code>--resolve</code> ให้แน่ใจก่อน</li>
+<li><strong>ค่อยย้าย DNS record</strong> มาที่ Gateway IP</li>
+<li>เฝ้า Grafana 24 ชั่วโมง แล้วค่อยไป service ถัดไป</li>
+</ol>
+<p><strong>ก่อนย้ายทุกตัว ตรวจ capacity:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get pods -A -o json | jq -r '
+  [.items[] | select(.spec.nodeName | test("worker"))
+   | .spec.containers[].resources.requests.cpu // "0"]
+  | map(sub("m$";"") | tonumber / (if test("m") then 1 else 0.001 end))
+  | add / 1000' 2&gt;/dev/null || kubectl describe nodes | grep -A5 'Allocated resources'
+</code></pre></div>
+<p><strong>ผลรวมต้องไม่เกิน 32 vCPU / 96 GB</strong> — นั่นคือเพดาน N+1 ไม่ใช่ 48/144</p>
+<hr />
+</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<ul>
+<li>[ ] repo ของ manifest สร้างแล้วและมีทุกอย่างที่อยู่บน cluster</li>
+<li>[ ] service แรก deploy ผ่านและเรียกได้จากนอก cluster ผ่าน HTTPS</li>
+<li>[ ] pod <strong>กระจายคนละ node</strong> จริง</li>
+<li>[ ] ทุก Deployment มี PDB · <code>replicas &gt;= 2</code> · resources · probes ครบ</li>
+<li>[ ] 🔴 <strong>CI policy check ทำงานและ block PR ที่ manifest ไม่ผ่านได้จริง</strong></li>
+<li>[ ] alert <code>DeploymentWithoutPDB</code> ไม่ดัง</li>
+<li>[ ] ทีมรู้กติกา <strong>&quot;ห้าม <code>kubectl edit</code> บน cluster&quot;</strong> แล้ว</li>
+<li>[ ] ผลรวม requests ยังไม่เกินเพดาน N+1</li>
+</ul>
+<p><strong>➡️ ต่อที่ <a href="12-day2-operations.html">บทที่ 12 — Day-2 Operations</a></strong> ← <strong>บทที่สำคัญที่สุด</strong></p>
+</div></section>
+    <div class="pn-row"><a class="pn" href="10-security.html">← Security</a><a class="pn" href="12-day2-operations.html">Day-2 Operations →</a></div>
+  </main>
+</div>
+
+<button class="fab" id="fab" type="button">
+  <span class="fab-ico">↓</span><span class="fab-txt">ขั้นที่ต้องทำ</span>
+</button>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var CH    = document.body.dataset.chapter;
+  var TOTAL = +document.body.dataset.total;
+  var KEY   = 'myhr-k8s-progress';
+
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ return {}; } }
+  function save(o){ try{ localStorage.setItem(KEY, JSON.stringify(o)); }catch(e){} }
+  function mine(){ var a=load(); return (a[CH]||[]); }
+  function setMine(list){ var a=load(); a[CH]=list; save(a); }
+
+  var toastEl=document.getElementById('toast'), toastT;
+  function toast(msg){
+    toastEl.textContent=msg; toastEl.classList.add('show');
+    clearTimeout(toastT); toastT=setTimeout(function(){toastEl.classList.remove('show');},1600);
+  }
+
+  /* ---------- ทำแล้ว / ยังไม่ทำ ---------- */
+  function paint(){
+    var done=mine();
+    document.querySelectorAll('.step').forEach(function(s){
+      var n=+s.dataset.step, is=done.indexOf(n)>=0;
+      s.classList.toggle('done', is);
+      var b=s.querySelector('.done-btn');
+      if(b) b.querySelector('.lbl').textContent = is ? 'ทำแล้ว' : 'ทำแล้ว';
+    });
+    var n=done.length;
+    document.getElementById('pcount').textContent=n+'/'+TOTAL;
+    document.getElementById('pbar').style.width=(TOTAL?100*n/TOTAL:0)+'%';
+    paintFab();
+    paintNav();
+  }
+
+  document.querySelectorAll('.done-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      if(i>=0){ done.splice(i,1); } else { done.push(n); }
+      setMine(done); paint();
+    });
+  });
+
+  document.getElementById('reset').addEventListener('click', function(){
+    if(!confirm('ล้างสถานะ "ทำแล้ว" ทั้งหมดของบทนี้?')) return;
+    setMine([]); paint(); toast('ล้างแล้ว');
+  });
+
+  /* ---------- ขั้นที่ต้องทำต่อไป ---------- */
+  function nextStep(){
+    var done=mine(), out=null;
+    document.querySelectorAll('.step').forEach(function(s){
+      if(out) return;
+      if(done.indexOf(+s.dataset.step)<0) out=s;
+    });
+    return out;
+  }
+  function paintFab(){
+    var fab=document.getElementById('fab'), s=nextStep();
+    if(s){
+      fab.classList.remove('alldone');
+      fab.querySelector('.fab-ico').textContent='↓';
+      fab.querySelector('.fab-txt').textContent='ขั้นที่ต้องทำ';
+      fab.title='ไปที่: '+s.querySelector('h2').textContent.trim();
+    }else{
+      fab.classList.add('alldone');
+      fab.querySelector('.fab-ico').textContent='✓';
+      fab.querySelector('.fab-txt').textContent='บทนี้เสร็จแล้ว';
+      fab.title='ไปบทถัดไป';
+    }
+  }
+  document.getElementById('fab').addEventListener('click', function(){
+    var s=nextStep();
+    if(s){
+      s.scrollIntoView({behavior:'smooth', block:'start'});
+      s.animate([{outline:'2px solid var(--accent)'},{outline:'2px solid transparent'}],
+                {duration:1100});
+    }else{
+      var nx=document.querySelector('.pn-row a:last-child');
+      if(nx && nx.classList.contains('pn')) nx.click(); else toast('ครบทุกขั้นแล้ว');
+    }
+  });
+
+  /* ---------- ความคืบหน้าใน sidebar ---------- */
+  function paintNav(){
+    var all=load();
+    document.querySelectorAll('[data-progress-for]').forEach(function(el){
+      var f=el.dataset.progressFor, d=(all[f]||[]).length, t=+el.dataset.total||0;
+      el.textContent = d ? (d+'/'+t) : '';
+      el.classList.toggle('full', t>0 && d>=t);
+    });
+  }
+
+  /* ---------- ปุ่มคัดลอก ---------- */
+  function copyText(t){
+    if(navigator.clipboard && window.isSecureContext){
+      return navigator.clipboard.writeText(t);
+    }
+    return new Promise(function(res,rej){
+      var ta=document.createElement('textarea');
+      ta.value=t; ta.setAttribute('readonly','');
+      ta.style.cssText='position:fixed;top:-1000px;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy') ? res() : rej(); }
+      catch(e){ rej(e); }
+      finally{ document.body.removeChild(ta); }
+    });
+  }
+  document.querySelectorAll('.cb-copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var code=btn.closest('.cb').querySelector('code');
+      copyText(code.innerText).then(function(){
+        btn.textContent='คัดลอกแล้ว'; btn.classList.add('ok');
+        setTimeout(function(){ btn.textContent='คัดลอก'; btn.classList.remove('ok'); },1400);
+      }).catch(function(){
+        // คัดลอกอัตโนมัติไม่ได้ (เบราว์เซอร์บล็อก) — เลือกข้อความให้เลย เหลือแค่กด Ctrl+C
+        try{
+          var sel=window.getSelection(), rng=document.createRange();
+          rng.selectNodeContents(code); sel.removeAllRanges(); sel.addRange(rng);
+          toast('เบราว์เซอร์บล็อกการคัดลอก — เลือกให้แล้ว กด Ctrl+C ได้เลย');
+        }catch(e){ toast('คัดลอกไม่สำเร็จ — ลากเลือกข้อความแล้วกด Ctrl+C'); }
+      });
+    });
+  });
+
+  /* ---------- เมนูบนจอเล็ก ---------- */
+  var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');
+  if(burger) burger.addEventListener('click', function(){ sb.classList.toggle('open'); });
+
+  paint();
+})();
+</script>
+</body>
+</html>

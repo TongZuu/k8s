@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>บทที่ 10 — Security Baseline — MyHR Kubernetes</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#f6f7f9; --panel:#fff; --ink:#1c1f24; --dim:#5d6570; --line:#e0e4e9;
+  --accent:#2d6ae0; --accent-soft:#eaf1fe;
+  --done-bg:#eaf7ee; --done-line:#8fd3a8; --done-ink:#1c6b3c;
+  --code-bg:#1e2530; --code-ink:#e6edf3; --warn:#b4530a;
+  --radius:10px;
+  --font:"Segoe UI","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;
+  --mono:"Cascadia Mono",Consolas,"Noto Sans Thai Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151a; --panel:#181c23; --ink:#e5e9ef; --dim:#98a2b0; --line:#272d37;
+    --accent:#6ea3ff; --accent-soft:#1b2740;
+    --done-bg:#152a1e; --done-line:#2f6b47; --done-ink:#7fd9a3;
+    --code-bg:#0d1117; --code-ink:#e6edf3; --warn:#e0913f;
+  }
+}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
+     font-size:15.5px;line-height:1.75}
+
+/* ---------- sidebar ---------- */
+.sidebar{position:fixed;inset:0 auto 0 0;width:260px;background:var(--panel);
+  border-right:1px solid var(--line);overflow-y:auto;padding:14px 0;z-index:40}
+.brand{display:block;padding:8px 18px 14px;font-weight:700;font-size:15px;
+  color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);margin-bottom:8px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 18px;text-decoration:none;
+  color:var(--dim);font-size:13.5px;border-left:3px solid transparent}
+.nav-item:hover{background:var(--accent-soft);color:var(--ink)}
+.nav-item.cur{border-left-color:var(--accent);color:var(--ink);font-weight:600;
+  background:var(--accent-soft)}
+.nav-num{font-family:var(--mono);font-size:11.5px;opacity:.65;min-width:18px}
+.nav-t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-p{font-size:11px;font-family:var(--mono);opacity:.8}
+.nav-p.full{color:var(--done-ink);font-weight:700}
+
+/* ---------- layout ---------- */
+.wrap{margin-left:260px;min-height:100vh}
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;
+  padding:12px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
+.top-t{flex:1;min-width:0}
+.top h1{margin:0;font-size:19px;line-height:1.3}
+.sub{margin:2px 0 0;font-size:12.5px;color:var(--dim)}
+.top-p{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--dim);
+  font-family:var(--mono);white-space:nowrap}
+.bar{width:96px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.reset{border:1px solid var(--line);background:transparent;color:var(--dim);
+  border-radius:6px;padding:3px 9px;font-size:11.5px;cursor:pointer;font-family:var(--font)}
+.reset:hover{border-color:var(--accent);color:var(--accent)}
+.burger{display:none;border:0;background:transparent;color:var(--ink);font-size:20px;cursor:pointer}
+main{max-width:920px;padding:24px 30px 120px}
+
+/* ---------- steps ---------- */
+.intro{padding:0 2px 6px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
+.step.done{background:var(--done-bg);border-color:var(--done-line)}
+.step.done .step-body{opacity:.62}
+.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
+.step.done .step-head h2{color:var(--done-ink)}
+.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  border:1px solid var(--line);background:transparent;color:var(--dim);
+  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
+  transition:all .2s;margin-top:3px}
+.done-btn:hover{border-color:var(--accent);color:var(--accent)}
+.done-btn .tick{opacity:.35;font-weight:700}
+.step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
+.step.done .done-btn .tick{opacity:1}
+
+/* ---------- เนื้อหา ---------- */
+h3{font-size:15.5px;margin:22px 0 8px}
+h4{font-size:14px;margin:18px 0 6px;color:var(--dim)}
+p{margin:10px 0}
+a{color:var(--accent)}
+ul,ol{padding-left:22px;margin:10px 0}
+li{margin:4px 0}
+blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--warn);
+  background:var(--accent-soft);border-radius:0 6px 6px 0;color:var(--ink)}
+blockquote p{margin:5px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--accent-soft);
+  padding:1.5px 5px;border-radius:4px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px;display:block;
+  overflow-x:auto;white-space:nowrap}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);font-weight:600}
+tbody tr:nth-child(even){background:rgba(128,128,128,.045)}
+hr{border:0;border-top:1px solid var(--line);margin:22px 0}
+img{max-width:100%}
+
+/* ---------- code block ---------- */
+.cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.cb-bar{display:flex;align-items:center;justify-content:space-between;
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+.cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
+  letter-spacing:.5px}
+.cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:5px;padding:3px 11px;font-size:11.5px;cursor:pointer;font-family:var(--font);
+  transition:all .15s}
+.cb-copy:hover{border-color:var(--accent);color:var(--accent)}
+.cb-copy.ok{background:var(--done-line);border-color:var(--done-line);color:#08301b}
+.cb pre{margin:0;padding:13px 15px;background:var(--code-bg);color:var(--code-ink);
+  overflow-x:auto;font-size:13px;line-height:1.65}
+.cb pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+/* ---------- prev/next ---------- */
+.pn-row{display:flex;justify-content:space-between;gap:14px;margin-top:34px;
+  padding-top:18px;border-top:1px solid var(--line)}
+.pn{color:var(--accent);text-decoration:none;font-size:14px}
+.pn.dim{color:var(--dim);opacity:.6}
+
+/* ---------- ปุ่มลอย ---------- */
+.fab{position:fixed;right:24px;bottom:24px;z-index:50;display:inline-flex;align-items:center;
+  gap:9px;border:0;border-radius:26px;padding:13px 20px;cursor:pointer;
+  background:var(--accent);color:#fff;font-family:var(--font);font-size:14px;font-weight:600;
+  box-shadow:0 5px 18px rgba(0,0,0,.28);transition:transform .18s,opacity .18s,background .18s}
+.fab:hover{transform:translateY(-2px)}
+.fab.alldone{background:var(--done-line);color:#08301b}
+.fab-ico{font-size:16px;line-height:1}
+
+.toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,26px);z-index:60;
+  background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:13px;
+  opacity:0;pointer-events:none;transition:all .25s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);transition:transform .22s}
+  .sidebar.open{transform:none}
+  .wrap{margin-left:0}
+  .burger{display:block}
+  main{padding:18px 16px 120px}
+  .top{padding:10px 14px}
+  .top h1{font-size:16px}
+  .top-p .bar{display:none}
+  .fab-txt{display:none}
+  .fab{padding:15px;border-radius:50%}
+}
+@media print{
+  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
+  .wrap{margin-left:0}
+}
+</style>
+</head>
+<body data-chapter="10-security.md" data-total="8">
+
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="9"></span></a><a href="10-security.html" class="nav-item cur" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="16"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="9"></span></a></nav>
+</aside>
+
+<div class="wrap">
+  <header class="top">
+    <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
+    <div class="top-t">
+      <h1>บทที่ 10 — Security Baseline</h1>
+      <p class="sub">รันที่: 🎩 master ทั้ง 3 (สำหรับ etcd encryption) + 👑 master01 (ที่เหลือ) · เวลาที่ใช้: ~60 นาที · ต้องผ่านบทที่ 09 — ต้องมี monitoring ก่อน เพราะขั้นตอนบางอย่างอาจทำของพัง</p>
+    </div>
+    <div class="top-p">
+      <span id="pcount">0/8</span>
+      <div class="bar"><i id="pbar"></i></div>
+      <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="intro"><hr />
+</div>
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ทำไมบทนี้ไม่ใช่ทางเลือก</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>ระบบนี้เก็บ <strong>ข้อมูลส่วนบุคคลของพนักงาน</strong> ซึ่งทำให้เรื่องที่หลายที่ถือเป็น &quot;ทำก็ดี&quot;
+กลายเป็นข้อกำหนดจริง โดยเฉพาะ NetworkPolicy แบบ default-deny และ encryption at rest</p>
+<p><strong>และมีหนี้เก่าที่ต้องจ่ายด้วย:</strong> คู่มือชุดเดิมมี root password, VPN password,
+registry password, cluster-admin token และ client key <strong>ฝังอยู่ในไฟล์แบบ plaintext</strong>
+ทั้งหมดนั้น<strong>ต้องถูกหมุนใหม่</strong> ไม่ใช่แค่ลบไฟล์ทิ้ง</p>
+<hr />
+</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · 🔴 etcd encryption at rest</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>โดยค่าเริ่มต้น Kubernetes เก็บ Secret ใน etcd เป็น <strong>base64 ธรรมดา ไม่ได้เข้ารหัส</strong>
+ใครที่อ่านไฟล์ etcd ได้ (หรือได้ backup ไป) จะเห็น secret ทั้งหมด</p>
+<h3>1.1 สร้าง encryption key</h3>
+<p><strong>👑 บน master01:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">head -c 32 /dev/urandom | base64
+</code></pre></div>
+<p><strong>เก็บค่านี้ไว้ให้ดี</strong> — ถ้าหายจะถอดรหัส etcd backup เก่าไม่ได้เลย
+เอาไปใส่ที่เก็บ secret ขององค์กรทันที <strong>ห้ามใส่ใน git</strong></p>
+<h3>1.2 วางไฟล์ config — 🎩 ทำเหมือนกันทั้ง 3 master</h3>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">mkdir -p /etc/kubernetes/enc
+cp /root/k8s/config/security/encryption-config.yaml /etc/kubernetes/enc/encryption-config.yaml
+
+read -rsp 'encryption key (base64): ' ENC_KEY &amp;&amp; echo
+sed -i "s|&lt;ENCRYPTION_KEY_BASE64&gt;|${ENC_KEY}|" /etc/kubernetes/enc/encryption-config.yaml
+unset ENC_KEY
+
+chmod 600 /etc/kubernetes/enc/encryption-config.yaml
+</code></pre></div>
+<blockquote>
+<p><strong>key ต้องเหมือนกันทั้ง 3 เครื่อง</strong> ไม่งั้น apiserver ตัวหนึ่งจะอ่านของที่อีกตัวเขียนไม่ออก</p>
+</blockquote>
+<h3>1.3 เปิดใช้ — ทำทีละเครื่อง</h3>
+<p><strong>🎩 บนแต่ละ master ทีละตัว</strong> แก้ <code>/etc/kubernetes/manifests/kube-apiserver.yaml</code>:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cp /etc/kubernetes/manifests/kube-apiserver.yaml /root/k8s/kube-apiserver.yaml.bak
+</code></pre></div>
+<p>เพิ่มใน <code>spec.containers[0].command</code>:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-yaml">    - --encryption-provider-config=/etc/kubernetes/enc/encryption-config.yaml
+</code></pre></div>
+<p>เพิ่มใน <code>volumeMounts</code>:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-yaml">    - name: enc
+      mountPath: /etc/kubernetes/enc
+      readOnly: true
+</code></pre></div>
+<p>เพิ่มใน <code>volumes</code>:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-yaml">  - name: enc
+    hostPath:
+      path: /etc/kubernetes/enc
+      type: DirectoryOrCreate
+</code></pre></div>
+<p>kubelet จะเห็นไฟล์เปลี่ยนแล้ว restart apiserver ให้เอง — <strong>รอให้ขึ้นก่อนไปเครื่องถัดไป:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">crictl ps | grep kube-apiserver
+kubectl get --raw='/healthz'
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> <code>ok</code></p>
+<blockquote>
+<p>⚠️ <strong>ห้ามทำพร้อมกันทั้ง 3 เครื่อง</strong> ถ้า apiserver ล้มพร้อมกันหมด cluster จะเข้าไม่ได้เลย
+ทำทีละตัวแล้วรอ <code>/healthz</code> ผ่านก่อนเสมอ</p>
+</blockquote>
+<h3>1.4 เข้ารหัส Secret ที่มีอยู่แล้ว</h3>
+<p>การเปิด encryption มีผลเฉพาะกับของที่เขียน<strong>หลังจากนี้</strong> ของเก่ายังเป็น plaintext
+ต้องเขียนทับทั้งหมดหนึ่งรอบ:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get secrets -A -o json | kubectl replace -f -
+</code></pre></div>
+<p><strong>ตรวจว่าเข้ารหัสจริง — อ่านตรงจาก etcd:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n default create secret generic enc-test --from-literal=key=supersecret
+
+kubectl -n kube-system exec -it etcd-k8s-master01 -- etcdctl \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key \
+  get /registry/secrets/default/enc-test | hexdump -C | head -5
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> <code>k8s:enc:aescbc:v1:key1:</code> แล้วตามด้วยข้อมูลที่อ่านไม่ออก
+<strong>ต้องไม่เห็นคำว่า <code>supersecret</code></strong> — ถ้าเห็นแปลว่ายังไม่ได้เข้ารหัส</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n default delete secret enc-test
+</code></pre></div>
+<hr />
+</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · Pod Security Admission</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>PSA เป็นของที่มีอยู่ใน Kubernetes อยู่แล้ว ไม่ต้องลงอะไรเพิ่ม แค่ติด label ที่ namespace</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/security/namespaces.yaml
+kubectl get ns -L pod-security.kubernetes.io/enforce
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> namespace ของ application เป็น <code>restricted</code></p>
+<table>
+<thead>
+<tr>
+<th>ระดับ</th>
+<th>ใช้กับ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>restricted</code></td>
+<td>namespace ของ application ทั้งหมด — เข้มที่สุด</td>
+</tr>
+<tr>
+<td><code>baseline</code></td>
+<td>namespace ที่มี workload พิเศษที่ <code>restricted</code> ไม่ผ่าน</td>
+</tr>
+<tr>
+<td><code>privileged</code></td>
+<td><code>kube-system</code> เท่านั้น</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong><code>restricted</code> จะทำให้ manifest เดิมของ <code>zeeme-*</code> deploy ไม่ผ่าน</strong>
+เพราะของเดิมใช้ <code>runAsUser: 0</code> — นี่คือเจตนา ดูวิธีแก้ที่บทที่ 11</p>
+<p>ตั้ง <code>warn</code> และ <code>audit</code> ไว้ด้วยเสมอ จะได้เห็นว่าอะไรจะพังก่อนที่จะบังคับจริง</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · 🔴 NetworkPolicy default-deny</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>นี่คือเหตุผลหลักที่เลือก Cilium แทน Flannel — Flannel ทำข้อนี้ไม่ได้เลย</p>
+<p><strong>หลักการ: ปิดทุกอย่างก่อน แล้วค่อยเปิดทีละเส้นที่จำเป็น</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/security/default-deny.yaml
+kubectl apply -f /root/k8s/config/security/allow-dns.yaml
+</code></pre></div>
+<p><strong>ตรวจว่า default-deny ทำงาน:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n myhr-prod run nptest --rm -it --restart=Never --image=curlimages/curl -- \
+  curl -m 5 -s https://www.google.com
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> timeout ← <strong>ถูกต้องแล้ว</strong></p>
+<p><strong>ตรวจว่า DNS ยังใช้ได้ (ไม่งั้นทุกอย่างพัง):</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n myhr-prod run dnstest --rm -it --restart=Never --image=busybox:1.36 -- \
+  nslookup kubernetes.default.svc.cluster.local
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> ตอบกลับปกติ</p>
+<blockquote>
+<p><strong>ลำดับสำคัญมาก</strong> — ถ้า apply <code>default-deny</code> โดยไม่ apply <code>allow-dns</code> พร้อมกัน
+ทุก pod ใน namespace จะ resolve DNS ไม่ได้ทันที และอาการจะดูเหมือน application พัง</p>
+</blockquote>
+<p><strong>ดู flow จริงด้วย Hubble เพื่อรู้ว่าต้องเปิดเส้นไหนบ้าง:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n kube-system exec -it ds/cilium -- hubble observe --namespace myhr-prod --verdict DROPPED --last 50
+</code></pre></div>
+<p>นี่คือวิธีที่ถูกต้องในการเขียน policy — <strong>ดูของจริงว่าอะไรถูก drop แล้วเปิดเฉพาะเส้นนั้น</strong>
+ไม่ใช่เดาเอาจากเอกสาร</p>
+<hr />
+</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · RBAC ตามหน้าที่</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p><code>cluster-admin</code> ควรมีคนถือน้อยที่สุด และต้องรู้ว่าใครถือบ้าง</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/security/rbac.yaml
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>ทำอะไรได้</th>
+<th>ให้ใคร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>myhr:developer</code></td>
+<td>อ่าน pod/log/service ใน namespace ตัวเอง · <code>exec</code> ไม่ได้</td>
+<td>ทีม dev</td>
+</tr>
+<tr>
+<td><code>myhr:deployer</code></td>
+<td>apply manifest ใน namespace ที่กำหนด</td>
+<td>คนที่ deploy</td>
+</tr>
+<tr>
+<td><code>myhr:operator</code></td>
+<td>จัดการ node, drain, ดู resource ทั้ง cluster</td>
+<td>ทีม ops</td>
+</tr>
+<tr>
+<td><code>cluster-admin</code></td>
+<td>ทุกอย่าง</td>
+<td><strong>2 คนเท่านั้น</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>ตรวจว่าใครเป็น cluster-admin อยู่บ้าง:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get clusterrolebinding -o json \
+  | jq -r '.items[] | select(.roleRef.name=="cluster-admin") | .metadata.name as $n
+           | (.subjects // [])[] | "\($n)\t\(.kind)/\(.name)"'
+</code></pre></div>
+<p><strong>ทบทวนรายชื่อนี้ทุกไตรมาส</strong> และลบคนที่ไม่ได้อยู่แล้วออก</p>
+<p><strong>ทดสอบว่า RBAC ทำงานจริง:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl auth can-i delete nodes --as=system:serviceaccount:myhr-prod:developer
+kubectl auth can-i get pods --as=system:serviceaccount:myhr-prod:developer -n myhr-prod
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> <code>no</code> และ <code>yes</code> ตามลำดับ</p>
+<hr />
+<h3>4.1 ออก kubeconfig ให้คนใหม่</h3>
+<p>ตอนนี้ยังไม่มี OIDC — ตัวตนของคนมาจาก <strong>client certificate</strong> ที่เซ็นด้วย CA ของ cluster
+โดย <code>CN</code> กลายเป็นชื่อ user และ <code>O</code> กลายเป็น group ที่ <a href="../config/security/rbac.yaml"><code>rbac.yaml</code></a> ผูกสิทธิ์ไว้</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">/CN=somchai/O=myhr:developers
+     │              └── group → ได้สิทธิ์ myhr:developer
+     └── user → ชื่อที่โผล่ใน audit log
+</code></pre></div>
+<p><strong>👑 ทำบน master01:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">USER_NAME=somchai
+GROUP=myhr:developers          # หรือ myhr:operators
+
+# 1. สร้าง key + CSR
+openssl genrsa -out ${USER_NAME}.key 2048
+openssl req -new -key ${USER_NAME}.key -out ${USER_NAME}.csr \
+  -subj "/CN=${USER_NAME}/O=${GROUP}"
+
+# 2. ส่งให้ cluster เซ็น — อายุ 90 วัน
+cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: ${USER_NAME}
+spec:
+  request: $(base64 -w0 &lt; ${USER_NAME}.csr)
+  signerName: kubernetes.io/kube-apiserver-client
+  expirationSeconds: 7776000
+  usages: ["client auth"]
+EOF
+
+kubectl certificate approve ${USER_NAME}
+kubectl get csr ${USER_NAME} -o jsonpath='{.status.certificate}' | base64 -d &gt; ${USER_NAME}.crt
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> <code>certificatesigningrequest.certificates.k8s.io/somchai approved</code></p>
+<p><strong>3. ประกอบเป็น kubeconfig</strong> (<code>--embed-certs</code> เพื่อให้ได้ไฟล์เดียวจบ):</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">KCFG=${USER_NAME}.kubeconfig
+kubectl config set-cluster myhr \
+  --server="https://${VIP}:${VIP_PORT}" \
+  --certificate-authority=/etc/kubernetes/pki/ca.crt \
+  --embed-certs=true --kubeconfig="$KCFG"
+kubectl config set-credentials "${USER_NAME}" \
+  --client-certificate="${USER_NAME}.crt" --client-key="${USER_NAME}.key" \
+  --embed-certs=true --kubeconfig="$KCFG"
+kubectl config set-context "${USER_NAME}" \
+  --cluster=myhr --user="${USER_NAME}" \
+  --namespace=myhr-prod --kubeconfig="$KCFG"
+kubectl config use-context "${USER_NAME}" --kubeconfig="$KCFG"
+</code></pre></div>
+<p><strong>4. ตรวจว่าสิทธิ์ถูกต้องก่อนส่งมอบ:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl --kubeconfig="$KCFG" auth can-i get pods -n myhr-prod    # ต้องได้ yes
+kubectl --kubeconfig="$KCFG" auth can-i delete nodes             # ต้องได้ no
+kubectl --kubeconfig="$KCFG" auth can-i get secrets -n myhr-prod # ต้องได้ no
+</code></pre></div>
+<p><strong>5. ส่งไฟล์ให้เจ้าตัวผ่านช่องทางที่ปลอดภัย แล้วลบของกลางทิ้ง:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">shred -u ${USER_NAME}.key ${USER_NAME}.csr ${USER_NAME}.crt
+</code></pre></div>
+<blockquote>
+<p>🔴 <strong>cert ที่ออกไปแล้ว &quot;ถอนไม่ได้&quot;</strong> — Kubernetes ไม่รองรับ CRL
+ถ้าคนลาออกกลางคัน ทางเดียวที่ตัดได้ทันทีคือ <strong>ลบ RoleBinding ของทั้ง group</strong>
+(กระทบทุกคนใน group) หรือรื้อ CA ใหม่ทั้ง cluster ซึ่งไม่คุ้ม
+จึงตั้งอายุไว้แค่ 90 วัน — ทำใหม่ทุกไตรมาสพร้อมรอบทบทวนรายชื่อ <code>cluster-admin</code>
+<strong>นี่คือราคาของการยังไม่ตั้ง OIDC</strong> ยอมรับได้ตราบใดที่คนถือ kubeconfig ยังนับหัวได้</p>
+</blockquote>
+<hr />
+<h3>4.2 วันที่จะย้ายไปใช้ OIDC — ทำอะไรบ้าง</h3>
+<p>ยังไม่ต้องทำตอนนี้ บันทึกไว้เฉย ๆ ว่าเส้นทางเป็นยังไง
+<strong>สัญญาณว่าถึงเวลา:</strong> คนถือ kubeconfig เกินราว 10 คน หรือมีคนเข้าออกบ่อยจนตามถอนไม่ไหว</p>
+<p>Kubernetes ต่อ AD/LDAP ตรง ๆ <strong>ไม่ได้</strong> รับได้แค่ OIDC จึงต้องมีตัวกลาง:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">AD ของบริษัท ──→ OIDC provider ──→ apiserver
+                 Keycloak / Dex        (ถ้าใช้ Microsoft 365 อยู่แล้ว
+                 ถ้า AD เป็น on-prem     ต่อ Entra ID ตรงได้ ไม่ต้องลงอะไรเพิ่ม)
+</code></pre></div>
+<p>4 ขั้น:</p>
+<ol>
+<li><strong>ตั้ง OIDC provider</strong> ให้อ่าน AD ได้ แล้ว<strong>ตั้งให้มันส่ง group ชื่อ <code>myhr:developers</code>
+และ <code>myhr:operators</code> ออกมาตรง ๆ</strong> — ชื่อเดียวกับที่ <code>rbac.yaml</code> ใช้อยู่ตอนนี้</li>
+<li><strong>เพิ่ม flag ที่ apiserver</strong> — ใส่ใน <code>kubeadm-config.yaml</code> ที่ <code>apiServer.extraArgs</code>
+แล้ว <code>kubeadm upgrade apply</code> หรือแก้ <code>/etc/kubernetes/manifests/kube-apiserver.yaml</code> ทีละ master:<div class="cb"><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-yaml">oidc-issuer-url: "https://sso.myhr.co.th/realms/myhr"
+oidc-client-id: "kubernetes"
+oidc-username-claim: "preferred_username"
+oidc-groups-claim: "groups"
+</code></pre></div>
+</li>
+<li><strong>ทดสอบด้วยคนเดียวก่อน</strong> — <code>kubectl auth can-i</code> ผ่าน token ของ OIDC
+ระหว่างนี้ client cert เดิมยังใช้ได้ปกติ ทั้งสองทางอยู่ร่วมกันได้</li>
+<li><strong>หยุดออก cert ใหม่</strong> แล้วปล่อยของเก่าหมดอายุไปเองใน 90 วัน</li>
+</ol>
+<p><strong><a href="../config/security/rbac.yaml"><code>rbac.yaml</code></a> ไม่ต้องแก้เลยสักบรรทัด</strong> เพราะผูกกับชื่อ group ไม่ได้ผูกกับวิธี login
+— นั่นคือเหตุผลที่ตั้งชื่อ group ไว้แบบนี้ตั้งแต่ตอนที่ยังไม่มี OIDC</p>
+<hr />
+</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · Audit log</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<p>เปิดไว้แล้วตั้งแต่ <code>kubeadm-config.yaml</code> (บทที่ 04) แต่ยังไม่มี policy
+ซึ่งแปลว่า<strong>ยังไม่ได้บันทึกอะไรเลย</strong></p>
+<p><strong>🎩 ทำทั้ง 3 master ทีละตัว:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cp /root/k8s/config/security/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
+chmod 600 /etc/kubernetes/audit-policy.yaml
+</code></pre></div>
+<p>เพิ่มใน <code>kube-apiserver.yaml</code>:</p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-yaml">    - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
+</code></pre></div>
+<p>พร้อม volumeMount ของ <code>/etc/kubernetes/audit-policy.yaml</code> และ <code>/var/log/kubernetes</code></p>
+<p><strong>ตรวจ:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">tail -3 /var/log/kubernetes/audit.log | jq -r '"\(.verb) \(.objectRef.resource) by \(.user.username)"'
+</code></pre></div>
+<p><strong>ควรเห็น:</strong> บรรทัด JSON ของ event จริง</p>
+<blockquote>
+<p><strong>audit log กิน disk เร็วมาก</strong> ถ้าเขียนทุก event — policy ที่ให้มาจึงบันทึกเฉพาะ
+สิ่งที่มีความหมายจริง (secret access, การเปลี่ยนแปลง RBAC, exec เข้า pod)
+และตั้ง rotate ไว้ที่ 100 MB × 10 ไฟล์</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · หนี้เก่าที่ต้องจ่าย — หมุน credential</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<blockquote>
+<p>🔴 <strong>ข้อนี้ไม่เกี่ยวกับ cluster ใหม่ แต่ห้ามข้าม</strong></p>
+</blockquote>
+<p>credential ที่รั่วในคู่มือชุดเดิม <strong>ต้องถือว่าถูกเปิดเผยไปแล้วทั้งหมด</strong>
+การลบไฟล์ออกจาก git ไม่ได้ทำให้มันปลอดภัยขึ้น เพราะยังอยู่ใน git history</p>
+<table>
+<thead>
+<tr>
+<th>รายการ</th>
+<th>สถานะ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>root password ของทุก node เดิม</td>
+<td>[ ] หมุนแล้ว</td>
+</tr>
+<tr>
+<td>VPN password (FortiClient)</td>
+<td>[ ] หมุนแล้ว</td>
+</tr>
+<tr>
+<td>registry password</td>
+<td>[ ] หมุนแล้ว + <strong>แยก account pull อ่านอย่างเดียว</strong></td>
+</tr>
+<tr>
+<td>cluster-admin token ของ cluster เดิม</td>
+<td>[ ] เพิกถอนแล้ว</td>
+</tr>
+<tr>
+<td>client key ใน <code>admin.conf</code> เดิม</td>
+<td>[ ] เพิกถอนแล้ว</td>
+</tr>
+</tbody>
+</table>
+<p><strong>สำหรับ registry — สร้าง 2 account แยกกัน:</strong></p>
+<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># บน cluster ใหม่ ใช้ account ที่ pull ได้อย่างเดียว
+kubectl -n myhr-prod create secret docker-registry regcred \
+  --docker-server="${REGISTRY_HOST}" \
+  --docker-username='&lt;PULL_ONLY_USER&gt;' \
+  --docker-password='&lt;PULL_ONLY_PASSWORD&gt;'
+</code></pre></div>
+<blockquote>
+<p><strong>secret ไม่ข้าม namespace</strong> ต้องสร้างทุก namespace ที่ต้อง pull image
+คู่มือเดิมสร้างแค่ <code>default</code> แล้วงงว่าทำไม namespace อื่น pull ไม่ได้</p>
+</blockquote>
+<hr />
+</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+<ul>
+<li>[ ] 🔴 อ่าน Secret ตรงจาก etcd แล้ว <strong>เห็นเป็นข้อมูลเข้ารหัส</strong> ไม่ใช่ plaintext</li>
+<li>[ ] encryption key เก็บในที่เก็บ secret แล้ว <strong>และไม่ได้อยู่ใน git</strong></li>
+<li>[ ] Secret เก่าถูกเขียนทับให้เข้ารหัสครบแล้ว</li>
+<li>[ ] namespace ของ application เป็น PSA <code>restricted</code></li>
+<li>[ ] 🔴 NetworkPolicy default-deny ทำงาน — curl ออกนอกไม่ได้ แต่ DNS ยังใช้ได้</li>
+<li>[ ] RBAC role ครบ 3 ระดับ · <code>cluster-admin</code> ไม่เกิน 2 คน · จดรายชื่อไว้แล้ว</li>
+<li>[ ] audit log เขียนไฟล์จริงและอ่านได้</li>
+<li>[ ] 🔴 <strong>credential ที่รั่วในเอกสารเดิม หมุนครบทุกตัวแล้ว</strong></li>
+<li>[ ] <code>regcred</code> เป็น account ที่ pull ได้อย่างเดียว ไม่ใช่รหัสเดียวกับ root</li>
+</ul>
+<p><strong>➡️ ต่อที่ <a href="11-deploy-app.html">บทที่ 11 — Deploy Application</a></strong></p>
+</div></section>
+    <div class="pn-row"><a class="pn" href="09-observability.html">← Observability</a><a class="pn" href="11-deploy-app.html">Deploy App →</a></div>
+  </main>
+</div>
+
+<button class="fab" id="fab" type="button">
+  <span class="fab-ico">↓</span><span class="fab-txt">ขั้นที่ต้องทำ</span>
+</button>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var CH    = document.body.dataset.chapter;
+  var TOTAL = +document.body.dataset.total;
+  var KEY   = 'myhr-k8s-progress';
+
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ return {}; } }
+  function save(o){ try{ localStorage.setItem(KEY, JSON.stringify(o)); }catch(e){} }
+  function mine(){ var a=load(); return (a[CH]||[]); }
+  function setMine(list){ var a=load(); a[CH]=list; save(a); }
+
+  var toastEl=document.getElementById('toast'), toastT;
+  function toast(msg){
+    toastEl.textContent=msg; toastEl.classList.add('show');
+    clearTimeout(toastT); toastT=setTimeout(function(){toastEl.classList.remove('show');},1600);
+  }
+
+  /* ---------- ทำแล้ว / ยังไม่ทำ ---------- */
+  function paint(){
+    var done=mine();
+    document.querySelectorAll('.step').forEach(function(s){
+      var n=+s.dataset.step, is=done.indexOf(n)>=0;
+      s.classList.toggle('done', is);
+      var b=s.querySelector('.done-btn');
+      if(b) b.querySelector('.lbl').textContent = is ? 'ทำแล้ว' : 'ทำแล้ว';
+    });
+    var n=done.length;
+    document.getElementById('pcount').textContent=n+'/'+TOTAL;
+    document.getElementById('pbar').style.width=(TOTAL?100*n/TOTAL:0)+'%';
+    paintFab();
+    paintNav();
+  }
+
+  document.querySelectorAll('.done-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      if(i>=0){ done.splice(i,1); } else { done.push(n); }
+      setMine(done); paint();
+    });
+  });
+
+  document.getElementById('reset').addEventListener('click', function(){
+    if(!confirm('ล้างสถานะ "ทำแล้ว" ทั้งหมดของบทนี้?')) return;
+    setMine([]); paint(); toast('ล้างแล้ว');
+  });
+
+  /* ---------- ขั้นที่ต้องทำต่อไป ---------- */
+  function nextStep(){
+    var done=mine(), out=null;
+    document.querySelectorAll('.step').forEach(function(s){
+      if(out) return;
+      if(done.indexOf(+s.dataset.step)<0) out=s;
+    });
+    return out;
+  }
+  function paintFab(){
+    var fab=document.getElementById('fab'), s=nextStep();
+    if(s){
+      fab.classList.remove('alldone');
+      fab.querySelector('.fab-ico').textContent='↓';
+      fab.querySelector('.fab-txt').textContent='ขั้นที่ต้องทำ';
+      fab.title='ไปที่: '+s.querySelector('h2').textContent.trim();
+    }else{
+      fab.classList.add('alldone');
+      fab.querySelector('.fab-ico').textContent='✓';
+      fab.querySelector('.fab-txt').textContent='บทนี้เสร็จแล้ว';
+      fab.title='ไปบทถัดไป';
+    }
+  }
+  document.getElementById('fab').addEventListener('click', function(){
+    var s=nextStep();
+    if(s){
+      s.scrollIntoView({behavior:'smooth', block:'start'});
+      s.animate([{outline:'2px solid var(--accent)'},{outline:'2px solid transparent'}],
+                {duration:1100});
+    }else{
+      var nx=document.querySelector('.pn-row a:last-child');
+      if(nx && nx.classList.contains('pn')) nx.click(); else toast('ครบทุกขั้นแล้ว');
+    }
+  });
+
+  /* ---------- ความคืบหน้าใน sidebar ---------- */
+  function paintNav(){
+    var all=load();
+    document.querySelectorAll('[data-progress-for]').forEach(function(el){
+      var f=el.dataset.progressFor, d=(all[f]||[]).length, t=+el.dataset.total||0;
+      el.textContent = d ? (d+'/'+t) : '';
+      el.classList.toggle('full', t>0 && d>=t);
+    });
+  }
+
+  /* ---------- ปุ่มคัดลอก ---------- */
+  function copyText(t){
+    if(navigator.clipboard && window.isSecureContext){
+      return navigator.clipboard.writeText(t);
+    }
+    return new Promise(function(res,rej){
+      var ta=document.createElement('textarea');
+      ta.value=t; ta.setAttribute('readonly','');
+      ta.style.cssText='position:fixed;top:-1000px;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy') ? res() : rej(); }
+      catch(e){ rej(e); }
+      finally{ document.body.removeChild(ta); }
+    });
+  }
+  document.querySelectorAll('.cb-copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var code=btn.closest('.cb').querySelector('code');
+      copyText(code.innerText).then(function(){
+        btn.textContent='คัดลอกแล้ว'; btn.classList.add('ok');
+        setTimeout(function(){ btn.textContent='คัดลอก'; btn.classList.remove('ok'); },1400);
+      }).catch(function(){
+        // คัดลอกอัตโนมัติไม่ได้ (เบราว์เซอร์บล็อก) — เลือกข้อความให้เลย เหลือแค่กด Ctrl+C
+        try{
+          var sel=window.getSelection(), rng=document.createRange();
+          rng.selectNodeContents(code); sel.removeAllRanges(); sel.addRange(rng);
+          toast('เบราว์เซอร์บล็อกการคัดลอก — เลือกให้แล้ว กด Ctrl+C ได้เลย');
+        }catch(e){ toast('คัดลอกไม่สำเร็จ — ลากเลือกข้อความแล้วกด Ctrl+C'); }
+      });
+    });
+  });
+
+  /* ---------- เมนูบนจอเล็ก ---------- */
+  var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');
+  if(burger) burger.addEventListener('click', function(){ sb.classList.toggle('open'); });
+
+  paint();
+})();
+</script>
+</body>
+</html>
