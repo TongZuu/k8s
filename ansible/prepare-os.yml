@@ -134,16 +134,22 @@
     # -------------------------------------------------------------------------
     #  3 · repo
     # -------------------------------------------------------------------------
+    # ใช้ module แทน command เพราะ command รายงาน changed ทุกครั้ง
+    # ทำให้ changed=0 เป็นไปไม่ได้ ซึ่งทำลายสัญญาณที่เราใช้ตรวจว่าเครื่องตรงสเปกแล้ว
     - name: ปิด ol9_addons — มี containerd ของ Oracle ที่จะไปทับ tarball ในบท 02
-      ansible.builtin.command: dnf config-manager --disable ol9_addons
-      register: _dis
-      changed_when: _dis.rc == 0
+      community.general.dnf_config_manager:
+        name: ol9_addons
+        state: disabled
+      # บางเครื่องอาจไม่มี repo นี้ตั้งแต่แรก ซึ่งก็คือสถานะที่ต้องการอยู่แล้ว
       failed_when: false
 
     - name: เปิดเฉพาะ repo ที่ใช้
-      ansible.builtin.command: dnf config-manager --enable ol9_baseos_latest ol9_appstream ol9_UEKR8
-      register: _en
-      changed_when: _en.rc == 0
+      community.general.dnf_config_manager:
+        name:
+          - ol9_baseos_latest
+          - ol9_appstream
+          - ol9_UEKR8
+        state: enabled
 
     - name: ปิด Ksplice — ใช้ OL แบบฟรีจึงไม่มีสิทธิ์ ปล่อยไว้ได้แต่ log error
       ansible.builtin.systemd_service:
