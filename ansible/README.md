@@ -46,6 +46,41 @@ ansible --version                 # ต้องได้ 2.15 ขึ้นไ�
 > ansible-galaxy collection install ansible.posix community.general
 > ```
 
+### ⚠️ WSL + repo บนไดรฟ์ D: — ต้องแก้ permission ก่อน
+
+WSL mount ไดรฟ์ Windows แบบ world-writable (777) และ
+**Ansible จะเมิน `ansible.cfg` ที่อยู่ในโฟลเดอร์ world-writable แบบเงียบ ๆ**
+ผลคือมันไม่โหลด `inventory.ini` ให้ แล้วคุณจะเจอ "ไม่พบ host" ทั้งที่ไฟล์อยู่ตรงนั้น
+
+แก้ใน WSL:
+
+```bash
+sudo tee /etc/wsl.conf <<'EOF'
+[automount]
+options = "metadata,umask=22,fmask=11"
+EOF
+```
+
+แล้วปิด WSL ให้สนิทจาก PowerShell — ปิดแค่หน้าต่างไม่พอ:
+
+```powershell
+wsl --shutdown
+```
+
+เปิดใหม่แล้วให้ Ansible ยืนยันเอง (แม่นกว่าการไปนั่งดูเลขสิทธิ์):
+
+```bash
+cd /mnt/d/workspace/k8s/ansible && ansible --version | head -3
+```
+
+**ควรเห็น:** `config file = /mnt/d/workspace/k8s/ansible/ansible.cfg`
+ถ้าได้ `config file = None` หรือมี warning เรื่อง world writable แปลว่ายังไม่ผ่าน
+
+> เลขสิทธิ์ที่ได้จะเป็น `755` สำหรับโฟลเดอร์ และ `744` สำหรับไฟล์ — **ถูกต้องแล้ว**
+> สิ่งที่ Ansible ตรวจคือ *โฟลเดอร์* ที่คุณยืนอยู่ ว่าคนอื่นเขียนได้หรือไม่ ไม่ใช่สิทธิ์ของตัวไฟล์
+
+---
+
 **SSH key** — Ansible เข้าเครื่องโดยไม่ถามรหัสผ่านไม่ได้:
 
 ```bash
