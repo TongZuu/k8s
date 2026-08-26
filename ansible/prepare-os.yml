@@ -50,16 +50,32 @@
     # -------------------------------------------------------------------------
     #  ตรวจสิ่งที่ต้องมาจาก VM template ก่อน — ถ้าไม่ผ่านหยุดทันที
     # -------------------------------------------------------------------------
-    - name: kernel ต้องเป็น UEK และตรงกับ versions.env
+    # -------------------------------------------------------------------------
+    #  เส้นที่บังคับคือ major.minor + ต้องเป็น UEK — สองอย่างนี้เปลี่ยน feature set
+    #  ที่ Cilium/eBPF ใช้จริง ส่วนหางเลข (203/204/205) เป็น errata ของ Oracle
+    #  ซึ่งไม่กระทบ แต่ก็ไม่ควรต่างกันเงียบ ๆ จึงเตือนไว้ในงานถัดไป
+    # -------------------------------------------------------------------------
+    - name: kernel ต้องเป็น UEK และตรง major.minor กับ versions.env
       ansible.builtin.assert:
         that:
           - "'uek' in ansible_facts['kernel']"
-          - ansible_facts['kernel'].startswith(v.KERNEL_UEK)
+          - ansible_facts['kernel'].startswith(v.KERNEL_UEK.split('-')[0] ~ '-')
         fail_msg: >-
           kernel บนเครื่องนี้คือ {{ ansible_facts['kernel'] }}
-          แต่ versions.env ระบุ {{ v.KERNEL_UEK }} (ต้องเป็น uek)
-          → แก้ที่ VM template ก่อน อย่าให้ playbook สลับ kernel ให้
-        success_msg: "kernel {{ ansible_facts['kernel'] }} ถูกต้อง"
+          แต่ versions.env ระบุสาย {{ v.KERNEL_UEK.split('-')[0] }} และต้องเป็น uek
+          → คนละสายแปลว่า feature set ต่างกันจริง (เช่นหลุดไป RHCK)
+             แก้ที่ VM template ก่อน อย่าให้ playbook สลับ kernel ให้
+        success_msg: "kernel {{ ansible_facts['kernel'] }} อยู่ในสายที่ถูกต้อง"
+
+    - name: เตือนถ้า patch level ไม่ตรงกัน — ไม่หยุดงาน แต่ต้องเห็น
+      ansible.builtin.debug:
+        msg: >-
+          ⚠️  kernel ของเครื่องนี้ ({{ ansible_facts['kernel'] }})
+          ไม่ตรงกับ KERNEL_UEK ใน versions.env ({{ v.KERNEL_UEK }})
+          · ไม่กระทบ Cilium เพราะ major.minor เดียวกัน
+          · แต่เวลามีอาการแปลกเฉพาะ node นี้ ต้องเสียเวลาตัดตัวแปรนี้ทิ้งก่อนทุกครั้ง
+          · ค้างไว้เป็นหนี้ใน docs/CHECKLIST.md — ทำให้ตรงตอนยังไม่มี workload ถูกที่สุด
+      when: not ansible_facts['kernel'].startswith(v.KERNEL_UEK)
 
     - name: kernel ต้องถูก versionlock ไว้แล้ว
       ansible.builtin.shell:
