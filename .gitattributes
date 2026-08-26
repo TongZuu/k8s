@@ -1,0 +1,31 @@
+# =============================================================================
+#  บังคับ LF ทุกไฟล์ที่ต้องไปรันบน Linux
+# =============================================================================
+#  เครื่องที่แก้ไฟล์เป็น Windows (core.autocrlf=true) แต่ปลายทางทุกไฟล์คือ Linux
+#  ถ้าปล่อยให้เป็น CRLF จะเจออาการแบบนี้หลัง scp:
+#    · .sh   → bash: $'\r': command not found
+#    · .env  → VIP="192.168.50.100\r"  ค่ามี \r ติดไปด้วย พังแบบเงียบ ๆ
+#    · .conf → keepalived/haproxy parse ไม่ผ่าน
+# =============================================================================
+
+* text=auto eol=lf
+
+*.sh    text eol=lf
+*.env   text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.conf  text eol=lf
+*.cfg   text eol=lf
+*.toml  text eol=lf
+*.md    text eol=lf
+*.ini   text eol=lf
+*.crt   text eol=lf
+*.repo  text eol=lf
+
+# ไบนารีและไฟล์ที่ห้ามแตะ
+*.zip   binary
+*.tgz   binary
+*.tar.gz binary
+*.png   binary
+*.jpg   binary
+runc.amd64 binary
