@@ -264,12 +264,16 @@ cluster-admin token, client key (ดู README หัวข้อสุดท้
 </div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>C2 · หนี้ค้างที่ตัดสินใจเลื่อนไว้</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
 <ul>
 <li>[ ] <strong>ทำ kernel ทุกเครื่องให้เป็นเลขเดียวกัน</strong> (ตัดสินใจเลื่อน 27 ส.ค. 2026)
-สถานะที่พบ: master01/02 = <code>6.12.0-204.92.4.3.1</code> · master03 = <code>6.12.0-203.76.7.3</code>
+สถานะจริง (ตรวจครบทั้ง 6 เครื่องแล้ว 27 ส.ค. 2026):
+· <code>6.12.0-204.92.4.3.1</code> → master01, master02  (2 เครื่อง)
+· <code>6.12.0-203.76.7.3</code>   → master03, worker01-03  (4 เครื่อง)
 สาเหตุ: template แจก <code>6.12.0-105.51.5</code> เหมือนกัน แล้วแต่ละเครื่อง <code>dnf update</code>
 คนละวัน จึงได้คนละ errata
 · <strong>ไม่กระทบ Cilium</strong> เพราะ major.minor เดียวกัน (6.12) — playbook จึงแค่เตือน ไม่หยุด
 · ต้นทุนแก้ตอนนี้ ~15 นาที/เครื่อง · ตอนมี workload แล้วคือครึ่งวัน + ต้อง drain
-· 🔴 <strong>ยังไม่ได้ตรวจ worker 04-06</strong> ว่าเป็นเลขไหน</li>
+· ทางที่แนะนำ: <strong>ยกทั้ง 6 เครื่องไป <code>6.12.0-205.92.4.2</code></strong> (ใหม่สุด ยังมีในrepo)
+เพราะ <code>204.92.4.3.1</code> อาจหาไม่ได้แล้ว และการยก 2 เครื่องลง 203 คือ downgrade
+· ต้องเคาะ <strong>ก่อนจบ Phase 4</strong> — หลังรับ workload แล้วราคาขึ้นทันที</li>
 <li>[ ] 🔴 <strong>แก้ต้นเหตุ: ขั้นตอนสร้าง VM ต้องไม่ใช่ <code>dnf update</code> ลอย ๆ</strong>
 ต้องเป็น &quot;ลง kernel เวอร์ชันที่ระบุใน <code>versions.env</code> แล้ว <code>versionlock</code> ทันที&quot;
 ไม่งั้นเครื่องที่สร้างเพิ่มในอนาคตจะได้เลขใหม่เรื่อย ๆ ตามวันที่สร้าง</li>
