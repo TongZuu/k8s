@@ -25,6 +25,8 @@
             | while read -r k; do printf '%s: "%s"\n' "$k" "${!k}"; done
       register: _ver_raw
       changed_when: false
+      # อ่านอย่างเดียว — ต้องรันแม้ใน --check ไม่งั้นตัวแปรที่ register หายทั้งชุด
+      check_mode: false
 
     - name: แปลงเป็นตัวแปรให้ทุก host ใช้ร่วมกัน
       ansible.builtin.set_fact:
@@ -265,6 +267,8 @@
           echo "selinux=$(getenforce)"
       register: _post
       changed_when: false
+      # อ่านอย่างเดียว — ต้องรันแม้ใน --check ไม่งั้นตัวแปรที่ register หายทั้งชุด
+      check_mode: false
 
     - name: ผลหลัง reboot
       ansible.builtin.debug:

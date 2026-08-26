@@ -24,6 +24,8 @@
             | while read -r k; do printf '%s: "%s"\n' "$k" "${!k}"; done
       register: _ver_raw
       changed_when: false
+      # อ่านอย่างเดียว — ต้องรันแม้ใน --check ไม่งั้นตัวแปรที่ register หายทั้งชุด
+      check_mode: false
 
     - name: แปลงเป็นตัวแปร
       ansible.builtin.set_fact:
@@ -63,12 +65,14 @@
       ansible.builtin.command: "awk '{print $1}' {{ dl }}/containerd.sha256sum"
       register: _sha
       changed_when: false
+      # ใน --check ไฟล์ยังไม่ถูกดาวน์โหลด — ปล่อยผ่าน แล้วข้ามการตรวจ checksum ด้านล่าง
+      failed_when: false
 
     - name: ดาวน์โหลด containerd — get_url ตรวจ checksum ให้เอง ถ้าไม่ตรงจะ fail
       ansible.builtin.get_url:
         url: "https://github.com/containerd/containerd/releases/download/v{{ v.CONTAINERD_VERSION }}/containerd-{{ v.CONTAINERD_VERSION }}-linux-amd64.tar.gz"
         dest: "{{ dl }}/containerd.tar.gz"
-        checksum: "sha256:{{ _sha.stdout }}"
+        checksum: "{{ ('sha256:' + _sha.stdout) if (_sha.stdout | default('')) else omit }}"
         mode: "0644"
 
     - name: ดาวน์โหลด runc
@@ -287,6 +291,8 @@
           echo "containerd_from_dnf=$(dnf list installed 2>/dev/null | grep -c '^containerd' || true)"
       register: _final
       changed_when: false
+      # อ่านอย่างเดียว — ต้องรันแม้ใน --check ไม่งั้นตัวแปรที่ register หายทั้งชุด
+      check_mode: false
 
     - name: ผลตรวจ
       ansible.builtin.debug:
