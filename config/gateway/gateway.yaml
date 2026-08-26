@@ -1,0 +1,62 @@
+# =============================================================================
+#  Gateway หลักของ MyHR
+# =============================================================================
+#  ตัวนี้จะได้ LoadBalancer IP หนึ่งตัวจาก Cilium LB-IPAM (192.168.50.200-209)
+#  และเป็นทางเข้าเดียวของทุก HTTP/HTTPS service ใน cluster
+#
+#  microservice ทุกตัวอยู่หลังตัวนี้เป็น ClusterIP ธรรมดา ไม่กิน IP ของ LAN
+#  แยกกันด้วย hostname ผ่าน HTTPRoute
+# =============================================================================
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: myhr-gateway
+  namespace: envoy-gateway-system
+  annotations:
+    # ให้ cert-manager ออก cert ให้ listener HTTPS อัตโนมัติ
+    cert-manager.io/cluster-issuer: myhr-internal-ca-issuer
+spec:
+  gatewayClassName: eg
+
+  listeners:
+    # --- HTTP: มีไว้เพื่อ redirect ไป HTTPS อย่างเดียว --------------------
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: "*.myhr.co.th"
+      allowedRoutes:
+        namespaces:
+          from: All          # ให้ทุก namespace ผูก route เข้ามาได้
+
+    # --- HTTPS: ทางเข้าจริง -----------------------------------------------
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: "*.myhr.co.th"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: myhr-wildcard-tls     # cert-manager สร้างให้จาก annotation ด้านบน
+      allowedRoutes:
+        namespaces:
+          from: All
+
+# =============================================================================
+#  หมายเหตุเรื่อง allowedRoutes.from: All
+# -----------------------------------------------------------------------------
+#  ตอนนี้เปิดให้ทุก namespace ผูก route ได้ ซึ่งสะดวกตอนเริ่ม
+#  แต่แปลว่าใครก็ตามที่สร้าง HTTPRoute ได้ จะแย่ง hostname กันได้
+#
+#  เมื่อ namespace เริ่มเยอะขึ้น ให้เปลี่ยนเป็น Selector แล้วติด label
+#  ที่ namespace ที่อนุญาต:
+#
+#      allowedRoutes:
+#        namespaces:
+#          from: Selector
+#          selector:
+#            matchLabels:
+#              gateway-access: "true"
+# =============================================================================

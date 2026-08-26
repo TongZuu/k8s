@@ -1,0 +1,77 @@
+# =============================================================================
+#  Static local PV สำหรับ monitoring stack (บทที่ 09)
+# =============================================================================
+#  ทั้ง 3 ตัวผูกกับ k8s-worker03 ถาวร เพราะข้อมูลอยู่บน disk ของเครื่องนั้น
+#
+#  ⚠️ ผลที่ต้องรู้: ตอน rolling reboot เครื่องนี้ Prometheus/Loki/Grafana จะดับ ~5 นาที
+#     ดังนั้น "reboot worker03 เป็นเครื่องแรกเสมอ" จะได้มี monitoring ครบตอนทำเครื่องที่เหลือ
+#
+#  reclaimPolicy: Retain — ลบ PVC แล้วข้อมูลยังอยู่ ต้องมาลบ directory เองด้วยมือ
+#  ปลอดภัยกว่า Delete มากสำหรับข้อมูลที่กู้กลับไม่ได้
+#
+#  ต้องสร้าง directory บน worker03 ก่อน:
+#    mkdir -p /var/lib/monitoring/{prometheus,loki,grafana}
+# =============================================================================
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-data
+spec:
+  capacity:
+    storage: 150Gi
+  accessModes: ["ReadWriteOnce"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /var/lib/monitoring/prometheus
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: ["k8s-worker03"]
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: loki-data
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes: ["ReadWriteOnce"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /var/lib/monitoring/loki
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: ["k8s-worker03"]
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: grafana-data
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes: ["ReadWriteOnce"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /var/lib/monitoring/grafana
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: ["k8s-worker03"]

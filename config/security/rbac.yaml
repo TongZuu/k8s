@@ -1,0 +1,135 @@
+# =============================================================================
+#  RBAC ตามหน้าที่
+# =============================================================================
+#  หลักการ: cluster-admin ควรมีคนถือน้อยที่สุด และต้องรู้ว่าใครถือบ้าง
+#  ทบทวนรายชื่อทุกไตรมาส — ดูใครถืออยู่ด้วย:
+#    kubectl get clusterrolebinding -o json | jq -r '.items[]
+#      | select(.roleRef.name=="cluster-admin") | .metadata.name'
+# =============================================================================
+
+---
+# =============================================================================
+#  developer — อ่านได้ แต่แก้ไม่ได้ และ exec เข้า pod ไม่ได้
+# =============================================================================
+#  ตั้งใจไม่ให้ exec เพราะ exec เข้า pod ที่ mount secret อยู่
+#  = อ่าน secret ได้ทางอ้อม ซึ่งจะไม่โผล่ใน audit log ว่าเป็นการอ่าน secret
+# =============================================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: myhr:developer
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "endpoints", "configmaps", "events"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["httproutes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list"]
+  # ตั้งใจไม่มี: secrets, pods/exec, pods/portforward
+
+---
+# =============================================================================
+#  deployer — apply manifest ได้ใน namespace ที่ผูกให้
+# =============================================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: myhr:deployer
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "endpoints", "configmaps", "events", "serviceaccounts"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["httproutes"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # สร้าง secret ได้ แต่ "อ่านของเดิมไม่ได้" — กันการดูดค่า secret ที่มีอยู่
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "update", "patch", "delete"]
+
+---
+# =============================================================================
+#  operator — ทีม ops จัดการ node และ drain ได้
+# =============================================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: myhr:operator
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "nodes/status"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["pods/eviction"]           # จำเป็นสำหรับ kubectl drain
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "namespaces", "events", "persistentvolumes", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["cilium.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["*"]
+    verbs: ["get", "list"]
+
+---
+# =============================================================================
+#  ผูก role เข้ากับ "group"
+# =============================================================================
+#  ตอนนี้ยังไม่มี OIDC — group มาจากช่อง O (Organization) ของ client certificate
+#  เช่น cert ที่มี subject  /CN=somchai/O=myhr:developers
+#      → apiserver มองว่า user = somchai · group = myhr:developers
+#  วิธีออก cert ให้คนใหม่อยู่ในบทที่ 10 หัวข้อ 4.1
+#
+#  ข้อดีของการผูกกับ group แทนที่จะผูกกับชื่อคนตรง ๆ:
+#  วันที่ย้ายไปใช้ OIDC ให้ตั้ง provider ให้ส่ง group ชื่อเดียวกันนี้ออกมา
+#  แล้วไฟล์นี้ไม่ต้องแก้เลยแม้แต่บรรทัดเดียว
+# =============================================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: myhr-developers
+  namespace: myhr-prod
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: myhr:developer
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: "myhr:developers"
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: myhr-operators
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: myhr:operator
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: "myhr:operators"

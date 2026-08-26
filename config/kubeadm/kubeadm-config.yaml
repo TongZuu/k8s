@@ -1,0 +1,105 @@
+# =============================================================================
+#  kubeadm-config.yaml  —  ใช้บน k8s-master01 เท่านั้น (192.168.50.101)
+#  API: kubeadm.k8s.io/v1beta4   (v1beta3 ถูกถอดออกแล้วใน 1.36)
+# =============================================================================
+#  รันด้วย:
+#    kubeadm init --config=/root/k8s/config/kubeadm/kubeadm-config.yaml \
+#                 --upload-certs \
+#                 --skip-phases=addon/kube-proxy
+#
+#  เก็บไฟล์นี้ลง git — มันคือเอกสารว่า cluster ถูกสร้างด้วยค่าอะไร
+# =============================================================================
+
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: 192.168.50.101      # IP จริงของ master01 — ไม่ใช่ VIP
+  bindPort: 6443
+nodeRegistration:
+  name: k8s-master01
+  criSocket: unix:///run/containerd/containerd.sock
+  imagePullPolicy: IfNotPresent
+bootstrapTokens:
+  - token: ""          # ปล่อยว่างให้ kubeadm สร้างเองก็ได้
+    ttl: "2h"                           # ของเดิม default 24 ชม. — สั้นกว่านี้ปลอดภัยกว่า
+    usages: ["signing", "authentication"]
+    groups: ["system:bootstrappers:kubeadm:default-node-token"]
+
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+kubernetesVersion: v1.36.3
+
+# --- endpoint ที่ทุก node และ kubeconfig จะชี้มา ------------------------------
+# ค่านี้ถูกฝังลงใน certificate — แก้ทีหลังไม่ได้โดยไม่ออก cert ใหม่ทั้งชุด
+controlPlaneEndpoint: "192.168.50.100:8443"
+
+networking:
+  podSubnet: "10.246.0.0/16"            # Cilium cluster-pool ใช้ค่านี้ด้วย
+  serviceSubnet: "10.247.0.0/16"
+  dnsDomain: "cluster.local"
+
+apiServer:
+  # certSANs — จุดที่พลาดบ่อยที่สุด
+  # ต้องมีครบทั้ง VIP (IP + ชื่อ) และ master ทุกตัว (IP + ชื่อ)
+  # ลืมตัวใดตัวหนึ่ง = เจอ x509 error ตอนต่อผ่านช่องทางนั้น และต้องออก cert ใหม่
+  certSANs:
+    - "192.168.50.100"
+    - "k8s-vip"
+    - "192.168.50.101"
+    - "k8s-master01"
+    - "192.168.50.102"
+    - "k8s-master02"
+    - "192.168.50.103"
+    - "k8s-master03"
+    - "127.0.0.1"
+    - "localhost"
+    - "kubernetes"
+    - "kubernetes.default"
+    - "kubernetes.default.svc"
+    - "kubernetes.default.svc.cluster.local"
+  extraArgs:
+    # เก็บ audit log — จำเป็นสำหรับระบบที่เก็บข้อมูลพนักงาน
+    - name: "audit-log-path"
+      value: "/var/log/kubernetes/audit.log"
+    - name: "audit-log-maxage"
+      value: "30"
+    - name: "audit-log-maxbackup"
+      value: "10"
+    - name: "audit-log-maxsize"
+      value: "100"
+
+controllerManager:
+  extraArgs:
+    - name: "node-cidr-mask-size"
+      value: "24"                       # /24 ต่อ node ให้ตรงกับ Cilium cluster-pool
+
+etcd:
+  local:
+    # /var/lib/etcd คือ partition แยกที่เราย้ายมาจาก /home ในบทที่ 01
+    dataDir: "/var/lib/etcd"
+    extraArgs:
+      - name: "quota-backend-bytes"
+        value: "8589934592"             # 8 GB — default 2 GB เล็กไปสำหรับ cluster ที่อยู่ยาว
+
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+# ต้องตรงกับ SystemdCgroup = true ใน containerd (บทที่ 02)
+# ถ้าไม่ตรง node จะดูปกติแต่ evict pod มั่วตอนโหลดสูง
+cgroupDriver: systemd
+serializeImagePulls: false              # ดึง image พร้อมกันได้ — เร็วขึ้นตอน scale up
+evictionHard:
+  memory.available: "500Mi"
+  nodefs.available: "10%"
+  imagefs.available: "15%"
+
+# =============================================================================
+#  หมายเหตุ: ตั้งใจไม่มี KubeProxyConfiguration ในไฟล์นี้
+#  เพราะเราไม่ติดตั้ง kube-proxy เลย — Cilium ทำหน้าที่นี้ด้วย eBPF (บทที่ 05)
+#  จึงต้องสั่ง --skip-phases=addon/kube-proxy ตอน kubeadm init เสมอ
+#
+#  อย่าปิดท้ายไฟล์ด้วย "---" เปล่า ๆ เพราะจะกลายเป็น YAML document ว่าง
+#  ซึ่งทำให้ kubeadm ฟ้อง unknown kind
+# =============================================================================

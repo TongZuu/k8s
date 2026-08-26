@@ -1,0 +1,115 @@
+# =============================================================================
+#  kube-prometheus-stack — Helm values สำหรับ MyHR
+# =============================================================================
+#  ข้อจำกัดที่ค่าเหล่านี้ถูกออกแบบมารองรับ:
+#    - ไม่มี CSI → ใช้ static local PV ที่ผูกกับ k8s-worker03 (บทที่ 08)
+#    - /var/lib/monitoring อยู่บน root partition → ต้องคุม retention ไม่ให้ล้น
+#    - ต้อง drain node ทุก 1-2 เดือน → ทุกอย่างที่มีหลาย replica ต้องมี PDB
+# =============================================================================
+
+# --- Prometheus ---------------------------------------------------------------
+prometheus:
+  prometheusSpec:
+    # retention 2 ชั้น: ตามเวลา และตามขนาด — ตัวไหนถึงก่อนใช้ตัวนั้น
+    # retentionSize ต่ำกว่า PV (150Gi) ไว้ ~20% กันไม่ให้เต็มจนเขียนไม่ได้
+    retention: 30d
+    retentionSize: "120GiB"
+
+    replicas: 1                    # local PV เป็น RWO จึงมีได้ตัวเดียว
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-storage
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 150Gi
+
+    # เก็บ ServiceMonitor/PrometheusRule จากทุก namespace ไม่ใช่แค่ที่ chart สร้าง
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+    resources:
+      requests:
+        cpu: 500m
+        memory: 4Gi
+      limits:
+        memory: 8Gi
+
+# --- Alertmanager -------------------------------------------------------------
+alertmanager:
+  alertmanagerSpec:
+    replicas: 2                    # HA — alert ห้ามหายตอน drain node
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-storage
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 2Gi
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+# --- Grafana ------------------------------------------------------------------
+grafana:
+  replicas: 1                      # local PV เป็น RWO
+
+  persistence:
+    enabled: true
+    type: pvc
+    storageClassName: local-storage
+    accessModes: ["ReadWriteOnce"]
+    size: 5Gi
+
+  # รหัสเริ่มต้น — ต้องเปลี่ยนทันทีหลังเข้าครั้งแรก แล้วเก็บลงที่เก็บ secret
+  adminPassword: "<GRAFANA_ADMIN_PASSWORD>"
+
+  # ต่อ Loki เป็น data source ให้อัตโนมัติ
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki-gateway.monitoring.svc.cluster.local
+      access: proxy
+
+  grafana.ini:
+    server:
+      root_url: "https://grafana.myhr.co.th"
+    auth.anonymous:
+      enabled: false
+
+# --- node-exporter ------------------------------------------------------------
+nodeExporter:
+  enabled: true                    # ต้องได้ครบ 6 ตัว รวม master ด้วย
+
+# --- kube-state-metrics -------------------------------------------------------
+kube-state-metrics:
+  # ต้องเปิด metric ของ PDB และ resourcequota
+  # เพราะ alert DeploymentWithoutPDB ที่เราเขียนเองต้องใช้
+  metricLabelsAllowlist:
+    - deployments=[*]
+    - pods=[*]
+
+# --- component ที่ kubeadm จัดการเอง -------------------------------------------
+# เปิดให้ scrape ได้ แต่ต้องแน่ใจว่า component bind 0.0.0.0 ไม่ใช่ 127.0.0.1
+kubeControllerManager:
+  enabled: true
+  endpoints: ["192.168.50.101", "192.168.50.102", "192.168.50.103"]
+kubeScheduler:
+  enabled: true
+  endpoints: ["192.168.50.101", "192.168.50.102", "192.168.50.103"]
+kubeEtcd:
+  enabled: true
+  endpoints: ["192.168.50.101", "192.168.50.102", "192.168.50.103"]
+
+# --- kube-proxy: ปิด เพราะเราไม่ได้ติดตั้ง ------------------------------------
+# ถ้าไม่ปิด Prometheus จะมี target ที่ down ตลอดเวลาและกลบ alert จริง
+kubeProxy:
+  enabled: false
+
+# --- ให้ทุกอย่างลงที่ worker03 ที่มี PV อยู่ ------------------------------------
+# ไม่ต้องใส่ nodeSelector เพราะ WaitForFirstConsumer จัดการให้
+# แต่ใส่ toleration ไว้เผื่อ worker03 ถูก taint ในอนาคต

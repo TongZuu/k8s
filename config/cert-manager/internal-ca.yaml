@@ -1,0 +1,54 @@
+# =============================================================================
+#  Internal CA สำหรับ MyHR
+# =============================================================================
+#  ทำงาน 3 ชั้น:
+#    1. selfsigned-bootstrap  — issuer ชั่วคราวสำหรับเซ็น CA ของเราเอง
+#    2. myhr-internal-ca      — root CA อายุ 10 ปี
+#    3. myhr-internal-ca-issuer — ClusterIssuer ที่ทุก namespace เรียกใช้ได้
+#
+#  หลังจากนี้ Gateway และ Certificate ทุกอันอ้าง issuer ตัวที่ 3
+#  แล้ว cert-manager จะออกและ "ต่ออายุให้เองอัตโนมัติ" ก่อนหมดอายุ
+# =============================================================================
+
+---
+# ชั้นที่ 1 — issuer ชั่วคราว ใช้เซ็น CA ของเราเท่านั้น
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-bootstrap
+spec:
+  selfSigned: {}
+
+---
+# ชั้นที่ 2 — root CA ของ MyHR
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: myhr-internal-ca
+  namespace: cert-manager        # ต้องอยู่ namespace เดียวกับ cert-manager
+spec:
+  isCA: true
+  commonName: "MyHR Internal CA"
+  subject:
+    organizations: ["MyHR"]
+    countries: ["TH"]
+  secretName: myhr-internal-ca-key-pair
+  duration: 87600h               # 10 ปี
+  renewBefore: 8760h             # เตือน/ต่ออายุล่วงหน้า 1 ปี
+  privateKey:
+    algorithm: ECDSA
+    size: 384
+  issuerRef:
+    name: selfsigned-bootstrap
+    kind: ClusterIssuer
+    group: cert-manager.io
+
+---
+# ชั้นที่ 3 — issuer ที่ใช้งานจริง ทุก namespace เรียกได้
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: myhr-internal-ca-issuer
+spec:
+  ca:
+    secretName: myhr-internal-ca-key-pair

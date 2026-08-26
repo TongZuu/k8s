@@ -1,0 +1,35 @@
+# =============================================================================
+#  HTTPRoute ตัวอย่าง — ใช้เป็นแม่แบบของทุก service
+# =============================================================================
+#  นี่คือไฟล์เดียวที่ทีม dev ต้องเขียนเพิ่มเวลามี service ใหม่
+#  ไม่ต้องขอ IP ใหม่ ไม่ต้องแตะ Gateway ไม่ต้องคุยกับทีม network
+# =============================================================================
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: echo-route
+  namespace: demo
+spec:
+  # ผูกเข้ากับ Gateway กลาง — ข้าม namespace ได้เพราะ Gateway ตั้ง from: All
+  parentRefs:
+    - name: myhr-gateway
+      namespace: envoy-gateway-system
+      sectionName: https        # ผูกกับ listener HTTPS
+
+  hostnames:
+    - "echo.myhr.co.th"
+
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: echo            # ชื่อ Service (ClusterIP) ใน namespace เดียวกัน
+          port: 80
+
+      # ตัวอย่าง timeout — Spring Boot บางตัวตอบช้าตอน cold start
+      timeouts:
+        request: 30s
+        backendRequest: 30s

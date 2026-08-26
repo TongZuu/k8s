@@ -1,0 +1,122 @@
+# =============================================================================
+#  NetworkPolicy — default deny
+# =============================================================================
+#  หลักการ: ปิดทุกอย่างก่อน แล้วค่อยเปิดทีละเส้นที่จำเป็น
+#
+#  ⚠️ ต้อง apply allow-dns.yaml "พร้อมกัน" กับไฟล์นี้
+#     ถ้า apply แค่ไฟล์นี้ ทุก pod จะ resolve DNS ไม่ได้ทันที
+#     และอาการจะดูเหมือน application พังทั้งที่เป็นเรื่อง network policy
+#
+#  วิธีหาว่าต้องเปิดเส้นไหนบ้าง — ดูของจริงอย่าเดา:
+#    kubectl -n kube-system exec -it ds/cilium -- \
+#      hubble observe --namespace myhr-prod --verdict DROPPED --last 100
+# =============================================================================
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: myhr-prod
+spec:
+  podSelector: {}                  # ทุก pod ใน namespace
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: myhr-uat
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+# =============================================================================
+#  เปิดให้ Gateway เข้าถึง pod ได้ — ไม่งั้น service จะเข้าไม่ถึงจากข้างนอกเลย
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-gateway
+  namespace: myhr-prod
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+
+---
+# =============================================================================
+#  เปิดให้ Prometheus scrape metric ได้
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: myhr-prod
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8080              # ปรับตามพอร์ต metric จริงของ zeeme-*
+
+---
+# =============================================================================
+#  เปิดให้ pod ออกไปหาฐานข้อมูลนอก cluster
+# =============================================================================
+#  cluster นี้ไม่มี storage ฐานข้อมูลจึงอยู่นอกทั้งหมด (D8)
+#  ⚠️ แก้ IP และพอร์ตให้ตรงกับฐานข้อมูลจริงก่อน apply
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-to-database
+  namespace: myhr-prod
+spec:
+  podSelector: {}
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 192.168.30.0/24     # ← แก้ให้ตรงกับวงของฐานข้อมูลจริง
+      ports:
+        - protocol: TCP
+          port: 3306                  # MySQL — แก้ตามที่ใช้จริง
+        - protocol: TCP
+          port: 5432                  # PostgreSQL
+        - protocol: TCP
+          port: 1521                  # Oracle
+
+---
+# =============================================================================
+#  เปิดให้ pod คุยกันเองภายใน namespace เดียวกัน
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-same-namespace
+  namespace: myhr-prod
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]
+  ingress:
+    - from:
+        - podSelector: {}
+  egress:
+    - to:
+        - podSelector: {}

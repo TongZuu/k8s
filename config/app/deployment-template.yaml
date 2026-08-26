@@ -1,0 +1,196 @@
+# =============================================================================
+#  แม่แบบ Deployment ของ MyHR — คัดลอกไปแก้ทุกครั้งที่มี service ใหม่
+# =============================================================================
+#  ผ่าน PSA restricted แล้ว และมีครบทุกอย่างที่ CI จะตรวจ
+#  เทียบกับ zeeme-ads/deployment.yml ของเดิมที่ขาดเกือบทั้งหมด
+#
+#  แทนที่ทุกที่ที่เขียนว่า APPNAME แล้วปรับตัวเลขให้ตรงกับ service จริง
+# =============================================================================
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: APPNAME
+  namespace: myhr-prod
+  labels:
+    app.kubernetes.io/name: APPNAME
+    app.kubernetes.io/part-of: myhr
+spec:
+  # 🔴 replica >= 2 เสมอ — ไม่ใช่ข้อแนะนำ
+  # cluster นี้ไม่มี Ksplice จึงต้อง drain ทุก node ทุก 1-2 เดือน
+  # replica เดียว = service ดับทุกรอบ patch และ PDB ช่วยไม่ได้
+  replicas: 2
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0        # ห้ามลดจำนวน pod ที่พร้อมใช้ระหว่าง deploy
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: APPNAME
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: APPNAME
+        app.kubernetes.io/part-of: myhr
+    spec:
+      imagePullSecrets:
+        - name: regcred          # account ที่ pull ได้อย่างเดียว (บทที่ 10)
+
+      # --- กระจาย replica ข้าม node -------------------------------------
+      # ถ้าทุก replica อยู่ node เดียวกัน drain เครื่องนั้น = service ดับ
+      # ทั้งที่มี replica 2 ตัว
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: APPNAME
+
+      # --- security context ระดับ pod — จำเป็นสำหรับ PSA restricted -------
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001         # ของเดิมเป็น runAsUser: 0 (root)
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: APPNAME
+          # 🔴 pin ด้วย digest ไม่ใช่แค่ tag
+          # tag ถูกเขียนทับได้ deploy ซ้ำแล้วอาจได้คนละ image
+          image: registry.myhr.co.th/myhr/APPNAME:1.0.0@sha256:<IMAGE_DIGEST>
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: metrics
+              containerPort: 8081
+
+          # --- security context ระดับ container ---------------------------
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+
+          # readOnlyRootFilesystem ทำให้เขียน /tmp ไม่ได้
+          # Spring Boot ต้องการที่เขียนชั่วคราว จึง mount emptyDir ให้
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
+          # --- resources — บังคับมีทุกตัว ----------------------------------
+          # ไม่มี requests = scheduler ตัดสินใจมั่ว และ ResourceQuota บล็อกทั้ง namespace
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              # ตั้งใจไม่ใส่ limits.cpu — throttling ทำให้ latency แย่ลง
+              # โดยไม่ช่วยอะไร ถ้าคุม requests ดีแล้ว
+              memory: 1Gi
+
+          # --- probes ทั้ง 3 ตัว ---------------------------------------------
+          # startupProbe สำคัญที่สุดสำหรับ Spring Boot ที่เริ่มช้า
+          # ถ้าไม่มี livenessProbe จะฆ่า pod ตั้งแต่ยังไม่ทันเริ่มเสร็จ → CrashLoop ตลอดกาล
+          startupProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            failureThreshold: 30
+            periodSeconds: 5        # ให้เวลาเริ่มได้สูงสุด 150 วินาที
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 20
+            failureThreshold: 3
+
+          env:
+            - name: TZ
+              value: "Asia/Bangkok"
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+      # ให้เวลา pod ปิดงานที่ค้างอยู่ก่อนถูกฆ่า — สำคัญตอน drain
+      terminationGracePeriodSeconds: 45
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: APPNAME
+  namespace: myhr-prod
+  labels:
+    app.kubernetes.io/name: APPNAME
+spec:
+  type: ClusterIP              # ไม่ใช่ LoadBalancer — เข้าผ่าน Gateway เท่านั้น
+  selector:
+    app.kubernetes.io/name: APPNAME
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+
+---
+# =============================================================================
+#  🔴 PodDisruptionBudget — ห้ามขาด
+# =============================================================================
+#  ตอน drain node Kubernetes จะรอจนกว่าจะมี pod ใหม่ขึ้นบน node อื่นก่อน
+#  ถ้าไม่มี PDB มันจะปิดทันทีโดยไม่สนใจว่าเหลือกี่ตัว
+#
+#  ⚠️ minAvailable ต้อง "น้อยกว่า" replicas เสมอ
+#     ถ้า replicas: 2 และ minAvailable: 2 → drain จะค้างตลอดกาล
+# =============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: APPNAME
+  namespace: myhr-prod
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: APPNAME
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: APPNAME
+  namespace: myhr-prod
+spec:
+  parentRefs:
+    - name: myhr-gateway
+      namespace: envoy-gateway-system
+      sectionName: https
+  hostnames:
+    - "APPNAME.myhr.co.th"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: APPNAME
+          port: 80
+      timeouts:
+        request: 30s

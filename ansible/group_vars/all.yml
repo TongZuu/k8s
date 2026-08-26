@@ -1,0 +1,16 @@
+# =============================================================================
+#  ค่าที่ไม่ได้อยู่ใน versions.env
+# =============================================================================
+#  ⚠️ ห้ามใส่เลขเวอร์ชันหรือ IP ที่นี่ — ทุกอย่างนั้นอ่านจาก versions.env
+#     ตอนเริ่มรัน playbook (ดู task "โหลด versions.env")
+# =============================================================================
+
+# ที่อยู่ของ versions.env บนเครื่องที่รัน Ansible (ไม่ใช่บนเครื่องปลายทาง)
+versions_env: "{{ playbook_dir }}/../docs/versions.env"
+
+# registry เป็น HTTP หรือ HTTPS — ต้องยืนยันของจริงก่อน (บท 02 หัวข้อ 4)
+#   curl -sI https://registry.myhr.co.th/v2/ || curl -sI http://registry.myhr.co.th/v2/
+registry_scheme: https        # https | http
+
+# มี CA ของ registry ให้ติดตั้งไหม (วางไฟล์ที่ config/registry/ca.crt)
+registry_ca_file: ""          # เว้นว่าง = ไม่ต้องติดตั้ง CA

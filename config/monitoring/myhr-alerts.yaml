@@ -1,0 +1,151 @@
+# =============================================================================
+#  PrometheusRule เฉพาะของ MyHR
+# =============================================================================
+#  4 ข้อนี้ไม่มีใน chart มาตรฐาน เพราะมันมาจากข้อจำกัดที่เราเลือกเอง:
+#    - ไม่มี GitOps  → ไม่มีอะไรบังคับให้ manifest มี PDB
+#    - ไม่มี Ksplice → ต้อง drain ทุก 1-2 เดือน จึงต้องเผื่อ capacity N+1
+#    - Oracle Linux ให้ kernel สองตัว → node อาจบูตคนละตัวโดยไม่มีใครรู้
+#    - cluster เดิมตายเพราะ cert หมดอายุ → ต้องเตือนล่วงหน้าหลายเดือน
+# =============================================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: myhr-cluster-rules
+  namespace: monitoring
+  labels:
+    release: monitoring          # ต้องมี label นี้ Prometheus ถึงจะเก็บไป
+spec:
+  groups:
+
+    # =========================================================================
+    - name: myhr.rolling-reboot-readiness
+      rules:
+
+        # --- Deployment ที่ไม่มี PDB ----------------------------------------
+        # ถ้า drain node ที่มี pod ของ Deployment นี้อยู่ จะดับทันที
+        - alert: DeploymentWithoutPDB
+          expr: |
+            count by (namespace, deployment) (
+              kube_deployment_spec_replicas{namespace!~"kube-system|monitoring|cert-manager|envoy-gateway-system"}
+            )
+            unless on (namespace)
+            count by (namespace) (kube_poddisruptionbudget_status_desired_healthy)
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.deployment }} ไม่มี PodDisruptionBudget"
+            description: >-
+              cluster นี้ไม่มี Ksplice จึงต้อง drain ทุก node ทุก 1-2 เดือน
+              Deployment ที่ไม่มี PDB จะดับตอน drain
+              แก้โดยเพิ่ม PDB (minAvailable: 1) และตั้ง replica >= 2
+
+        # --- replica เดียว = drain แล้วดับแน่นอน ----------------------------
+        - alert: DeploymentSingleReplica
+          expr: |
+            kube_deployment_spec_replicas{namespace!~"kube-system|monitoring|cert-manager"} == 1
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.deployment }} มี replica เดียว"
+            description: "PDB ช่วยไม่ได้ถ้ามี replica เดียว — ต้องมีอย่างน้อย 2"
+
+        # --- capacity ใกล้ชนเพดาน N+1 ---------------------------------------
+        # worker 3 เครื่อง รวม 48 vCPU / 144 GB
+        # แต่ตอน drain เหลือ 2 เครื่อง → เพดานจริงคือ 32 vCPU / 96 GB
+        - alert: ClusterCapacityNearNPlusOneLimit
+          # เพดาน N+1: CPU 32 core · MEM 96 GiB — เตือนที่ 90% ของทั้งคู่
+          expr: |
+            sum(kube_pod_container_resource_requests{resource="cpu", node=~"k8s-worker.*"}) > (32 * 0.9)
+            or
+            sum(kube_pod_container_resource_requests{resource="memory", node=~"k8s-worker.*"}) > (96 * 1024 * 1024 * 1024 * 0.9)
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "requests รวมเกิน 90% ของเพดาน N+1 (32 vCPU / 96 GB)"
+            description: >-
+              ถ้าเกินเพดานนี้ การ drain node เพื่อ patch kernel จะทำให้ pod ค้าง Pending
+              และ drain ไม่จบ — ต้องลด requests หรือขอ worker เพิ่มก่อนรอบ patch ถัดไป
+
+    # =========================================================================
+    - name: myhr.oracle-linux
+      rules:
+
+        # --- node บูตคนละ kernel --------------------------------------------
+        - alert: NodeKernelVersionMismatch
+          expr: count(count by (release) (node_uname_info)) > 1
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "node ใน cluster บูต kernel คนละเวอร์ชัน"
+            description: >-
+              Oracle Linux ให้ kernel มาสองตัว (UEK และ RHCK) การผสมกันทำให้เกิด
+              อาการ network ที่ต่างกันเป็นราย node ซึ่งหาสาเหตุยากมาก
+              ตรวจด้วย `uname -r` ทุกเครื่อง และยืนยันว่า dnf versionlock ยังอยู่
+              หมายเหตุ: ระหว่าง rolling reboot alert นี้จะดังชั่วคราวเป็นเรื่องปกติ
+
+    # =========================================================================
+    - name: myhr.certificates
+      rules:
+
+        # --- cert ของ cluster ใกล้หมดอายุ ------------------------------------
+        - alert: KubeCertificateExpiringSoon
+          expr: |
+            (apiserver_client_certificate_expiration_seconds_count > 0)
+            and on (job)
+            histogram_quantile(0.01,
+              sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket[5m]))
+            ) < 60 * 60 * 24 * 60
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "certificate ของ cluster เหลืออายุน้อยกว่า 60 วัน"
+            description: >-
+              นี่คือสาเหตุที่ cluster เดิมเดินต่อไม่ได้
+              ตรวจด้วย `kubeadm certs check-expiration` บนทุก master
+              แล้วต่ออายุด้วย `kubeadm certs renew all` (ดูบทที่ 12)
+
+    # =========================================================================
+    - name: myhr.cilium
+      rules:
+
+        # --- Cilium ล่ม = pod network + Service + LoadBalancer ดับพร้อมกัน ----
+        - alert: CiliumAgentDown
+          expr: |
+            kube_daemonset_status_number_ready{daemonset="cilium", namespace="kube-system"}
+            < kube_daemonset_status_desired_number_scheduled{daemonset="cilium", namespace="kube-system"}
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Cilium agent ไม่ครบทุก node"
+            description: >-
+              Cilium ทำทั้ง CNI, kube-proxy replacement และ LB-IPAM
+              node ที่ไม่มี Cilium จะไม่มี pod network และ Service ใช้ไม่ได้
+              และไม่มี kube-proxy ให้ถอยกลับเพราะไม่ได้ติดตั้งไว้
+
+    # =========================================================================
+    - name: myhr.disk
+      rules:
+
+        # --- monitoring กิน root partition จนเต็ม ----------------------------
+        - alert: MonitoringDiskFillingUp
+          expr: |
+            (
+              node_filesystem_avail_bytes{mountpoint="/", instance=~".*106.*"}
+              / node_filesystem_size_bytes{mountpoint="/", instance=~".*106.*"}
+            ) < 0.20
+          for: 30m
+          labels:
+            severity: critical
+          annotations:
+            summary: "root partition ของ k8s-worker03 เหลือน้อยกว่า 20%"
+            description: >-
+              /var/lib/monitoring อยู่บน root partition ร่วมกับ log และ OS
+              ถ้าเต็ม node จะกลายเป็น NotReady ทั้งเครื่อง
+              ลด retention ของ Prometheus/Loki หรือย้ายไป disk แยก

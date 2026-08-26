@@ -1,0 +1,89 @@
+# =============================================================================
+#  Cilium Helm values  —  MyHR production cluster
+#  ใช้กับ Cilium 1.20.1
+# =============================================================================
+#  Cilium ในชุดนี้ทำ 3 หน้าที่: CNI + แทน kube-proxy + จ่าย LoadBalancer IP
+#  ติดตั้งด้วย:
+#    helm install cilium cilium/cilium --version 1.20.1 \
+#      --namespace kube-system -f values.yaml
+# =============================================================================
+
+# --- แทน kube-proxy ทั้งตัว --------------------------------------------------
+kubeProxyReplacement: true
+
+# เพราะไม่มี kube-proxy Cilium จึงหา apiserver ผ่าน Service ClusterIP ไม่ได้
+# ต้องบอก endpoint ตรง ๆ — ชี้ไปที่ VIP เพื่อให้ยังทน master ตายได้
+k8sServiceHost: 192.168.50.100
+k8sServicePort: 8443
+
+# --- IPAM ---------------------------------------------------------------------
+ipam:
+  mode: cluster-pool
+  operator:
+    clusterPoolIPv4PodCIDRList:
+      - "10.246.0.0/16"
+    clusterPoolIPv4MaskSize: 24        # /24 ต่อ node → รองรับ 256 node
+
+# --- Routing ------------------------------------------------------------------
+# VXLAN บนพอร์ต 8472/udp (เปิดไว้แล้วที่บทที่ 01)
+# ถ้าอยากได้ประสิทธิภาพสูงกว่านี้ ค่อยพิจารณา native routing ทีหลัง
+# แต่ต้องให้ทีม network ตั้ง route ของ pod CIDR ให้ ซึ่งเพิ่มงานประสานงาน
+routingMode: tunnel
+tunnelProtocol: vxlan
+
+# MTU — node เป็น 1500 และ VXLAN ห่อเพิ่ม 50 bytes
+# ปล่อยให้ Cilium ตรวจเอง แต่ถ้าเจออาการ "ping ผ่าน แต่ HTTP ใหญ่ ๆ ค้าง"
+# ให้ตั้งตรง ๆ เป็น 1450 แล้วทดสอบซ้ำ
+# MTU: 1450
+
+# --- L2 announcement สำหรับ LoadBalancer IP -----------------------------------
+l2announcements:
+  enabled: true
+
+externalIPs:
+  enabled: true
+
+# L2 announcement เรียก API บ่อยกว่าปกติมาก
+# ถ้าไม่ยก rate limit จะเจอ leader election หลุดเป็นระยะและ IP กระพริบ
+k8sClientRateLimit:
+  qps: 20
+  burst: 100
+
+# --- Security -----------------------------------------------------------------
+# ระบบเก็บข้อมูลพนักงาน จึงต้องมี NetworkPolicy ใช้ได้จริง
+policyEnforcementMode: default        # เปลี่ยนเป็น always หลังเขียน policy ครบแล้ว (บทที่ 10)
+
+# --- Observability ------------------------------------------------------------
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+  metrics:
+    enabled:
+      - dns
+      - drop
+      - tcp
+      - flow
+      - icmp
+      - http
+
+# --- Operator -----------------------------------------------------------------
+operator:
+  replicas: 2                          # HA — อย่าเหลือ 1 บน cluster ที่มี 3 master
+
+# --- Resource ----------------------------------------------------------------
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+
+# --- ปิดของที่ยังไม่ใช้ -------------------------------------------------------
+# Gateway API จะใช้ Envoy Gateway แยก ไม่ใช่ของ Cilium (ตาม D6)
+gatewayAPI:
+  enabled: false
+
+# BGP ไม่ใช้ เพราะเลือก L2 announcement
+bgpControlPlane:
+  enabled: false

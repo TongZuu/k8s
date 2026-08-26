@@ -1,0 +1,80 @@
+# =============================================================================
+#  เปิด DNS — ต้อง apply พร้อมกับ default-deny.yaml เสมอ
+# =============================================================================
+#  ถ้าลืมไฟล์นี้ ทุก pod ใน namespace จะ resolve ชื่อไม่ได้ทันที
+#  อาการที่เจอ: application ขึ้น Running ปกติ แต่ log เต็มไปด้วย
+#  "UnknownHostException" หรือ "could not resolve host"
+#  ซึ่งหลอกให้ไปไล่หาปัญหาที่ application
+# =============================================================================
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: myhr-prod
+spec:
+  podSelector: {}
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: myhr-uat
+spec:
+  podSelector: {}
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+# =============================================================================
+#  เปิดให้ pull image จาก private registry ได้
+# =============================================================================
+#  หมายเหตุ: การ pull image ทำโดย "kubelet บน host" ไม่ใช่ตัว pod
+#  จึงไม่ถูก NetworkPolicy ควบคุมโดยตรง
+#  แต่ถ้า application ต้องเรียก registry เอง (เช่น ตรวจ tag) จะต้องมีข้อนี้
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-to-registry
+  namespace: myhr-prod
+spec:
+  podSelector: {}
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 192.168.30.207/32     # registry.myhr.co.th
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80

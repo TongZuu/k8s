@@ -1,0 +1,281 @@
+# =============================================================================
+#  prepare-os.yml — แทนบทที่ 01
+# =============================================================================
+#  รัน:   ansible-playbook prepare-os.yml --check     ← ดูอย่างเดียว ไม่แก้อะไร
+#         ansible-playbook prepare-os.yml
+#
+#  ⚠️ playbook นี้ "ไม่ได้" ทำสองข้อของบท 01 โดยเจตนา:
+#     · ข้อ 2 สลับ/ตรึง kernel  → ควรอยู่ใน VM template ไม่ใช่ที่นี่
+#     · ข้อ 5 ย้าย partition    → umount + แก้ fstab พลาดแล้วเครื่องบูตไม่ขึ้น
+#                                 ต้องแบ่ง partition ให้ถูกตั้งแต่สร้าง template
+#     ทั้งสองข้อมี task ตรวจให้ว่าทำมาแล้วหรือยัง ถ้ายังจะหยุดทันที
+# =============================================================================
+---
+- name: โหลด versions.env (แหล่งความจริงเดียว)
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: อ่านและ source versions.env ด้วย bash — ใช้ semantics เดียวกับคู่มือ
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -euo pipefail
+          set -a && source "{{ versions_env }}" && set +a
+          grep -oE '^[A-Z][A-Z0-9_]*=' "{{ versions_env }}" | tr -d '=' | sort -u \
+            | while read -r k; do printf '%s: "%s"\n' "$k" "${!k}"; done
+      register: _ver_raw
+      changed_when: false
+
+    - name: แปลงเป็นตัวแปรให้ทุก host ใช้ร่วมกัน
+      ansible.builtin.set_fact:
+        v: "{{ _ver_raw.stdout | from_yaml }}"
+        cacheable: true
+
+    - name: แสดงค่าที่โหลดได้ — ตรวจด้วยตาก่อนไปต่อ
+      ansible.builtin.debug:
+        msg: "K8S={{ v.K8S_VERSION }} VIP={{ v.VIP }} IFACE={{ v.NODE_IFACE }} kernel={{ v.KERNEL_UEK }}"
+
+- name: เตรียม OS ทุกเครื่อง
+  hosts: k8s_nodes
+  gather_facts: true
+  vars:
+    v: "{{ hostvars['localhost']['v'] }}"
+
+  tasks:
+    # -------------------------------------------------------------------------
+    #  ตรวจสิ่งที่ต้องมาจาก VM template ก่อน — ถ้าไม่ผ่านหยุดทันที
+    # -------------------------------------------------------------------------
+    - name: kernel ต้องเป็น UEK และตรงกับ versions.env
+      ansible.builtin.assert:
+        that:
+          - "'uek' in ansible_kernel"
+          - ansible_kernel.startswith(v.KERNEL_UEK)
+        fail_msg: >-
+          kernel บนเครื่องนี้คือ {{ ansible_kernel }}
+          แต่ versions.env ระบุ {{ v.KERNEL_UEK }} (ต้องเป็น uek)
+          → แก้ที่ VM template ก่อน อย่าให้ playbook สลับ kernel ให้
+        success_msg: "kernel {{ ansible_kernel }} ถูกต้อง"
+
+    - name: kernel ต้องถูก versionlock ไว้แล้ว
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: dnf versionlock list 2>/dev/null | grep -c kernel-uek || true
+      register: _vlock
+      changed_when: false
+      failed_when: _vlock.stdout | int == 0
+
+    - name: partition ต้องถูกย้ายมาแล้วตั้งแต่สร้าง VM
+      vars:
+        _want: "{{ '/var/lib/etcd' if inventory_hostname in groups['masters'] else '/var/lib/containerd' }}"
+      ansible.builtin.assert:
+        that:
+          - _want in (ansible_mounts | map(attribute='mount') | list)
+        fail_msg: >-
+          ยังไม่มี partition แยกสำหรับ {{ _want }}
+          → ทำใน VM template หรือทำมือตามบท 01 ข้อ 5 · playbook ไม่แตะ fstab ให้
+
+    # -------------------------------------------------------------------------
+    #  1 · hostname และ /etc/hosts
+    # -------------------------------------------------------------------------
+    - name: ตั้ง hostname ตามชื่อใน inventory
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: วาง /etc/hosts — บล็อกเดียวกันทุกเครื่อง
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} k8s cluster — จัดการโดย ansible"
+        block: |
+          {{ v.VIP }}  {{ v.VIP_HOSTNAME }}
+          {{ v.MASTER01_IP }}  {{ v.MASTER01_NAME }}
+          {{ v.MASTER02_IP }}  {{ v.MASTER02_NAME }}
+          {{ v.MASTER03_IP }}  {{ v.MASTER03_NAME }}
+          {{ v.WORKER01_IP }}  {{ v.WORKER01_NAME }}
+          {{ v.WORKER02_IP }}  {{ v.WORKER02_NAME }}
+          {{ v.WORKER03_IP }}  {{ v.WORKER03_NAME }}
+
+    # -------------------------------------------------------------------------
+    #  3 · repo
+    # -------------------------------------------------------------------------
+    - name: ปิด ol9_addons — มี containerd ของ Oracle ที่จะไปทับ tarball ในบท 02
+      ansible.builtin.command: dnf config-manager --disable ol9_addons
+      register: _dis
+      changed_when: _dis.rc == 0
+      failed_when: false
+
+    - name: เปิดเฉพาะ repo ที่ใช้
+      ansible.builtin.command: dnf config-manager --enable ol9_baseos_latest ol9_appstream ol9_UEKR8
+      register: _en
+      changed_when: _en.rc == 0
+
+    - name: ปิด Ksplice — ใช้ OL แบบฟรีจึงไม่มีสิทธิ์ ปล่อยไว้ได้แต่ log error
+      ansible.builtin.systemd_service:
+        name: ksplice-uptrack.service
+        enabled: false
+        state: stopped
+      failed_when: false
+
+    # -------------------------------------------------------------------------
+    #  4 · package พื้นฐาน + เวลา
+    # -------------------------------------------------------------------------
+    - name: ลง package พื้นฐาน
+      ansible.builtin.dnf:
+        name:
+          - chrony
+          - open-vm-tools
+          - tar
+          - curl
+          - wget
+          - iproute-tc
+          - socat
+          - conntrack-tools
+          - ethtool
+          - bash-completion
+          - jq
+        state: present
+
+    - name: เปิด chronyd
+      ansible.builtin.systemd_service:
+        name: chronyd
+        enabled: true
+        state: started
+
+    - name: เวลาต้อง sync แล้ว — TLS cert และ etcd raft พังทันทีถ้าเวลาเพี้ยน
+      ansible.builtin.command: chronyc tracking
+      register: _chrony
+      changed_when: false
+      failed_when: "'Leap status' not in _chrony.stdout or 'Normal' not in _chrony.stdout"
+
+    # -------------------------------------------------------------------------
+    #  6 · kernel module และ sysctl
+    # -------------------------------------------------------------------------
+    - name: ให้ module โหลดเองหลัง reboot
+      ansible.builtin.copy:
+        dest: /etc/modules-load.d/k8s.conf
+        mode: "0644"
+        content: |
+          overlay
+          br_netfilter
+
+    - name: โหลด module เดี๋ยวนี้ — ต้องมาก่อนตั้ง sysctl ไม่งั้น net.bridge.* set ไม่ติด
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+
+    - name: ตั้ง sysctl
+      ansible.posix.sysctl:
+        name: "{{ item }}"
+        value: "1"
+        sysctl_file: /etc/sysctl.d/99-kubernetes.conf
+        sysctl_set: true
+        reload: true
+      loop:
+        - net.ipv4.ip_forward
+        - net.bridge.bridge-nf-call-iptables
+        - net.bridge.bridge-nf-call-ip6tables
+
+    # -------------------------------------------------------------------------
+    #  7 · swap และ SELinux
+    # -------------------------------------------------------------------------
+    - name: ปิด swap เดี๋ยวนี้
+      ansible.builtin.command: swapoff -a
+      when: ansible_swaptotal_mb | int > 0
+      changed_when: true
+
+    - name: คอมเมนต์บรรทัด swap ใน fstab ไม่ให้กลับมาหลัง reboot
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([^#].*\sswap\s.*)$'
+        replace: '# \1'
+
+    - name: ตั้ง SELinux เป็น permissive
+      ansible.posix.selinux:
+        policy: targeted
+        state: permissive
+
+    # -------------------------------------------------------------------------
+    #  8 · firewalld
+    # -------------------------------------------------------------------------
+    - name: เปิดพอร์ตของ master
+      ansible.posix.firewalld:
+        port: "{{ item }}"
+        permanent: true
+        immediate: true
+        state: enabled
+      loop:
+        - 6443/tcp          # kube-apiserver
+        - 8443/tcp          # HAProxy frontend (VIP)
+        - 2379-2380/tcp     # etcd client + peer
+        - 10250/tcp         # kubelet API
+        - 10257/tcp         # controller-manager
+        - 10259/tcp         # scheduler
+        - 8472/udp          # Cilium VXLAN
+        - 4240/tcp          # Cilium health
+        - 4244-4245/tcp     # Hubble
+      when: inventory_hostname in groups['masters']
+
+    - name: เปิด VRRP ให้ keepalived — master เท่านั้น
+      ansible.posix.firewalld:
+        rich_rule: rule protocol value="vrrp" accept
+        permanent: true
+        immediate: true
+        state: enabled
+      when: inventory_hostname in groups['masters']
+
+    - name: เปิดพอร์ตของ worker
+      ansible.posix.firewalld:
+        port: "{{ item }}"
+        permanent: true
+        immediate: true
+        state: enabled
+      loop:
+        - 10250/tcp         # kubelet API
+        - 30000-32767/tcp   # NodePort range
+        - 8472/udp          # Cilium VXLAN
+        - 4240/tcp          # Cilium health
+        - 4244-4245/tcp     # Hubble
+      when: inventory_hostname in groups['workers']
+
+# =============================================================================
+#  reboot + ตรวจซ้ำ — ข้ามได้ด้วย --skip-tags reboot
+# =============================================================================
+- name: Reboot แล้วพิสูจน์ว่าทุกอย่างยังอยู่
+  hosts: k8s_nodes
+  gather_facts: false
+  serial: 1
+  vars:
+    v: "{{ hostvars['localhost']['v'] }}"
+  tags: reboot
+  tasks:
+    - name: reboot ทีละเครื่อง
+      ansible.builtin.reboot:
+        reboot_timeout: 600
+
+    - name: ตรวจว่าของยังอยู่ครบหลัง reboot
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          echo "kernel=$(uname -r)"
+          echo "modules=$(lsmod | grep -cE '^overlay|^br_netfilter')"
+          echo "fwd=$(sysctl -n net.ipv4.ip_forward)"
+          echo "swap=$(free -m | awk '/Swap/{print $2}')"
+          echo "selinux=$(getenforce)"
+      register: _post
+      changed_when: false
+
+    - name: ผลหลัง reboot
+      ansible.builtin.debug:
+        var: _post.stdout_lines
+
+    - name: ทุกข้อต้องผ่าน ไม่งั้นห้ามไปบท 02
+      ansible.builtin.assert:
+        that:
+          - "'modules=2' in _post.stdout"
+          - "'fwd=1' in _post.stdout"
+          - "'swap=0' in _post.stdout"
+          - "'selinux=Permissive' in _post.stdout"
+          - "'kernel=' ~ v.KERNEL_UEK in _post.stdout"
+        fail_msg: "เครื่องนี้ไม่ผ่านเกณฑ์บท 01 — หยุดแล้วแก้ก่อน"

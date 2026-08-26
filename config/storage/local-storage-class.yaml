@@ -1,0 +1,20 @@
+# =============================================================================
+#  StorageClass สำหรับ static local PV
+# =============================================================================
+#  ไม่ใช่ dynamic provisioning — provisioner เป็น "no-provisioner"
+#  แปลว่าไม่มีใครสร้าง PV ให้อัตโนมัติ เราต้องสร้างเองทีละอัน
+#  มี StorageClass นี้ไว้เพื่อให้ PVC ผูกกับ PV ที่เราเตรียมไว้ได้เท่านั้น
+#
+#  WaitForFirstConsumer สำคัญมาก:
+#    ให้ scheduler เลือก node ให้ pod ก่อน แล้วค่อยผูก PV ที่อยู่ node นั้น
+#    ถ้าใช้ Immediate จะผูก PV ก่อน แล้ว pod อาจถูก schedule ไปคนละเครื่อง
+#    → pod ค้าง Pending ตลอดกาลโดยไม่มี error ที่บอกสาเหตุชัด
+# =============================================================================
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain

@@ -1,0 +1,38 @@
+# =============================================================================
+#  CiliumL2AnnouncementPolicy  —  ใครเป็นคนตอบ ARP ให้ LoadBalancer IP
+# =============================================================================
+#  IP ที่ได้จาก LB-IPAM จะยังไม่มีใครรู้จักใน LAN จนกว่าจะมี policy นี้
+#  หน้าที่ของมันคือสั่งให้ node ตัวใดตัวหนึ่งตอบ ARP ว่า "IP นี้อยู่ที่ฉัน"
+#  ถ้า node นั้นตาย Cilium จะให้ node อื่นรับหน้าที่แทนภายในไม่กี่วินาที
+#
+#  ⚠️ กลไกนี้คือการตอบ ARP แทน IP ที่ไม่ใช่ของตัวเอง ซึ่งหน้าตาเหมือน ARP spoofing
+#     ถ้า switch เปิด Dynamic ARP Inspection หรือ port security ไว้ จะถูกบล็อก
+#     อาการที่เจอ: Service ขึ้น EXTERNAL-IP ปกติทุกอย่าง แต่ ping จากข้างนอกไม่ติด
+#
+#  หมายเหตุ: resource นี้ยังเป็น v2alpha1 (ต่างจาก LB-IPAM ที่เป็น v2 แล้ว)
+#  ตรวจของจริงในคลัสเตอร์ด้วย: kubectl api-resources | grep -i l2announcement
+# =============================================================================
+
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: default-l2-policy
+spec:
+  # ประกาศให้ทุก Service ที่ขอ LoadBalancer IP — ไม่กรองด้วย label
+  # ถ้าต้องการแยกกลุ่มทีหลัง ให้ใส่ serviceSelector แล้วแยกเป็นหลาย policy
+  serviceSelector: {}
+
+  # ให้เฉพาะ worker เป็นคนตอบ ARP ไม่ใช้ control plane
+  # เหตุผล: กัน traffic ของ application ไม่ให้ไปเบียด apiserver และ etcd
+  nodeSelector:
+    matchExpressions:
+      - key: node-role.kubernetes.io/control-plane
+        operator: DoesNotExist
+
+  # interface ที่จะตอบ ARP — ต้องเป็นวงเดียวกับ IP pool (192.168.50.0/24)
+  # ยืนยันชื่อจริงด้วย: ip -br addr show
+  interfaces:
+    - ^ens192$
+
+  externalIPs: true
+  loadBalancerIPs: true

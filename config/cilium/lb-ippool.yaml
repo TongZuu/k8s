@@ -1,0 +1,23 @@
+# =============================================================================
+#  CiliumLoadBalancerIPPool  —  ช่วง IP ที่ Cilium หยิบไปให้ Service
+# =============================================================================
+#  1 IP = 1 Service ที่เป็น type: LoadBalancer  (ไม่ใช่ 1 IP ต่อ 1 node)
+#
+#  จอง 10 IP แต่วันเปิดใช้จริงจะกินแค่ 1-2 ตัว
+#  เพราะ HTTP/HTTPS ทุก service ไปรวมอยู่หลัง Envoy Gateway ตัวเดียว
+#  แล้วแยกกันด้วย hostname ผ่าน HTTPRoute
+#
+#  ที่เหลือเผื่อไว้สำหรับ:
+#    - Gateway ตัวที่สอง (แยก internal / external)
+#    - service ที่ไม่ใช่ HTTP ซึ่ง route ด้วย hostname ไม่ได้
+#    - service ที่ต้องมี IP เฉพาะเพื่อให้ firewall เขียน rule เจาะจงได้
+# =============================================================================
+
+apiVersion: "cilium.io/v2"
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: default-pool
+spec:
+  blocks:
+    - start: "192.168.50.200"
+      stop:  "192.168.50.209"

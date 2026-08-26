@@ -1,0 +1,82 @@
+# =============================================================================
+#  Audit policy
+#  ปลายทาง: /etc/kubernetes/audit-policy.yaml  (chmod 600) ทั้ง 3 master
+# =============================================================================
+#  audit log กิน disk เร็วมากถ้าบันทึกทุก event
+#  policy นี้จึงบันทึกเฉพาะสิ่งที่มีความหมายจริงตอนสืบสวน:
+#    - ใครอ่าน/แก้ Secret
+#    - ใครเปลี่ยน RBAC
+#    - ใคร exec เข้า pod
+#    - การเปลี่ยนแปลง resource ทั้งหมด (create/update/delete)
+#  และ "ตัดทิ้ง" การอ่านทั่วไปกับ health check ที่เกิดตลอดเวลา
+# =============================================================================
+
+apiVersion: audit.k8s.io/v1
+kind: Policy
+
+# ไม่ต้องบันทึก request/response body ของ Secret (จะกลายเป็น secret รั่วในไฟล์ log)
+omitStages:
+  - RequestReceived
+
+rules:
+  # --- ตัดเสียงรบกวนออกก่อน -------------------------------------------------
+  - level: None
+    users: ["system:kube-proxy"]
+    verbs: ["watch"]
+
+  - level: None
+    userGroups: ["system:nodes"]
+    verbs: ["get", "list", "watch"]
+
+  - level: None
+    nonResourceURLs:
+      - /healthz*
+      - /readyz*
+      - /livez*
+      - /version
+      - /metrics
+      - /openapi/*
+
+  - level: None
+    users: ["system:serviceaccount:monitoring:monitoring-prometheus"]
+    verbs: ["get", "list", "watch"]
+
+  # --- 🔴 Secret: บันทึกทุกการเข้าถึง แต่ไม่เก็บเนื้อหา ----------------------
+  - level: Metadata
+    resources:
+      - group: ""
+        resources: ["secrets", "configmaps"]
+
+  # --- 🔴 RBAC: บันทึกเต็มรูปแบบ ใครแก้สิทธิ์ต้องรู้ให้หมด -------------------
+  - level: RequestResponse
+    resources:
+      - group: "rbac.authorization.k8s.io"
+        resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+
+  # --- 🔴 exec / attach / port-forward: ช่องทางเข้าถึงข้อมูลทางอ้อม ----------
+  - level: RequestResponse
+    resources:
+      - group: ""
+        resources: ["pods/exec", "pods/attach", "pods/portforward"]
+
+  # --- การเปลี่ยนแปลงทุกอย่าง ------------------------------------------------
+  - level: RequestResponse
+    verbs: ["create", "update", "patch", "delete", "deletecollection"]
+    resources:
+      - group: ""
+      - group: "apps"
+      - group: "batch"
+      - group: "networking.k8s.io"
+      - group: "policy"
+      - group: "gateway.networking.k8s.io"
+      - group: "cilium.io"
+
+  # --- การอ่านอย่างอื่น: เก็บแค่ metadata ------------------------------------
+  - level: Metadata
+    verbs: ["get", "list"]
+    resources:
+      - group: ""
+        resources: ["pods", "services", "nodes", "namespaces"]
+
+  # --- ที่เหลือทั้งหมด --------------------------------------------------------
+  - level: Metadata

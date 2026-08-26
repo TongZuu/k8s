@@ -1,0 +1,109 @@
+# =============================================================================
+#  etcd backup อัตโนมัติ — ทุกวันตี 2
+# =============================================================================
+#  ⚠️ นี่คือ backup ชั้นแรกเท่านั้น — snapshot ยังอยู่บนเครื่องเดียวกับ etcd
+#     ต้องมีงานอีกชุดที่ดึงไฟล์ออกไปนอก cluster
+#     (rsync/scp จากเครื่อง backup มาที่ /var/lib/etcd-backup ของ master01)
+#     snapshot ที่อยู่บนเครื่องเดียวกับ etcd ไม่ช่วยอะไรตอนเครื่องพัง
+#
+#  ⚠️ snapshot มี Secret ที่เข้ารหัสด้วย encryption key อยู่ข้างใน
+#     ถ้า key หายจะถอดรหัสไม่ได้เลย — เก็บ key แยกจาก backup
+# =============================================================================
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: etcd-backup
+  namespace: kube-system
+spec:
+  schedule: "0 2 * * *"              # ทุกวัน 02:00
+  timeZone: "Asia/Bangkok"
+  concurrencyPolicy: Forbid          # ห้ามซ้อนกันถ้ารอบก่อนยังไม่เสร็จ
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5          # เก็บที่ล้มไว้เยอะกว่า จะได้ตรวจย้อนหลังได้
+
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          hostNetwork: true
+
+          # ต้องรันบน master01 เท่านั้น เพราะต้องอ่าน cert และเขียนลง /var/lib/etcd
+          nodeSelector:
+            kubernetes.io/hostname: k8s-master01
+
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+
+          containers:
+            - name: etcd-backup
+              # ใช้ image เดียวกับ etcd ที่ cluster รันอยู่ — ตรวจเลขจริงด้วย:
+              #   kubectl -n kube-system get pod etcd-k8s-master01 \
+              #     -o jsonpath='{.spec.containers[0].image}'
+              image: registry.k8s.io/etcd:3.6.6-0
+              imagePullPolicy: IfNotPresent
+
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  TS=$(date +%Y%m%d-%H%M%S)
+                  SNAP="/backup/etcd-snapshot-${TS}.db"
+
+                  echo "==> สร้าง snapshot: ${SNAP}"
+                  etcdctl \
+                    --endpoints=https://127.0.0.1:2379 \
+                    --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+                    --cert=/etc/kubernetes/pki/etcd/server.crt \
+                    --key=/etc/kubernetes/pki/etcd/server.key \
+                    snapshot save "${SNAP}"
+
+                  echo "==> ตรวจว่าไฟล์ใช้ได้จริง"
+                  etcdutl --write-out=table snapshot status "${SNAP}"
+
+                  echo "==> checksum"
+                  sha256sum "${SNAP}" > "${SNAP}.sha256"
+                  cat "${SNAP}.sha256"
+
+                  echo "==> ลบ snapshot ที่เก่ากว่า 7 วัน"
+                  find /backup -name 'etcd-snapshot-*.db*' -mtime +7 -print -delete
+
+                  echo "==> พื้นที่คงเหลือ"
+                  df -h /backup
+
+                  echo "==> เสร็จ: ${SNAP}"
+
+              volumeMounts:
+                - name: etcd-certs
+                  mountPath: /etc/kubernetes/pki/etcd
+                  readOnly: true
+                - name: backup
+                  mountPath: /backup
+
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  memory: 512Mi
+
+              securityContext:
+                runAsUser: 0            # ต้อง root เพื่ออ่าน cert ของ etcd
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+
+          volumes:
+            - name: etcd-certs
+              hostPath:
+                path: /etc/kubernetes/pki/etcd
+                type: Directory
+            - name: backup
+              hostPath:
+                path: /var/lib/etcd-backup
+                type: DirectoryOrCreate

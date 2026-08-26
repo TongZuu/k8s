@@ -111,8 +111,8 @@ td code,li code,p code{white-space:nowrap;}
 .rec{background:var(--ok-soft); border-left:3px solid var(--ok);}
 .gapbox{background:var(--crit-soft); border-left:3px solid var(--crit);}
 .note{background:var(--warn-soft); border-left:3px solid var(--warn);}
-.rec b,.gapbox b,.note b{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; display:block; margin-bottom:6px; font-weight:600;}
-.rec b{color:var(--ok);} .gapbox b{color:var(--crit);} .note b{color:var(--warn);}
+.rec>b:first-child,.gapbox>b:first-child,.note>b:first-child{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; display:block; margin-bottom:6px; font-weight:600;}
+.rec>b:first-child{color:var(--ok);} .gapbox>b:first-child{color:var(--crit);} .note>b:first-child{color:var(--warn);}
 .rec p:last-child,.gapbox p:last-child,.note p:last-child,.rec ul:last-child{margin-bottom:0;}
 .rec ul,.gapbox ul{margin-bottom:0;}
 
@@ -183,8 +183,9 @@ figcaption b{color:var(--ink); font-weight:600;}
   <p class="lede">ข้อเสนอโครงสร้างเอกสารและสถาปัตยกรรมเต็มระบบ สำหรับสร้าง on-prem HA cluster ชุดใหม่แทนของเดิมที่อิง Kubernetes 1.30 ซึ่งหมดระยะ support ไปแล้ว — ไล่ทีละชั้นว่าแต่ละองค์ประกอบทำหน้าที่อะไร มีทางเลือกอะไรบ้าง และควรเลือกอะไรเพราะอะไร</p>
   <div class="meta">
     <div><b>เป้าหมาย</b>Kubernetes 1.36 · kubeadm HA</div>
+    <div><b>OS ฐาน</b>Oracle Linux 9.8 (ฟรี) · UEK 8U2 (6.12)</div>
     <div><b>ฐานเดิม</b>k8s 1.30 · containerd 1.7 · Helm 3</div>
-    <div><b>สถานะ</b>ยังไม่เคาะ · รอตัดสินใจ 10 ข้อ</div>
+    <div><b>สถานะ</b>เคาะครบทุกข้อ · พร้อมเริ่ม Phase 0</div>
     <div><b>วันที่</b>25 ส.ค. 2026</div>
   </div>
 </header>
@@ -240,17 +241,23 @@ figcaption b{color:var(--ink); font-weight:600;}
   </table></div>
 
   <div class="note"><b>ข้อสมมติที่ยังต้องยืนยัน</b>
-  <p>ผมสมมติจากเอกสารเดิมว่า: node เป็น VM บน VMware (interface ชื่อ <code>ens192</code>), OS เป็นตระกูล RHEL (ใช้ <code>yum</code> + <code>firewalld</code> + SELinux), มี private registry ที่ <code>registry.myhr.co.th</code>, และ workload หลักเป็น Spring Boot microservices ถ้าข้อไหนไม่ตรง บอกได้ครับ จะมีผลกับ L00, L02 และ L07 โดยตรง</p></div>
+  <p><b>OS ยืนยันแล้ว</b> — ทีมเลือก <b>Oracle Linux 9.8</b> ดังนั้น D2 ถือว่าปิดแล้ว แต่เปิดข้อย่อย <b>D2a (เลือก kernel UEK หรือ RHCK)</b> ขึ้นมาแทน ซึ่งมีผลต่อ L02 และ L05 โดยตรง</p>
+  <p>ส่วนที่ยังเป็นข้อสมมติจากเอกสารเดิม: node เป็น VM บน VMware (interface ชื่อ <code>ens192</code>), มี private registry ที่ <code>registry.myhr.co.th</code>, และ workload หลักเป็น Spring Boot microservices ถ้าข้อไหนไม่ตรง บอกได้ครับ จะมีผลกับ L00, L07 และ L08</p></div>
 </section>
 
 <!-- ============ 01 ============ -->
 <section id="decisions">
   <div class="sec-head"><span class="sec-num">01</span><h2>สิ่งที่ต้องเคาะก่อนลงมือเขียน</h2></div>
 
-  <p>10 ข้อนี้กำหนดหน้าตาของคู่มือทั้งชุด ถ้าเปลี่ยนทีหลังจะต้องรื้อหลายบท เรียงจากผลกระทบมากไปน้อย <span class="pill p-ok">แนะนำ</span> คือตัวที่ผมเสนอ</p>
+  <p>ข้อเหล่านี้กำหนดหน้าตาของคู่มือทั้งชุด ถ้าเปลี่ยนทีหลังจะต้องรื้อหลายบท เรียงจากผลกระทบมากไปน้อย</p>
+  <div class="rec"><b>เคาะครบแล้วทั้ง 11 ข้อ</b>
+    <p>ทุกข้อด้านล่างปิดแล้ว แถวที่ไฮไลต์ในแต่ละตารางคือตัวที่เลือก ส่วนแถวอื่นเก็บไว้เป็นบันทึกเหตุผล — ตอบคำถาม “ทำไมไม่เลือกตัวนั้น” ได้โดยไม่ต้องประชุมใหม่</p>
+    <p><b>สรุปทั้งชุด:</b> Kubernetes 1.36.x บน Oracle Linux 9.8 (UEK 8U2) · stacked etcd 3 master · keepalived + HAProxy เป็น systemd · Cilium ทำทั้ง CNI, แทน kube-proxy และจ่าย LoadBalancer IP · Envoy Gateway เป็นทางเข้า · ไม่มี persistent storage · deploy ด้วย <code>kubectl apply</code></p>
+    <p class="dim">ผลรวมคือ cluster ที่มีชิ้นส่วนน้อยกว่าที่เสนอไว้ตอนแรกพอสมควร — ตัด MetalLB, ตัด CSI, ตัด kube-proxy และตัด Argo CD ออกไปทั้งหมด ซึ่งช่วยลดความเสี่ยง “ขอบเขตบานปลาย” ไปได้มาก</p>
+  </div>
 
   <details class="dec" open>
-    <summary><span class="did">D1</span> เวอร์ชัน Kubernetes ที่จะ pin</summary>
+    <summary><span class="did">D1</span> เวอร์ชัน Kubernetes ที่จะ pin <span class="pill p-ok">เคาะแล้ว — 1.36.x</span></summary>
     <div class="inner">
       <div class="tw"><table>
         <thead><tr><th>ตัวเลือก</th><th>EOL</th><th>เหตุผล</th></tr></thead>
@@ -265,57 +272,95 @@ figcaption b{color:var(--ink); font-weight:600;}
   </details>
 
   <details class="dec">
-    <summary><span class="did">D2</span> ระบบปฏิบัติการฐาน</summary>
+    <summary><span class="did">D2</span> ระบบปฏิบัติการฐาน <span class="pill p-ok">เคาะแล้ว — Oracle Linux 9.8</span></summary>
     <div class="inner">
+      <div class="rec"><b>ข้อสรุป</b>
+        <p>ทีมเลือก <b>Oracle Linux 9.8</b> (ออก มิ.ย. 2026 · binary-compatible กับ RHEL 9.8) เป็น OS ฐานทุก node ทั้ง control plane และ worker <b>แบบไม่ซื้อ support</b> — ดึง package จาก <code>yum.oracle.com</code> ที่เปิดสาธารณะ ตัวเลือกอื่นในตารางเก็บไว้เป็นบันทึกเหตุผลเท่านั้น ไม่ต้องพิจารณาใหม่</p>
+      </div>
+      <div class="note"><b>“ใช้แบบฟรี” แปลว่าอะไรบ้าง</b>
+        <p><b>ยังได้:</b> ตัว OS, security errata และ kernel update ทั้งหมดจาก <code>yum.oracle.com</code> โดยไม่ต้องลงทะเบียนหรือมี subscription — จุดนี้ต่างจาก RHEL และเป็นเหตุผลหลักที่เลือก Oracle Linux ได้</p>
+        <p><b>ไม่ได้:</b> <span class="pill p-crit">Ksplice</span> (ต้องมี Premier Support) และ<b>ไม่มี vendor ให้เปิดเคส</b>เวลาเจอปัญหา ผลตรง ๆ สองข้อ:</p>
+        <ul>
+          <li>ปะ kernel ต้อง <b>reboot ทุกครั้ง</b> → ทุกรอบ CVE ต้อง rolling drain ทั้ง cluster (ดู <a href="#l12">L12</a>)</li>
+          <li>เวลาติดปัญหาต้องพึ่งทีมเองกับ community → <b>บทที่ 13 (Troubleshooting) และการซ้อมกู้ ยิ่งสำคัญขึ้น</b></li>
+        </ul>
+        <p class="dim">ทั้งสองข้อนี้ไม่ใช่การถอยหลังจากแผนเดิม เพราะ Rocky/Alma ที่เสนอไว้ก่อนหน้าก็ไม่มี vendor support และไม่มี live patching เหมือนกัน — สิ่งที่ได้เพิ่มมาจริงคือ kernel 6.12</p>
+      </div>
       <div class="tw"><table>
         <thead><tr><th>ตัวเลือก</th><th>ข้อดี</th><th>ข้อควรระวัง</th></tr></thead>
         <tbody>
-          <tr class="pick"><td><b>Rocky / AlmaLinux 9</b> <span class="pill p-ok">แนะนำ</span></td><td>cgroup v2 by default, ecosystem นิ่ง, คำสั่งเหมือน RHEL ที่ทีมคุ้นอยู่แล้ว, support ยาว</td><td>ต้องใช้ <code>dnf</code> แทน <code>yum</code> (alias ยังใช้ได้)</td></tr>
-          <tr><td>Rocky / AlmaLinux 10</td><td>kernel ใหม่กว่า (รองรับ nftables mode สบาย), อายุยาวที่สุด</td><td>ecosystem บางตัว (CSI, agent เก่า) ยังตามไม่ทัน ต้องเทสเยอะกว่า</td></tr>
+          <tr class="pick"><td><b>Oracle Linux 9.8</b> <span class="pill p-ok">เลือก</span></td><td>RHEL 9 ABI-compatible — คำสั่ง/ไฟล์/พอร์ตเหมือน RHEL ที่ทีมคุ้นอยู่ · cgroup v2 by default · <b>UEK 8U2 ให้ kernel 6.12</b> ซึ่งใหม่กว่าทุก distro ตระกูล EL9 มาก · update ฟรีจาก <code>yum.oracle.com</code> ไม่ต้องมี subscription · อายุ 9.x ถึง <b>มิ.ย. 2032</b></td><td>ต้องเลือกระหว่าง kernel สองตัว — ดู <b>D2a</b> ด้านล่าง · agent ของ third-party (backup / EDR) บางตัว certify เฉพาะ RHCK · <code>dnf</code> แทน <code>yum</code> (alias ยังใช้ได้) · <b>ใช้แบบฟรีจึงไม่มี Ksplice และไม่มี vendor support</b></td></tr>
+          <tr><td>Rocky / AlmaLinux 9</td><td>ecosystem นิ่ง, community เยอะ, ไม่ผูกกับ vendor เดียว</td><td>kernel ค้างที่ 5.14 (RHEL backport) ตลอดอายุ 9.x · EOL พ.ค. 2032 สั้นกว่าเล็กน้อย</td></tr>
+          <tr><td>Rocky / AlmaLinux 10</td><td>kernel ใหม่กว่า, อายุยาวที่สุด</td><td>ecosystem บางตัว (CSI, agent เก่า) ยังตามไม่ทัน ต้องเทสเยอะกว่า</td></tr>
           <tr><td>Ubuntu 24.04 LTS</td><td>เอกสาร community เยอะสุด, ไม่ต้องยุ่งกับ SELinux</td><td>ทีมต้องเปลี่ยนชุดคำสั่งทั้งหมด — ไม่คุ้มถ้าไม่มีเหตุผลอื่น</td></tr>
           <tr><td>CentOS 7 (ของเดิม)</td><td>—</td><td><span class="pill p-crit">EOL แล้ว</span> ไม่มี security patch ตั้งแต่ มิ.ย. 2024</td></tr>
         </tbody>
       </table></div>
+      <div class="note"><b>อย่าสับสนกับ Oracle Cloud Native Environment</b>
+        <p>Oracle มี Kubernetes distro ของตัวเองชื่อ OCNE ที่ลงบน Oracle Linux ได้ — <b>คู่มือชุดนี้ไม่ใช้</b> เราใช้ Oracle Linux เป็นแค่ OS ฐาน แล้วสร้าง cluster ด้วย <code>kubeadm</code> upstream ตามเดิม ถ้าใครเสิร์ชเจอเอกสาร OCNE ระหว่างทำ ให้ข้ามไป เพราะคนละชุดคำสั่งกันทั้งหมด</p>
+      </div>
     </div>
   </details>
 
   <details class="dec">
-    <summary><span class="did">D3</span> วิธีทำ HA ให้ control-plane endpoint <span class="pill p-warn">ผลกระทบสูง</span></summary>
+    <summary><span class="did">D2a</span> เลือก kernel — UEK 8 หรือ RHCK <span class="pill p-ok">เคาะแล้ว — UEK 8U2</span></summary>
+    <div class="inner">
+      <p>Oracle Linux ต่างจาก Rocky/Alma ตรงที่<b>ให้ kernel มาสองตัวในเครื่องเดียวกัน</b> และเลือกได้ว่าจะบูตตัวไหน นี่คือผลกระทบที่ใหญ่ที่สุดของการย้ายมา Oracle Linux เพราะ<b>ตัวเลขเวอร์ชัน kernel เป็นตัวกำหนดว่า L05 ทำอะไรได้บ้าง</b></p>
+      <div class="rec"><b>ข้อสรุป — ใช้ UEK 8U2 ตาม default</b>
+        <p>ข้อนี้ปิดได้ทันทีโดยไม่ต้องรอ Phase 1 เพราะทีมยืนยันว่า <b>ไม่มี agent ของ third-party ที่ต้องลงบน node เลย</b> (ไม่มี backup agent, EDR หรือ monitoring agent ระดับ OS) — ซึ่งเป็นเหตุผลเดียวที่เหลืออยู่ที่จะดึงไปทาง RHCK หลังจากที่เราไม่ได้ซื้อ vendor support แล้ว</p>
+        <p>เมื่อไม่มีอะไรผูกกับ RHCK เลย ก็ไม่มีเหตุผลจะทิ้ง kernel 6.12 ไปใช้ 5.14 <b>ทั้ง cluster บูต UEK 8U2 เหมือนกันหมด</b> · monitoring ทั้งหมดทำที่ชั้น Kubernetes ผ่าน Prometheus + node-exporter (L09) ซึ่งรันเป็น pod ไม่ใช่ agent บน OS จึงไม่มีปัญหาเรื่อง kernel certify</p>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>ตัวเลือก</th><th>เวอร์ชันใน 9.8</th><th>ข้อดี</th><th>ข้อควรระวัง</th></tr></thead>
+        <tbody>
+          <tr class="pick"><td><b>UEK 8U2</b> <span class="pill p-ok">แนะนำ</span><br><span class="dim">ค่า default ของ 9.8</span></td><td class="num">kernel-uek<br>6.12.0-203.76.7.3</td><td>ฐานเป็น <b>Linux 6.12 LTS ตรง ๆ</b> — ตรงกับ kernel ที่ Cilium/eBPF และ kube-proxy nftables ทดสอบกันจริงในต้นน้ำ · เปิดทาง netkit datapath, BIG TCP, WireGuard ที่ 5.14 ทำไม่ได้ · เป็นค่า default อยู่แล้ว ไม่ต้องแก้อะไรตอนติดตั้ง</td><td>ไม่ใช่ kernel เดียวกับที่ vendor agent ส่วนใหญ่ certify · out-of-tree kmod ต้อง build ใหม่เมื่อขึ้น UEK รุ่นใหม่</td></tr>
+          <tr><td>RHCK</td><td class="num">kernel<br>5.14.0-687.5.3</td><td>ตรงกับ RHEL 9 เป๊ะ — agent และ CSI driver ของ third-party อ้างอิงตัวนี้</td><td>เป็น 5.14 ที่ backport มาหนัก ทำให้เครื่องมือ eBPF บางตัวตรวจ feature ผิด · ต้องสั่งเปลี่ยน default ด้วย <code>grubby</code> เองทุกเครื่อง · <b>ข้อได้เปรียบเรื่อง “vendor certify” อ่อนลงมาก เมื่อเราไม่ได้ซื้อ support อยู่แล้ว</b> — เหลือน้ำหนักเฉพาะ agent ของ third-party เท่านั้น</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note"><b>สิ่งที่ต้องทำต่อ</b>
+        <p>pin เลข <code>kernel-uek</code> ให้ชัดใน <code>versions.env</code> พร้อม <code>dnf versionlock</code> — อย่าปล่อยให้ <code>dnf update</code> ยก kernel เอง เพราะจะได้ node ที่ kernel ไม่ตรงกันโดยไม่รู้ตัว · <b>ห้ามผสมสอง kernel ใน cluster เดียวกัน</b> ไม่ว่ากรณีใด</p>
+        <p><b>เงื่อนไขที่จะทำให้ต้องกลับมาทบทวนข้อนี้:</b> ถ้าวันหนึ่งมีนโยบายให้ลง EDR หรือ backup agent ระดับ OS บน node ให้กลับมาอ่านตารางด้านบนใหม่<b>ก่อน</b>ลง เพราะ agent พวกนี้จำนวนไม่น้อย certify เฉพาะ RHCK และการย้าย kernel ทั้ง cluster หลังมี workload จริงแล้วแพงกว่าตอนนี้มาก</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="dec">
+    <summary><span class="did">D3</span> วิธีทำ HA ให้ control-plane endpoint <span class="pill p-ok">เคาะแล้ว — systemd</span></summary>
     <div class="inner"><p class="dim">รายละเอียดเต็มอยู่ที่ <a href="#l4">ชั้น L04</a> — ตัวเลือกคือ static pod (ของเดิม) / systemd service / kube-vip / hardware LB สรุปคือ <b>แนะนำ systemd service</b> เพราะ static pod จะหายไปพร้อม <code>/etc/kubernetes/manifests</code> ตอน <code>kubeadm reset</code> ซึ่งคือช่วงที่ต้องการมันที่สุด</p></div>
   </details>
 
   <details class="dec">
-    <summary><span class="did">D4</span> CNI plugin <span class="pill p-warn">ผลกระทบสูง</span></summary>
+    <summary><span class="did">D4</span> CNI plugin <span class="pill p-ok">เคาะแล้ว — Cilium</span></summary>
     <div class="inner"><p class="dim">Flannel (ของเดิม) / Calico / Cilium — รายละเอียดที่ <a href="#l5">ชั้น L05</a> ตัวชี้ขาดคือ <b>ต้องการ NetworkPolicy หรือไม่</b> ซึ่งสำหรับระบบที่เก็บข้อมูลพนักงานน่าจะตอบว่าต้องการ</p></div>
   </details>
 
   <details class="dec">
-    <summary><span class="did">D5</span> โหมด kube-proxy</summary>
+    <summary><span class="did">D5</span> โหมด kube-proxy <span class="pill p-ok">เคาะแล้ว — ไม่ใช้ kube-proxy</span></summary>
     <div class="inner"><p class="dim">iptables (default) / IPVS (<span class="pill p-crit">deprecated ใน 1.35</span>) / nftables (GA ตั้งแต่ 1.33) / ไม่ใช้เลย (Cilium kube-proxy replacement) — ผูกกับ D4 ดูที่ <a href="#l5">L05</a></p></div>
   </details>
 
   <details class="dec">
-    <summary><span class="did">D6</span> ทางเข้าจากนอก cluster</summary>
+    <summary><span class="did">D6</span> ทางเข้าจากนอก cluster <span class="pill p-ok">เคาะแล้ว — Envoy Gateway</span></summary>
     <div class="inner"><p class="dim">ingress-nginx ปิดโปรเจกต์ไปแล้วเมื่อ มี.ค. 2026 จึงเป็นโอกาสเริ่มที่ Gateway API เลย ไม่ต้องย้ายสองรอบ ดูที่ <a href="#l6">L06</a></p></div>
   </details>
 
   <details class="dec">
-    <summary><span class="did">D7</span> จะมี <code>type: LoadBalancer</code> ใช้ไหม</summary>
+    <summary><span class="did">D7</span> จะมี <code>type: LoadBalancer</code> ใช้ไหม <span class="pill p-ok">เคาะแล้ว — Cilium LB-IPAM</span></summary>
     <div class="inner"><p class="dim">on-prem ไม่มี cloud LB ให้ ทางเลือกคืออยู่กับ NodePort ต่อ (ของเดิม) หรือใส่ MetalLB ดูที่ <a href="#l6">L06</a></p></div>
   </details>
 
   <details class="dec">
-    <summary><span class="did">D8</span> จะรองรับ stateful workload ไหม</summary>
+    <summary><span class="did">D8</span> จะรองรับ stateful workload ไหม <span class="pill p-ok">เคาะแล้ว — ไม่มี storage</span></summary>
     <div class="inner"><p class="dim">ถ้าตอบว่า “ไม่ ฐานข้อมูลอยู่นอก cluster” จะตัดงานออกไปได้เยอะมาก ถ้าตอบว่า “ใช่” ต้องเลือก CSI ดูที่ <a href="#l7">L07</a> — <b>ควรตอบข้อนี้ให้ชัดตั้งแต่แรก</b> เพราะเปลี่ยนใจทีหลังแพงที่สุดในบรรดา 10 ข้อ</p></div>
   </details>
 
   <details class="dec">
-    <summary><span class="did">D9</span> วิธี deploy application</summary>
+    <summary><span class="did">D9</span> วิธี deploy application <span class="pill p-ok">เคาะแล้ว — kubectl apply</span></summary>
     <div class="inner"><p class="dim"><code>kubectl apply</code> มือ (ของเดิม) / Helm chart / GitOps ด้วย Argo CD — ดูที่ <a href="#l11">L11</a></p></div>
   </details>
 
   <details class="dec">
-    <summary><span class="did">D10</span> etcd แบบ stacked หรือ external</summary>
+    <summary><span class="did">D10</span> etcd แบบ stacked หรือ external <span class="pill p-ok">เคาะแล้ว — stacked</span></summary>
     <div class="inner"><p class="dim">ของเดิมเป็น stacked (etcd อยู่บน master เดียวกัน) ซึ่งเหมาะกับขนาดนี้ external etcd เพิ่มความทนทานแต่เพิ่มเครื่องอีก 3 ตัวและงานดูแลอีกชุด ดูที่ <a href="#l3">L03</a></p></div>
   </details>
 </section>
@@ -433,15 +478,44 @@ figcaption b{color:var(--ink); font-weight:600;}
       <div class="blk"><h4>หน้าที่</h4>
         <p>ฐานที่ทุกอย่างวางอยู่ ถ้าชั้นนี้ผิด อาการจะโผล่ที่ชั้นบนสุดแบบไม่มีเบาะแส — ตัวอย่างคลาสสิกคือ etcd ที่ disk ช้าจะทำให้ทั้ง cluster ตอบช้าและ leader election สะดุด แต่ log จะไปโผล่ที่ apiserver</p>
       </div>
-      <div class="blk"><h4>สเปกที่เสนอ</h4>
+      <div class="blk"><h4>สเปกเครื่องจริงที่ได้มา</h4>
         <div class="tw"><table>
-          <thead><tr><th>บทบาท</th><th class="num">จำนวน</th><th class="num">vCPU / RAM</th><th>Disk</th></tr></thead>
+          <thead><tr><th>บทบาท</th><th class="num">จำนวน</th><th class="num">vCPU / RAM</th><th>Disk</th><th>เทียบกับที่เสนอไว้</th></tr></thead>
           <tbody>
-            <tr><td><b>Control plane</b></td><td class="num">3</td><td class="num">4 / 8 GB</td><td>OS 60 GB + <b>disk แยกสำหรับ etcd 50 GB SSD</b></td></tr>
-            <tr><td><b>Worker</b></td><td class="num">4+</td><td class="num">8 / 16 GB</td><td>OS 100 GB SSD (พื้นที่ image สำคัญกว่าที่คิด)</td></tr>
+            <tr class="pick"><td><b>Control plane</b></td><td class="num">3</td><td class="num">4 / 16 GB</td><td class="num">400 GB<br><span class="dim">root 300 · home 100</span></td><td><span class="pill p-ok">เกินที่ขอ</span> เสนอไว้ 4/8 GB — RAM เหลือเฟือสำหรับ etcd + apiserver ที่ขนาดนี้</td></tr>
+            <tr class="pick"><td><b>Worker</b></td><td class="num">3</td><td class="num">16 / 48 GB</td><td class="num">500 GB<br><span class="dim">root 400 · home 100</span></td><td><span class="pill p-ok">เกินที่ขอมาก</span> เสนอไว้ 8/16 GB — ได้ CPU 2 เท่า RAM 3 เท่าต่อเครื่อง</td></tr>
           </tbody>
         </table></div>
-        <p class="dim">จำนวน control plane ต้องเป็นเลขคี่เสมอ (3 หรือ 5) เพราะ etcd ใช้ quorum — 3 ตัวทน node ตายได้ 1, 4 ตัวก็ยังทนได้แค่ 1 เท่าเดิม แต่เสี่ยงกว่า</p>
+        <p class="dim">จำนวน control plane ต้องเป็นเลขคี่เสมอ (3 หรือ 5) เพราะ etcd ใช้ quorum — 3 ตัวทน node ตายได้ 1 ตัว ซึ่งชุดนี้ตรงตามนั้นแล้ว</p>
+        <div class="rec"><b>capacity ที่ใช้ได้จริง — ต้องคิดแบบ N+1</b>
+          <p>worker รวมกันได้ <b>48 vCPU / 144 GB</b> แต่<b>นั่นไม่ใช่ตัวเลขที่ใช้วางแผนได้</b> เพราะไม่มี Ksplice จึงต้อง drain ทีละ node ทุก 1-2 เดือน (ดู <a href="#l12">L12</a>) เวลา drain หนึ่งเครื่องจะเหลือ worker ทำงานแค่ 2 ตัว</p>
+          <p><b>เพดานจริงของ workload คือ 32 vCPU / 96 GB</b> — ผลรวมของ <code>requests</code> ทุก pod ต้องไม่เกินนี้ ไม่งั้นวันที่ patch kernel จะมี pod ค้าง Pending และ drain ไม่จบ · ตั้ง alert ที่ Prometheus ให้เตือนเมื่อผลรวม requests เกิน 90% ของเพดานนี้</p>
+          <p class="dim">ข่าวดีคือ 3 worker เป็นจำนวนที่พอดีสำหรับ N+1 — ถ้ามีแค่ 2 เครื่อง การ drain หนึ่งตัวจะเหลือจุดเดียวและทำ HA ไม่ได้เลย</p>
+        </div>
+      </div>
+      <div class="blk"><h4>การจัดสรร IP</h4>
+        <div class="tw"><table>
+          <thead><tr><th>Hostname ที่เสนอ</th><th class="num">IP</th><th>บทบาท</th><th>หมายเหตุ</th></tr></thead>
+          <tbody>
+            <tr class="pick"><td><code>k8s-vip</code></td><td class="num">192.168.50.100</td><td><b>VIP (keepalived)</b></td><td><b>ยังไม่ได้จอง — ต้องขอเพิ่ม</b> เป็น endpoint ของ control plane ที่ทุก node และ kubeconfig ชี้มา · ต้องใส่ใน <code>certSANs</code> ทั้งชื่อและ IP</td></tr>
+            <tr><td><code>k8s-master01</code></td><td class="num">192.168.50.101</td><td>control plane</td><td>etcd member 1 · node ที่รัน <code>kubeadm init</code></td></tr>
+            <tr><td><code>k8s-master02</code></td><td class="num">192.168.50.102</td><td>control plane</td><td>etcd member 2</td></tr>
+            <tr><td><code>k8s-master03</code></td><td class="num">192.168.50.103</td><td>control plane</td><td>etcd member 3</td></tr>
+            <tr><td><code>k8s-worker01</code></td><td class="num">192.168.50.104</td><td>worker</td><td></td></tr>
+            <tr><td><code>k8s-worker02</code></td><td class="num">192.168.50.105</td><td>worker</td><td></td></tr>
+            <tr><td><code>k8s-worker03</code></td><td class="num">192.168.50.106</td><td>worker</td><td></td></tr>
+            <tr><td><span class="dim">— กันไว้ —</span></td><td class="num">192.168.50.107-110</td><td>worker ในอนาคต</td><td>ขอกันไว้ตั้งแต่ตอนนี้ จะได้ไม่ต้องไปหา IP กระจัดกระจายตอนขยาย</td></tr>
+            <tr class="pick"><td><code>CiliumLoadBalancerIPPool</code></td><td class="num">192.168.50.200-209</td><td><b>LB-IPAM pool</b></td><td>10 IP สำหรับ <code>type: LoadBalancer</code> — <b>วันเปิดใช้จริงจะใช้แค่ 1-2 ตัว</b> เพราะทุก HTTP ไปรวมหลัง Envoy Gateway ตัวเดียว ที่เหลือเผื่อโต · ต้องอยู่ subnet เดียวกับ node เพราะใช้ L2 announcement (ดู <a href="#l6">L06</a>)</td></tr>
+            <tr><td colspan="4" class="dim">เลี่ยง <code>192.168.50.179-183</code> ซึ่งเป็นของ cluster ฝึกอบรมชุดเดิม (VIP .179 · node .180-.183) — ดูกล่องเตือนด้านล่าง</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note"><b>cluster ใหม่อยู่ subnet เดียวกับ lab เดิม</b>
+          <p>วง <code>192.168.50.0/24</code> เคยเป็นวงของ cluster ฝึกอบรม (VIP <code>.179</code>, node <code>.180-.183</code>) ซึ่งแปลว่า production ชุดใหม่กับ lab จะอยู่ L2 domain เดียวกัน มีสองเรื่องที่ต้องระวัง:</p>
+          <ul>
+            <li><b>ถ้าเครื่อง lab ยังเปิดอยู่ ห้ามให้ VIP ซ้ำกัน</b> — keepalived สองชุดที่ใช้ VIP เดียวกันในวงเดียวกันจะแย่ง IP กันและ apiserver จะเข้าไม่ถึงแบบสลับไปมา · เสนอ <code>.100</code> ให้ห่างจาก <code>.179</code> ชัดเจน และ<b>ต้องตั้ง <code>virtual_router_id</code> ของ keepalived ไม่ให้ซ้ำกับชุดเดิมด้วย</b> ไม่ใช่แค่ IP</li>
+            <li><b>Phase 1 ที่จะรื้อ lab มาทำใหม่</b> ต้องใช้ IP pool ของ LB-IPAM คนละช่วงกับ production เด็ดขาด เพราะ L2 announcement ทำงานที่ ARP ในวงเดียวกัน ถ้าใช้ช่วงซ้ำจะแย่งกันตอบ ARP</li>
+          </ul>
+        </div>
       </div>
       <div class="blk"><h4>สิ่งที่ต้องมีก่อนเริ่ม</h4>
         <div class="tw"><table>
@@ -451,22 +525,56 @@ figcaption b{color:var(--ink); font-weight:600;}
             <tr><td><b>NTP / chrony</b></td><td>TLS cert และ etcd raft พังทันทีถ้าเวลาเพี้ยน</td><td>ไม่มีทางเลือก — บังคับ และต้องมีขั้นตอน verify (<code>chronyc tracking</code>)</td></tr>
             <tr><td><b>Anti-affinity ระดับ hypervisor</b></td><td>ถ้า master ทั้ง 3 อยู่ ESXi host เดียวกัน HA ที่ทำมาไม่มีความหมาย</td><td>DRS rule “separate virtual machines” บน vCenter</td></tr>
             <tr><td><b>etcd disk latency</b></td><td>etcd ต้องการ fsync p99 ต่ำกว่า ~10 ms — datastore ที่แชร์กับ VM อื่นเยอะ ๆ มักไม่ผ่าน</td><td>วัดด้วย <code>fio</code> ก่อนตั้ง cluster และใส่ผลลงคู่มือเป็น baseline</td></tr>
-            <tr><td><b>แผน IP</b></td><td>node subnet, pod CIDR, service CIDR ห้ามทับกัน</td><td>ดูตารางที่ <a href="#l5">L05</a></td></tr>
+            <tr><td><b>ย้าย partition <code>/home</code></b></td><td>Kubernetes ไม่ใช้ <code>/home</code> เลยสักไบต์ — ปล่อยไว้คือทิ้ง 100 GB ต่อเครื่อง รวม 600 GB</td><td>ดูตารางด้านล่าง — mount ไปเป็น <code>/var/lib/etcd</code> บน master และ <code>/var/lib/containerd</code> บน worker</td></tr>
+            <tr><td><b>แผน IP</b></td><td>node subnet, pod CIDR, service CIDR ห้ามทับกัน</td><td>ดูตารางจัดสรร IP ด้านล่าง และแผน CIDR ที่ <a href="#l5">L05</a></td></tr>
+            <tr><td><b>VM template ของ OL 9.8</b></td><td>ทุก node ต้องออกมาจากแม่พิมพ์เดียวกัน ไม่งั้นจะได้ kernel/package ที่ไม่ตรงกันตั้งแต่วันแรก</td><td>ทำ template เดียวใน Phase 0: minimal install + <code>open-vm-tools</code> + UEK 8U2 ที่ versionlock แล้ว + chrony · <b>อย่าลง GUI หรือ package group อื่น</b></td></tr>
           </tbody>
         </table></div>
       </div>
-      <div class="gapbox"><b>ช่องว่างจากของเดิม</b>
-        <p>node ของ cluster เดิมกระจายอยู่สอง subnet (192.168.30.x และ 192.168.40.x) โดยไม่มีบันทึกว่าตั้งใจหรือเป็นผลจากการค่อย ๆ เพิ่มเครื่อง — ควรตัดสินใจรอบนี้ว่าจะรวมให้อยู่ subnet เดียว เพราะมีผลกับ VRRP (keepalived ทำงานใน L2 domain เดียวเท่านั้น) และกับ latency ของ etcd</p>
+      <div class="blk"><h4>แผน partition ที่เสนอ</h4>
+        <p>เครื่องที่ได้มาแบ่ง <code>root</code> กับ <code>/home</code> มาตามค่ามาตรฐานของการติดตั้ง Linux ทั่วไป แต่ <b>Kubernetes ไม่แตะ <code>/home</code> เลย</b> ขณะที่ทุกอย่างที่โตเร็ว (image, etcd, log) ไปกองอยู่ใต้ <code>/var</code> บน root ทั้งหมด ข้อเสนอคือย้าย partition <code>/home</code> ไปรับงานที่มีประโยชน์แทน</p>
+        <div class="tw"><table>
+          <thead><tr><th>บทบาท</th><th>ปัจจุบัน</th><th>ที่เสนอ</th><th>ได้อะไร</th></tr></thead>
+          <tbody>
+            <tr class="pick"><td><b>Master</b><br><span class="dim">×3</span></td><td class="num">root 300<br>home 100</td><td class="num">root 300<br><b>/var/lib/etcd 100</b></td><td>etcd ได้ partition ของตัวเอง — image ที่โตขึ้นบน root จะไม่มีวันเบียด etcd จนเขียนไม่ได้ ซึ่งเป็นอาการที่ทำให้ทั้ง cluster หยุด · แถมวัด fsync latency แยกได้ชัด</td></tr>
+            <tr class="pick"><td><b>Worker</b><br><span class="dim">×3</span></td><td class="num">root 400<br>home 100</td><td class="num">root 400<br><b>/var/lib/containerd 100</b></td><td>พื้นที่ image แยกจาก root — image ที่สะสมจนเต็มจะกระทบแค่การ pull ไม่ทำให้ <code>/var/log</code> เขียนไม่ได้จน node กลายเป็น NotReady ทั้งเครื่อง</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note"><b>ต้องเช็คก่อนว่าเป็น disk คนละลูกจริงหรือไม่</b>
+          <p>ประโยชน์ข้างต้นแบ่งเป็นสองระดับ ขึ้นกับว่า 400/500 GB นั้นเป็น VMDK ลูกเดียวแบ่ง partition หรือเป็นคนละลูก:</p>
+          <ul>
+            <li><b>ถ้าเป็น VMDK คนละลูก</b> — ได้ครบทั้งการแยกพื้นที่<b>และ</b>แยก I/O ซึ่งเป็นสิ่งที่เอกสารนี้เสนอไว้แต่แรกว่า etcd ควรมี disk ของตัวเอง</li>
+            <li><b>ถ้าเป็นลูกเดียวแบ่ง partition</b> — ได้แค่การแยกพื้นที่ (ซึ่งยังคุ้มมากและควรทำ) แต่<b>ไม่ได้แยก I/O</b> etcd ยังแย่ง IOPS กับ containerd อยู่ · ถ้าผล <code>fio</code> ที่วัดใน Phase 0 ออกมาเกิน 10 ms ให้ขอเพิ่ม VMDK แยกสำหรับ etcd</li>
+          </ul>
+          <p>ทำตอนสร้าง VM template ใน Phase 0 ง่ายกว่ามาแก้ทีหลังตอนมี cluster แล้ว — การย้าย <code>/var/lib/etcd</code> บน cluster ที่รันอยู่ต้องหยุด etcd ทีละ node</p>
+        </div>
+      </div>
+      <div class="rec"><b>เทียบกับ cluster เดิม — ดีขึ้นสองเรื่อง</b>
+        <p><b>1 · อยู่ subnet เดียว</b> — cluster เดิมกระจายสอง subnet (192.168.30.x + 192.168.40.x) โดยไม่มีบันทึกว่าตั้งใจหรือเป็นผลจากค่อย ๆ เพิ่มเครื่อง ชุดใหม่อยู่ <code>192.168.50.0/24</code> วงเดียวทั้งหมด ซึ่งจำเป็นกับทั้ง VRRP ของ keepalived (ทำงานใน L2 domain เดียวเท่านั้น) และ L2 announcement ของ Cilium</p>
+        <p><b>2 · IP เรียงต่อกัน</b> — <code>.101-.103</code> เป็น master, <code>.104-.106</code> เป็น worker อ่านแล้วรู้ทันทีว่าเครื่องไหนทำหน้าที่อะไร ต่างจากของเดิมที่ต้องเปิด <code>/etc/hosts</code> ดูทุกครั้ง</p>
       </div>
     </div>
   </article>
 
   <!-- ===== L1 ===== -->
   <article class="layer" id="l1">
-    <header class="layer-head"><span class="layer-id">L01</span><div><h3>OS Baseline</h3><p class="sub">kernel modules · sysctl · swap · SELinux · firewalld</p></div></header>
+    <header class="layer-head"><span class="layer-id">L01</span><div><h3>OS Baseline</h3><p class="sub">Oracle Linux 9.8 · kernel · sysctl · swap · SELinux · firewalld</p></div></header>
     <div class="layer-body">
       <div class="blk"><h4>หน้าที่</h4>
         <p>ปรับ kernel ให้ทำ container networking ได้ และเปิดพอร์ตที่ component ต้องใช้ ชั้นนี้ดูน่าเบื่อแต่เป็นต้นเหตุของ “pod ข้าม node ไม่ได้” เกือบทุกเคส</p>
+      </div>
+      <div class="blk"><h4>งานเฉพาะของ Oracle Linux</h4>
+        <p>สี่ข้อนี้ไม่มีในคู่มือของ distro อื่น และต้องทำ<b>ก่อน</b>รายการมาตรฐานด้านล่าง ทำเป็น role แรกของ Ansible playbook บทที่ 02</p>
+        <div class="tw"><table>
+          <thead><tr><th>รายการ</th><th>ทำอะไร</th><th>เหตุผล</th></tr></thead>
+          <tbody>
+            <tr><td>ยืนยัน kernel ที่บูตอยู่</td><td><code>uname -r</code> ต้องขึ้น <code>uek</code> ทุก node ตามที่เคาะไว้ใน D2a</td><td>ผสม UEK กับ RHCK ใน cluster เดียวกันแล้วจะได้อาการ network ที่ต่างกันเป็นราย node — หาสาเหตุยากมาก</td></tr>
+            <tr><td><code>dnf versionlock</code> ที่ kernel</td><td>ล็อก <code>kernel-uek</code> ไว้ที่เลขใน <code>versions.env</code></td><td>Oracle ปล่อย UEK ถี่กว่า kernel ของ RHEL การ <code>dnf update</code> ปกติจะยก kernel เองโดยไม่ตั้งใจ</td></tr>
+            <tr><td>ตั้ง repo ให้ชัด</td><td>เปิดเฉพาะ <code>ol9_baseos_latest</code>, <code>ol9_appstream</code>, <code>ol9_UEKR8</code> · ปิด <code>ol9_addons</code></td><td><code>ol9_addons</code> มี containerd/podman ของ Oracle ที่จะไปทับตัวที่เราลงจาก tarball ใน L02</td></tr>
+            <tr><td>ปิด Ksplice</td><td>ไม่ต้องลง <code>ksplice-uptrack</code> · ถ้าติดมากับ image ให้ <code>systemctl disable --now</code></td><td>ใช้แบบฟรีจึงไม่มีสิทธิ์ใช้อยู่แล้ว ปล่อยไว้จะได้แค่ service ที่ auth ไม่ผ่านและเขียน log error รกทุกวัน</td></tr>
+            <tr><td>ปิด <code>oracle-instantclient</code> / repo ที่ไม่ใช้</td><td>ให้เหลือ repo เท่าที่ระบุไว้ในแถวก่อนหน้า</td><td>image ของ Oracle Linux มาพร้อม repo definition หลายสิบไฟล์ ยิ่งเปิดไว้มาก ยิ่งมีโอกาสที่ <code>dnf update</code> ดึงของที่ไม่ได้ตั้งใจเข้ามา</td></tr>
+          </tbody>
+        </table></div>
       </div>
       <div class="blk"><h4>รายการที่ต้องมี</h4>
         <div class="tw"><table>
@@ -492,17 +600,29 @@ figcaption b{color:var(--ink); font-weight:600;}
             <tr><td class="num"><code>10250/tcp</code></td><td>ทุก node</td><td>kubelet API (<code>logs</code>, <code>exec</code>, metrics)</td><td><span class="pill p-ok">มี</span></td></tr>
             <tr><td class="num"><code>10257/tcp</code></td><td>control plane</td><td>controller-manager</td><td><span class="pill p-ok">มี</span></td></tr>
             <tr><td class="num"><code>10259/tcp</code></td><td>control plane</td><td>scheduler</td><td><span class="pill p-ok">มี</span></td></tr>
-            <tr><td class="num"><code>10256/tcp</code></td><td>ทุก node</td><td>kube-proxy health</td><td><span class="pill p-warn">มีแค่ worker</span></td></tr>
             <tr><td class="num"><code>30000-32767/tcp</code></td><td>worker</td><td>NodePort range</td><td><span class="pill p-ok">มี</span></td></tr>
-            <tr><td class="num"><code>8472/udp</code></td><td>ทุก node</td><td><b>VXLAN ของ Flannel</b></td><td><span class="pill p-crit">ไม่มี</span></td></tr>
             <tr><td class="num"><code>112 (VRRP)</code></td><td>control plane</td><td>keepalived คุยกันเลือก master</td><td><span class="pill p-crit">ไม่มี</span></td></tr>
-            <tr><td class="num"><code>179/tcp</code></td><td>ทุก node</td><td>BGP — ถ้าเลือก Calico หรือ MetalLB BGP mode</td><td>—</td></tr>
-            <tr><td class="num"><code>4240/tcp</code></td><td>ทุก node</td><td>Cilium health — ถ้าเลือก Cilium</td><td>—</td></tr>
+            <tr><td class="num"><code>8472/udp</code></td><td>ทุก node</td><td><b>VXLAN ของ Cilium</b> — พอร์ตเดียวกับที่ Flannel เคยใช้ (ถ้าเลือก native routing แทน VXLAN ตัดแถวนี้ออกได้)</td><td><span class="pill p-crit">ไม่มี</span></td></tr>
+            <tr><td class="num"><code>4240/tcp</code></td><td>ทุก node</td><td><b>Cilium health check</b> ระหว่าง agent</td><td>—</td></tr>
+            <tr><td class="num"><code>4244/tcp</code></td><td>ทุก node</td><td>Hubble peer service (ถ้าเปิด Hubble)</td><td>—</td></tr>
+            <tr><td class="num"><code>4245/tcp</code></td><td>ทุก node</td><td>Hubble Relay (ถ้าเปิด Hubble)</td><td>—</td></tr>
+            <tr><td class="num">ARP / L2</td><td>ทุก node</td><td><b>Cilium L2 announcement</b> สำหรับ LB-IPAM — ไม่ใช่พอร์ต TCP/UDP แต่ต้องไม่มี ARP inspection ขวางบน switch</td><td>—</td></tr>
+            <tr><td class="num"><code>10256/tcp</code></td><td>—</td><td><s>kube-proxy health</s> <b>ไม่ต้องเปิดแล้ว</b> เพราะ D5 = ไม่ติดตั้ง kube-proxy</td><td><span class="pill p-neu">ตัดออก</span></td></tr>
+            <tr><td class="num"><code>179/tcp</code></td><td>—</td><td>BGP — <b>ไม่ต้องเปิด</b> เพราะเลือก L2 announcement ไม่ใช่ BGP mode</td><td><span class="pill p-neu">ตัดออก</span></td></tr>
           </tbody>
         </table></div>
       </div>
-      <div class="gapbox"><b>ช่องว่างจากของเดิม</b>
-        <p>ขาด <code>8472/udp</code> และ VRRP ซึ่งเป็นสองพอร์ตที่ถ้าไม่เปิด HA และ pod networking จะไม่ทำงาน — เดาว่า cluster เดิมรอดเพราะ firewalld ถูกปิดไว้ ซึ่งถ้าจริง คู่มือใหม่ควรเลือกอย่างชัดเจนระหว่าง “ปิด firewalld แล้วพึ่ง firewall ระดับ network” หรือ “เปิดและระบุ port ให้ครบ” ไม่ใช่ปล่อยให้คลุมเครือเหมือนเดิม</p>
+      <div class="gapbox"><b>ช่องว่างจากของเดิม — และตอนนี้ยืนยันแล้วว่าต้องแก้จริง</b>
+        <p>ทีมยืนยันว่า <b>firewalld เปิดอยู่</b> ขณะที่คู่มือเดิมไม่ได้เปิด <code>8472/udp</code> และ VRRP ไว้เลย ซึ่งเป็นสองพอร์ตที่ถ้าไม่เปิด HA และ pod networking จะไม่ทำงาน แปลว่าอย่างใดอย่างหนึ่งต้องจริง: มีคนเปิดพอร์ตเพิ่มด้วยมือแล้วไม่ได้จดลงคู่มือ หรือ zone ที่ node อยู่เป็นแบบ trusted อยู่แล้ว</p>
+        <p><b>สิ่งที่คู่มือใหม่ต้องทำ:</b> ตั้ง firewalld ด้วยไฟล์ที่อยู่ใน git (ไม่ใช่ <code>firewall-cmd</code> ทีละคำสั่งบนเครื่อง), ระบุ zone ให้ชัดว่า interface ไหนอยู่ zone อะไร, และมี verify step ที่รัน <code>firewall-cmd --list-all</code> เทียบกับตารางด้านบน</p>
+      </div>
+      <div class="note"><b>firewalld กับ Cilium — ต้องทดสอบจริงใน Phase 1</b>
+        <p>สองเรื่องที่ต้องพิสูจน์ในแล็บ ไม่ใช่เดาจากเอกสาร:</p>
+        <ul>
+          <li><b><code>firewall-cmd --reload</code> ตอน Cilium รันอยู่</b> — firewalld เขียนกฎลง nftables ใหม่ทั้งชุดตอน reload ซึ่งเคยมีรายงานว่าไปลบกฎที่ CNI วางไว้ ต้องลอง reload แล้วเช็คว่า pod ข้าม node ยังคุยกันได้</li>
+          <li><b>ARP สำหรับ LB-IPAM</b> — L2 announcement ไม่ได้ผ่านพอร์ต TCP/UDP จึงไม่เกี่ยวกับ firewalld โดยตรง แต่ต้องเช็คว่า switch ไม่ได้เปิด ARP inspection ขวางอยู่ (ดู L06)</li>
+        </ul>
+        <p>ทั้งสองข้อให้จดผลลงบทที่ 13 ไม่ว่าจะผ่านหรือไม่ผ่าน</p>
       </div>
     </div>
   </article>
@@ -540,6 +660,7 @@ figcaption b{color:var(--ink); font-weight:600;}
           <li><b>sandbox image</b> ต้องตรงกับที่ kubeadm คาด — ตรวจด้วย <code>kubeadm config images list</code></li>
           <li><b><code>/etc/containerd/certs.d/registry.myhr.co.th/hosts.toml</code></b> สำหรับ private registry — ถ้า cert เป็น self-signed หรือ registry เป็น HTTP ต้องประกาศตรงนี้ ไม่งั้น pull ไม่ได้ (ดู <a href="#l8">L08</a>)</li>
           <li>ขั้นตอน verify: <code>crictl info | grep -i cgroup</code> และ pull image ทดสอบจาก registry จริง</li>
+          <li><b>เฉพาะ Oracle Linux</b> — <code>ol9_addons</code> มี <code>containerd.io</code> ของ Oracle อยู่ด้วย ถ้า repo นี้เปิดค้างไว้ <code>dnf update</code> รอบหน้าจะลง containerd ทับตัวที่เราวางจาก tarball แล้วได้ unit file คนละไฟล์ · คู่มือต้องสั่งปิด repo นี้ที่บทที่ 02 และใส่ verify ว่า <code>dnf list installed | grep containerd</code> ต้องไม่คืนอะไรเลย</li>
         </ul>
       </div>
       <div class="gapbox"><b>ช่องว่างที่ใหญ่ที่สุดในชั้นนี้</b>
@@ -730,12 +851,25 @@ figcaption b{color:var(--ink); font-weight:600;}
         <div class="tw"><table>
           <thead><tr><th>ช่วง</th><th>ใช้ทำอะไร</th><th>ข้อควรระวัง</th></tr></thead>
           <tbody>
-            <tr><td class="num"><code>192.168.30.0/24</code>, <code>192.168.40.0/24</code></td><td>node IP</td><td>ของเดิมกระจายสอง subnet — ดู L00</td></tr>
-            <tr><td class="num"><code>10.242.0.0/16</code></td><td>pod CIDR (ของเดิม)</td><td><b>ต้องยืนยันว่าไม่ชนกับ route ใดในองค์กร</b> ถ้าชนจะเจออาการแปลก ๆ ที่ debug ยากมาก</td></tr>
-            <tr><td class="num"><code>10.96.0.0/12</code></td><td>service CIDR (ค่า default)</td><td>ห้ามทับ pod CIDR และ node subnet</td></tr>
-            <tr><td class="num">TBD</td><td>MetalLB pool (ถ้าเลือกใช้)</td><td>ต้องขอ IP ว่างจากทีม network ล่วงหน้า</td></tr>
+            <tr><td class="num"><code>192.168.50.0/24</code></td><td>node IP (cluster ใหม่)</td><td>master <code>.101-.103</code> · worker <code>.104-.106</code> · VIP <code>.100</code> — อยู่วงเดียวทั้งหมดตามที่ L2 announcement และ VRRP ต้องการ · ดูตารางจัดสรรเต็มที่ <a href="#l0">L00</a></td></tr>
+            <tr class="pick"><td class="num"><code>10.246.0.0/16</code></td><td><b>pod CIDR (ใหม่)</b></td><td>ตั้งใจไม่ใช้ซ้ำกับของเดิม · /24 ต่อ node → รองรับ 256 node · ให้ทีม network ยืนยันว่าไม่มี route นี้ในองค์กร</td></tr>
+            <tr class="pick"><td class="num"><code>10.247.0.0/16</code></td><td><b>service CIDR (ใหม่)</b></td><td>รองรับ 65,536 service · เล็กกว่า default <code>10.96.0.0/12</code> แต่เหลือเฟือ และอ่านคู่กับ pod CIDR ได้ง่าย</td></tr>
+            <tr class="pick"><td class="num"><code>192.168.50.200-209</code></td><td><b>Cilium LB-IPAM pool</b></td><td>10 IP — หนึ่ง IP ต่อหนึ่ง Service ที่เป็น <code>type: LoadBalancer</code> ไม่ใช่ต่อ node · <b>ต้องอยู่ subnet เดียวกับ node</b> เพราะใช้ L2 announcement · ขอทีม network กันไว้ไม่ให้ DHCP หรือเครื่องอื่นใช้</td></tr>
+            <tr><td class="num"><code>10.242.0.0/16</code></td><td>pod CIDR ของ cluster เดิม</td><td><span class="pill p-neu">อ้างอิง</span> ห้ามใช้ซ้ำระหว่างที่ cluster เดิมยังรันอยู่</td></tr>
+            <tr><td class="num"><code>192.168.30.0/24</code>, <code>192.168.40.0/24</code></td><td>node ของ cluster เดิม</td><td><span class="pill p-neu">อ้างอิง</span> คนละวงกับชุดใหม่ จึงไม่ชนกัน — ระหว่าง Phase 5 ทั้งสอง cluster คุยกันผ่าน IP จริงเหล่านี้ได้ตามปกติ</td></tr>
           </tbody>
         </table></div>
+        <div class="note"><b>ทำไมไม่ใช้ CIDR เดิมซ้ำ</b>
+          <p>ในทางเทคนิค pod CIDR กับ service CIDR เป็นเรื่องภายใน cluster และไม่ได้ route ออกนอก ดังนั้นสอง cluster<b>ใช้ค่าเดียวกันได้</b>โดยไม่ชนกันตรง ๆ แต่ระหว่าง Phase 5 ที่ทั้งสอง cluster รันคู่กันและต้องย้าย workload ทีละตัว การใช้ค่าซ้ำสร้างปัญหาสองอย่าง:</p>
+          <ul>
+            <li>ถ้ามี pod ฝั่งใหม่ต้องเรียกอะไรในฝั่งเดิม (หรือกลับกัน) ด้วย IP ตรง ๆ node จะเข้าใจว่าปลายทางอยู่ในเครื่องตัวเองแล้วส่งผิดที่ — เป็นอาการที่ไล่หาสาเหตุยากมาก</li>
+            <li>เวลาอ่าน log หรือ <code>tcpdump</code> จะแยกไม่ออกว่า IP ที่เห็นเป็นของ cluster ไหน</li>
+          </ul>
+          <p>การใช้เลขคนละชุด<b>ไม่มีต้นทุนอะไรเลย</b> และตัดปัญหาทั้งสองข้อทิ้ง จึงเป็นข้อเสนอของเอกสารนี้</p>
+        </div>
+        <div class="gapbox"><b>พบความไม่ตรงกันในเอกสารเดิม</b>
+          <p><code>2. setup_cluster.md</code> สั่ง <code>--pod-network-cidr=10.242.0.0/16</code> และลง Helm ด้วยค่าเดียวกัน แต่ไฟล์ <code>config/master*/kube-flannel.yml</code> ที่วางคู่กันไว้กลับเขียน <code>"Network": "10.243.0.0/16"</code> — คนละค่า ถ้าใครเผลอ <code>kubectl apply</code> ไฟล์นั้นจะได้ cluster ที่ pod คุยกันไม่ได้ทั้งระบบ เป็นตัวอย่างตรง ๆ ว่าทำไมคู่มือใหม่ต้องมีแหล่งความจริงเดียว (<code>versions.env</code> + ไฟล์ config ชุดเดียว) และต้องมี verify step ทุกขั้น</p>
+        </div>
         <div class="note"><b>MTU — เรื่องที่ลืมกันบ่อยที่สุด</b>
           <p>VXLAN ห่อ packet เพิ่มอีก 50 bytes ถ้า node MTU = 1500 แล้วปล่อย pod MTU ไว้ที่ 1500 ด้วย จะเจออาการ “ping ผ่าน แต่ HTTP request ใหญ่ ๆ ค้าง” หรือ “TLS handshake ล้มเป็นบางครั้ง” — เป็นอาการที่หลอกให้ไปไล่หาปัญหาที่ application คู่มือใหม่ต้องมีขั้นตอนตั้ง MTU และวิธีทดสอบด้วย <code>ping -M do -s</code></p>
         </div>
@@ -746,7 +880,7 @@ figcaption b{color:var(--ink); font-weight:600;}
           <tbody>
             <tr><td><b>Flannel</b> <span class="pill p-neu">ของเดิม</span></td><td><span class="pill p-crit">ไม่รองรับ</span></td><td>ง่ายที่สุด ชิ้นส่วนน้อย พังยาก ทีมคุ้นแล้ว</td><td>ไม่มี policy, ไม่มี encryption, ไม่มี observability</td></tr>
             <tr><td><b>Calico</b></td><td><span class="pill p-ok">รองรับ</span></td><td>policy engine ที่สุกงอมที่สุด, มี BGP mode ทำ routing จริงได้, แนวคิดยังใกล้ Flannel</td><td>ชิ้นส่วนเพิ่มขึ้นปานกลาง เรียนรู้ไม่นาน</td></tr>
-            <tr class="pick"><td><b>Cilium</b> <span class="pill p-ok">แนะนำ</span></td><td><span class="pill p-ok">รองรับ + L7</span></td><td>eBPF, แทน kube-proxy ได้ทั้งตัว, Hubble ให้เห็น flow ระหว่าง pod จริง ๆ, มี Gateway API ในตัว, transparent encryption</td><td>ชันที่สุด, debug ต้องใช้เครื่องมือของ Cilium เอง, ต้อง kernel ใหม่</td></tr>
+            <tr class="pick"><td><b>Cilium</b> <span class="pill p-ok">แนะนำ</span></td><td><span class="pill p-ok">รองรับ + L7</span></td><td>eBPF, แทน kube-proxy ได้ทั้งตัว, Hubble ให้เห็น flow ระหว่าง pod จริง ๆ, มี Gateway API ในตัว, transparent encryption</td><td>ชันที่สุด, debug ต้องใช้เครื่องมือของ Cilium เอง · <b>เรื่อง kernel หมดปัญหาแล้วเมื่อย้ายมา Oracle Linux</b> (ดูกล่องด้านล่าง)</td></tr>
           </tbody>
         </table></div>
         <div class="rec"><b>เหตุผลที่เสนอ Cilium</b>
@@ -760,10 +894,19 @@ figcaption b{color:var(--ink); font-weight:600;}
           <tbody>
             <tr><td><code>iptables</code></td><td>default</td><td>ยังใช้ได้ แต่ rule จะบวมตามจำนวน Service และ resync ช้าลงเรื่อย ๆ</td></tr>
             <tr><td><code>ipvs</code></td><td><span class="pill p-crit">deprecated ใน 1.35</span></td><td>อย่าเริ่มใหม่กับโหมดนี้</td></tr>
-            <tr class="pick"><td><code>nftables</code></td><td>GA ตั้งแต่ 1.33 <span class="pill p-ok">แนะนำ</span></td><td>เป็นโหมดที่แนะนำสำหรับ Linux แล้ว update เป็น O(n) ของสิ่งที่เปลี่ยนจริง ต้องการ kernel ≥ 5.13</td></tr>
-            <tr><td>ไม่ใช้ kube-proxy</td><td>ถ้าเลือก Cilium</td><td>Cilium ทำหน้าที่นี้ด้วย eBPF — ชิ้นส่วนน้อยลงหนึ่งชิ้น</td></tr>
+            <tr><td><code>nftables</code></td><td>GA ตั้งแต่ 1.33</td><td>เป็นโหมดที่แนะนำสำหรับ Linux แล้ว ต้องการ kernel ≥ 5.13 ซึ่ง UEK 8U2 ผ่านสบาย — <b>เก็บไว้เป็นแผนสำรองถ้าต้องถอย kube-proxy replacement</b></td></tr>
+            <tr class="pick"><td><b>ไม่ใช้ kube-proxy</b> <span class="pill p-ok">เลือก</span></td><td>Cilium kube-proxy replacement</td><td>Cilium ทำหน้าที่นี้ด้วย eBPF — ชิ้นส่วนน้อยลงหนึ่งชิ้น ไม่มี rule ที่บวมตามจำนวน Service · ต้องตั้ง <code>k8sServiceHost</code>/<code>k8sServicePort</code> ชี้ไปที่ VIP ตอนลง Cilium เพราะไม่มี kube-proxy ให้พึ่งตอน bootstrap</td></tr>
           </tbody>
         </table></div>
+      </div>
+      <div class="rec"><b>ผลพลอยได้จากการย้ายมา Oracle Linux</b>
+        <p>ข้อกังวลเดิมที่ว่า “Cilium ต้อง kernel ใหม่” หายไปเกือบหมด เพราะ UEK 8U2 มีฐานเป็น <b>Linux 6.12 LTS</b> ขณะที่ Rocky/Alma 9 ค้างที่ 5.14 ตลอดอายุ 9.x ผลตรง ๆ คือ:</p>
+        <ul>
+          <li>Cilium ทดสอบกับ kernel ต้นน้ำเป็นหลัก — 6.12 คือของที่เขาเทสจริง ไม่ใช่ 5.14 ที่ backport มาจนตรวจ feature ผิดได้</li>
+          <li>ฟีเจอร์ที่ 5.14 แตะไม่ถึงอย่าง <b>netkit datapath</b> และ <b>BIG TCP</b> เปิดใช้ได้ ถ้าอยากได้ประสิทธิภาพเพิ่ม</li>
+          <li><code>mode: nftables</code> ของ kube-proxy ผ่านเกณฑ์ kernel แบบไม่ต้องลุ้น</li>
+        </ul>
+        <p><b>D2a ปิดเป็น UEK แล้ว ผลนี้จึงถือว่าได้จริง</b> — ข้อกังวลเรื่อง kernel ตัดออกจากการตัดสินใจ D4 (CNI) ได้เลย เหลือตัวชี้ขาดแค่ว่าทีมรับความชันของ Cilium ไหวหรือไม่ ซึ่งต้องดูจากผลจริงใน Phase 1</p>
       </div>
       <div class="blk"><h4>CoreDNS</h4>
         <p>kubeadm ติดตั้งให้อยู่แล้ว สิ่งที่คู่มือควรเพิ่มคือ: ปรับ replica ให้เหมาะกับจำนวน node, ใส่ PodDisruptionBudget, และพิจารณา <b>NodeLocal DNSCache</b> ถ้าเจอ DNS timeout เป็นระยะ (เป็นอาการยอดฮิตของ cluster ที่มี microservices เรียกกันเยอะ ซึ่งตรงกับ workload ของที่นี่)</p>
@@ -851,11 +994,127 @@ figcaption b{color:var(--ink); font-weight:600;}
           <thead><tr><th>ตัวเลือก</th><th>ข้อดี</th><th>ข้อเสีย</th></tr></thead>
           <tbody>
             <tr><td>NodePort <span class="pill p-neu">ของเดิม</span></td><td>ไม่ต้องลงอะไรเพิ่ม</td><td>พอร์ตสุ่มจำยาก, ผูกกับ node, ไม่มี TLS, client ต้องรู้ IP node</td></tr>
-            <tr class="pick"><td><b>MetalLB — L2 mode</b> <span class="pill p-ok">แนะนำ</span></td><td>ตั้งง่ายที่สุด ขอแค่ IP pool ว่างใน subnet เดียวกัน ได้ <code>type: LoadBalancer</code> ใช้จริง</td><td>traffic เข้าทาง node เดียวต่อ service (ไม่ใช่ load balance จริง) แต่พอสำหรับปริมาณระดับนี้</td></tr>
+            <tr><td>MetalLB — L2 mode</td><td>ตั้งง่ายที่สุด ขอแค่ IP pool ว่างใน subnet เดียวกัน</td><td>traffic เข้าทาง node เดียวต่อ service · <b>ไม่ต้องใช้แล้วเมื่อเลือก Cilium LB-IPAM</b></td></tr>
             <tr><td>MetalLB — BGP mode</td><td>กระจาย traffic จริงหลาย node, failover เร็ว</td><td>ต้องให้ทีม network ตั้ง BGP peer ให้</td></tr>
-            <tr><td>Cilium LB-IPAM</td><td>ถ้าเลือก Cilium อยู่แล้ว ไม่ต้องลง MetalLB เพิ่ม</td><td>ผูกกับการตัดสินใจ D4</td></tr>
+            <tr class="pick"><td><b>Cilium LB-IPAM</b> <span class="pill p-ok">เลือก</span></td><td>เลือก Cilium ที่ D4 อยู่แล้ว จึงไม่ต้องลง MetalLB เพิ่ม — ตัดออกไปหนึ่งระบบ · ประกาศ IP pool ด้วย <code>CiliumLoadBalancerIPPool</code></td><td>ต้องขอ IP pool ว่างจากทีม network เหมือนกัน · โฆษณา IP ออกนอก node ต้องเปิด <code>l2announcements</code> ของ Cilium</td></tr>
           </tbody>
         </table></div>
+      </div>
+      <div class="blk"><h4>LB-IPAM ทำงานอย่างไร และต้องใช้กี่ IP</h4>
+        <p><b>IP หนึ่งตัวผูกกับหนึ่ง Service ไม่ใช่หนึ่ง node</b> — จำนวน IP ที่ต้องใช้จึงไม่เกี่ยวกับว่ามีกี่เครื่อง แต่เกี่ยวกับว่า<b>มีกี่ service ที่ต้องเปิดให้คนนอก cluster เรียกถึง</b> node ทั้ง 6 เครื่องใช้ IP ของตัวเอง (<code>.101-.106</code>) อยู่แล้ว และไม่เกี่ยวกับ pool นี้เลย</p>
+        <div class="tw"><table>
+          <thead><tr><th class="num">ขั้น</th><th>เกิดอะไรขึ้น</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td>เราประกาศ <code>CiliumLoadBalancerIPPool</code> บอกช่วง IP ที่ Cilium หยิบไปใช้ได้</td></tr>
+            <tr><td class="num">2</td><td>มีคนสร้าง Service ที่เป็น <code>type: LoadBalancer</code> — Cilium operator หยิบ IP ว่างจาก pool มาหนึ่งตัว แล้วเขียนลงใน <code>status.loadBalancer.ingress</code> ของ Service นั้น</td></tr>
+            <tr><td class="num">3</td><td><b>L2 announcement</b> ให้ node ตัวใดตัวหนึ่งตอบ ARP ว่า “IP นี้อยู่ที่ฉัน” traffic ใน LAN จึงวิ่งมาที่ node นั้น</td></tr>
+            <tr><td class="num">4</td><td>eBPF ของ Cilium บน node นั้นส่งต่อไปยัง pod ปลายทาง <b>ซึ่งอยู่ node ไหนก็ได้</b> — ไม่จำเป็นต้องอยู่เครื่องเดียวกับที่รับ traffic เข้ามา</td></tr>
+            <tr><td class="num">5</td><td>ถ้า node ที่ตอบ ARP ตาย node อื่นจะรับหน้าที่ตอบแทนภายในไม่กี่วินาที — <b>IP ลอยตามได้ ไม่ผูกกับเครื่อง</b> นี่คือส่วนที่ทำให้มันเป็น HA</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <figure>
+        <div class="svgscroll"><svg viewBox="0 0 820 340" role="img" aria-label="แผนภาพแสดงว่า LoadBalancer IP หนึ่งตัวรองรับหลาย service ได้ผ่าน Envoy Gateway ที่แยกด้วย hostname และแสดงการย้าย ARP ระหว่าง node เมื่อ node ตาย">
+          <defs>
+            <marker id="ar9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor">
+
+            <text x="20" y="20" font-size="11.5" font-weight="600" class="dg-acc">ทำไม 1 IP พอสำหรับหลาย service</text>
+
+            <rect x="20" y="36" width="146" height="26" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="93" y="53" text-anchor="middle">ads.myhr.co.th</text>
+            <rect x="20" y="72" width="146" height="26" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="93" y="89" text-anchor="middle">hr.myhr.co.th</text>
+            <rect x="20" y="108" width="146" height="26" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="93" y="125" text-anchor="middle">api.myhr.co.th</text>
+
+            <path d="M166,49 L196,49 L196,85" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".75"/>
+            <path d="M166,121 L196,121 L196,85" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".75"/>
+            <line x1="166" y1="85" x2="214" y2="85" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar9)"/>
+
+            <rect x="216" y="62" width="132" height="46" rx="2" fill="none" class="dg-acc-s" stroke-width="1.6"/>
+            <text x="282" y="80" text-anchor="middle" class="dg-acc" font-weight="600">192.168.50.201</text>
+            <text x="282" y="97" text-anchor="middle" font-size="9" opacity=".72">LoadBalancer IP — 1 ตัว</text>
+
+            <line x1="348" y1="85" x2="392" y2="85" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar9)"/>
+
+            <rect x="394" y="62" width="132" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="460" y="80" text-anchor="middle" font-weight="600">Envoy Gateway</text>
+            <text x="460" y="97" text-anchor="middle" font-size="9" opacity=".72">แยกด้วย hostname</text>
+
+            <path d="M526,85 L556,85 L556,49" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".75"/>
+            <path d="M526,85 L556,85 L556,121" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".75"/>
+            <line x1="556" y1="49" x2="588" y2="49" stroke="currentColor" stroke-width="1.1" marker-end="url(#ar9)"/>
+            <line x1="556" y1="85" x2="588" y2="85" stroke="currentColor" stroke-width="1.1" marker-end="url(#ar9)"/>
+            <line x1="556" y1="121" x2="588" y2="121" stroke="currentColor" stroke-width="1.1" marker-end="url(#ar9)"/>
+
+            <rect x="590" y="36" width="150" height="26" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="665" y="53" text-anchor="middle">zeeme-ads</text>
+            <rect x="590" y="72" width="150" height="26" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="665" y="89" text-anchor="middle">zeeme-hr</text>
+            <rect x="590" y="108" width="150" height="26" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="665" y="125" text-anchor="middle">zeeme-api</text>
+            <text x="665" y="150" text-anchor="middle" font-size="9" opacity=".72">ClusterIP — ไม่กิน IP ของ LAN</text>
+
+            <line x1="20" y1="178" x2="800" y2="178" stroke="currentColor" stroke-width="1" opacity=".22" stroke-dasharray="3 3"/>
+
+            <text x="20" y="204" font-size="11.5" font-weight="600" class="dg-acc">L2 announcement — IP ลอยตาม node ที่ยังอยู่</text>
+
+            <rect x="20" y="234" width="118" height="40" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="79" y="258" text-anchor="middle">client ใน LAN</text>
+            <line x1="138" y1="254" x2="196" y2="254" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar9)"/>
+            <text x="167" y="246" text-anchor="middle" font-size="9" opacity=".72">ARP: ใครถือ .201?</text>
+
+            <rect x="198" y="234" width="126" height="40" rx="2" fill="none" class="dg-acc-s" stroke-width="1.6"/>
+            <text x="261" y="252" text-anchor="middle" class="dg-acc" font-weight="600">worker01 .104</text>
+            <text x="261" y="267" text-anchor="middle" font-size="9" opacity=".72">ตอบ ARP อยู่</text>
+
+            <rect x="336" y="234" width="126" height="40" rx="2" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".55"/>
+            <text x="399" y="258" text-anchor="middle" opacity=".7">worker02 .105</text>
+
+            <rect x="474" y="234" width="126" height="40" rx="2" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".55"/>
+            <text x="537" y="258" text-anchor="middle" opacity=".7">worker03 .106</text>
+
+            <path d="M261,282 L261,300 L399,300 L399,280" fill="none" class="dg-acc-s" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ar9)"/>
+            <text x="330" y="316" text-anchor="middle" font-size="9.5" class="dg-acc">ถ้า .104 ตาย — .105 ตอบ ARP แทน โดย IP ยังเป็น .201 เหมือนเดิม</text>
+
+            <text x="620" y="252" font-size="9.5" opacity=".72">pod ปลายทางอยู่ node ไหนก็ได้</text>
+            <text x="620" y="268" font-size="9.5" opacity=".72">eBPF ส่งต่อให้เอง</text>
+          </g>
+        </svg></div>
+        <figcaption><b>ซ้าย-ขวา: hostname หลายตัวใช้ IP เดียว</b> — Envoy Gateway รับ traffic ทั้งหมดที่ <code>.201</code> แล้วดูจาก <code>Host</code> header ว่าจะส่งไป Service ไหน ทุก microservice จึงเป็น <code>ClusterIP</code> ธรรมดาที่ไม่กิน IP ของ LAN เลย · <b>ล่าง: IP ไม่ผูกกับเครื่อง</b> — node ที่ตอบ ARP เปลี่ยนได้เมื่อเครื่องเดิมตาย ซึ่งเป็นเหตุผลที่ไม่ต้องจอง IP เผื่อไว้ต่อ node</figcaption>
+      </figure>
+      <div class="rec"><b>แก้จำนวน IP จาก 21 เหลือ 10</b>
+        <p>ตัวเลข 21 IP ที่เสนอไว้ก่อนหน้านี้<b>มากเกินความจำเป็น</b> — มันเป็นตัวเลขที่เหมาะกับ cluster ที่ทุก service ขอ IP ของตัวเอง ซึ่ง<b>ไม่ใช่สถาปัตยกรรมที่เราเลือก</b> เมื่อ D6 เลือก Envoy Gateway แล้ว microservice ทั้งหมดจะไปรวมอยู่หลัง Gateway ตัวเดียว</p>
+        <div class="tw"><table>
+          <thead><tr><th>ใช้ทำอะไร</th><th class="num">จำนวน IP</th><th>หมายเหตุ</th></tr></thead>
+          <tbody>
+            <tr><td><b>Envoy Gateway (ตัวหลัก)</b></td><td class="num">1</td><td>ทุก HTTP/HTTPS ของ <code>zeeme-*</code> วิ่งผ่านตัวนี้หมด แยกกันด้วย hostname</td></tr>
+            <tr><td>Gateway ตัวที่สอง</td><td class="num">1</td><td>เผื่อกรณีต้องแยก internal กับ external หรือแยก security zone</td></tr>
+            <tr><td>service ที่ไม่ใช่ HTTP</td><td class="num">2-3</td><td>ถ้าวันหนึ่งต้องเปิด TCP/UDP ตรง ๆ ที่ route ด้วย hostname ไม่ได้ · <b>ตอนนี้ยังไม่มี</b></td></tr>
+            <tr><td>service ที่ต้องมี IP เฉพาะ</td><td class="num">1-2</td><td>บางกรณี firewall ต้องเขียน rule เจาะจงปลายทาง ซึ่งง่ายกว่าถ้า service นั้นมี IP ของตัวเอง</td></tr>
+            <tr class="pick"><td><b>รวมที่ขอจอง</b></td><td class="num"><b>10</b><br><span class="dim">.200-.209</span></td><td><b>วันเปิดใช้จริงจะใช้แค่ 1-2 ตัว</b> ที่เหลือคือเผื่อโต — เหตุผลที่ยังจองเป็นช่วงคือการขอ IP เพิ่มทีละตัวจากทีม network ช้ากว่าการขอครั้งเดียวมาก</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="blk"><h4>สิ่งที่ต้องขอจากทีม network (SE)</h4>
+        <p>L2 announcement ทำงานที่ชั้น ARP ใน subnet เดียวกับ node ไม่ใช่การ route ดังนั้น<b>โดยปกติ SE แค่กัน IP ไว้ให้ ไม่ต้องตั้งค่าอะไรบนอุปกรณ์</b> แต่มีข้อยกเว้นหนึ่งข้อที่ต้องถามให้ชัด</p>
+        <div class="tw"><table>
+          <thead><tr><th>รายการ</th><th>SE ต้องทำอะไร</th><th>ถ้าไม่ทำจะเป็นอย่างไร</th></tr></thead>
+          <tbody>
+            <tr><td><b>กัน IP pool ไว้</b><br><span class="dim">192.168.50.200-209</span></td><td><b>แค่แจ้ง/จองในระบบ IPAM</b> และกันออกจาก DHCP scope · ต้องอยู่ subnet เดียวกับ node ไม่ต้องเปิด route ใหม่</td><td>วันหนึ่งมีเครื่องอื่นได้ IP ซ้ำ แล้ว service ล่มแบบสลับไปมา หาสาเหตุยากมาก</td></tr>
+            <tr><td><b>ARP inspection / port security</b> <span class="pill p-crit">ข้อสำคัญ</span></td><td><b>ต้องถามและอาจต้องแก้</b> — ถามว่า switch เปิด Dynamic ARP Inspection หรือ port security ที่ผูก MAC-IP ไว้หรือไม่ ถ้าเปิดต้องยกเว้นช่วง IP นี้ให้</td><td>node ตอบ ARP แทน IP ที่ไม่ใช่ของตัวเอง ซึ่ง<b>หน้าตาเหมือน ARP spoofing เป๊ะ</b> switch จะบล็อกทิ้ง — LoadBalancer จะขึ้นสถานะปกติใน Kubernetes แต่ ping จากข้างนอกไม่ติด</td></tr>
+            <tr><td><b>ยืนยัน pod/service CIDR</b><br><span class="dim">10.246.0.0/16, 10.247.0.0/16</span></td><td><b>แค่ยืนยันเป็นลายลักษณ์อักษร</b>ว่าไม่มี route สองวงนี้ในองค์กร — ไม่ต้องตั้งอะไร เพราะเป็นวงภายใน cluster ไม่ออกนอก node</td><td>ถ้าชนกับวงจริงในองค์กร pod จะเรียกปลายทางนั้นไม่ได้เลย และอาการจะดูเหมือนปัญหาที่ application</td></tr>
+            <tr class="pick"><td><b>VIP ของ control plane</b><br><span class="dim">192.168.50.100</span></td><td><b>ขอจองเพิ่มอีก 1 IP</b> — ยังไม่ได้อยู่ในรายการเครื่องที่ได้มา · ต้องอยู่วงเดียวกับ master ทั้งสามตัว</td><td>ไม่มี VIP = ไม่มี HA · ถ้าไปหยิบ IP ที่มีเครื่องอื่นใช้อยู่ apiserver จะเข้าถึงได้บ้างไม่ได้บ้างแบบสุ่ม</td></tr>
+            <tr><td>node อยู่ subnet เดียว</td><td><span class="pill p-ok">เรียบร้อยแล้ว</span> เครื่องชุดใหม่อยู่ <code>192.168.50.0/24</code> วงเดียวทั้งหมด</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note"><b>ถ้า SE ไม่ยอมให้ทำ L2 announcement</b>
+          <p>บาง องค์กรล็อก ARP ไว้แน่นและไม่ยกเว้นให้ ถ้าเจอกรณีนั้นมีทางออกสองทาง เรียงจากที่แนะนำก่อน: <b>(1) BGP mode</b> — Cilium ทำ BGP ได้ในตัวเหมือนกัน แลกกับที่ SE ต้องตั้ง peer และเปิด <code>179/tcp</code> ให้ · <b>(2) กลับไปใช้ NodePort</b> แล้วให้ hardware LB ที่มีอยู่ยิงเข้ามาที่ NodePort ของทุก node ซึ่งใช้ได้แต่เสียความสะดวกของ <code>type: LoadBalancer</code> ไป</p>
+        </div>
       </div>
       <div class="blk"><h4>ตัวเลือก — ตัวจัดการ routing</h4>
         <div class="tw"><table>
@@ -889,8 +1148,8 @@ figcaption b{color:var(--ink); font-weight:600;}
         <div class="tw"><table>
           <thead><tr><th>ตัวเลือก</th><th>เหมาะกับ</th><th>ข้อควรระวัง</th></tr></thead>
           <tbody>
-            <tr><td><b>ไม่มีเลย</b> <span class="pill p-neu">ของเดิม</span></td><td>ถ้า workload เป็น stateless ล้วน ฐานข้อมูลอยู่นอก cluster</td><td>ต้องประกาศให้ชัดในคู่มือ ไม่ใช่ปล่อยให้เป็นความบังเอิญ — วันหนึ่งจะมีคนอยากลง Redis แล้วติด</td></tr>
-            <tr class="pick"><td><b>vSphere CSI</b> <span class="pill p-ok">ถ้าอยู่บน VMware</span></td><td>ใช้ datastore เดิมที่มีอยู่ ไม่ต้องซื้อของใหม่</td><td>ต้องได้สิทธิ์ vCenter และต้องดูแลเวอร์ชันให้เข้ากับ vSphere</td></tr>
+            <tr class="pick"><td><b>ไม่มีเลย</b> <span class="pill p-ok">เลือก</span> <span class="pill p-neu">ของเดิม</span></td><td>workload เป็น stateless ล้วน ฐานข้อมูลอยู่นอก cluster ตลอด</td><td>ต้องประกาศให้ชัดในคู่มือ ไม่ใช่ปล่อยให้เป็นความบังเอิญ — วันหนึ่งจะมีคนอยากลง Redis แล้วติด</td></tr>
+            <tr><td><b>vSphere CSI</b></td><td>ใช้ datastore เดิมที่มีอยู่ ไม่ต้องซื้อของใหม่</td><td>ต้องได้สิทธิ์ vCenter และต้องดูแลเวอร์ชันให้เข้ากับ vSphere — <b>ตัวที่ควรหยิบมาใช้ก่อน ถ้าวันหนึ่งต้องกลับมาเปิด D8</b></td></tr>
             <tr><td><b>NFS CSI driver</b></td><td>ต้องการ RWX (หลาย pod เขียนพร้อมกัน) เช่นที่เก็บไฟล์แนบ</td><td>NFS server กลายเป็น single point of failure และ latency สูงกว่า block</td></tr>
             <tr><td><b>local-path-provisioner</b></td><td>ต้องการความเร็ว ยอมให้ข้อมูลผูกกับ node</td><td>pod ย้าย node ไม่ได้ ต้องมี backup ระดับ application เอง</td></tr>
             <tr><td><b>Longhorn</b></td><td>อยากได้ replicated block storage ในตัว cluster พร้อม snapshot</td><td>กิน CPU/RAM/disk ของ worker และเพิ่มสิ่งที่ต้องดูแลอีกระบบหนึ่ง</td></tr>
@@ -926,10 +1185,19 @@ figcaption b{color:var(--ink); font-weight:600;}
         <div class="tw"><table>
           <thead><tr><th>ตัวเลือก</th><th>ได้อะไร</th></tr></thead>
           <tbody>
-            <tr><td>Docker registry เปล่า <span class="pill p-neu">น่าจะเป็นของเดิม</span></td><td>เก็บ image ได้ จบ</td></tr>
-            <tr class="pick"><td><b>Harbor</b> <span class="pill p-ok">พิจารณา</span></td><td>vulnerability scanning, RBAC ต่อ project, replication, retention policy, pull-through cache — ครอบคลุมทุกช่องในตารางด้านบนด้วยของชิ้นเดียว</td></tr>
+            <tr class="pick"><td><b>Docker Registry (distribution)</b> <span class="pill p-ok">ของที่ใช้อยู่</span></td><td>เก็บ image ได้ จบ — <b>ไม่มี</b> scanning, RBAC ต่อ project, retention policy หรือ UI · ทีมยืนยันแล้วว่า <code>registry.myhr.co.th</code> เป็นตัวนี้</td></tr>
+            <tr><td>Harbor</td><td>vulnerability scanning, RBAC ต่อ project, replication, retention policy, pull-through cache — ครอบคลุมทุกช่องในตารางด้านบนด้วยของชิ้นเดียว · <span class="pill p-neu">เลื่อนออกไปก่อน</span> เป็นของที่เพิ่มทีหลังได้โดยไม่กระทบ cluster</td></tr>
           </tbody>
         </table></div>
+      </div>
+      <div class="note"><b>อยู่กับ Docker Registry ต่อ — สิ่งที่ต้องชดเชย</b>
+        <p>การคง registry เดิมไว้เป็นการตัดสินใจที่สมเหตุสมผลในรอบนี้ (ของใหม่เยอะพออยู่แล้ว) แต่ Docker Registry เปล่ามีข้อจำกัดที่ต้องรู้ตัวและมีแผนรองรับ:</p>
+        <ul>
+          <li><b>ไม่มี retention policy</b> — disk จะโตขึ้นเรื่อย ๆ จนเต็ม ต้องตั้ง cron รัน <code>registry garbage-collect</code> เป็นงานประจำในบทที่ 12 และมี alert ที่ disk usage</li>
+          <li><b>ไม่มี vulnerability scanning</b> — ถ้ามีข้อกำหนดเรื่องนี้ ให้รัน Trivy ที่ CI ก่อน push แทน ซึ่งได้ผลใกล้เคียงและไม่ต้องเปลี่ยน registry</li>
+          <li><b>auth เป็น htpasswd ทั้ง registry</b> — ไม่มีสิทธิ์ระดับ project แยกไม่ได้ว่าใครอ่านอะไรได้ อย่างน้อยต้อง<b>แยก account สำหรับ pull ที่อ่านได้อย่างเดียว</b> ออกจาก account ที่ push ได้ และห้ามใช้รหัสเดียวกับ root เหมือนของเดิม</li>
+          <li><b>TLS</b> — ต้องยืนยันว่า <code>registry.myhr.co.th</code> เสิร์ฟ HTTPS ด้วย cert อะไร ถ้าเป็น self-signed ต้องวาง CA ไว้ที่ <code>/etc/containerd/certs.d/registry.myhr.co.th/</code> ทุก node ถ้าเป็น HTTP ล้วนต้องประกาศ <code>skip_verify</code>/plain-HTTP ให้ชัด <b>ไม่ใช่ปล่อยให้ pull ไม่ผ่านแล้วมาไล่หาทีหลัง</b></li>
+        </ul>
       </div>
     </div>
   </article>
@@ -1007,9 +1275,9 @@ figcaption b{color:var(--ink); font-weight:600;}
         <div class="tw"><table>
           <thead><tr><th>ตัวเลือก</th><th>ข้อดี</th><th>ข้อเสีย</th></tr></thead>
           <tbody>
-            <tr><td><code>kubectl apply</code> มือ <span class="pill p-neu">ของเดิม</span></td><td>ง่าย ไม่มีอะไรต้องเรียน</td><td>ไม่มีร่องรอยว่าใคร deploy อะไรเมื่อไหร่, สถานะจริงกับใน git ไม่ตรงกันเรื่อย ๆ, rollback ต้องพึ่งความจำ</td></tr>
+            <tr class="pick"><td><b><code>kubectl apply</code> มือ</b> <span class="pill p-ok">เลือก</span> <span class="pill p-neu">ของเดิม</span></td><td>ง่าย ไม่มีอะไรต้องเรียน ทีมทำอยู่แล้ว ไม่ต้องเพิ่มระบบให้ดูแลในรอบที่มีของใหม่เยอะอยู่แล้ว</td><td>ไม่มีร่องรอยว่าใคร deploy อะไรเมื่อไหร่, สถานะจริงกับใน git ไม่ตรงกันเรื่อย ๆ, rollback ต้องพึ่งความจำ — <b>ต้องชดเชยด้วยวินัย ดูกล่องด้านล่าง</b></td></tr>
             <tr><td>Helm chart</td><td>ทำ template ได้ มี rollback ในตัว จัดการ values ต่อ environment ได้</td><td>ยังต้องมีคนรันคำสั่ง ยังไม่แก้ปัญหา drift</td></tr>
-            <tr class="pick"><td><b>Argo CD</b> <span class="pill p-ok">แนะนำ</span></td><td>git คือแหล่งความจริงเดียว, เห็น drift ทันที, rollback = revert commit, มี UI ที่ให้สิทธิ์ dev ดู deployment ตัวเองได้โดยไม่ต้องให้ <code>kubectl</code></td><td>เป็นระบบเพิ่มอีกหนึ่งที่ต้องดูแล และทีมต้องเปลี่ยนนิสัยการทำงาน</td></tr>
+            <tr><td>Argo CD</td><td>git คือแหล่งความจริงเดียว, เห็น drift ทันที, rollback = revert commit, มี UI ที่ให้สิทธิ์ dev ดู deployment ตัวเองได้โดยไม่ต้องให้ <code>kubectl</code></td><td>เป็นระบบเพิ่มอีกหนึ่งที่ต้องดูแล และทีมต้องเปลี่ยนนิสัยการทำงาน — <b>ทางที่เปิดไว้สำหรับรอบถัดไป</b></td></tr>
             <tr><td>Flux CD</td><td>เบากว่า Argo, เป็น GitOps เหมือนกัน</td><td>ไม่มี UI ในตัว ซึ่งเป็นข้อดีของ Argo ที่ทีม dev จะได้ประโยชน์มากที่สุด</td></tr>
           </tbody>
         </table></div>
@@ -1027,6 +1295,16 @@ figcaption b{color:var(--ink); font-weight:600;}
             <tr><td>ResourceQuota / LimitRange</td><td>ไม่มี</td><td>ต่อ namespace กัน namespace เดียวกินทั้ง cluster</td></tr>
           </tbody>
         </table></div>
+      </div>
+      <div class="gapbox"><b>ผลของการเลือก kubectl apply มือ — ต้องชดเชยด้วยวินัย</b>
+        <p>GitOps ไม่ได้ทำแค่เรื่องความสะดวก มันเป็นตัว<b>บังคับ</b>ให้ manifest ทุกตัวผ่านมาตรฐานในตารางด้านบน เมื่อเลือก <code>kubectl apply</code> มือ ตัวบังคับนั้นหายไป และมาชนกับข้อเท็จจริงจาก <a href="#l12">L12</a> พอดี: <b>เราไม่มี Ksplice จึงต้อง drain ทุก node ทุกรอบ patch kernel</b> ถ้ามี Deployment สักตัวที่ไม่มี PDB หรือมี replica เดียว rolling reboot จะทำ service ล่มจริง</p>
+        <p>สามอย่างนี้จึงต้องมีมาแทน — ไม่ใช่ของแถม:</p>
+        <ul>
+          <li><b>manifest ทุกตัวอยู่ใน git และ apply จาก git เท่านั้น</b> ห้าม <code>kubectl edit</code> บน cluster ตรง ๆ · ให้ทำเป็นข้อตกลงที่เขียนไว้ในบทที่ 11</li>
+          <li><b>ตัวตรวจอัตโนมัติแทนคน</b> — ใส่ <code>kubeconform</code> + policy check (เช่น Kyverno ในโหมด audit) ที่ CI ให้ตกทันทีถ้า manifest ไม่มี PDB / probes / resources / non-root · ตัวนี้ถูกกว่า Argo CD มากและได้ประโยชน์หลักไปแล้ว</li>
+          <li><b>alert ที่จับ Deployment ที่ไม่มี PDB</b> จาก kube-state-metrics ที่ L09 — ให้รู้ก่อนถึงรอบ patch ไม่ใช่รู้ตอน drain แล้วล่ม</li>
+        </ul>
+        <p>ทางกลับมาเปิดไว้: ถ้าภายหลังอยากได้ Argo CD ให้ทำหลัง Phase 5 เมื่อ manifest ทุกตัวอยู่ใน git เรียบร้อยแล้ว — ตอนนั้นจะเป็นแค่การชี้ Argo ไปที่ repo ที่มีอยู่ ไม่ใช่โครงการใหญ่</p>
       </div>
       <div class="note"><b>Helm 4</b><p>Helm 3 หยุด bugfix ไปแล้วเมื่อ ก.ค. 2026 และ security patch จะหยุด ก.พ. 2027 คู่มือใหม่ควรอิง Helm 4 ตั้งแต่แรก แต่ต้องเผื่อเวลาทดสอบ chart เดิม เพราะ Helm 4 เปลี่ยนมาใช้ Server-Side Apply เป็นค่าเริ่มต้นและต้องการสิทธิ์ RBAC เพิ่มสำหรับ kstatus</p></div>
     </div>
@@ -1049,9 +1327,19 @@ figcaption b{color:var(--ink); font-weight:600;}
             <tr><td><b>Patch upgrade</b></td><td>ทุก 1-2 เดือน</td><td>ภายใน minor เดียวกัน ทำได้เร็ว ความเสี่ยงต่ำ</td></tr>
             <tr><td><b>Minor upgrade</b></td><td>ปีละ 1-2 ครั้ง</td><td>ห้ามข้าม minor — ต้องไปทีละขั้น (1.36 → 1.37 → 1.38) ลำดับคือ control plane แรกก่อน แล้วที่เหลือ แล้วค่อย worker ทีละตัวพร้อม drain</td></tr>
             <tr><td><b>เพิ่ม/ถอด node</b></td><td>ตามต้องการ</td><td>รวมถึงวิธีออก bootstrap token ใหม่ (ของเก่าหมดอายุใน 24 ชม.) และวิธี <code>drain</code> ให้ปลอดภัย</td></tr>
+            <tr><td><b>Patch kernel / OS</b><br><span class="dim">rolling reboot</span></td><td>ทุก 1-2 เดือน + ทันทีเมื่อมี CVE ระดับสูง</td><td><b>เพิ่มเข้ามาเพราะเปลี่ยนเป็น Oracle Linux</b> · ใช้แบบฟรีจึงไม่มี Ksplice → <b>ปะ kernel ต้อง reboot ทุกครั้ง ไม่มีทางเลี่ยง</b> · ขั้นตอน: <code>cordon</code> → <code>drain</code> → ยก versionlock → <code>dnf update</code> → reboot → <code>uncordon</code> → <b>ล็อก versionlock กลับทันที</b> → ยืนยัน <code>uname -r</code> ตรงกับที่ตั้งใจ แล้วค่อยไป node ถัดไป</td></tr>
             <tr><td><b>ทบทวน capacity</b></td><td>ทุกไตรมาส</td><td>ดู request vs usage จริงจาก Prometheus แล้วปรับ</td></tr>
           </tbody>
         </table></div>
+      </div>
+      <div class="note"><b>ผลจากการใช้ Oracle Linux แบบฟรี — ไม่มี live patching</b>
+        <p>ไม่มี Ksplice แปลว่า <b>ทุกรอบ CVE ของ kernel ต้อง reboot ทั้ง cluster ทีละ node</b> ปีละหลายรอบ นี่เปลี่ยนจาก “งานที่เลื่อนได้” เป็น “งานประจำที่ต้องทำได้โดยไม่มี downtime” และบังคับให้สามอย่างนี้ต้องพร้อมก่อนรับ workload จริงใน Phase 4:</p>
+        <ul>
+          <li><b>ต้องมี capacity เผื่อ N+1</b> — drain worker หนึ่งตัวแล้ว pod ต้องมีที่ลงครบ ถ้า worker เต็มทุกตัวจะ drain ไม่ได้เลย</li>
+          <li><b>ทุก Deployment ต้องมี PodDisruptionBudget และ replica ≥ 2</b> — ไม่งั้น drain จะทำ service ล่มจริง (อยู่ในมาตรฐาน manifest ที่ <a href="#l11">L11</a> แล้ว แต่ตอนนี้กลายเป็นข้อบังคับ ไม่ใช่ข้อแนะนำ)</li>
+          <li><b>control plane ต้องเป็น 3 ตัวจริง ๆ และ HA ต้องใช้งานได้</b> — reboot master ทีละตัวต้องไม่ทำให้ apiserver ขาด ซึ่งไปผูกกับ <a href="#l4">L04</a> ที่เสนอให้ย้าย keepalived/HAProxy เป็น systemd</li>
+        </ul>
+        <p>เขียน rolling reboot เป็น runbook ที่มีลำดับชัดในบทที่ 12 และ<b>ซ้อมหนึ่งรอบใน Phase 4 ก่อนรับ workload</b> — ไม่ใช่มาลองครั้งแรกตอนมี CVE จริง</p>
       </div>
       <div class="rec"><b>ก่อนอื่นเลย — ตรวจ cluster เดิมก่อน</b>
         <p>ถ้า cluster เดิมยังรันอยู่ ให้รัน <code>kubeadm certs check-expiration</code> บนทุก master ก่อนทำอะไรทั้งสิ้น cert ของ kubeadm มีอายุ 1 ปี และจะต่ออายุอัตโนมัติเมื่อ upgrade เท่านั้น — cluster ที่ตั้งเมื่อ 2-3 ปีก่อนและไม่เคย upgrade มีโอกาสสูงที่ cert หมดอายุไปแล้ว ซึ่งจะเปลี่ยนแผนการย้าย workload ทั้งหมด</p>
@@ -1069,7 +1357,7 @@ figcaption b{color:var(--ink); font-weight:600;}
 
   <div class="chap"><span class="cn">01</span><div><h4>เตรียม Infrastructure</h4><p>สเปก VM, แผน IP/CIDR, DNS, NTP, anti-affinity, การวัด disk latency ของ etcd พร้อม checklist ที่ต้องผ่านก่อนแตะเครื่องแรก<span class="who">ผู้อ่าน: infra/network · L00</span></p></div></div>
 
-  <div class="chap"><span class="cn">02</span><div><h4>เตรียม OS ทุก node</h4><p>kernel modules, sysctl, swap, SELinux, firewall port matrix, hostname, time sync — บทนี้รันเหมือนกันทุกเครื่อง เหมาะทำเป็น Ansible playbook<span class="who">ผู้อ่าน: ops · L01</span></p></div></div>
+  <div class="chap"><span class="cn">02</span><div><h4>เตรียม OS ทุก node</h4><p><b>เลือก/ล็อก kernel (UEK 8U2), จัด repo ของ Oracle Linux</b>, kernel modules, sysctl, swap, SELinux, firewall port matrix, hostname, time sync — บทนี้รันเหมือนกันทุกเครื่อง เหมาะทำเป็น Ansible playbook<span class="who">ผู้อ่าน: ops · L01</span></p></div></div>
 
   <div class="chap"><span class="cn">03</span><div><h4>ติดตั้ง Container Runtime</h4><p>containerd + runc + CNI binaries, สร้างและแก้ <code>config.toml</code> (SystemdCgroup!), registry config, verify ด้วย <code>crictl</code><span class="who">ผู้อ่าน: ops · L02</span></p></div></div>
 
@@ -1111,12 +1399,13 @@ figcaption b{color:var(--ink); font-weight:600;}
       <tr><td>runc</td><td>ไม่ระบุ</td><td class="num"><b>pin เลขให้ชัด</b></td><td>ดึงเลขล่าสุดจาก opencontainers/runc releases</td></tr>
       <tr><td>CNI plugins</td><td class="num">1.4.1</td><td class="num"><b>pin เลขให้ชัด</b></td><td>ดึงเลขล่าสุดจาก containernetworking/plugins releases</td></tr>
       <tr><td>Helm</td><td class="num">3.15.1</td><td class="num"><b>4.1.x</b></td><td>Helm 3 security patch หมด ก.พ. 2027</td></tr>
-      <tr><td>CNI (controller)</td><td>Flannel 0.25.1</td><td><b>ตาม D4</b></td><td>Cilium (แนะนำ) หรือ Calico</td></tr>
-      <tr><td>kube-proxy mode</td><td>iptables</td><td><b>nftables</b></td><td>หรือไม่ใช้เลยถ้าเลือก Cilium</td></tr>
+      <tr><td>CNI (controller)</td><td>Flannel 0.25.1</td><td><b>Cilium</b></td><td>ทำ CNI + kube-proxy replacement + LB-IPAM ในตัวเดียว · pin เลข chart และ image ให้ตรงกัน</td></tr>
+      <tr><td>kube-proxy</td><td>iptables</td><td><b>ไม่ติดตั้ง</b></td><td>ใช้ Cilium kube-proxy replacement · ต้องใส่ <code>skipPhases: [addon/kube-proxy]</code> ตอน <code>kubeadm init</code></td></tr>
       <tr><td>metrics-server</td><td>ไม่ pin</td><td class="num"><b>0.8.x</b></td><td>ผ่าน Helm chart 3.14.x</td></tr>
       <tr><td>HAProxy</td><td class="num">2.1.4 (2020)</td><td class="num"><b>3.x LTS</b></td><td>ลงเป็น package ของ OS แทน container image</td></tr>
       <tr><td>keepalived</td><td>osixia/keepalived 2.0.17</td><td><b>package ของ OS</b></td><td>image เดิมไม่มีคนดูแลแล้ว</td></tr>
-      <tr><td>OS</td><td>ตระกูล RHEL (ไม่ระบุ)</td><td><b>ตาม D2</b></td><td>Rocky/Alma 9 (แนะนำ)</td></tr>
+      <tr><td>OS</td><td>ตระกูล RHEL (ไม่ระบุ)</td><td><b>Oracle Linux 9.8</b></td><td>ออก มิ.ย. 2026 · อายุ 9.x ถึง มิ.ย. 2032 · <b>ใช้แบบฟรี</b> — repo <code>yum.oracle.com</code> ไม่ต้อง subscription, ไม่มี Ksplice, ไม่มี vendor support</td></tr>
+      <tr><td>kernel</td><td>ไม่ระบุ</td><td class="num"><b>kernel-uek 6.12.0-203.76.7.3</b></td><td>UEK 8U2 · ค่า default ของ 9.8 · ทางเลือกคือ RHCK <code>5.14.0-687.5.3</code> ตาม D2a · <b>ต้อง versionlock</b></td></tr>
     </tbody>
   </table></div>
 </section>
@@ -1129,12 +1418,12 @@ figcaption b{color:var(--ink); font-weight:600;}
   <div class="phase">
     <h4>Phase 0 — เคาะและสำรวจ</h4>
     <span class="dur">~1 สัปดาห์</span>
-    <p>ตอบ D1-D10 · ตรวจ cert ของ cluster เดิม (<code>kubeadm certs check-expiration</code>) · หมุน credential ที่รั่วในเอกสารเดิม · ยืนยันข้อสมมติเรื่อง OS/VMware/registry · ขอ IP pool จากทีม network</p>
+    <p><b>ตัดสินใจครบทุกข้อแล้ว</b> เหลืองานสำรวจ: ตรวจ cert ของ cluster เดิม (<code>kubeadm certs check-expiration</code>) · หมุน credential ที่รั่วในเอกสารเดิม · <b>ทำ VM template ของ OL 9.8 ที่ versionlock kernel แล้ว พร้อมแผน partition ใหม่ (ย้าย /home)</b> · วัด fsync ของ disk ด้วย <code>fio</code> เพื่อตัดสินว่าต้องขอ VMDK แยกให้ etcd ไหม · ยืนยันว่า registry เป็น HTTP หรือ HTTPS · <b>ขอ VIP และ LB-IPAM pool จากทีม network</b></p>
   </div>
   <div class="phase">
     <h4>Phase 1 — Lab</h4>
     <span class="dur">~2 สัปดาห์</span>
-    <p>สร้าง lab 2 master + 2 worker (ใช้ชุดเดิมที่ subnet 192.168.50.x ได้) · เดินทีละชั้น L00→L06 · <b>จดทุกอย่างที่ติดขัดขณะทำ</b> — บันทึกนี้จะกลายเป็นบทที่ 13 โดยตรง</p>
+    <p>สร้าง lab 2 master + 2 worker บน <b>OL 9.8 + UEK 8U2</b> (ใช้เครื่องฝึกอบรมเดิมที่ <code>192.168.50.180-183</code> ได้ แต่<b>ต้องใช้ VIP, virtual_router_id และ LB-IPAM pool คนละชุดกับ production</b> เพราะอยู่ L2 domain เดียวกัน) · เดินทีละชั้น L00→L06 · <b>จดทุกอย่างที่ติดขัดขณะทำ</b> — บันทึกนี้จะกลายเป็นบทที่ 13 โดยตรง</p>
   </div>
   <div class="phase">
     <h4>Phase 2 — เขียนคู่มือฉบับร่าง</h4>
@@ -1149,7 +1438,7 @@ figcaption b{color:var(--ink); font-weight:600;}
   <div class="phase">
     <h4>Phase 4 — Production</h4>
     <span class="dur">~2 สัปดาห์</span>
-    <p>สร้าง cluster จริง 3 master + worker ตามคู่มือที่ผ่าน Phase 3 · เพิ่มบท 09-12 (observability, security, delivery, day-2) · ตั้ง backup และ alert ให้ทำงานจริงก่อนรับ workload</p>
+    <p>สร้าง cluster จริง 3 master + worker ตามคู่มือที่ผ่าน Phase 3 · เพิ่มบท 09-12 (observability, security, delivery, day-2) · ตั้ง backup และ alert ให้ทำงานจริงก่อนรับ workload · <b>ซ้อม rolling reboot ปะ kernel หนึ่งรอบ</b> — จำเป็นเพราะไม่มี Ksplice ให้ใช้ ต้องพิสูจน์ว่า drain ทั้ง cluster ได้จริงตั้งแต่ตอนที่ยังไม่มี workload</p>
   </div>
   <div class="phase">
     <h4>Phase 5 — ย้าย workload และส่งมอบ</h4>
@@ -1165,16 +1454,22 @@ figcaption b{color:var(--ink); font-weight:600;}
     <thead><tr><th>ความเสี่ยง</th><th>ผลกระทบ</th><th>วิธีรับมือ</th></tr></thead>
     <tbody>
       <tr><td><b>cert ของ cluster เดิมหมดอายุแล้ว</b></td><td>ย้าย workload แบบค่อยเป็นค่อยไปไม่ได้ ต้องเร่งสร้างของใหม่</td><td>ตรวจใน Phase 0 ทันที ถ้าหมดจริงยังกู้ได้ด้วย <code>kubeadm certs renew all</code> ตราบใดที่ CA ยังไม่หมด (CA อายุ 10 ปี)</td></tr>
-      <tr><td>เลือก Cilium แล้วทีม debug ไม่ไหว</td><td>เวลาเกิดปัญหา network จะแก้ช้ากว่าเดิมมาก</td><td>ตัดสินใจจากผลจริงใน Phase 1 ไม่ใช่จากเอกสาร · มี Calico เป็นแผนสำรองที่เปลี่ยนได้ก่อนจบ Phase 3</td></tr>
+      <tr><td>มีนโยบายให้ลง EDR / backup agent บน node ทีหลัง</td><td>agent พวกนี้จำนวนไม่น้อย certify เฉพาะ RHCK — ถ้าต้องย้าย kernel ทั้ง cluster ตอนมี workload จริงแล้ว จะแพงกว่าตัดสินตอนนี้มาก</td><td>ตอนนี้ยืนยันแล้วว่าไม่มี agent จึงปิด D2a เป็น UEK ได้ · <b>ถ้าอนาคตมีนโยบายเพิ่ม ให้กลับมาทบทวน D2a ก่อนลง</b> ไม่ใช่ลงแล้วค่อยแก้ · ระบุเงื่อนไขนี้ไว้ในภาคผนวก D (บันทึกความต่างและเหตุผล)</td></tr>
+      <tr><td>node บูตคนละ kernel กันโดยไม่รู้ตัว</td><td>อาการ network ต่างกันเป็นราย node — เป็นบั๊กที่หาสาเหตุยากที่สุดแบบหนึ่ง</td><td><code>dnf versionlock</code> ที่ <code>kernel-uek</code> ทุกเครื่อง · ใส่ <code>uname -r</code> เป็น verify step ในบทที่ 02 · ทำ alert ที่ Prometheus เทียบ <code>node_uname_info</code> ข้าม node</td></tr>
+      <tr><td><b>ไม่มี vendor support ให้เปิดเคส</b> (ใช้ OL แบบฟรี)</td><td>เจอบั๊กระดับ kernel หรือ driver แล้วไม่มีใครให้พึ่ง ต้องแก้กันเองหรือรอ upstream</td><td>ยอมรับความเสี่ยงนี้ — Rocky/Alma ก็ไม่ต่างกัน · ชดเชยด้วยการทำ<b>บทที่ 13 ให้ละเอียด</b>และ<b>ยึด default ของ distro ให้มากที่สุด</b> อย่าไป custom kernel parameter หรือ out-of-tree module ถ้าไม่จำเป็นจริง เพราะจะไม่มีใครเคยเจอเคสเดียวกัน</td></tr>
+      <tr><td>ไม่มี Ksplice → ต้อง reboot ทุกรอบ patch kernel</td><td>ถ้า capacity ไม่พอหรือไม่มี PDB จะ drain node ไม่ได้ กลายเป็นเลื่อน patch ออกไปเรื่อย ๆ จนค้าง CVE</td><td>บังคับ N+1 capacity, PDB และ replica ≥ 2 ให้เสร็จ<b>ก่อน</b>รับ workload ใน Phase 4 · ซ้อม rolling reboot หนึ่งรอบใน Phase 4 (ดู <a href="#l12">L12</a>)</td></tr>
+      <tr><td><b>Cilium รับภาระ 3 หน้าที่พร้อมกัน</b> (CNI + kube-proxy + LB-IPAM)</td><td>Cilium มีปัญหาทีเดียว = pod network, Service และ LoadBalancer ดับพร้อมกันหมด · ไม่มี kube-proxy ให้ถอยกลับไปใช้เพราะไม่ได้ติดตั้งไว้เลย</td><td>นี่คือราคาของการตัดชิ้นส่วนออก ซึ่งคุ้มถ้าทีมคุมมันได้ · <b>Phase 1 ต้องพิสูจน์ว่าทีม debug Cilium ได้จริง</b> ไม่ใช่แค่ติดตั้งผ่าน · แผนสำรองคือ Calico + kube-proxy nftables + MetalLB ซึ่ง<b>ต้องตัดสินก่อนจบ Phase 3</b> เพราะเปลี่ยนหลังจากนั้นคือรื้อ L05-L06 ทั้งชั้น</td></tr>
+      <tr><td>ไม่มี GitOps บังคับมาตรฐาน manifest (D9 = kubectl apply)</td><td>Deployment ที่ไม่มี PDB หรือมี replica เดียวจะหลุดขึ้น production แล้วไปดับตอน drain node รอบ patch kernel ซึ่งเกิดทุก 1-2 เดือน</td><td>ใส่ <code>kubeconform</code> + policy check ที่ CI ให้ตกทันทีถ้า manifest ไม่ครบมาตรฐาน · ทำ alert จับ Deployment ที่ไม่มี PDB · ดูรายละเอียดที่ <a href="#l11">L11</a></td></tr>
       <tr><td>pod CIDR <code>10.242.0.0/16</code> ชนกับ route ในองค์กร</td><td>อาการประหลาดที่หาสาเหตุยากมาก</td><td>ให้ทีม network ยืนยันเป็นลายลักษณ์อักษรใน Phase 0</td></tr>
       <tr><td>Gateway API ใหม่เกินไปสำหรับทีม</td><td>ติดขัดตอนตั้ง ingress</td><td>Traefik v3 รองรับทั้ง Ingress และ Gateway API — เริ่มด้วย Ingress ก่อนแล้วค่อยย้ายได้ ถ้าจำเป็น</td></tr>
-      <tr><td>ขอบเขตบานปลาย (Argo CD + Harbor + Cilium + Prometheus พร้อมกัน)</td><td>โครงการยืดจนไม่จบ</td><td>บังคับลำดับ: cluster ต้องขึ้นและมี backup ก่อน (Phase 4) แล้วค่อยเพิ่มของอื่นทีละอย่าง · ทุกตัวใน L08-L11 เลื่อนออกไปได้ ยกเว้น backup</td></tr>
+      <tr><td>ขอบเขตบานปลาย</td><td>โครงการยืดจนไม่จบ</td><td><span class="pill p-ok">ลดลงมากแล้ว</span> การเคาะ D7-D9 ตัด MetalLB, CSI และ Argo CD ออกไปทั้งหมด เหลือของใหม่ที่ต้องเรียนจริง ๆ แค่ Cilium กับ Envoy Gateway · ยังคงบังคับลำดับ: cluster ต้องขึ้นและมี backup ก่อน (Phase 4) แล้วค่อยเพิ่มของอื่นทีละอย่าง</td></tr>
       <tr><td>ไม่มีเวลาทำ Phase 3</td><td>ได้คู่มือที่อ่านรู้เรื่องเฉพาะคนเขียน — ซ้ำรอยเดิม</td><td>ตัดขอบเขตอย่างอื่นก่อน อย่าตัด Phase 3</td></tr>
     </tbody>
   </table></div>
 
   <div class="note"><b>ต้องยืนยันจากทีม</b>
-    <p>1 · Hypervisor เป็น VMware ใช่ไหม (มีผลกับ L07) &nbsp; 2 · OS ปัจจุบันเป็นอะไร (มีผลกับ D2) &nbsp; 3 · firewalld บน node เดิมเปิดอยู่หรือปิด (มีผลกับ L01) &nbsp; 4 · มี workload ที่ต้องการ persistent storage ไหม (D8) &nbsp; 5 · <code>registry.myhr.co.th</code> เป็น registry อะไรและ TLS เป็นแบบไหน (L08) &nbsp; 6 · มีข้อกำหนด compliance ที่ระบุเรื่อง network segmentation หรือ audit trail ไหม (มีผลกับ D4 และ L10)</p>
+    <p><b>เหลือเรื่องเดียว คือคุยกับทีม network (SE)</b> — รายการเต็มพร้อมเหตุผลอยู่ที่ <a href="#l6">L06</a> สรุปคือ: <b>1 ·</b> <span class="pill p-crit">ต้องมี</span> จอง VIP <code>192.168.50.100</code> เพิ่มอีก 1 IP สำหรับ control plane endpoint &nbsp; <b>2 ·</b> กัน <code>192.168.50.200-209</code> ไว้ให้ LB-IPAM (แค่จองในระบบ ไม่ต้องตั้ง route) &nbsp; <b>3 ·</b> <span class="pill p-crit">ข้อสำคัญ</span> ถามว่า switch เปิด Dynamic ARP Inspection หรือ port security ไว้ไหม ถ้าเปิดต้องยกเว้นช่วง IP นี้ &nbsp; <b>4 ·</b> ยืนยันว่าไม่มี route <code>10.246.0.0/16</code> และ <code>10.247.0.0/16</code> ในองค์กร &nbsp; <b>5 ·</b> ยืนยันว่าเครื่อง lab เดิมที่ <code>192.168.50.179-183</code> ยังเปิดอยู่หรือปลดไปแล้ว</p>
+    <p class="dim" style="margin-top:10px">ตอบแล้วทั้งหมด: OS เป็น Oracle Linux 9.8 แบบใช้ฟรี · kernel UEK 8U2 · ไม่มี agent ระดับ OS · ไม่มี stateful workload จึงไม่ต้องใช้ CSI และคำถามเรื่อง hypervisor ไม่กระทบ L07 อีกต่อไป · <b>firewalld เปิดอยู่</b> จึงต้องเปิดพอร์ตตามตารางที่ L01 ให้ครบ · <b>registry เป็น Docker Registry เปล่า</b> ไม่ใช่ Harbor จึงต้องมี garbage-collect และแยก account pull ตามที่ระบุใน L08</p>
   </div>
 </section>
 

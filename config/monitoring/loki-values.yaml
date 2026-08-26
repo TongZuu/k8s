@@ -1,0 +1,76 @@
+# =============================================================================
+#  Loki — Helm values สำหรับ MyHR
+# =============================================================================
+#  โหมด SingleBinary เพราะ cluster ขนาดนี้ไม่ต้องการ microservices mode
+#  และเราไม่มี object storage (S3/MinIO) จึงใช้ filesystem บน local PV
+# =============================================================================
+
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false              # cluster ภายใน · กันด้วย NetworkPolicy แทน (บทที่ 10)
+
+  commonConfig:
+    replication_factor: 1          # local PV เป็น RWO จึงมีได้ตัวเดียว
+
+  storage:
+    type: filesystem
+
+  schemaConfig:
+    configs:
+      - from: "2026-01-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+
+  limits_config:
+    retention_period: 336h         # 14 วัน
+    # กัน pod ที่ log รัว ๆ ไม่ให้กิน disk จนเต็ม root partition
+    ingestion_rate_mb: 10
+    ingestion_burst_size_mb: 20
+    per_stream_rate_limit: 3MB
+    max_query_series: 5000
+
+  compactor:
+    retention_enabled: true        # ต้องเปิด ไม่งั้น retention_period ไม่มีผล
+    delete_request_store: filesystem
+
+singleBinary:
+  replicas: 1
+  persistence:
+    enabled: true
+    storageClass: local-storage
+    accessModes: ["ReadWriteOnce"]
+    size: 50Gi
+  resources:
+    requests:
+      cpu: 200m
+      memory: 1Gi
+    limits:
+      memory: 3Gi
+
+# --- ปิด component ของ microservices mode ที่ไม่ใช้ ---------------------------
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+
+# --- ปิด MinIO ที่ chart จะลงให้อัตโนมัติ --------------------------------------
+# เราใช้ filesystem บน local PV ไม่ต้องการ object storage
+minio:
+  enabled: false
+
+# --- ปิด self-monitoring ที่ chart ลงเพิ่มให้ ---------------------------------
+# เรามี kube-prometheus-stack อยู่แล้ว ไม่ต้องซ้ำ
+monitoring:
+  selfMonitoring:
+    enabled: false
+    grafanaAgent:
+      installOperator: false
+test:
+  enabled: false

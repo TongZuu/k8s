@@ -1,0 +1,102 @@
+# =============================================================================
+#  Namespace + Pod Security Admission + ResourceQuota
+# =============================================================================
+#  PSA เป็นของที่มีอยู่ใน Kubernetes อยู่แล้ว ไม่ต้องลง controller เพิ่ม
+#  แค่ติด label 3 ตัว:
+#    enforce = บล็อกจริงถ้าไม่ผ่าน
+#    audit   = เขียนลง audit log
+#    warn    = เตือนคนที่ apply ทันที (สำคัญ — ทำให้รู้ตัวก่อนโดนบล็อก)
+#
+#  ⚠️ restricted จะทำให้ manifest เดิมของ zeeme-* deploy ไม่ผ่าน
+#     เพราะของเดิมใช้ runAsUser: 0 — นี่คือเจตนา ดูวิธีแก้ที่บทที่ 11
+# =============================================================================
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: myhr-prod
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    myhr.co.th/environment: production
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: myhr-uat
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    myhr.co.th/environment: uat
+
+---
+# =============================================================================
+#  ResourceQuota — กัน namespace เดียวกินทั้ง cluster
+# =============================================================================
+#  ตัวเลขอิงจากเพดาน N+1 ของ worker (32 vCPU / 96 GB)
+#  ไม่ใช่จาก capacity รวม (48 vCPU / 144 GB) เพราะเวลา drain จะเหลือ worker 2 ตัว
+#
+#  prod 60% · uat 25% · เหลือ 15% ให้ระบบ (monitoring, gateway, cert-manager)
+# =============================================================================
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: myhr-prod-quota
+  namespace: myhr-prod
+spec:
+  hard:
+    requests.cpu: "19"             # ~60% ของ 32
+    requests.memory: 57Gi          # ~60% ของ 96
+    limits.cpu: "38"               # อนุญาต burst ได้ 2 เท่าของ request
+    limits.memory: 76Gi
+    pods: "100"
+    persistentvolumeclaims: "0"    # cluster นี้ไม่มี dynamic storage (D8)
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: myhr-uat-quota
+  namespace: myhr-uat
+spec:
+  hard:
+    requests.cpu: "8"
+    requests.memory: 24Gi
+    limits.cpu: "16"
+    limits.memory: 32Gi
+    pods: "50"
+    persistentvolumeclaims: "0"
+
+---
+# =============================================================================
+#  LimitRange — ให้ค่า default กับ pod ที่ลืมใส่ resources
+# =============================================================================
+#  สำคัญเพราะเราไม่มี GitOps มาบังคับ ถ้า pod ไม่มี requests เลย
+#  scheduler จะตัดสินใจมั่วและ ResourceQuota จะบล็อกทั้ง namespace
+# =============================================================================
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: myhr-prod-limits
+  namespace: myhr-prod
+spec:
+  limits:
+    - type: Container
+      default:                     # ใช้เป็น limits ถ้าไม่ระบุ
+        cpu: 500m
+        memory: 512Mi
+      defaultRequest:              # ใช้เป็น requests ถ้าไม่ระบุ
+        cpu: 100m
+        memory: 256Mi
+      max:
+        cpu: "4"
+        memory: 8Gi
+      min:
+        cpu: 10m
+        memory: 32Mi

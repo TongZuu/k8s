@@ -1,0 +1,46 @@
+# =============================================================================
+#  PodDisruptionBudget สำหรับ cert-manager
+# =============================================================================
+#  จำเป็นเพราะเราไม่มี Ksplice จึงต้อง drain node ทุก 1-2 เดือน
+#  ถ้า webhook เหลือ pod เดียวแล้ว node นั้นถูก drain
+#  → การสร้าง/ต่ออายุ Certificate ทุกอันจะค้างจนกว่า pod จะขึ้นใหม่
+# =============================================================================
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cert-manager
+  namespace: cert-manager
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: cert-manager
+      app.kubernetes.io/component: controller
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cert-manager-webhook
+  namespace: cert-manager
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: cert-manager
+      app.kubernetes.io/component: webhook
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cert-manager-cainjector
+  namespace: cert-manager
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: cert-manager
+      app.kubernetes.io/component: cainjector

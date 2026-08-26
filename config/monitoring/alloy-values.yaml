@@ -1,0 +1,83 @@
+# =============================================================================
+#  Grafana Alloy — เก็บ log จากทุก pod ส่งเข้า Loki
+# =============================================================================
+#  รันเป็น DaemonSet ต้องได้ครบ 6 ตัว (ทั้ง master และ worker)
+#  log ของ control plane สำคัญพอ ๆ กับ log ของ application
+# =============================================================================
+
+controller:
+  type: daemonset
+
+alloy:
+  configMap:
+    create: true
+    content: |
+      // ค้นหา pod ทั้งหมดใน cluster
+      discovery.kubernetes "pods" {
+        role = "pod"
+      }
+
+      // แปลง label ของ Kubernetes เป็น label ของ Loki
+      discovery.relabel "pod_logs" {
+        targets = discovery.kubernetes.pods.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label  = "container"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+          target_label  = "app"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          target_label  = "node"
+        }
+      }
+
+      // อ่านไฟล์ log ของ container
+      loki.source.kubernetes "pod_logs" {
+        targets    = discovery.relabel.pod_logs.output
+        forward_to = [loki.process.drop_noise.receiver]
+      }
+
+      // กรอง log ที่ไม่มีประโยชน์ออกก่อนส่ง — ประหยัด disk บน root partition
+      loki.process "drop_noise" {
+        forward_to = [loki.write.default.receiver]
+
+        stage.drop {
+          expression = "(?i)(health|readyz|livez).*(200|OK)"
+          drop_counter_reason = "healthcheck_noise"
+        }
+      }
+
+      loki.write "default" {
+        endpoint {
+          url = "http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
+        }
+      }
+
+  # ต้องอ่าน /var/log/pods ของ host ได้
+  mounts:
+    varlog: true
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
+# --- ต้องรันบน master ด้วย จึงต้อง tolerate taint ของ control plane -----------
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule

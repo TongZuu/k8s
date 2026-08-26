@@ -1,0 +1,316 @@
+# =============================================================================
+#  container-runtime.yml — แทนบทที่ 02
+# =============================================================================
+#  รัน:   ansible-playbook container-runtime.yml --check
+#         ansible-playbook container-runtime.yml
+#
+#  ต้องผ่าน prepare-os.yml มาก่อน
+#
+#  ⚠️ ก่อนรัน ต้องรู้ก่อนว่า registry เป็น HTTP หรือ HTTPS แล้วตั้งใน group_vars/all.yml
+#     ตรวจด้วย:  curl -sI https://registry.myhr.co.th/v2/ || curl -sI http://registry.myhr.co.th/v2/
+# =============================================================================
+---
+- name: โหลด versions.env
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: source versions.env ด้วย bash
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -euo pipefail
+          set -a && source "{{ versions_env }}" && set +a
+          grep -oE '^[A-Z][A-Z0-9_]*=' "{{ versions_env }}" | tr -d '=' | sort -u \
+            | while read -r k; do printf '%s: "%s"\n' "$k" "${!k}"; done
+      register: _ver_raw
+      changed_when: false
+
+    - name: แปลงเป็นตัวแปร
+      ansible.builtin.set_fact:
+        v: "{{ _ver_raw.stdout | from_yaml }}"
+        cacheable: true
+
+    - name: แสดงเวอร์ชันที่จะติดตั้ง
+      ansible.builtin.debug:
+        msg: >-
+          containerd={{ v.CONTAINERD_VERSION }} runc={{ v.RUNC_VERSION }}
+          cni={{ v.CNI_PLUGINS_VERSION }} k8s={{ v.K8S_VERSION }}
+
+- name: ติดตั้ง container runtime
+  hosts: k8s_nodes
+  gather_facts: true
+  vars:
+    v: "{{ hostvars['localhost']['v'] }}"
+    dl: /root/k8s/dl
+
+  tasks:
+    # -------------------------------------------------------------------------
+    #  1 · ดาวน์โหลด + ตรวจ checksum
+    # -------------------------------------------------------------------------
+    - name: สร้างที่เก็บไฟล์ดาวน์โหลด
+      ansible.builtin.file:
+        path: "{{ dl }}"
+        state: directory
+        mode: "0755"
+
+    - name: ดึง checksum ของ containerd มาก่อน
+      ansible.builtin.get_url:
+        url: "https://github.com/containerd/containerd/releases/download/v{{ v.CONTAINERD_VERSION }}/containerd-{{ v.CONTAINERD_VERSION }}-linux-amd64.tar.gz.sha256sum"
+        dest: "{{ dl }}/containerd.sha256sum"
+        mode: "0644"
+
+    - name: อ่านค่า checksum
+      ansible.builtin.command: "awk '{print $1}' {{ dl }}/containerd.sha256sum"
+      register: _sha
+      changed_when: false
+
+    - name: ดาวน์โหลด containerd — get_url ตรวจ checksum ให้เอง ถ้าไม่ตรงจะ fail
+      ansible.builtin.get_url:
+        url: "https://github.com/containerd/containerd/releases/download/v{{ v.CONTAINERD_VERSION }}/containerd-{{ v.CONTAINERD_VERSION }}-linux-amd64.tar.gz"
+        dest: "{{ dl }}/containerd.tar.gz"
+        checksum: "sha256:{{ _sha.stdout }}"
+        mode: "0644"
+
+    - name: ดาวน์โหลด runc
+      ansible.builtin.get_url:
+        url: "https://github.com/opencontainers/runc/releases/download/v{{ v.RUNC_VERSION }}/runc.amd64"
+        dest: "{{ dl }}/runc.amd64"
+        mode: "0755"
+
+    - name: ดาวน์โหลด CNI plugins
+      ansible.builtin.get_url:
+        url: "https://github.com/containernetworking/plugins/releases/download/v{{ v.CNI_PLUGINS_VERSION }}/cni-plugins-linux-amd64-v{{ v.CNI_PLUGINS_VERSION }}.tgz"
+        dest: "{{ dl }}/cni-plugins.tgz"
+        mode: "0644"
+
+    - name: ดาวน์โหลด systemd unit ของ containerd
+      ansible.builtin.get_url:
+        url: "https://github.com/containerd/containerd/releases/download/v{{ v.CONTAINERD_VERSION }}/containerd.service"
+        dest: "{{ dl }}/containerd.service"
+        mode: "0644"
+
+    # -------------------------------------------------------------------------
+    #  2 · ติดตั้ง
+    # -------------------------------------------------------------------------
+    - name: แตก containerd ลง /usr/local
+      ansible.builtin.unarchive:
+        src: "{{ dl }}/containerd.tar.gz"
+        dest: /usr/local
+        remote_src: true
+        creates: /usr/local/bin/containerd
+
+    - name: ติดตั้ง runc
+      ansible.builtin.copy:
+        src: "{{ dl }}/runc.amd64"
+        dest: /usr/local/sbin/runc
+        mode: "0755"
+        remote_src: true
+
+    - name: สร้าง /opt/cni/bin
+      ansible.builtin.file:
+        path: /opt/cni/bin
+        state: directory
+        mode: "0755"
+
+    - name: แตก CNI plugins
+      ansible.builtin.unarchive:
+        src: "{{ dl }}/cni-plugins.tgz"
+        dest: /opt/cni/bin
+        remote_src: true
+        creates: /opt/cni/bin/bridge
+
+    - name: สร้างที่วาง systemd unit
+      ansible.builtin.file:
+        path: /usr/local/lib/systemd/system
+        state: directory
+        mode: "0755"
+
+    - name: ติดตั้ง containerd.service
+      ansible.builtin.copy:
+        src: "{{ dl }}/containerd.service"
+        dest: /usr/local/lib/systemd/system/containerd.service
+        mode: "0644"
+        remote_src: true
+      notify: daemon-reload
+
+    - name: ทำ daemon-reload เดี๋ยวนี้ก่อนไปต่อ
+      ansible.builtin.meta: flush_handlers
+
+    # -------------------------------------------------------------------------
+    #  3 · config.toml
+    # -------------------------------------------------------------------------
+    - name: สร้าง /etc/containerd
+      ansible.builtin.file:
+        path: /etc/containerd
+        state: directory
+        mode: "0755"
+
+    - name: มี config.toml อยู่แล้วหรือยัง
+      ansible.builtin.stat:
+        path: /etc/containerd/config.toml
+      register: _cfg
+
+    - name: สร้าง config.toml จากค่า default
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: containerd config default > /etc/containerd/config.toml
+      when: not _cfg.stat.exists
+      changed_when: true
+
+    - name: เปิด SystemdCgroup — ถ้าไม่ตรงกับ kubelet จะ evict pod มั่วตอนโหลดสูง
+      ansible.builtin.replace:
+        path: /etc/containerd/config.toml
+        regexp: 'SystemdCgroup = false'
+        replace: 'SystemdCgroup = true'
+      notify: restart containerd
+
+    - name: ต้องไม่เหลือ SystemdCgroup = false แม้แต่บรรทัดเดียว
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: grep -c 'SystemdCgroup = false' /etc/containerd/config.toml || true
+      register: _sc
+      changed_when: false
+      failed_when: _sc.stdout | int > 0
+
+    # -------------------------------------------------------------------------
+    #  4 · private registry
+    # -------------------------------------------------------------------------
+    - name: สร้าง certs.d ของ registry
+      ansible.builtin.file:
+        path: "/etc/containerd/certs.d/{{ v.REGISTRY_HOST }}"
+        state: directory
+        mode: "0755"
+
+    - name: วาง hosts.toml — HTTPS
+      ansible.builtin.copy:
+        dest: "/etc/containerd/certs.d/{{ v.REGISTRY_HOST }}/hosts.toml"
+        mode: "0644"
+        content: |
+          server = "https://{{ v.REGISTRY_HOST }}"
+
+          [host."https://{{ v.REGISTRY_HOST }}"]
+            capabilities = ["pull", "resolve"]
+      when: registry_scheme == 'https'
+      notify: restart containerd
+
+    - name: วาง hosts.toml — HTTP ล้วน
+      ansible.builtin.copy:
+        dest: "/etc/containerd/certs.d/{{ v.REGISTRY_HOST }}/hosts.toml"
+        mode: "0644"
+        content: |
+          server = "http://{{ v.REGISTRY_HOST }}"
+
+          [host."http://{{ v.REGISTRY_HOST }}"]
+            capabilities = ["pull", "resolve"]
+            skip_verify = true
+      when: registry_scheme == 'http'
+      notify: restart containerd
+
+    - name: ติดตั้ง CA ของ registry (ถ้ามี)
+      ansible.builtin.copy:
+        src: "{{ registry_ca_file }}"
+        dest: /etc/pki/ca-trust/source/anchors/myhr-registry-ca.crt
+        mode: "0644"
+      when: registry_ca_file | length > 0
+      notify: update-ca-trust
+
+    # -------------------------------------------------------------------------
+    #  5 · เปิด containerd + ลง kubeadm/kubelet/kubectl
+    # -------------------------------------------------------------------------
+    - name: เปิด containerd
+      ansible.builtin.systemd_service:
+        name: containerd
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: เพิ่ม repo ของ Kubernetes — exclude กัน dnf update ยกเวอร์ชันเอง
+      ansible.builtin.copy:
+        dest: /etc/yum.repos.d/kubernetes.repo
+        mode: "0644"
+        content: |
+          [kubernetes]
+          name=Kubernetes
+          baseurl=https://pkgs.k8s.io/core:/stable:/{{ v.K8S_REPO_MINOR }}/rpm/
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://pkgs.k8s.io/core:/stable:/{{ v.K8S_REPO_MINOR }}/rpm/repodata/repomd.xml.key
+          exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+
+    - name: ลง kubelet / kubeadm / kubectl ตามเวอร์ชันที่ตรึงไว้
+      ansible.builtin.dnf:
+        name:
+          - "kubelet-{{ v.K8S_VERSION }}"
+          - "kubeadm-{{ v.K8S_VERSION }}"
+          - "kubectl-{{ v.K8S_VERSION }}"
+        state: present
+        disable_excludes: kubernetes
+
+    - name: enable kubelet แต่ยังไม่ start — จะ crash loop จนกว่าจะมี cluster
+      ansible.builtin.systemd_service:
+        name: kubelet
+        enabled: true
+
+    - name: ตรึงเวอร์ชัน kube* อีกชั้น
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          if dnf versionlock list 2>/dev/null | grep -q '^kubelet'; then
+            echo "already-locked"
+          else
+            dnf versionlock add kubelet kubeadm kubectl && echo "locked"
+          fi
+      register: _kvlock
+      changed_when: "'locked' == _kvlock.stdout_lines[-1] | default('')"
+
+    # -------------------------------------------------------------------------
+    #  6 · crictl
+    # -------------------------------------------------------------------------
+    - name: ตั้ง crictl ให้รู้ว่า containerd อยู่ไหน
+      ansible.builtin.copy:
+        dest: /etc/crictl.yaml
+        mode: "0644"
+        content: |
+          runtime-endpoint: unix:///run/containerd/containerd.sock
+          image-endpoint: unix:///run/containerd/containerd.sock
+          timeout: 10
+
+    # -------------------------------------------------------------------------
+    #  เกณฑ์ผ่านของบทนี้
+    # -------------------------------------------------------------------------
+    - name: เก็บผลตรวจ
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          echo "systemdcgroup=$(crictl info 2>/dev/null | jq -r '.config.containerd.runtimes.runc.options.SystemdCgroup')"
+          echo "kubeadm=$(kubeadm version -o short)"
+          echo "containerd_from_dnf=$(dnf list installed 2>/dev/null | grep -c '^containerd' || true)"
+      register: _final
+      changed_when: false
+
+    - name: ผลตรวจ
+      ansible.builtin.debug:
+        var: _final.stdout_lines
+
+    - name: ต้องผ่านทุกข้อ
+      ansible.builtin.assert:
+        that:
+          - "'systemdcgroup=true' in _final.stdout"
+          - "'kubeadm=v' ~ v.K8S_VERSION in _final.stdout"
+          - "'containerd_from_dnf=0' in _final.stdout"
+        fail_msg: >-
+          ไม่ผ่านเกณฑ์บท 02 — ถ้า containerd_from_dnf ไม่ใช่ 0
+          แปลว่า ol9_addons ยังเปิดอยู่ กลับไปดูบท 01 ข้อ 3
+
+  handlers:
+    - name: daemon-reload
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+
+    - name: restart containerd
+      ansible.builtin.systemd_service:
+        name: containerd
+        state: restarted
+
+    - name: update-ca-trust
+      ansible.builtin.command: update-ca-trust
