@@ -34,15 +34,15 @@ hostnamectl set-hostname k8s-worker03    # บน 192.168.50.106
 จากนั้นวาง `/etc/hosts` ชุดเดียวกันนี้ลง **ทุกเครื่อง**:
 
 ```bash
-cat >> /etc/hosts <<'EOF'
-192.168.50.100  k8s-vip
-192.168.50.101  k8s-master01
-192.168.50.102  k8s-master02
-192.168.50.103  k8s-master03
-192.168.50.104  k8s-worker01
-192.168.50.105  k8s-worker02
-192.168.50.106  k8s-worker03
-192.168.30.207  registry.myhr.co.th
+cat >> /etc/hosts <<EOF
+${VIP}  ${VIP_HOSTNAME}
+${MASTER01_IP}  ${MASTER01_NAME}
+${MASTER02_IP}  ${MASTER02_NAME}
+${MASTER03_IP}  ${MASTER03_NAME}
+${WORKER01_IP}  ${WORKER01_NAME}
+${WORKER02_IP}  ${WORKER02_NAME}
+${WORKER03_IP}  ${WORKER03_NAME}
+${REGISTRY_IP}  ${REGISTRY_HOST}
 EOF
 ```
 
@@ -51,7 +51,10 @@ EOF
 
 **ตรวจ:**
 ```bash
-hostname && ping -c1 k8s-master01 && ping -c1 registry.myhr.co.th
+# ดูก่อนว่าตัวแปรขยายครบจริง ไม่มีบรรทัดไหนเหลือ ${...}
+tail -8 /etc/hosts
+
+hostname && ping -c1 ${MASTER01_NAME} && ping -c1 ${REGISTRY_HOST}
 ```
 **ควรเห็น:** ชื่อเครื่องถูกต้อง และ ping ทั้งสองปลายทางได้
 

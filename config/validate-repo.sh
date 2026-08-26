@@ -64,7 +64,24 @@ for f in docs/*.md config/*/*.sh config/*/*.yaml; do
 done
 [ $UNDEF -eq 0 ] && ok "ทุกตัวแปรมีที่มา"
 
-echo "5 · ความลับที่ไม่ควรอยู่ในrepo"
+echo "5 · IP ต้องตรงกับ versions.env"
+# ค่าเครือข่ายที่เขียนตรง ๆ ในไฟล์อื่นคือจุดที่ drift ได้เงียบ ๆ
+# ตัวที่เจ็บที่สุดคือ NetworkPolicy เพราะปฏิเสธโดยไม่เขียน log อะไรเลย
+set -a; . ./docs/versions.env >/dev/null 2>&1; set +a
+DRIFT=0
+if [ -n "${REGISTRY_IP:-}" ]; then
+    HITS=$(grep -rniE "192[.]168[.][0-9]+[.][0-9]+" config/ docs/ ansible/ 2>/dev/null | grep -i registry | grep -v "$REGISTRY_IP" | grep -v "^docs/versions.env" | grep -v "^config/validate-repo.sh")
+    if [ -n "$HITS" ]; then
+        # ต้องมี newline ท้าย ไม่งั้น read อ่านบรรทัดสุดท้ายไม่จบแล้ว loop ไม่ทำงาน
+        printf '%s\n' "$HITS" | while IFS= read -r h; do
+            fail "$h  <- ไม่ตรงกับ REGISTRY_IP=$REGISTRY_IP"
+        done
+        DRIFT=1; FAILED=1
+    fi
+fi
+[ $DRIFT -eq 0 ] && ok "IP ของ registry ตรงกันทุกไฟล์ ($REGISTRY_IP)"
+
+echo "6 · ความลับที่ไม่ควรอยู่ในrepo"
 LEAK=0
 # placeholder ต้องยังเป็น placeholder — ไม่ใช่ค่าจริง
 for pat in 'auth_pass' 'adminPassword' 'docker-password'; do

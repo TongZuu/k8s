@@ -560,7 +560,7 @@ kubectl get pods -A -o json | jq -r '.items[].spec.containers[].image' \
 
 # 5. registry garbage collection
 #    Docker Registry เปล่าไม่มี retention policy — disk จะโตไปเรื่อย ๆ จนเต็ม
-ssh root@192.168.30.207 'registry garbage-collect /etc/docker/registry/config.yml'
+ssh root@${REGISTRY_IP} 'registry garbage-collect /etc/docker/registry/config.yml'
 </code></pre></div>
 <hr />
 </div></section><section class="step" id="step-11" data-step="11"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">

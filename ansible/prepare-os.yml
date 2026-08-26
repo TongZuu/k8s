@@ -98,6 +98,7 @@
           {{ v.WORKER01_IP }}  {{ v.WORKER01_NAME }}
           {{ v.WORKER02_IP }}  {{ v.WORKER02_NAME }}
           {{ v.WORKER03_IP }}  {{ v.WORKER03_NAME }}
+          {{ v.REGISTRY_IP }}  {{ v.REGISTRY_HOST }}
 
     # -------------------------------------------------------------------------
     #  3 · repo
