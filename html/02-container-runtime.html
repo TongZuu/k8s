@@ -362,7 +362,7 @@ openssl s_client -connect "${REGISTRY_HOST}:443" -servername "${REGISTRY_HOST}" 
 </tbody>
 </table>
 <p><strong>ถ้าต้องวาง CA:</strong></p>
-<div class="cb"><pre><code class="language-bash">cp /root/k8s/config/registry/ca.crt /etc/pki/ca-trust/source/anchors/myhr-registry-ca.crt
+<div class="cb"><pre><code class="language-bash">\cp -f /root/k8s/config/registry/ca.crt /etc/pki/ca-trust/source/anchors/myhr-registry-ca.crt
 update-ca-trust
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ถ้าย้ายไปเป็น HTTP ล้วน:</strong></p>
@@ -376,10 +376,13 @@ EOF
 </details>
 <hr />
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>5 · เปิด containerd และลง kubeadm/kubelet/kubectl</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<div class="cb"><pre><code class="language-bash">systemctl enable --now containerd
+<div class="cb"><pre><code class="language-bash">systemctl enable containerd
+systemctl restart containerd
 systemctl status containerd --no-pager | head -5
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>Active: active (running)</code></p>
+<p>(ใช้ <code>restart</code> ไม่ใช่ <code>enable --now</code> เพราะถ้า containerd รันอยู่แล้วตั้งแต่ตอน <code>dnf install</code>
+<code>--now</code> จะไม่โหลด <code>config.toml</code> ที่เพิ่งวางในข้อ 4 — ดูกติกาข้อ 6 ในบทที่ 00)
+<strong>ควรเห็น:</strong> <code>Active: active (running)</code></p>
 <p><strong>เพิ่ม repo ของ Kubernetes:</strong></p>
 <div class="cb"><pre><code class="language-bash">cat &gt; /etc/yum.repos.d/kubernetes.repo &lt;&lt;EOF
 [kubernetes]
@@ -429,7 +432,7 @@ echo "containerd มี: ${have:-หาไม่เจอ}"
 [ "$want" = "$have" ] &amp;&amp; echo "ตรงกัน ✓" || echo "ไม่ตรง — รันบล็อกถัดไป"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ถ้าไม่ตรง — รันบล็อกนี้ต่อได้เลย</strong> (ใช้ตัวแปร <code>$want</code> จากบล็อกบน):</p>
-<div class="cb"><pre><code class="language-bash">cp /etc/containerd/config.toml /etc/containerd/config.toml.bak
+<div class="cb"><pre><code class="language-bash">\cp -f /etc/containerd/config.toml /etc/containerd/config.toml.bak
 
 # แก้เฉพาะบรรทัดที่เป็น 'sandbox = ' เป๊ะ ๆ — ไม่โดน sandboxer
 sed -i "s|^\([[:space:]]*sandbox = \).*|\1'${want}'|" /etc/containerd/config.toml
@@ -444,7 +447,7 @@ systemctl is-active containerd
 · containerd ยัง <code>active</code></p>
 <blockquote>
 <p>ถ้า containerd ไม่ขึ้นหลัง restart ให้กู้ด้วย
-<code>cp /etc/containerd/config.toml.bak /etc/containerd/config.toml &amp;&amp; systemctl restart containerd</code></p>
+<code>\cp -f /etc/containerd/config.toml.bak /etc/containerd/config.toml &amp;&amp; systemctl restart containerd</code></p>
 </blockquote>
 <blockquote>
 <p><strong>ไม่แก้ได้ไหม</strong> — ได้ cluster ยังทำงาน แต่จะมี pause image สองตัวใน node

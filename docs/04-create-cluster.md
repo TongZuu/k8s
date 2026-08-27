@@ -90,7 +90,7 @@ Then you can join any number of worker nodes ...
 
 ```bash
 mkdir -p "$HOME/.kube"
-cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
+\cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
 chown "$(id -u):$(id -g)" "$HOME/.kube/config"
 
 kubectl cluster-info
@@ -159,7 +159,7 @@ kubectl -n kube-system get pods -l component=etcd -o wide
 **ตั้ง kubeconfig บน master02/03 ด้วย:**
 ```bash
 mkdir -p "$HOME/.kube"
-cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
+\cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
 chown "$(id -u):$(id -g)" "$HOME/.kube/config"
 ```
 

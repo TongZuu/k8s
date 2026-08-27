@@ -183,7 +183,7 @@ openssl s_client -connect "${REGISTRY_HOST}:443" -servername "${REGISTRY_HOST}" 
 
 **ถ้าต้องวาง CA:**
 ```bash
-cp /root/k8s/config/registry/ca.crt /etc/pki/ca-trust/source/anchors/myhr-registry-ca.crt
+\cp -f /root/k8s/config/registry/ca.crt /etc/pki/ca-trust/source/anchors/myhr-registry-ca.crt
 update-ca-trust
 ```
 
@@ -203,9 +203,12 @@ EOF
 ## 5 · เปิด containerd และลง kubeadm/kubelet/kubectl
 
 ```bash
-systemctl enable --now containerd
+systemctl enable containerd
+systemctl restart containerd
 systemctl status containerd --no-pager | head -5
 ```
+(ใช้ `restart` ไม่ใช่ `enable --now` เพราะถ้า containerd รันอยู่แล้วตั้งแต่ตอน `dnf install`
+`--now` จะไม่โหลด `config.toml` ที่เพิ่งวางในข้อ 4 — ดูกติกาข้อ 6 ในบทที่ 00)
 **ควรเห็น:** `Active: active (running)`
 
 **เพิ่ม repo ของ Kubernetes:**
@@ -268,7 +271,7 @@ echo "containerd มี: ${have:-หาไม่เจอ}"
 **ถ้าไม่ตรง — รันบล็อกนี้ต่อได้เลย** (ใช้ตัวแปร `$want` จากบล็อกบน):
 
 ```bash
-cp /etc/containerd/config.toml /etc/containerd/config.toml.bak
+\cp -f /etc/containerd/config.toml /etc/containerd/config.toml.bak
 
 # แก้เฉพาะบรรทัดที่เป็น 'sandbox = ' เป๊ะ ๆ — ไม่โดน sandboxer
 sed -i "s|^\([[:space:]]*sandbox = \).*|\1'${want}'|" /etc/containerd/config.toml
@@ -285,7 +288,7 @@ systemctl is-active containerd
 · containerd ยัง `active`
 
 > ถ้า containerd ไม่ขึ้นหลัง restart ให้กู้ด้วย
-> `cp /etc/containerd/config.toml.bak /etc/containerd/config.toml && systemctl restart containerd`
+> `\cp -f /etc/containerd/config.toml.bak /etc/containerd/config.toml && systemctl restart containerd`
 
 > **ไม่แก้ได้ไหม** — ได้ cluster ยังทำงาน แต่จะมี pause image สองตัวใน node
 > และเวลามีปัญหาเรื่อง sandbox จะไล่ยากขึ้นเพราะไม่รู้ว่าตัวไหนถูกใช้

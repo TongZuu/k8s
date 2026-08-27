@@ -211,6 +211,13 @@ img{max-width:100%}
 <p>เป็น systemd แล้ว: อยู่รอดข้าม <code>kubeadm reset</code>/upgrade, debug ด้วย <code>journalctl</code> ได้ตั้งแต่ก่อนมี cluster
 และ image <code>osixia/keepalived</code> ที่ของเดิมใช้ก็ไม่มีคนดูแลมาหลายปีแล้ว</p>
 <hr />
+<blockquote>
+<p><strong>ข้อ 1-3 มี playbook แล้ว</strong> — <code>ansible-playbook ha-layer.yml</code> ทำแทนได้ทั้งหมด
+(ดู <a href="ansible.html">ansible/README.md</a>) มันถามรหัส VRRP ครั้งเดียวแล้วกระจายให้ครบ 3 เครื่อง
+และหาชื่อ interface จากเครื่องจริงเอง ไม่ต้องมาไล่แก้ทีละเครื่อง</p>
+<p><strong>แต่ข้อ 5 (failover test) ยังต้องทำมือเสมอ</strong> — และแนะนำให้อ่านข้อ 1-3 ให้จบก่อนอยู่ดี
+เพราะเวลามีปัญหาคุณต้อง debug ที่ตัวเครื่อง ไม่ใช่ที่ playbook</p>
+</blockquote>
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>0 · โหลดตัวแปร</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 echo "VIP=$VIP:$VIP_PORT  IFACE=$NODE_IFACE  VRID=$VRRP_ROUTER_ID"
@@ -219,8 +226,14 @@ echo "VIP=$VIP:$VIP_PORT  IFACE=$NODE_IFACE  VRID=$VRRP_ROUTER_ID"
 <p><strong>ยืนยันชื่อ interface จริง — อย่าเชื่อค่าใน versions.env โดยไม่ตรวจ:</strong></p>
 <div class="cb"><pre><code class="language-bash">ip -br addr show | grep 192.168.50
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>ens192  UP  192.168.50.10X/24</code>
-ถ้าชื่อไม่ใช่ <code>ens192</code> ให้แก้ทั้งใน <code>versions.env</code> และในไฟล์ <code>keepalived-*.conf</code> ทั้ง 3 ไฟล์</p>
+<p><strong>ควรเห็น:</strong> ชื่อ interface พร้อม IP ของเครื่องนี้ เช่น <code>ens192  UP  192.168.50.101/24</code></p>
+<blockquote>
+<p>⚠️ <strong>ชื่อ NIC ไม่จำเป็นต้องเหมือนกันทุกเครื่อง</strong> — เคยเจอจริงว่า master01 เป็น <code>ens192</code>
+แต่ master02 เป็น <code>ens33</code> ขึ้นกับว่า VM ถูกสร้างด้วย virtual hardware รุ่นไหน
+<strong>อย่าจดค่าจากเครื่องแรกแล้วเหมาว่าใช้ได้ทุกเครื่อง</strong> — ต้องดูทีละเครื่อง</p>
+<p>ไฟล์ <code>keepalived-*.conf</code> เขียน <code>ens192</code> ไว้ตายตัว 2 จุด ข้อ 3 จึงมีขั้นตอนแก้ให้ตรงกับ
+เครื่องที่ทำอยู่แบบอัตโนมัติ — ไม่ต้องมาไล่แก้ในรีโปเอง</p>
+</blockquote>
 <p><strong>ยืนยันว่ายังไม่มีใครใช้ VIP:</strong></p>
 <div class="cb"><pre><code class="language-bash">ping -c2 -W1 "$VIP"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -237,14 +250,33 @@ haproxy -v | head -1
 <hr />
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>2 · วาง HAProxy config</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>ไฟล์เดียวกันทั้ง 3 เครื่อง ไม่มีอะไรต่างกัน:</p>
-<div class="cb"><pre><code class="language-bash">cp /root/k8s/config/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg
+<div class="cb"><pre><code class="language-bash">\cp -f /root/k8s/config/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg
 haproxy -c -f /etc/haproxy/haproxy.cfg
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>Configuration file is valid</code></p>
-<div class="cb"><pre><code class="language-bash">systemctl enable --now haproxy
+<blockquote>
+<p>⚠️ <code>Configuration file is valid</code> <strong>ไม่ได้แปลว่าไฟล์ถูกทับสำเร็จ</strong> — ไฟล์ default ที่มากับ package
+ก็ผ่าน syntax check เหมือนกัน ต้องตรวจ<strong>เนื้อใน</strong>ด้วย:</p>
+</blockquote>
+<div class="cb"><pre><code class="language-bash">grep -cE '^[[:space:]]*bind[[:space:]]+\*:8443' /etc/haproxy/haproxy.cfg
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>1</code> — ถ้าได้ <code>0</code> แปลว่ายังเป็นไฟล์ default อยู่ (<code>bind *:5000</code>) ให้กลับไปตรวจว่า path ต้นทางถูกไหม</p>
+<blockquote>
+<p>ที่ต้องใช้ <code>-E</code> กับ <code>[[:space:]]+</code> เพราะในไฟล์จริง <code>bind</code> กับ <code>*:8443</code> คั่นด้วยช่องว่างหลายตัว
+(จัดคอลัมน์ให้อ่านง่าย) — เขียน <code>grep 'bind \*:8443'</code> เฉย ๆ จะได้ <code>0</code> ทั้งที่ไฟล์ถูกต้อง</p>
+</blockquote>
+<div class="cb"><pre><code class="language-bash">systemctl enable haproxy
+systemctl restart haproxy
 ss -lnt | grep ':8443'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>LISTEN 0 ... *:8443</code></p>
+<blockquote>
+<p><strong>ทำไมไม่ใช่ <code>systemctl enable --now haproxy</code></strong>
+<code>--now</code> จะ <strong>start เฉพาะตอนที่ service ยังไม่รัน</strong> ถ้ามันรันอยู่แล้ว (เช่น คุณเคยลอง start
+ก่อนวางไฟล์ config หรือย้อนกลับมาทำข้อนี้ซ้ำ) คำสั่งจะผ่านไปเงียบ ๆ โดย <strong>ไม่โหลด config ใหม่</strong>
+process เดิมยังถือไฟล์เก่าอยู่ แล้ว <code>ss</code> ก็จะไม่เห็นอะไรทั้งที่ไฟล์บนดิสก์ถูกต้องแล้ว</p>
+<p><code>restart</code> ทำงานถูกทั้งสองกรณี — ยังไม่รันก็ start ให้ รันอยู่ก็โหลดใหม่ให้</p>
+</blockquote>
 <blockquote>
 <p>ตอนนี้ backend ทั้ง 3 ตัวจะ <strong>DOWN</strong> หมด เพราะยังไม่มี kube-apiserver — <strong>ถูกต้องแล้ว</strong>
 ดูได้ด้วย <code>curl -s http://127.0.0.1:8404/stats</code></p>
@@ -252,58 +284,123 @@ ss -lnt | grep ':8443'
 <hr />
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>3 · วาง keepalived config</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <blockquote>
-<p><strong>ระวัง: ไฟล์ต่างกันต่อเครื่อง</strong> เลือกให้ตรงกับเครื่องที่กำลังทำอยู่</p>
+<p><strong>ระวัง: ไฟล์ต่างกันต่อเครื่อง</strong> สามบล็อกข้างล่างเป็นทางเลือก <strong>รันแค่บล็อกเดียว</strong>
+ให้ตรงกับเครื่องที่กำลังทำอยู่ — ถ้ารันทั้งสามบล็อกบนเครื่องเดียว จะเหลือของ master03
+ค้างอยู่ แล้วเจอ split brain ตอนข้อ 4</p>
 </blockquote>
-<div class="cb"><pre><code class="language-bash"># บน master01 เท่านั้น
-cp /root/k8s/config/keepalived/keepalived-master01.conf /etc/keepalived/keepalived.conf
-
-# บน master02 เท่านั้น
-cp /root/k8s/config/keepalived/keepalived-master02.conf /etc/keepalived/keepalived.conf
-
-# บน master03 เท่านั้น
-cp /root/k8s/config/keepalived/keepalived-master03.conf /etc/keepalived/keepalived.conf
+<p><strong>🎩 บน master01:</strong></p>
+<div class="cb"><pre><code class="language-bash">\cp -f /root/k8s/config/keepalived/keepalived-master01.conf /etc/keepalived/keepalived.conf
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>🎩 บน master02:</strong></p>
+<div class="cb"><pre><code class="language-bash">\cp -f /root/k8s/config/keepalived/keepalived-master02.conf /etc/keepalived/keepalived.conf
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>🎩 บน master03:</strong></p>
+<div class="cb"><pre><code class="language-bash">\cp -f /root/k8s/config/keepalived/keepalived-master03.conf /etc/keepalived/keepalived.conf
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ตรวจว่าได้ไฟล์ของเครื่องนี้จริง — ไม่ใช่ไฟล์ตัวอย่างที่มากับ package และไม่ใช่ของเครื่องอื่น:</strong></p>
+<div class="cb"><pre><code class="language-bash">grep -c "router_id $(hostname -s)" /etc/keepalived/keepalived.conf
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>1</code> — ถ้าได้ <code>0</code> แปลว่า copy ไม่โดน หรือหยิบไฟล์ผิดเครื่อง <strong>ให้หยุดแก้ก่อน</strong>
+เพราะถ้าปล่อยไป จะได้ <code>priority</code> ซ้ำกันสองเครื่องแล้วเจอ split brain ตอนข้อ 4</p>
+<p><strong>แก้ชื่อ interface ให้ตรงกับเครื่องนี้ — ทำทุกเครื่อง ไม่ว่าข้อ 0 จะเห็นชื่ออะไร:</strong></p>
+<div class="cb"><pre><code class="language-bash">IFACE=$(ip -o -4 addr show | awk '$4 ~ /^192\.168\.50\./ {print $2; exit}')
+echo "interface ของเครื่องนี้: [${IFACE}]"
+
+if [ -z "$IFACE" ]; then
+    echo "❌ หา interface ที่ถือ IP 192.168.50.x ไม่เจอ — ไม่แตะไฟล์"
+else
+    sed -i "s/\bens192\b/${IFACE}/g" /etc/keepalived/keepalived.conf
+fi
+
+grep -n 'interface \|dev ' /etc/keepalived/keepalived.conf
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ชื่อในวงเล็บไม่ว่าง และสองบรรทัดสุดท้ายเป็นชื่อ interface จริงของเครื่องนี้ทั้งคู่</p>
+<blockquote>
+<p>ถ้าปล่อยชื่อผิดไว้ keepalived จะ <strong>start ไม่ขึ้น</strong> โดยขึ้น log ว่า
+<code>WARNING - interface ens192 for vrrp_instance VI_K8S doesn't exist</code> ตามด้วย
+<code>exited with permanent error CONFIG</code> — เป็น config error ไม่ใช่ปัญหา network</p>
+</blockquote>
 <p><strong>ใส่รหัส VRRP จริง — ต้องเหมือนกันทั้ง 3 เครื่อง:</strong></p>
-<div class="cb"><pre><code class="language-bash">read -rsp 'VRRP auth_pass: ' VRRP_PASS &amp;&amp; echo
-sed -i "s|&lt;VRRP_AUTH_PASS&gt;|${VRRP_PASS}|" /etc/keepalived/keepalived.conf
-unset VRRP_PASS
-chmod 600 /etc/keepalived/keepalived.conf
+<blockquote>
+<p>บล็อกนี้คัดลอกทั้งก้อนมาวางได้ — บรรทัดแรกจะ<strong>หยุดรอให้พิมพ์รหัส</strong>
+ตัวอักษรจะไม่ขึ้นบนจอ (<code>-s</code> ปิดการแสดงผล) ดูเหมือนค้างแต่ไม่ได้ค้าง
+พิมพ์แล้วกด Enter บรรทัดที่เหลือจะรันต่อเอง</p>
+</blockquote>
+<div class="cb"><pre><code class="language-bash">read -rsp 'VRRP auth_pass: ' VRRP_PASS &amp;&amp; echo "รับมา ${#VRRP_PASS} ตัวอักษร"
 
-# ตรวจว่าแทนที่สำเร็จจริง — ต้องไม่เหลือ placeholder
-grep -c '&lt;VRRP_AUTH_PASS&gt;' /etc/keepalived/keepalived.conf
+if [ -z "$VRRP_PASS" ]; then
+    echo "❌ ไม่ได้พิมพ์อะไรเลย — ไม่แตะไฟล์ ให้รันบล็อกนี้ใหม่"
+else
+    sed -i "s|&lt;VRRP_AUTH_PASS&gt;|${VRRP_PASS}|" /etc/keepalived/keepalived.conf
+    chmod 600 /etc/keepalived/keepalived.conf
+fi
+unset VRRP_PASS
+
+# ตรวจค่าที่ลงไปจริง — ไม่ใช่แค่ดูว่า placeholder หายไปแล้ว
+awk '$1=="auth_pass"{print "auth_pass = [" $2 "]"}' /etc/keepalived/keepalived.conf
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>0</code> — ถ้าได้ <code>1</code> แปลว่า <code>sed</code> ไม่โดน ให้ตรวจว่า copy ไฟล์ถูกตัวหรือยัง</p>
+<p><strong>ควรเห็น:</strong> จำนวนตัวอักษรมากกว่า <code>0</code> และบรรทัดสุดท้ายเป็น <code>auth_pass = [รหัสจริงของคุณ]</code></p>
+<blockquote>
+<p>⚠️ ถ้าเห็น <code>auth_pass = [!]</code> แปลว่ารหัสว่าง — <code>sed</code> เขียนค่าว่างทับ placeholder ไปแล้ว
+keepalived จะ <strong>parse ไฟล์ไม่ผ่านและ start ไม่ขึ้น</strong> ต้อง <code>\cp -f</code> ไฟล์ต้นฉบับมาทับใหม่
+แล้วทำข้อนี้ซ้ำ — แก้ที่ไฟล์ตรง ๆ ไม่ได้เพราะ placeholder หายไปแล้ว</p>
+<p>ห้ามเช็กด้วย <code>grep -c '&lt;VRRP_AUTH_PASS&gt;'</code> อย่างเดียว — ค่าว่างก็ทำให้ placeholder หายเหมือนกัน
+มันจะได้ <code>0</code> เหมือนตอนสำเร็จทุกประการ</p>
+</blockquote>
 <blockquote>
 <p>⚠️ <code>auth_pass</code> ของ keepalived ใช้ได้ <strong>ไม่เกิน 8 ตัวอักษร</strong> ตัวที่เกินจะถูกตัดทิ้งเงียบ ๆ
 ถ้าตั้งยาวกว่านั้นแล้วแต่ละเครื่องพิมพ์ไม่เหมือนกัน จะกลายเป็นว่า <strong>ทุกเครื่องคิดว่าตัวเองเป็น MASTER</strong>
 รหัสนี้กัน VRRP packet หลงเข้ามาเท่านั้น ไม่ใช่ระบบความปลอดภัยจริง</p>
 </blockquote>
 <p><strong>วาง health check script:</strong></p>
-<div class="cb"><pre><code class="language-bash">cp /root/k8s/config/keepalived/check_apiserver.sh /etc/keepalived/check_apiserver.sh
+<div class="cb"><pre><code class="language-bash">\cp -f /root/k8s/config/keepalived/check_apiserver.sh /etc/keepalived/check_apiserver.sh
 chmod 700 /etc/keepalived/check_apiserver.sh
 
 # ทดสอบสคริปต์ก่อนให้ keepalived เรียก
 /etc/keepalived/check_apiserver.sh; echo "exit=$?"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>exit=0</code> (ตอนนี้ยังไม่มี apiserver แต่ HAProxy ฟัง 8443 อยู่แล้วจึงผ่าน)</p>
-<div class="cb"><pre><code class="language-bash">systemctl enable --now keepalived
+<p><strong>ควรเห็น:</strong> <code>exit=0</code> — ผ่านที่ <strong>ด่าน 2</strong> ของสคริปต์ ซึ่งยอมให้ผ่านเมื่อยังไม่มี <code>kube-apiserver</code>
+ฟังที่ <code>:6443</code> บนเครื่องนี้ (คือช่วง bootstrap ตอนนี้) ยังไม่ได้พิสูจน์เส้นทาง VIP อะไรทั้งนั้น</p>
+<blockquote>
+<p>ด่าน 2 มีไว้กัน VIP กระพริบ — ถ้าไม่มี เครื่องที่ถือ VIP จะยิง <code>/healthz</code> ไม่ผ่าน
+(เพราะ HAProxy ยังไม่มี backend เป็น ๆ) แล้วโดนหัก priority 20 จนเสีย VIP ให้เครื่องอื่น
+ซึ่งก็จะตกด้วยเหตุผลเดียวกัน วนไม่จบทุก ~6-12 วินาที <strong>จนกว่าจะมี cluster</strong></p>
+</blockquote>
+<div class="cb"><pre><code class="language-bash">systemctl enable keepalived
+systemctl restart keepalived
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>(เหตุผลเดียวกับ HAProxy — <code>restart</code> ไม่ใช่ <code>enable --now</code> เพื่อให้ config ที่เพิ่งวางถูกโหลดแน่นอน)</p>
 <hr />
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>4 · ตรวจว่า VIP ขึ้นที่ master01</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><strong>บน master01:</strong></p>
-<div class="cb"><pre><code class="language-bash">ip -4 addr show "$NODE_IFACE" | grep "$VIP"
+<div class="cb"><pre><code class="language-bash">ip -4 addr show | grep "$VIP"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>inet 192.168.50.100/24 scope global secondary ens192</code></p>
+<p><strong>ควรเห็น:</strong> <code>inet 192.168.50.100/24 scope global secondary &lt;ชื่อ interface ของเครื่องนี้&gt;</code></p>
 <p><strong>บน master02 และ master03:</strong></p>
-<div class="cb"><pre><code class="language-bash">ip -4 addr show "$NODE_IFACE" | grep "$VIP" || echo "ไม่มี VIP — ถูกต้อง"
+<div class="cb"><pre><code class="language-bash">ip -4 addr show | grep "$VIP" || echo "ไม่มี VIP — ถูกต้อง"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>ไม่มี VIP — ถูกต้อง</code></p>
 <p><strong>จากเครื่องไหนก็ได้:</strong></p>
 <div class="cb"><pre><code class="language-bash">ping -c3 "$VIP"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ตอบครบ 3 packet</p>
+<p><strong>ยืนยันว่า VIP นิ่งจริง ไม่ใช่แค่บังเอิญถูกจังหวะ — รันซ้ำห่างกัน 10 วินาที:</strong></p>
+<div class="cb"><pre><code class="language-bash">for ip in 101 102 103; do echo -n "$ip: "; ssh root@192.168.50.$ip "ip -4 a s | grep -c 192.168.50.100"; done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>101: 1</code> · <code>102: 0</code> · <code>103: 0</code> <strong>เหมือนกันทั้งสองรอบ</strong></p>
 <blockquote>
-<p>ถ้า VIP ขึ้นมากกว่าหนึ่งเครื่องพร้อมกัน = <strong>split brain</strong> สาเหตุที่พบบ่อย 3 ข้อ:</p>
+<p><strong>ถ้าเลข <code>1</code> ย้ายเครื่องไปมา = VIP กระพริบ ไม่ใช่ split brain</strong> — สองอย่างนี้อาการต่างกัน
+และสาเหตุคนละเรื่อง อย่าเอาไปรวมกัน</p>
+<p>ยืนยันด้วย log — กระพริบจะเห็นสลับ MASTER/BACKUP ถี่ ๆ:</p>
+<div class="cb"><pre><code class="language-bash">journalctl -u keepalived -n 40 --no-pager | grep -iE 'Entering|transition'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ถ้าเจอ ให้ตรวจว่า <code>check_apiserver.sh</code> บนเครื่องมีด่าน 2 (<code>grep -q ':6443 '</code>) หรือยัง
+— สคริปต์รุ่นที่ไม่มีด่านนี้จะทำให้เครื่องที่ถือ VIP หัก priority ตัวเองจนเสีย VIP วนไปเรื่อย ๆ</p>
+</blockquote>
+<blockquote>
+<p>ถ้า VIP ขึ้นมากกว่าหนึ่งเครื่อง <strong>แล้วค้างอยู่อย่างนั้น</strong> = <strong>split brain</strong> ตัวจริง
+(ต่างจากกระพริบตรงที่ไม่สลับ ทุกเครื่องคิดว่าตัวเองเป็น MASTER พร้อมกัน)
+สาเหตุที่พบบ่อย 3 ข้อ:</p>
 <ol>
 <li><code>auth_pass</code> ไม่ตรงกัน (ดูเรื่อง 8 ตัวอักษรด้านบน)</li>
 <li>firewalld ยังไม่เปิด <code>--add-protocol=vrrp</code> — ตรวจด้วย <code>firewall-cmd --list-protocols</code></li>
@@ -322,7 +419,7 @@ chmod 700 /etc/keepalived/check_apiserver.sh
 <div class="cb"><pre><code class="language-bash">systemctl stop keepalived
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจภายใน 5 วินาที บน master02:</strong></p>
-<div class="cb"><pre><code class="language-bash">ip -4 addr show "$NODE_IFACE" | grep "$VIP"
+<div class="cb"><pre><code class="language-bash">ip -4 addr show | grep "$VIP"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> VIP ย้ายมาที่ master02 แล้ว · หน้าต่าง ping ขาดไม่เกิน <strong>2-3 packet</strong></p>
 <p><strong>คืนค่า:</strong></p>

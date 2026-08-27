@@ -28,6 +28,13 @@ cluster เดิมรัน keepalived/HAProxy เป็น static pod ใน 
 
 ---
 
+> **ข้อ 1-3 มี playbook แล้ว** — `ansible-playbook ha-layer.yml` ทำแทนได้ทั้งหมด
+> (ดู [ansible/README.md](../ansible/README.md)) มันถามรหัส VRRP ครั้งเดียวแล้วกระจายให้ครบ 3 เครื่อง
+> และหาชื่อ interface จากเครื่องจริงเอง ไม่ต้องมาไล่แก้ทีละเครื่อง
+>
+> **แต่ข้อ 5 (failover test) ยังต้องทำมือเสมอ** — และแนะนำให้อ่านข้อ 1-3 ให้จบก่อนอยู่ดี
+> เพราะเวลามีปัญหาคุณต้อง debug ที่ตัวเครื่อง ไม่ใช่ที่ playbook
+
 ## 0 · โหลดตัวแปร
 
 ```bash
@@ -40,8 +47,14 @@ echo "VIP=$VIP:$VIP_PORT  IFACE=$NODE_IFACE  VRID=$VRRP_ROUTER_ID"
 ```bash
 ip -br addr show | grep 192.168.50
 ```
-**ควรเห็น:** `ens192  UP  192.168.50.10X/24`
-ถ้าชื่อไม่ใช่ `ens192` ให้แก้ทั้งใน `versions.env` และในไฟล์ `keepalived-*.conf` ทั้ง 3 ไฟล์
+**ควรเห็น:** ชื่อ interface พร้อม IP ของเครื่องนี้ เช่น `ens192  UP  192.168.50.101/24`
+
+> ⚠️ **ชื่อ NIC ไม่จำเป็นต้องเหมือนกันทุกเครื่อง** — เคยเจอจริงว่า master01 เป็น `ens192`
+> แต่ master02 เป็น `ens33` ขึ้นกับว่า VM ถูกสร้างด้วย virtual hardware รุ่นไหน
+> **อย่าจดค่าจากเครื่องแรกแล้วเหมาว่าใช้ได้ทุกเครื่อง** — ต้องดูทีละเครื่อง
+>
+> ไฟล์ `keepalived-*.conf` เขียน `ens192` ไว้ตายตัว 2 จุด ข้อ 3 จึงมีขั้นตอนแก้ให้ตรงกับ
+> เครื่องที่ทำอยู่แบบอัตโนมัติ — ไม่ต้องมาไล่แก้ในรีโปเอง
 
 **ยืนยันว่ายังไม่มีใครใช้ VIP:**
 ```bash
@@ -71,16 +84,35 @@ haproxy -v | head -1
 ไฟล์เดียวกันทั้ง 3 เครื่อง ไม่มีอะไรต่างกัน:
 
 ```bash
-cp /root/k8s/config/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg
+\cp -f /root/k8s/config/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg
 haproxy -c -f /etc/haproxy/haproxy.cfg
 ```
 **ควรเห็น:** `Configuration file is valid`
 
+> ⚠️ `Configuration file is valid` **ไม่ได้แปลว่าไฟล์ถูกทับสำเร็จ** — ไฟล์ default ที่มากับ package
+> ก็ผ่าน syntax check เหมือนกัน ต้องตรวจ**เนื้อใน**ด้วย:
+
 ```bash
-systemctl enable --now haproxy
+grep -cE '^[[:space:]]*bind[[:space:]]+\*:8443' /etc/haproxy/haproxy.cfg
+```
+**ควรเห็น:** `1` — ถ้าได้ `0` แปลว่ายังเป็นไฟล์ default อยู่ (`bind *:5000`) ให้กลับไปตรวจว่า path ต้นทางถูกไหม
+
+> ที่ต้องใช้ `-E` กับ `[[:space:]]+` เพราะในไฟล์จริง `bind` กับ `*:8443` คั่นด้วยช่องว่างหลายตัว
+> (จัดคอลัมน์ให้อ่านง่าย) — เขียน `grep 'bind \*:8443'` เฉย ๆ จะได้ `0` ทั้งที่ไฟล์ถูกต้อง
+
+```bash
+systemctl enable haproxy
+systemctl restart haproxy
 ss -lnt | grep ':8443'
 ```
 **ควรเห็น:** `LISTEN 0 ... *:8443`
+
+> **ทำไมไม่ใช่ `systemctl enable --now haproxy`**
+> `--now` จะ **start เฉพาะตอนที่ service ยังไม่รัน** ถ้ามันรันอยู่แล้ว (เช่น คุณเคยลอง start
+> ก่อนวางไฟล์ config หรือย้อนกลับมาทำข้อนี้ซ้ำ) คำสั่งจะผ่านไปเงียบ ๆ โดย **ไม่โหลด config ใหม่**
+> process เดิมยังถือไฟล์เก่าอยู่ แล้ว `ss` ก็จะไม่เห็นอะไรทั้งที่ไฟล์บนดิสก์ถูกต้องแล้ว
+>
+> `restart` ทำงานถูกทั้งสองกรณี — ยังไม่รันก็ start ให้ รันอยู่ก็โหลดใหม่ให้
 
 > ตอนนี้ backend ทั้ง 3 ตัวจะ **DOWN** หมด เพราะยังไม่มี kube-apiserver — **ถูกต้องแล้ว**
 > ดูได้ด้วย `curl -s http://127.0.0.1:8404/stats`
@@ -89,30 +121,79 @@ ss -lnt | grep ':8443'
 
 ## 3 · วาง keepalived config
 
-> **ระวัง: ไฟล์ต่างกันต่อเครื่อง** เลือกให้ตรงกับเครื่องที่กำลังทำอยู่
+> **ระวัง: ไฟล์ต่างกันต่อเครื่อง** สามบล็อกข้างล่างเป็นทางเลือก **รันแค่บล็อกเดียว**
+> ให้ตรงกับเครื่องที่กำลังทำอยู่ — ถ้ารันทั้งสามบล็อกบนเครื่องเดียว จะเหลือของ master03
+> ค้างอยู่ แล้วเจอ split brain ตอนข้อ 4
 
+**🎩 บน master01:**
 ```bash
-# บน master01 เท่านั้น
-cp /root/k8s/config/keepalived/keepalived-master01.conf /etc/keepalived/keepalived.conf
-
-# บน master02 เท่านั้น
-cp /root/k8s/config/keepalived/keepalived-master02.conf /etc/keepalived/keepalived.conf
-
-# บน master03 เท่านั้น
-cp /root/k8s/config/keepalived/keepalived-master03.conf /etc/keepalived/keepalived.conf
+\cp -f /root/k8s/config/keepalived/keepalived-master01.conf /etc/keepalived/keepalived.conf
 ```
+
+**🎩 บน master02:**
+```bash
+\cp -f /root/k8s/config/keepalived/keepalived-master02.conf /etc/keepalived/keepalived.conf
+```
+
+**🎩 บน master03:**
+```bash
+\cp -f /root/k8s/config/keepalived/keepalived-master03.conf /etc/keepalived/keepalived.conf
+```
+
+**ตรวจว่าได้ไฟล์ของเครื่องนี้จริง — ไม่ใช่ไฟล์ตัวอย่างที่มากับ package และไม่ใช่ของเครื่องอื่น:**
+```bash
+grep -c "router_id $(hostname -s)" /etc/keepalived/keepalived.conf
+```
+**ควรเห็น:** `1` — ถ้าได้ `0` แปลว่า copy ไม่โดน หรือหยิบไฟล์ผิดเครื่อง **ให้หยุดแก้ก่อน**
+เพราะถ้าปล่อยไป จะได้ `priority` ซ้ำกันสองเครื่องแล้วเจอ split brain ตอนข้อ 4
+
+**แก้ชื่อ interface ให้ตรงกับเครื่องนี้ — ทำทุกเครื่อง ไม่ว่าข้อ 0 จะเห็นชื่ออะไร:**
+```bash
+IFACE=$(ip -o -4 addr show | awk '$4 ~ /^192\.168\.50\./ {print $2; exit}')
+echo "interface ของเครื่องนี้: [${IFACE}]"
+
+if [ -z "$IFACE" ]; then
+    echo "❌ หา interface ที่ถือ IP 192.168.50.x ไม่เจอ — ไม่แตะไฟล์"
+else
+    sed -i "s/\bens192\b/${IFACE}/g" /etc/keepalived/keepalived.conf
+fi
+
+grep -n 'interface \|dev ' /etc/keepalived/keepalived.conf
+```
+**ควรเห็น:** ชื่อในวงเล็บไม่ว่าง และสองบรรทัดสุดท้ายเป็นชื่อ interface จริงของเครื่องนี้ทั้งคู่
+
+> ถ้าปล่อยชื่อผิดไว้ keepalived จะ **start ไม่ขึ้น** โดยขึ้น log ว่า
+> `WARNING - interface ens192 for vrrp_instance VI_K8S doesn't exist` ตามด้วย
+> `exited with permanent error CONFIG` — เป็น config error ไม่ใช่ปัญหา network
 
 **ใส่รหัส VRRP จริง — ต้องเหมือนกันทั้ง 3 เครื่อง:**
-```bash
-read -rsp 'VRRP auth_pass: ' VRRP_PASS && echo
-sed -i "s|<VRRP_AUTH_PASS>|${VRRP_PASS}|" /etc/keepalived/keepalived.conf
-unset VRRP_PASS
-chmod 600 /etc/keepalived/keepalived.conf
 
-# ตรวจว่าแทนที่สำเร็จจริง — ต้องไม่เหลือ placeholder
-grep -c '<VRRP_AUTH_PASS>' /etc/keepalived/keepalived.conf
+> บล็อกนี้คัดลอกทั้งก้อนมาวางได้ — บรรทัดแรกจะ**หยุดรอให้พิมพ์รหัส**
+> ตัวอักษรจะไม่ขึ้นบนจอ (`-s` ปิดการแสดงผล) ดูเหมือนค้างแต่ไม่ได้ค้าง
+> พิมพ์แล้วกด Enter บรรทัดที่เหลือจะรันต่อเอง
+
+```bash
+read -rsp 'VRRP auth_pass: ' VRRP_PASS && echo "รับมา ${#VRRP_PASS} ตัวอักษร"
+
+if [ -z "$VRRP_PASS" ]; then
+    echo "❌ ไม่ได้พิมพ์อะไรเลย — ไม่แตะไฟล์ ให้รันบล็อกนี้ใหม่"
+else
+    sed -i "s|<VRRP_AUTH_PASS>|${VRRP_PASS}|" /etc/keepalived/keepalived.conf
+    chmod 600 /etc/keepalived/keepalived.conf
+fi
+unset VRRP_PASS
+
+# ตรวจค่าที่ลงไปจริง — ไม่ใช่แค่ดูว่า placeholder หายไปแล้ว
+awk '$1=="auth_pass"{print "auth_pass = [" $2 "]"}' /etc/keepalived/keepalived.conf
 ```
-**ควรเห็น:** `0` — ถ้าได้ `1` แปลว่า `sed` ไม่โดน ให้ตรวจว่า copy ไฟล์ถูกตัวหรือยัง
+**ควรเห็น:** จำนวนตัวอักษรมากกว่า `0` และบรรทัดสุดท้ายเป็น `auth_pass = [รหัสจริงของคุณ]`
+
+> ⚠️ ถ้าเห็น `auth_pass = [!]` แปลว่ารหัสว่าง — `sed` เขียนค่าว่างทับ placeholder ไปแล้ว
+> keepalived จะ **parse ไฟล์ไม่ผ่านและ start ไม่ขึ้น** ต้อง `\cp -f` ไฟล์ต้นฉบับมาทับใหม่
+> แล้วทำข้อนี้ซ้ำ — แก้ที่ไฟล์ตรง ๆ ไม่ได้เพราะ placeholder หายไปแล้ว
+>
+> ห้ามเช็กด้วย `grep -c '<VRRP_AUTH_PASS>'` อย่างเดียว — ค่าว่างก็ทำให้ placeholder หายเหมือนกัน
+> มันจะได้ `0` เหมือนตอนสำเร็จทุกประการ
 
 > ⚠️ `auth_pass` ของ keepalived ใช้ได้ **ไม่เกิน 8 ตัวอักษร** ตัวที่เกินจะถูกตัดทิ้งเงียบ ๆ
 > ถ้าตั้งยาวกว่านั้นแล้วแต่ละเครื่องพิมพ์ไม่เหมือนกัน จะกลายเป็นว่า **ทุกเครื่องคิดว่าตัวเองเป็น MASTER**
@@ -120,17 +201,24 @@ grep -c '<VRRP_AUTH_PASS>' /etc/keepalived/keepalived.conf
 
 **วาง health check script:**
 ```bash
-cp /root/k8s/config/keepalived/check_apiserver.sh /etc/keepalived/check_apiserver.sh
+\cp -f /root/k8s/config/keepalived/check_apiserver.sh /etc/keepalived/check_apiserver.sh
 chmod 700 /etc/keepalived/check_apiserver.sh
 
 # ทดสอบสคริปต์ก่อนให้ keepalived เรียก
 /etc/keepalived/check_apiserver.sh; echo "exit=$?"
 ```
-**ควรเห็น:** `exit=0` (ตอนนี้ยังไม่มี apiserver แต่ HAProxy ฟัง 8443 อยู่แล้วจึงผ่าน)
+**ควรเห็น:** `exit=0` — ผ่านที่ **ด่าน 2** ของสคริปต์ ซึ่งยอมให้ผ่านเมื่อยังไม่มี `kube-apiserver`
+ฟังที่ `:6443` บนเครื่องนี้ (คือช่วง bootstrap ตอนนี้) ยังไม่ได้พิสูจน์เส้นทาง VIP อะไรทั้งนั้น
+
+> ด่าน 2 มีไว้กัน VIP กระพริบ — ถ้าไม่มี เครื่องที่ถือ VIP จะยิง `/healthz` ไม่ผ่าน
+> (เพราะ HAProxy ยังไม่มี backend เป็น ๆ) แล้วโดนหัก priority 20 จนเสีย VIP ให้เครื่องอื่น
+> ซึ่งก็จะตกด้วยเหตุผลเดียวกัน วนไม่จบทุก ~6-12 วินาที **จนกว่าจะมี cluster**
 
 ```bash
-systemctl enable --now keepalived
+systemctl enable keepalived
+systemctl restart keepalived
 ```
+(เหตุผลเดียวกับ HAProxy — `restart` ไม่ใช่ `enable --now` เพื่อให้ config ที่เพิ่งวางถูกโหลดแน่นอน)
 
 ---
 
@@ -138,13 +226,13 @@ systemctl enable --now keepalived
 
 **บน master01:**
 ```bash
-ip -4 addr show "$NODE_IFACE" | grep "$VIP"
+ip -4 addr show | grep "$VIP"
 ```
-**ควรเห็น:** `inet 192.168.50.100/24 scope global secondary ens192`
+**ควรเห็น:** `inet 192.168.50.100/24 scope global secondary <ชื่อ interface ของเครื่องนี้>`
 
 **บน master02 และ master03:**
 ```bash
-ip -4 addr show "$NODE_IFACE" | grep "$VIP" || echo "ไม่มี VIP — ถูกต้อง"
+ip -4 addr show | grep "$VIP" || echo "ไม่มี VIP — ถูกต้อง"
 ```
 **ควรเห็น:** `ไม่มี VIP — ถูกต้อง`
 
@@ -154,7 +242,25 @@ ping -c3 "$VIP"
 ```
 **ควรเห็น:** ตอบครบ 3 packet
 
-> ถ้า VIP ขึ้นมากกว่าหนึ่งเครื่องพร้อมกัน = **split brain** สาเหตุที่พบบ่อย 3 ข้อ:
+**ยืนยันว่า VIP นิ่งจริง ไม่ใช่แค่บังเอิญถูกจังหวะ — รันซ้ำห่างกัน 10 วินาที:**
+```bash
+for ip in 101 102 103; do echo -n "$ip: "; ssh root@192.168.50.$ip "ip -4 a s | grep -c 192.168.50.100"; done
+```
+**ควรเห็น:** `101: 1` · `102: 0` · `103: 0` **เหมือนกันทั้งสองรอบ**
+
+> **ถ้าเลข `1` ย้ายเครื่องไปมา = VIP กระพริบ ไม่ใช่ split brain** — สองอย่างนี้อาการต่างกัน
+> และสาเหตุคนละเรื่อง อย่าเอาไปรวมกัน
+>
+> ยืนยันด้วย log — กระพริบจะเห็นสลับ MASTER/BACKUP ถี่ ๆ:
+> ```bash
+> journalctl -u keepalived -n 40 --no-pager | grep -iE 'Entering|transition'
+> ```
+> ถ้าเจอ ให้ตรวจว่า `check_apiserver.sh` บนเครื่องมีด่าน 2 (`grep -q ':6443 '`) หรือยัง
+> — สคริปต์รุ่นที่ไม่มีด่านนี้จะทำให้เครื่องที่ถือ VIP หัก priority ตัวเองจนเสีย VIP วนไปเรื่อย ๆ
+
+> ถ้า VIP ขึ้นมากกว่าหนึ่งเครื่อง **แล้วค้างอยู่อย่างนั้น** = **split brain** ตัวจริง
+> (ต่างจากกระพริบตรงที่ไม่สลับ ทุกเครื่องคิดว่าตัวเองเป็น MASTER พร้อมกัน)
+> สาเหตุที่พบบ่อย 3 ข้อ:
 > 1. `auth_pass` ไม่ตรงกัน (ดูเรื่อง 8 ตัวอักษรด้านบน)
 > 2. firewalld ยังไม่เปิด `--add-protocol=vrrp` — ตรวจด้วย `firewall-cmd --list-protocols`
 > 3. switch บล็อก multicast `224.0.0.18`
@@ -182,7 +288,7 @@ systemctl stop keepalived
 
 **ตรวจภายใน 5 วินาที บน master02:**
 ```bash
-ip -4 addr show "$NODE_IFACE" | grep "$VIP"
+ip -4 addr show | grep "$VIP"
 ```
 **ควรเห็น:** VIP ย้ายมาที่ master02 แล้ว · หน้าต่าง ping ขาดไม่เกิน **2-3 packet**
 

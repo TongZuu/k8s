@@ -242,7 +242,7 @@ img{max-width:100%}
 ถ้าของบน cluster ไม่ตรงกับ git ให้ถือว่า <strong>git ถูก</strong> แล้ว apply ทับ</p>
 <hr />
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · แม่แบบ manifest</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<div class="cb"><pre><code class="language-bash">cp /root/k8s/config/app/deployment-template.yaml ./zeeme-ads.yaml
+<div class="cb"><pre><code class="language-bash">\cp -f /root/k8s/config/app/deployment-template.yaml ./zeeme-ads.yaml
 sed -i 's/APPNAME/zeeme-ads/g' ./zeeme-ads.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>แล้วแก้ image digest, พอร์ต และ resources ให้ตรงกับ service จริง</p>
@@ -362,7 +362,7 @@ curl -I --cacert /root/k8s/myhr-root-ca.crt \
 <hr />
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · 🔴 Policy check ที่ CI</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><strong>นี่คือสิ่งที่มาแทน GitOps</strong> ถ้าข้ามข้อนี้ ข้อ 1-4 จะไร้ความหมายภายในไม่กี่เดือน</p>
-<div class="cb"><pre><code class="language-bash">cp /root/k8s/config/app/validate-manifests.sh ./scripts/
+<div class="cb"><pre><code class="language-bash">\cp -f /root/k8s/config/app/validate-manifests.sh ./scripts/
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ตัวสคริปต์ตรวจ 6 ข้อและ <strong>exit 1 ถ้าไม่ผ่าน</strong>:</p>
 <ol>

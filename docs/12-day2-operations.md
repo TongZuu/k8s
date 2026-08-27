@@ -130,7 +130,7 @@ kubeadm certs check-expiration
 **ต่ออายุ — ทำทีละ master:**
 ```bash
 # 1. backup ก่อนเสมอ
-cp -r /etc/kubernetes/pki /root/k8s/pki-backup-$(date +%Y%m%d)
+\cp -rf /etc/kubernetes/pki /root/k8s/pki-backup-$(date +%Y%m%d)
 
 # 2. ต่ออายุทั้งชุด
 kubeadm certs renew all
@@ -145,7 +145,7 @@ mv /tmp/{kube-apiserver,kube-controller-manager,kube-scheduler,etcd}.yaml .
 until kubectl get --raw='/healthz' 2>/dev/null | grep -q ok; do sleep 3; done
 
 # 5. อัปเดต kubeconfig ของ admin ด้วย (cert ในนั้นก็หมดอายุเหมือนกัน)
-cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
+\cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
 
 kubeadm certs check-expiration
 ```

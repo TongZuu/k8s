@@ -262,7 +262,7 @@ Then you can join any number of worker nodes ...
 <hr />
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · 👑 ตั้ง kubeconfig</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <div class="cb"><pre><code class="language-bash">mkdir -p "$HOME/.kube"
-cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
+\cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
 chown "$(id -u):$(id -g)" "$HOME/.kube/config"
 
 kubectl cluster-info
@@ -327,7 +327,7 @@ kubectl -n kube-system get pods -l component=etcd -o wide
 <p><strong>ควรเห็น:</strong> node เพิ่มขึ้นทีละตัว และมี pod <code>etcd-k8s-masterXX</code> เพิ่มตาม</p>
 <p><strong>ตั้ง kubeconfig บน master02/03 ด้วย:</strong></p>
 <div class="cb"><pre><code class="language-bash">mkdir -p "$HOME/.kube"
-cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
+\cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
 chown "$(id -u):$(id -g)" "$HOME/.kube/config"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />

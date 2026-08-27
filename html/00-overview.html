@@ -379,7 +379,7 @@ worker 3 เครื่อง โดยมี Cilium ทำหน้าที�
 </tbody>
 </table>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>กติกา 4 ข้อของคู่มือชุดนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>กติกา 6 ข้อของคู่มือชุดนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><strong>1 · ทุกเวอร์ชันมาจาก <code>versions.env</code> เท่านั้น</strong>
 รันบรรทัดนี้ก่อนเริ่มทุก session บนทุกเครื่อง — ถ้าลืม คำสั่งจะ error ทันทีเพราะตัวแปรว่าง
 ซึ่งดีกว่าเผลอไปติดตั้งเวอร์ชันผิด</p>
@@ -391,6 +391,18 @@ worker 3 เครื่อง โดยมี Cilium ทำหน้าที�
 password, token และ key ทั้งหมดเป็น placeholder ค่าจริงอยู่ในที่เก็บ secret แยก</p>
 <p><strong>4 · ห้าม <code>kubectl edit</code> บน cluster ตรง ๆ</strong>
 ทุกอย่างที่ apply ต้องมาจากไฟล์ใน git เพราะเราไม่มี GitOps มาบังคับให้</p>
+<p><strong>5 · ทุกคำสั่ง copy เขียนเป็น <code>\cp -f</code> เสมอ — ไม่ใช่ <code>cp</code></strong>
+บน Oracle Linux root มี <code>alias cp='cp -i'</code> ติดมาจาก <code>/root/.bashrc</code> พอ copy ทับไฟล์ที่มีอยู่แล้ว
+มันจะถาม <code>cp: overwrite '...'?</code> แล้วรอคำตอบ — <strong>ถ้าไม่ได้ตอบ <code>y</code> เป๊ะ ๆ มันจะยกเลิกเงียบ ๆ</strong>
+ไม่มี error ให้เห็น ของเดิมยังอยู่ที่เดิมทั้งที่คุณคิดว่าทับไปแล้ว
+เวลาวางคำสั่งทีละหลายบรรทัด คำถามนี้จะโผล่กลางกอง แล้วมักโดนกด Enter ผ่านไปโดยไม่ทันสังเกต</p>
+<p><code>\</code> หน้าคำสั่งบังคับให้ใช้ binary จริงแทน alias — ใส่ <code>-f</code> เฉย ๆ ไม่พอ เพราะ <code>cp -i -f</code> ยังถามอยู่</p>
+<p><strong>6 · หลังวางไฟล์ config ใช้ <code>systemctl restart</code> เสมอ — ไม่ใช่ <code>enable --now</code></strong>
+<code>--now</code> จะ start ให้<strong>เฉพาะตอนที่ service ยังไม่รัน</strong> ถ้ามันรันอยู่แล้ว คำสั่งจะผ่านไปเงียบ ๆ
+โดยไม่โหลด config ใหม่ — คุณจะเห็น <code>active (running)</code> แต่มันยังถือไฟล์เก่าอยู่</p>
+<div class="cb"><pre><code class="language-bash">systemctl enable &lt;service&gt;     # ให้ขึ้นเองตอน boot
+systemctl restart &lt;service&gt;    # โหลด config ที่เพิ่งวาง — ถูกทั้งกรณีรันอยู่และยังไม่รัน
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>ความจริงสองข้อที่ส่งผลกับทุกอย่างหลังจากนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><strong>ไม่มี Ksplice</strong> — ใช้ Oracle Linux แบบฟรี จึงปะ kernel โดยไม่ reboot ไม่ได้

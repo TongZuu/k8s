@@ -234,7 +234,7 @@ EOF
 <code># BEGIN k8s cluster</code> ชุดเดียวกัน ทำมือแล้วรัน playbook ทับได้เลย ไม่ซ้ำ</p>
 <p>ถ้าเครื่องไหนเคยรันด้วย <code>cat &gt;&gt;</code> แบบเดิมมาก่อน จะมีบรรทัดค้างอยู่นอกบล็อก
 ล้างทีเดียวด้วย (ทำครั้งเดียวพอ):</p>
-<div class="cb"><pre><code class="language-bash">cp /etc/hosts /etc/hosts.bak
+<div class="cb"><pre><code class="language-bash">\cp -f /etc/hosts /etc/hosts.bak
 sed -i -E '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/!{/^[0-9.]+[[:space:]]+(k8s-(vip|master0[1-3]|worker0[1-3])|registry\.myhr\.co\.th)[[:space:]]*$/d}' /etc/hosts
 grep -c k8s-master01 /etc/hosts    # ต้องได้ 1
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>

@@ -57,7 +57,7 @@ EOF
 > ถ้าเครื่องไหนเคยรันด้วย `cat >>` แบบเดิมมาก่อน จะมีบรรทัดค้างอยู่นอกบล็อก
 > ล้างทีเดียวด้วย (ทำครั้งเดียวพอ):
 > ```bash
-> cp /etc/hosts /etc/hosts.bak
+> \cp -f /etc/hosts /etc/hosts.bak
 > sed -i -E '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/!{/^[0-9.]+[[:space:]]+(k8s-(vip|master0[1-3]|worker0[1-3])|registry\.myhr\.co\.th)[[:space:]]*$/d}' /etc/hosts
 > grep -c k8s-master01 /etc/hosts    # ต้องได้ 1
 > ```

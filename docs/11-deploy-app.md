@@ -46,7 +46,7 @@ myhr-k8s-manifests/
 ## 2 · แม่แบบ manifest
 
 ```bash
-cp /root/k8s/config/app/deployment-template.yaml ./zeeme-ads.yaml
+\cp -f /root/k8s/config/app/deployment-template.yaml ./zeeme-ads.yaml
 sed -i 's/APPNAME/zeeme-ads/g' ./zeeme-ads.yaml
 ```
 แล้วแก้ image digest, พอร์ต และ resources ให้ตรงกับ service จริง
@@ -126,7 +126,7 @@ kubectl -n kube-system exec -it ds/cilium -- \
 **นี่คือสิ่งที่มาแทน GitOps** ถ้าข้ามข้อนี้ ข้อ 1-4 จะไร้ความหมายภายในไม่กี่เดือน
 
 ```bash
-cp /root/k8s/config/app/validate-manifests.sh ./scripts/
+\cp -f /root/k8s/config/app/validate-manifests.sh ./scripts/
 ```
 
 ตัวสคริปต์ตรวจ 6 ข้อและ **exit 1 ถ้าไม่ผ่าน**:

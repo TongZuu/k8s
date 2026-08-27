@@ -35,14 +35,30 @@ head -c 32 /dev/urandom | base64
 
 ```bash
 mkdir -p /etc/kubernetes/enc
-cp /root/k8s/config/security/encryption-config.yaml /etc/kubernetes/enc/encryption-config.yaml
+\cp -f /root/k8s/config/security/encryption-config.yaml /etc/kubernetes/enc/encryption-config.yaml
 
-read -rsp 'encryption key (base64): ' ENC_KEY && echo
-sed -i "s|<ENCRYPTION_KEY_BASE64>|${ENC_KEY}|" /etc/kubernetes/enc/encryption-config.yaml
+read -rsp 'encryption key (base64): ' ENC_KEY && echo "รับมา ${#ENC_KEY} ตัวอักษร"
+
+if [ -z "$ENC_KEY" ]; then
+    echo "❌ ไม่ได้พิมพ์อะไรเลย — ไม่แตะไฟล์ ให้รันบล็อกนี้ใหม่"
+else
+    sed -i "s|<ENCRYPTION_KEY_BASE64>|${ENC_KEY}|" /etc/kubernetes/enc/encryption-config.yaml
+    chmod 600 /etc/kubernetes/enc/encryption-config.yaml
+fi
 unset ENC_KEY
-
-chmod 600 /etc/kubernetes/enc/encryption-config.yaml
 ```
+**ควรเห็น:** `รับมา 44 ตัวอักษร` — key ที่ได้จาก `head -c 32 /dev/urandom | base64` ยาว 44 เสมอ
+
+**ตรวจว่าไฟล์ลงจริงและ key มีค่าจริง:**
+```bash
+grep -c 'kind: EncryptionConfiguration' /etc/kubernetes/enc/encryption-config.yaml
+awk '$1=="secret:"{print "secret ยาว " length($2) " ตัว"}' /etc/kubernetes/enc/encryption-config.yaml
+```
+**ควรเห็น:** `1` แล้วตามด้วย `secret ยาว 44 ตัว`
+
+> ⚠️ อย่าเช็กด้วย `grep -c '<ENCRYPTION_KEY_BASE64>'` อย่างเดียว — ถ้า `read` ได้ค่าว่าง
+> `sed` จะเขียนค่าว่างทับ placeholder ผลคือ placeholder หายไปเหมือนตอนสำเร็จทุกประการ
+> แต่ apiserver จะ **start ไม่ขึ้น** และคุณจะไล่หาสาเหตุไม่เจอเพราะด่านตรวจบอกว่าผ่าน
 
 > **key ต้องเหมือนกันทั้ง 3 เครื่อง** ไม่งั้น apiserver ตัวหนึ่งจะอ่านของที่อีกตัวเขียนไม่ออก
 
@@ -51,7 +67,7 @@ chmod 600 /etc/kubernetes/enc/encryption-config.yaml
 **🎩 บนแต่ละ master ทีละตัว** แก้ `/etc/kubernetes/manifests/kube-apiserver.yaml`:
 
 ```bash
-cp /etc/kubernetes/manifests/kube-apiserver.yaml /root/k8s/kube-apiserver.yaml.bak
+\cp -f /etc/kubernetes/manifests/kube-apiserver.yaml /root/k8s/kube-apiserver.yaml.bak
 ```
 
 เพิ่มใน `spec.containers[0].command`:
@@ -322,9 +338,13 @@ AD ของบริษัท ──→ OIDC provider ──→ apiserver
 
 **🎩 ทำทั้ง 3 master ทีละตัว:**
 ```bash
-cp /root/k8s/config/security/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
+\cp -f /root/k8s/config/security/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
 chmod 600 /etc/kubernetes/audit-policy.yaml
+
+# ตรวจว่าไฟล์ลงจริง ไม่ใช่ค้างของเก่า
+grep -c 'kind: Policy' /etc/kubernetes/audit-policy.yaml
 ```
+**ควรเห็น:** `1` — ถ้าได้ `0` แปลว่า copy ไม่โดน apiserver จะ restart ไม่ขึ้นเพราะหา policy ไม่เจอ
 
 เพิ่มใน `kube-apiserver.yaml`:
 ```yaml

@@ -214,20 +214,35 @@ registry password, cluster-admin token และ client key <strong>ฝังอ
 เอาไปใส่ที่เก็บ secret ขององค์กรทันที <strong>ห้ามใส่ใน git</strong></p>
 <h3>1.2 วางไฟล์ config — 🎩 ทำเหมือนกันทั้ง 3 master</h3>
 <div class="cb"><pre><code class="language-bash">mkdir -p /etc/kubernetes/enc
-cp /root/k8s/config/security/encryption-config.yaml /etc/kubernetes/enc/encryption-config.yaml
+\cp -f /root/k8s/config/security/encryption-config.yaml /etc/kubernetes/enc/encryption-config.yaml
 
-read -rsp 'encryption key (base64): ' ENC_KEY &amp;&amp; echo
-sed -i "s|&lt;ENCRYPTION_KEY_BASE64&gt;|${ENC_KEY}|" /etc/kubernetes/enc/encryption-config.yaml
+read -rsp 'encryption key (base64): ' ENC_KEY &amp;&amp; echo "รับมา ${#ENC_KEY} ตัวอักษร"
+
+if [ -z "$ENC_KEY" ]; then
+    echo "❌ ไม่ได้พิมพ์อะไรเลย — ไม่แตะไฟล์ ให้รันบล็อกนี้ใหม่"
+else
+    sed -i "s|&lt;ENCRYPTION_KEY_BASE64&gt;|${ENC_KEY}|" /etc/kubernetes/enc/encryption-config.yaml
+    chmod 600 /etc/kubernetes/enc/encryption-config.yaml
+fi
 unset ENC_KEY
-
-chmod 600 /etc/kubernetes/enc/encryption-config.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>รับมา 44 ตัวอักษร</code> — key ที่ได้จาก <code>head -c 32 /dev/urandom | base64</code> ยาว 44 เสมอ</p>
+<p><strong>ตรวจว่าไฟล์ลงจริงและ key มีค่าจริง:</strong></p>
+<div class="cb"><pre><code class="language-bash">grep -c 'kind: EncryptionConfiguration' /etc/kubernetes/enc/encryption-config.yaml
+awk '$1=="secret:"{print "secret ยาว " length($2) " ตัว"}' /etc/kubernetes/enc/encryption-config.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>1</code> แล้วตามด้วย <code>secret ยาว 44 ตัว</code></p>
+<blockquote>
+<p>⚠️ อย่าเช็กด้วย <code>grep -c '&lt;ENCRYPTION_KEY_BASE64&gt;'</code> อย่างเดียว — ถ้า <code>read</code> ได้ค่าว่าง
+<code>sed</code> จะเขียนค่าว่างทับ placeholder ผลคือ placeholder หายไปเหมือนตอนสำเร็จทุกประการ
+แต่ apiserver จะ <strong>start ไม่ขึ้น</strong> และคุณจะไล่หาสาเหตุไม่เจอเพราะด่านตรวจบอกว่าผ่าน</p>
+</blockquote>
 <blockquote>
 <p><strong>key ต้องเหมือนกันทั้ง 3 เครื่อง</strong> ไม่งั้น apiserver ตัวหนึ่งจะอ่านของที่อีกตัวเขียนไม่ออก</p>
 </blockquote>
 <h3>1.3 เปิดใช้ — ทำทีละเครื่อง</h3>
 <p><strong>🎩 บนแต่ละ master ทีละตัว</strong> แก้ <code>/etc/kubernetes/manifests/kube-apiserver.yaml</code>:</p>
-<div class="cb"><pre><code class="language-bash">cp /etc/kubernetes/manifests/kube-apiserver.yaml /root/k8s/kube-apiserver.yaml.bak
+<div class="cb"><pre><code class="language-bash">\cp -f /etc/kubernetes/manifests/kube-apiserver.yaml /root/k8s/kube-apiserver.yaml.bak
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>เพิ่มใน <code>spec.containers[0].command</code>:</p>
 <div class="cb"><pre><code class="language-yaml">    - --encryption-provider-config=/etc/kubernetes/enc/encryption-config.yaml
@@ -472,9 +487,13 @@ oidc-groups-claim: "groups"
 <p>เปิดไว้แล้วตั้งแต่ <code>kubeadm-config.yaml</code> (บทที่ 04) แต่ยังไม่มี policy
 ซึ่งแปลว่า<strong>ยังไม่ได้บันทึกอะไรเลย</strong></p>
 <p><strong>🎩 ทำทั้ง 3 master ทีละตัว:</strong></p>
-<div class="cb"><pre><code class="language-bash">cp /root/k8s/config/security/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
+<div class="cb"><pre><code class="language-bash">\cp -f /root/k8s/config/security/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
 chmod 600 /etc/kubernetes/audit-policy.yaml
+
+# ตรวจว่าไฟล์ลงจริง ไม่ใช่ค้างของเก่า
+grep -c 'kind: Policy' /etc/kubernetes/audit-policy.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>1</code> — ถ้าได้ <code>0</code> แปลว่า copy ไม่โดน apiserver จะ restart ไม่ขึ้นเพราะหา policy ไม่เจอ</p>
 <p>เพิ่มใน <code>kube-apiserver.yaml</code>:</p>
 <div class="cb"><pre><code class="language-yaml">    - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
