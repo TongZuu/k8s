@@ -347,6 +347,38 @@ done
 
 playbook เห็นไฟล์ที่ checksum ตรงแล้วจะไม่โหลดซ้ำ
 
+### `--check` ล้มบนเครื่องเปล่า — `dest '...' must be an existing dir`
+
+**ไม่ใช่บั๊ก** — ใน check mode Ansible ไม่ได้สร้างของจริง task ที่พึ่งผลของ
+task ก่อนหน้าจึงล้ม เช่น `unarchive` ลง `/opt/cni/bin` ที่ `file` module
+เพิ่งรายงานว่า *จะ* สร้าง แต่ยังไม่ได้สร้าง
+
+| เครื่อง | ใช้ `--check` ได้ไหม |
+|---|---|
+| ติดตั้งเสร็จแล้ว | ✅ **มีประโยชน์ที่สุด** — `changed=0` แปลว่ายังตรงสเปก |
+| ยังเปล่าอยู่ | ❌ จะล้มที่ task แรกที่ต่อเนื่องกัน — **รันจริงไปเลย** |
+
+`--check` มีค่าตอนใช้ตรวจ drift ไม่ใช่ตอนติดตั้งครั้งแรก
+
+### `scp: Permission denied` ตอนกระจายไฟล์จาก master01
+
+คีย์ที่แจกคือของ **WSL → root@nodes** ส่วน root บน master01 ไม่มีคีย์ไปเครื่องอื่น
+ส่ง agent ไปด้วยเพื่อให้ไฟล์วิ่งใน LAN ไม่ผ่าน VPN:
+
+```bash
+eval "$(ssh-agent -s)" && ssh-add ~/.ssh/id_ed25519
+ssh -A root@192.168.50.101
+```
+
+แล้วบน master01:
+
+```bash
+for ip in 102 103 104 105 106; do
+  ssh -o StrictHostKeyChecking=accept-new root@192.168.50.$ip 'mkdir -p /root/k8s/dl'
+  scp /root/k8s/dl/* root@192.168.50.$ip:/root/k8s/dl/
+done
+```
+
 ### `Permission denied (publickey,gssapi-keyex,...)`
 
 ยังไม่ได้แลก SSH key กับเครื่องนั้น:

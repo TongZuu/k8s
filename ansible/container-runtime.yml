@@ -9,6 +9,11 @@
 #  ⚠️ ก่อนรัน ต้องรู้ก่อนว่า registry เป็น HTTP หรือ HTTPS แล้วตั้งใน group_vars/all.yml
 #     ตรวจด้วย:  curl -sI https://registry.myhr.co.th/v2/ || curl -sI http://registry.myhr.co.th/v2/
 #
+#  ⚠️ --check ใช้ได้เฉพาะกับเครื่องที่ติดตั้งเสร็จแล้ว
+#     บนเครื่องเปล่า check mode จะล้มที่ task แรกที่พึ่งผลของ task ก่อนหน้า
+#     (เช่น unarchive ลง /opt/cni/bin ที่ file module ยังไม่ได้สร้างจริง)
+#     เป็นข้อจำกัดของ Ansible ไม่ใช่บั๊ก — เครื่องเปล่าให้รันจริงไปเลย
+#
 #  ⚠️ ทุก node ต้องออกอินเทอร์เน็ตไปที่ github.com ได้ — playbook ดาวน์โหลดตรงจาก
 #     upstream เหมือนที่คู่มือทำ ถ้า node ออกไม่ได้ ให้ scp ไฟล์ไปวางที่ /root/k8s/dl/
 #     เองก่อน แล้ว task ดาวน์โหลดจะข้ามให้เอง
