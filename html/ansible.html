@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ansible — แทนบทที่ 01 และ 02 — MyHR Kubernetes</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#f6f7f9; --panel:#fff; --ink:#1c1f24; --dim:#5d6570; --line:#e0e4e9;
+  --accent:#2d6ae0; --accent-soft:#eaf1fe;
+  --done-bg:#eaf7ee; --done-line:#8fd3a8; --done-ink:#1c6b3c;
+  --code-bg:#1e2530; --code-ink:#e6edf3; --warn:#b4530a;
+  --radius:10px;
+  --font:"Segoe UI","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;
+  --mono:"Cascadia Mono",Consolas,"Noto Sans Thai Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151a; --panel:#181c23; --ink:#e5e9ef; --dim:#98a2b0; --line:#272d37;
+    --accent:#6ea3ff; --accent-soft:#1b2740;
+    --done-bg:#152a1e; --done-line:#2f6b47; --done-ink:#7fd9a3;
+    --code-bg:#0d1117; --code-ink:#e6edf3; --warn:#e0913f;
+  }
+}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
+     font-size:15.5px;line-height:1.75}
+
+/* ---------- sidebar ---------- */
+.sidebar{position:fixed;inset:0 auto 0 0;width:260px;background:var(--panel);
+  border-right:1px solid var(--line);overflow-y:auto;padding:14px 0;z-index:40}
+.brand{display:block;padding:8px 18px 14px;font-weight:700;font-size:15px;
+  color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);margin-bottom:8px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 18px;text-decoration:none;
+  color:var(--dim);font-size:13.5px;border-left:3px solid transparent}
+.nav-item:hover{background:var(--accent-soft);color:var(--ink)}
+.nav-item.cur{border-left-color:var(--accent);color:var(--ink);font-weight:600;
+  background:var(--accent-soft)}
+.nav-num{font-family:var(--mono);font-size:11.5px;opacity:.65;min-width:18px}
+.nav-t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-p{font-size:11px;font-family:var(--mono);opacity:.8}
+.nav-p.full{color:var(--done-ink);font-weight:700}
+
+/* ---------- layout ---------- */
+.wrap{margin-left:260px;min-height:100vh}
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;
+  padding:12px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
+.top-t{flex:1;min-width:0}
+.top h1{margin:0;font-size:19px;line-height:1.3}
+.sub{margin:2px 0 0;font-size:12.5px;color:var(--dim)}
+.top-p{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--dim);
+  font-family:var(--mono);white-space:nowrap}
+.bar{width:96px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.reset{border:1px solid var(--line);background:transparent;color:var(--dim);
+  border-radius:6px;padding:3px 9px;font-size:11.5px;cursor:pointer;font-family:var(--font)}
+.reset:hover{border-color:var(--accent);color:var(--accent)}
+.burger{display:none;border:0;background:transparent;color:var(--ink);font-size:20px;cursor:pointer}
+main{max-width:920px;padding:24px 30px 120px}
+
+/* ---------- steps ---------- */
+.intro{padding:0 2px 6px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
+.step.done{background:var(--done-bg);border-color:var(--done-line)}
+.step.done .step-body{opacity:.62}
+.step-head{display:flex;align-items:flex-start;gap:10px;padding-top:14px}
+.step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
+.step.done .step-head h2{color:var(--done-ink)}
+/* เครื่องหมายถูกที่หัวข้อ — โผล่เฉพาะตอนทำแล้ว ให้กวาดตาหาได้เร็วตอนเลื่อนผ่าน */
+.head-tick{display:none;flex-shrink:0;color:var(--done-ink);font-size:19px;
+  font-weight:700;line-height:1.5}
+.step.done .head-tick{display:block}
+
+/* ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง */
+.step-foot{display:flex;justify-content:flex-end;padding:6px 0 2px;margin-top:14px;
+  border-top:1px dashed var(--line)}
+.step.done .step-foot{border-top-color:var(--done-line)}
+.done-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:20px;padding:7px 18px;font-size:13px;font-family:var(--font);
+  transition:all .2s;margin-top:10px}
+.done-btn:hover{border-color:var(--accent);color:var(--accent)}
+.done-btn .tick{opacity:.35;font-weight:700}
+.step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
+.step.done .done-btn .tick{opacity:1}
+
+/* ---------- เนื้อหา ---------- */
+h3{font-size:15.5px;margin:22px 0 8px}
+h4{font-size:14px;margin:18px 0 6px;color:var(--dim)}
+p{margin:10px 0}
+a{color:var(--accent)}
+ul,ol{padding-left:22px;margin:10px 0}
+li{margin:4px 0}
+blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--warn);
+  background:var(--accent-soft);border-radius:0 6px 6px 0;color:var(--ink)}
+blockquote p{margin:5px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--accent-soft);
+  padding:1.5px 5px;border-radius:4px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px;display:block;
+  overflow-x:auto;white-space:nowrap}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);font-weight:600}
+tbody tr:nth-child(even){background:rgba(128,128,128,.045)}
+hr{border:0;border-top:1px solid var(--line);margin:22px 0}
+img{max-width:100%}
+
+/* ---------- code block ---------- */
+.cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.cb-bar{display:flex;align-items:center;justify-content:space-between;
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-top:1px solid var(--line)}
+.cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
+  letter-spacing:.5px}
+.cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:5px;padding:3px 11px;font-size:11.5px;cursor:pointer;font-family:var(--font);
+  transition:all .15s}
+.cb-copy:hover{border-color:var(--accent);color:var(--accent)}
+.cb-copy.ok{background:var(--done-line);border-color:var(--done-line);color:#08301b}
+.cb pre{margin:0;padding:13px 15px;background:var(--code-bg);color:var(--code-ink);
+  overflow-x:auto;font-size:13px;line-height:1.65}
+.cb pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+/* ---------- prev/next ---------- */
+/* <details> ที่ใช้เก็บทางเลือกที่ยังไม่ต้องทำ */
+.step-body details{margin:16px 0;border:1px solid var(--line);border-radius:8px;
+  background:rgba(128,128,128,.05)}
+.step-body details[open]{background:transparent}
+.step-body summary{cursor:pointer;padding:10px 14px;font-size:14px;color:var(--dim);
+  user-select:none;list-style:none}
+.step-body summary::-webkit-details-marker{display:none}
+.step-body summary::before{content:'▸ ';color:var(--accent)}
+.step-body details[open] summary::before{content:'▾ '}
+.step-body summary:hover{color:var(--accent)}
+.step-body details > *:not(summary){margin-left:14px;margin-right:14px}
+.step-body details > *:last-child{margin-bottom:14px}
+
+.pn-row{display:flex;justify-content:space-between;gap:14px;margin-top:34px;
+  padding-top:18px;border-top:1px solid var(--line)}
+.pn{color:var(--accent);text-decoration:none;font-size:14px}
+.pn.dim{color:var(--dim);opacity:.6}
+
+/* ---------- ปุ่มลอย ---------- */
+.fab{position:fixed;right:24px;bottom:24px;z-index:50;display:inline-flex;align-items:center;
+  gap:9px;border:0;border-radius:26px;padding:13px 20px;cursor:pointer;
+  background:var(--accent);color:#fff;font-family:var(--font);font-size:14px;font-weight:600;
+  box-shadow:0 5px 18px rgba(0,0,0,.28);transition:transform .18s,opacity .18s,background .18s}
+.fab:hover{transform:translateY(-2px)}
+.fab.alldone{background:var(--done-line);color:#08301b}
+.fab-ico{font-size:16px;line-height:1}
+
+.toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,26px);z-index:60;
+  background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:13px;
+  opacity:0;pointer-events:none;transition:all .25s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);transition:transform .22s}
+  .sidebar.open{transform:none}
+  .wrap{margin-left:0}
+  .burger{display:block}
+  main{padding:18px 16px 120px}
+  .top{padding:10px 14px}
+  .top h1{font-size:16px}
+  .top-p .bar{display:none}
+  .fab-txt{display:none}
+  .fab{padding:15px;border-radius:50%}
+}
+@media print{
+  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
+  .wrap{margin-left:0}
+}
+</style>
+</head>
+<body data-chapter="ansible.md" data-total="9">
+
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="9"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="16"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item cur" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
+</aside>
+
+<div class="wrap">
+  <header class="top">
+    <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
+    <div class="top-t">
+      <h1>Ansible — แทนบทที่ 01 และ 02</h1>
+      <p class="sub"></p>
+    </div>
+    <div class="top-p">
+      <span id="pcount">0/9</span>
+      <div class="bar"><i id="pbar"></i></div>
+      <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="intro"><p>รันขั้นตอนเตรียม OS และติดตั้ง container runtime ให้ทุกเครื่องพร้อมกัน
+แทนการ SSH เข้าไป copy-วางทีละเครื่อง (บท 01+02 มี 47 บล็อกคำสั่ง × 6 เครื่อง)</p>
+<blockquote>
+<p><strong>playbook ตอบว่า &quot;ทำให้&quot; · <a href="../docs/README.md">คู่มือ .md</a> ตอบว่า &quot;ทำอะไรและทำไม&quot;</strong>
+ทุกอย่างที่ playbook ทำมีที่มาจากบท <a href="01-prepare-os.html">01</a> และ <a href="02-container-runtime.html">02</a> โดยตรง
+ถ้าสองอย่างไม่ตรงกัน <strong>คู่มือถูก</strong> แล้วต้องแก้ playbook ตาม</p>
+</blockquote>
+<hr />
+</div>
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>สถานะ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<table>
+<thead>
+<tr>
+<th>เครื่อง</th>
+<th>บท 01</th>
+<th>ทำด้วย</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>master01</td>
+<td>✅</td>
+<td><strong>ทำมือ</strong> — เครื่องอ้างอิง ใช้เทียบว่า playbook ทำถูกไหม</td>
+</tr>
+<tr>
+<td>master02</td>
+<td>✅</td>
+<td>playbook (รันจริง + reboot ผ่าน)</td>
+</tr>
+<tr>
+<td>master03</td>
+<td>✅</td>
+<td>playbook</td>
+</tr>
+<tr>
+<td>worker01</td>
+<td>✅</td>
+<td>playbook — <strong>เครื่องแรกที่พิสูจน์เส้นทาง worker</strong></td>
+</tr>
+<tr>
+<td>worker02–03</td>
+<td>⬜</td>
+<td>ยังไม่ได้รัน</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>playbook</th>
+<th>แทนบท</th>
+<th>สถานะ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>prepare-os.yml</code></td>
+<td>01</td>
+<td>✅ ใช้จริงครบ 6 เครื่อง</td>
+</tr>
+<tr>
+<td><code>container-runtime.yml</code></td>
+<td>02</td>
+<td>🔄 <code>--check</code> บน master01 ได้ <code>changed=0 failed=0</code> · <strong>ยังไม่เคยติดตั้งของจริง</strong> (master01 มีของครบอยู่ก่อนแล้ว)</td>
+</tr>
+<tr>
+<td><code>create-cluster.yml</code></td>
+<td>04</td>
+<td>⬜ <strong>ยังไม่เคยรัน</strong></td>
+</tr>
+<tr>
+<td><code>cilium.yml</code></td>
+<td>05</td>
+<td>⬜ <strong>ยังไม่เคยรัน</strong></td>
+</tr>
+</tbody>
+</table>
+<p>บท <strong>03 (HA layer) ไม่มี playbook โดยเจตนา</strong> — config ต่างกันทุกเครื่อง
+(priority 110/100/90) และ <strong>failover test ต้องมีคนดูว่า VIP ย้ายจริง</strong></p>
+<blockquote>
+<p>ทั้งสามตัวที่ยังไม่เคยรัน ตรวจมาแล้วแค่ YAML syntax กับ scanner ไล่ pattern บั๊ก
+ที่เคยเจอ — <strong>ทำมือหนึ่งเครื่องก่อนเสมอ</strong> แล้วค่อย <code>--check</code> ใส่เครื่องนั้น</p>
+</blockquote>
+<hr />
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>ติดตั้งครั้งเดียว</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<h3>1 · WSL2 + Ansible</h3>
+<p>Ansible เป็น control node บน Windows ไม่ได้ ต้องมี Linux:</p>
+<div class="cb"><pre><code class="language-powershell">wsl --install -d Ubuntu
+wsl --set-default Ubuntu
+</code></pre><div class="cb-bar"><span class="cb-lang">powershell</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>distro <code>docker-desktop</code> เป็น VM ภายในของ Docker Desktop — <strong>อย่าลงอะไรในนั้น</strong>
+มันถูกล้างทุกครั้งที่ Docker อัปเดต</p>
+</blockquote>
+<p>จากใน Ubuntu:</p>
+<div class="cb"><pre><code class="language-bash">sudo apt update &amp;&amp; sudo apt install -y ansible
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>⚠️ ต้องเป็น <code>ansible</code> (ตัวเต็ม) ไม่ใช่ <code>ansible-core</code> เพราะ playbook ใช้ module จาก
+<code>ansible.posix</code> (sysctl, selinux, firewalld) และ <code>community.general</code> (modprobe)
+ถ้าลง <code>ansible-core</code> มาแล้ว เติมด้วย:</p>
+<div class="cb"><pre><code class="language-bash">ansible-galaxy collection install ansible.posix community.general
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+</blockquote>
+<h3>2 · ⚠️ repo อยู่บนไดรฟ์ D: — ต้องแก้ permission ก่อน</h3>
+<p>WSL mount ไดรฟ์ Windows แบบ world-writable (777) และ
+<strong>Ansible จะเมิน <code>ansible.cfg</code> ที่อยู่ในโฟลเดอร์ world-writable แบบเงียบ ๆ</strong>
+ผลคือมันไม่โหลด <code>inventory.ini</code> ให้ แล้วคุณจะเจอ &quot;ไม่พบ host&quot; ทั้งที่ไฟล์อยู่ตรงนั้น</p>
+<div class="cb"><pre><code class="language-bash">sudo tee /etc/wsl.conf &lt;&lt;'EOF'
+[automount]
+options = "metadata,umask=22,fmask=11"
+EOF
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ปิด WSL ให้สนิทจาก PowerShell — ปิดแค่หน้าต่างไม่พอ:</p>
+<div class="cb"><pre><code class="language-powershell">wsl --shutdown
+</code></pre><div class="cb-bar"><span class="cb-lang">powershell</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>เปิดใหม่แล้วให้ Ansible ยืนยันเอง (แม่นกว่าไปนั่งดูเลขสิทธิ์):</p>
+<div class="cb"><pre><code class="language-bash">cd /mnt/d/workspace/k8s/ansible &amp;&amp; ansible --version | head -3
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>config file = /mnt/d/workspace/k8s/ansible/ansible.cfg</code>
+ถ้าได้ <code>config file = None</code> หรือมี warning เรื่อง world writable แปลว่ายังไม่ผ่าน</p>
+<blockquote>
+<p>เลขสิทธิ์ที่ได้จะเป็น <code>755</code> สำหรับโฟลเดอร์ และ <code>744</code> สำหรับไฟล์ — <strong>ถูกต้องแล้ว</strong>
+สิ่งที่ Ansible ตรวจคือ <em>โฟลเดอร์</em> ที่คุณยืนอยู่ ไม่ใช่สิทธิ์ของตัวไฟล์</p>
+</blockquote>
+<h3>3 · VPN</h3>
+<p>เครื่อง cluster อยู่หลัง Fortinet SSL VPN — ทดสอบก่อนว่า WSL ทะลุไปได้ไหม</p>
+<div class="cb"><pre><code class="language-bash">ping -c2 192.168.50.101
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ผ่านแล้วจบ ไม่ต้องแก้อะไร · ถ้าไม่ผ่านดู <a href="#%E0%B9%81%E0%B8%81%E0%B9%89%E0%B8%9B%E0%B8%B1%E0%B8%8D%E0%B8%AB%E0%B8%B2%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%80%E0%B8%84%E0%B8%A2%E0%B9%80%E0%B8%88%E0%B8%AD%E0%B8%88%E0%B8%A3%E0%B8%B4%E0%B8%87">แก้ปัญหา</a></p>
+<h3>4 · SSH key</h3>
+<div class="cb"><pre><code class="language-bash">ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ''
+for ip in 101 102 103 104 105 106; do
+  ssh-copy-id -o StrictHostKeyChecking=accept-new root@192.168.50.$ip
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ถามรหัส root เครื่องละครั้ง · <code>accept-new</code> ตัดคำถาม fingerprint ที่ต้องพิมพ์ <code>yes</code> ทุกรอบออก</p>
+<p><strong>ยืนยันครบทั้ง 6 ก่อนรัน playbook เสมอ:</strong></p>
+<div class="cb"><pre><code class="language-bash">ansible k8s_nodes -m ping
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ต้องได้ <code>SUCCESS</code> หกบรรทัด ไม่มีเครื่องไหนถามรหัสอีก
+ถ้าเครื่องไหนขึ้น <code>Permission denied (publickey,...)</code> แปลว่ายังไม่ได้แลก key กับเครื่องนั้น</p>
+<hr />
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>ก่อนรันทุกเครื่อง — 3 ข้อที่ playbook ไม่ทำให้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<p>playbook <strong>ตรวจ</strong> ทั้งสามข้อและหยุดถ้ายังไม่ได้ทำ แต่ <strong>ไม่ทำให้</strong> โดยเจตนา</p>
+<p>ดูสถานะรวดเดียว:</p>
+<div class="cb"><pre><code class="language-bash">for ip in 101 102 103 104 105 106; do
+  echo "=== .$ip ==="
+  ssh root@192.168.50.$ip 'uname -r'
+  ssh root@192.168.50.$ip 'bash -s' &lt; ../config/audit-node.sh 2&gt;&amp;1 | grep -E 'versionlock|partition'
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<table>
+<thead>
+<tr>
+<th>ต้องมี</th>
+<th>ทำไม playbook ไม่ทำ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>kernel สาย <code>6.12</code> และเป็น <code>uek</code></td>
+<td>เปลี่ยน kernel + reboot พร้อมกัน 6 เครื่องคือความเสี่ยงฟรี ๆ</td>
+</tr>
+<tr>
+<td><code>versionlock</code> kernel-uek</td>
+<td>ควรอยู่ใน VM template</td>
+</tr>
+<tr>
+<td>ย้าย partition <code>/home</code> แล้ว</td>
+<td><code>umount</code> + แก้ <code>/etc/fstab</code> พลาดแล้ว <strong>เครื่องบูตไม่ขึ้น</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>ย้าย partition — 🔴 master กับ worker คนละปลายทาง</h3>
+<p><strong>master → <code>/var/lib/etcd</code></strong></p>
+<div class="cb"><pre><code class="language-bash">findmnt /home                     # ยืนยันว่าเป็น partition แยกจริงก่อน
+umount /home
+mkdir -p /var/lib/etcd
+sed -i 's|[[:space:]]/home[[:space:]]|  /var/lib/etcd  |' /etc/fstab
+mount -a
+chmod 700 /var/lib/etcd           # ข้อกำหนดของ etcd
+findmnt /var/lib/etcd &amp;&amp; grep -v '^#' /etc/fstab | grep -E 'etcd|/home'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>worker → <code>/var/lib/containerd</code></strong></p>
+<div class="cb"><pre><code class="language-bash">findmnt /home
+umount /home
+mkdir -p /var/lib/containerd
+sed -i 's|[[:space:]]/home[[:space:]]|  /var/lib/containerd  |' /etc/fstab
+mount -a
+findmnt /var/lib/containerd &amp;&amp; grep -v '^#' /etc/fstab | grep -E 'containerd|/home'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>🔴 <strong>บรรทัดสุดท้ายคือด่านสุดท้ายก่อน reboot</strong> — ต้องเห็น mount point ใหม่ และ
+<strong>ต้องไม่เหลือบรรทัด <code>/home</code></strong> ใน fstab · fstab ผิดแล้วเครื่องไม่กลับมา ต้องไปแก้ที่ console ของ VMware</p>
+<h3>ล้าง /etc/hosts ถ้าเคยรันคู่มือรุ่นเก่า</h3>
+<p>คู่มือรุ่นก่อน 27 ส.ค. 2026 ใช้ <code>cat &gt;&gt;</code> ซึ่งไม่มี marker — playbook มองไม่เห็นแล้วเพิ่มบล็อกที่สองทับ</p>
+<div class="cb"><pre><code class="language-bash">cp /etc/hosts /etc/hosts.bak
+sed -i -E '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/!{/^[0-9.]+[[:space:]]+(k8s-(vip|master0[1-3]|worker0[1-3])|registry\.myhr\.co\.th)[[:space:]]*$/d}' /etc/hosts
+grep -c k8s-master01 /etc/hosts   # ต้องได้ 0 หรือ 1 ไม่ใช่ 2
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ทำครั้งเดียวพอ — คู่มือปัจจุบันและ playbook ใช้ marker <code># BEGIN k8s cluster</code> ชุดเดียวกันแล้ว</p>
+<hr />
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>ลำดับการรัน — ห้ามข้าม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<h3>ขั้น 1 · ทำมือหนึ่งเครื่องก่อน ✅</h3>
+<p>ต้องรู้ก่อนว่า &quot;ถูกต้อง&quot; หน้าตาเป็นยังไง ถึงจะบอกได้ว่า playbook ทำถูกหรือเปล่า</p>
+<h3>ขั้น 2 · 🔑 <code>--check</code> ใส่เครื่องที่ทำมือเสร็จแล้ว</h3>
+<p><strong>การทดสอบที่ดีที่สุดที่มี</strong> เพราะรู้คำตอบล่วงหน้า — เครื่องนั้นอยู่ในสถานะปลายทางที่ถูกต้องอยู่แล้ว</p>
+<div class="cb"><pre><code class="language-bash">ansible-playbook prepare-os.yml --check --diff --limit k8s-master01 --skip-tags reboot
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<table>
+<thead>
+<tr>
+<th>ผล</th>
+<th>แปลว่า</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>changed=0</code></td>
+<td>playbook ตรงกับคู่มือ</td>
+</tr>
+<tr>
+<td><code>changed=N</code></td>
+<td>อ่าน <code>--diff</code> ว่ามันอยากเปลี่ยนอะไร แล้วตัดสินว่าใครผิด</td>
+</tr>
+<tr>
+<td><code>failed</code></td>
+<td>assert ไม่ผ่าน — มักเป็น kernel, versionlock หรือ partition</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ ใส่ <code>--skip-tags reboot</code> เสมอในขั้นนี้ ไม่งั้นมันจะ reboot เครื่องที่เพิ่งทำเสร็จ</p>
+</blockquote>
+<blockquote>
+<p><strong><code>changed=N</code> ไม่ได้แปลว่า playbook ผิดเสมอไป</strong> — บาง task รายงาน changed ทุกครั้ง
+โดยธรรมชาติ ดู <code>--diff</code> ประกอบเสมอ</p>
+</blockquote>
+<blockquote>
+<p><strong><code>--check</code> ตรวจได้ไม่ครบ</strong> — Ansible ข้าม <code>shell</code>/<code>command</code> ทุกตัวใน check mode
+(<code>skipped=6</code> ที่เห็นคือพวกนั้น) <code>changed=0</code> จึงยังไม่ใช่หลักฐานเต็ม
+ตัวที่พิสูจน์จริงคือ <a href="#%E0%B8%82%E0%B8%B1%E0%B9%89%E0%B8%99-5--%E0%B8%9E%E0%B8%B4%E0%B8%AA%E0%B8%B9%E0%B8%88%E0%B8%99%E0%B9%8C%E0%B8%A7%E0%B9%88%E0%B8%B2-playbook-%E0%B9%80%E0%B8%97%E0%B8%B5%E0%B8%A2%E0%B8%9A%E0%B9%80%E0%B8%97%E0%B9%88%E0%B8%B2%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%97%E0%B8%B3%E0%B8%A1%E0%B8%B7%E0%B8%AD">ขั้น 5</a></p>
+</blockquote>
+<blockquote>
+<p><strong>ทำไม <code>versions.env</code> โหลดใน <code>pre_tasks</code> ไม่ใช่ play แยก</strong> — <code>--limit</code> มีผลกับ <em>ทุก</em> play
+ถ้าแยก play ที่ <code>hosts: localhost</code> ไว้ต่างหาก พอสั่ง <code>--limit k8s-master01</code> มันจะตัด play นั้นทิ้ง
+แล้วตัวแปรจะไม่มีอยู่จริงตอน play ถัดไปทำงาน (เจอจริงตอนทดสอบครั้งแรก)</p>
+</blockquote>
+<h3>ขั้น 3 · รันจริงใส่เครื่องที่ยังไม่ได้ทำ หนึ่งเครื่อง</h3>
+<div class="cb"><pre><code class="language-bash">ansible-playbook prepare-os.yml --check --diff --limit k8s-master02 --skip-tags reboot   # ดูก่อน
+ansible-playbook prepare-os.yml --limit k8s-master02                                     # แล้วยิงจริง
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ไม่ใส่ <code>--skip-tags reboot</code> ตอนรันจริง</strong> — บท 01 ข้อ 10 บอกว่าห้ามข้าม reboot
+ต้องพิสูจน์ว่าทุกอย่างยังอยู่หลังบูต · playbook รอเครื่องกลับมาเอง แล้ว assert ซ้ำให้</p>
+<h3>ขั้น 4 · เส้นทาง worker ต้องทดสอบแยก</h3>
+<p>master กับ worker เดินคนละกิ่งใน playbook — <strong>ผ่าน master ไม่ได้แปลว่า worker ผ่าน</strong></p>
+<div class="cb"><pre><code class="language-bash">ansible-playbook prepare-os.yml --check --diff --limit k8s-worker01 --skip-tags reboot
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>รูปร่างตัวเลขที่ควรเห็น เทียบกับ master ที่สถานะเดียวกัน:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>master</th>
+<th>worker</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>changed</code></td>
+<td>8</td>
+<td><strong>7</strong> (ไม่มี task เปิด VRRP)</td>
+</tr>
+<tr>
+<td><code>skipped</code></td>
+<td>6</td>
+<td><strong>7</strong></td>
+</tr>
+</tbody>
+</table>
+<p>และใน <code>--diff</code> ต้องเห็น:</p>
+<ul>
+<li>เปิดพอร์ต <strong>5 ตัว</strong> ไม่ใช่ 9 — ต้องมี <code>30000-32767/tcp</code> (NodePort)</li>
+<li><strong>ไม่มี</strong> task <code>เปิด VRRP</code></li>
+<li>assert partition มองหา <code>/var/lib/containerd</code> ไม่ใช่ <code>/var/lib/etcd</code></li>
+</ul>
+<p>ผ่านแล้วค่อย:</p>
+<div class="cb"><pre><code class="language-bash">ansible-playbook prepare-os.yml --limit k8s-worker01
+ansible-playbook prepare-os.yml --limit 'k8s-worker02,k8s-worker03'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<h3>ขั้น 5 · 🔑 พิสูจน์ว่า playbook เทียบเท่าการทำมือ</h3>
+<p><strong>นี่คือเกณฑ์ผ่านของทั้งเรื่อง</strong> — เทียบเครื่องที่ทำมือกับเครื่องที่ playbook ทำ</p>
+<div class="cb"><pre><code class="language-bash">for ip in 101 102; do ssh root@192.168.50.$ip 'bash -s' &lt; ../config/audit-node.sh &gt; /tmp/a$ip.txt; done
+diff &lt;(sed '1,3d;s/k8s-master0[0-9]/NODE/g' /tmp/a101.txt) \
+     &lt;(sed '1,3d;s/k8s-master0[0-9]/NODE/g' /tmp/a102.txt) &amp;&amp; echo "&gt;&gt;&gt; เหมือนกันทุกบรรทัด &lt;&lt;&lt;"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>(ตัด 3 บรรทัดหัวที่มีชื่อเครื่องกับเวลา และแทนชื่อ master01/02 เป็น <code>NODE</code> เพื่อให้เทียบได้)</p>
+<p>เทียบ worker กับ master ก็ได้ — <strong>ควรต่างแค่ 3 จุดที่ตั้งใจ</strong> (ชื่อเครื่อง, partition, รายการพอร์ต):</p>
+<div class="cb"><pre><code class="language-bash">for ip in 102 104; do ssh root@192.168.50.$ip 'bash -s' &lt; ../config/audit-node.sh &gt; /tmp/b$ip.txt; done
+diff /tmp/b102.txt /tmp/b104.txt
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ต่างเรื่องอื่น = ช่องโหว่ในเส้นทาง worker</p>
+<hr />
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<table>
+<thead>
+<tr>
+<th>บท 01 ข้อ</th>
+<th>ทำไม</th>
+<th>ต้องทำที่ไหนแทน</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>2 · สลับ/ตรึง kernel</strong></td>
+<td>เปลี่ยน kernel แล้ว reboot พร้อมกัน 6 เครื่องคือความเสี่ยงที่ไม่จำเป็น</td>
+<td>VM template (Phase 0)</td>
+</tr>
+<tr>
+<td><strong>5 · ย้าย partition <code>/home</code></strong></td>
+<td><code>umount</code> + แก้ <code>/etc/fstab</code> พลาดแล้ว <strong>เครื่องบูตไม่ขึ้น</strong></td>
+<td>แบ่ง partition ตอนสร้าง template</td>
+</tr>
+<tr>
+<td><strong>9 · วัด fsync ด้วย fio</strong></td>
+<td>เป็นการ <strong>วัด</strong> ต้องมีคนอ่านตัวเลขแล้วตัดสินใจ</td>
+<td>ทำมือตามบท 01</td>
+</tr>
+</tbody>
+</table>
+<p>ทั้งสามข้อมี task <strong>ตรวจ</strong> ว่าทำมาแล้วหรือยัง ถ้ายังไม่ได้ทำ playbook จะหยุดพร้อมบอกเหตุผล
+ไม่ใช่ทำต่อไปเงียบ ๆ</p>
+<h3>เรื่อง kernel — บังคับแค่ major.minor</h3>
+<div class="cb"><pre><code class="language-text">บังคับ  : สาย 6.12 + ต้องเป็น uek   → หลุดไป RHCK 5.14 หรือ 6.13 = หยุดทันที
+เตือน   : หางเลข 203/204/205        → errata ของ Oracle ไม่กระทบ Cilium
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>เครื่องที่หางเลขไม่ตรงกับ <code>KERNEL_UEK</code> จะขึ้นคำเตือนทุกครั้งที่รัน แต่ไม่หยุดงาน
+สถานะปัจจุบันและแผนจัดการอยู่ใน <a href="CHECKLIST.html">CHECKLIST หมวด C2</a></p>
+<hr />
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>แหล่งความจริงของเวอร์ชัน</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<p>playbook <strong>ไม่มีเลขเวอร์ชันหรือ IP เขียนไว้ตรง ๆ เลย</strong> — <code>pre_tasks</code> แรกจะ <code>source versions.env</code>
+ด้วย bash แล้วแปลงเป็นตัวแปรของ Ansible ใช้ semantics เดียวกับที่คู่มือทำเป๊ะ</p>
+<p>แปลว่าแก้ <a href="../docs/versions.env"><code>../docs/versions.env</code></a> ที่เดียวยังใช้ได้เหมือนเดิม
+ตรงตามกติกาข้อ 1 ของคู่มือ</p>
+<p>ค่าที่ <strong>ไม่ได้</strong> อยู่ใน <code>versions.env</code> อยู่ใน <a href="../ansible/group_vars/all.yml"><code>group_vars/all.yml</code></a>:</p>
+<table>
+<thead>
+<tr>
+<th>ตัวแปร</th>
+<th>ต้องตั้งก่อนรัน <code>container-runtime.yml</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>registry_scheme</code></td>
+<td><code>https</code> หรือ <code>http</code> — <strong>ต้องยืนยันของจริงก่อน</strong> ไม่ใช่เดา</td>
+</tr>
+<tr>
+<td><code>registry_ca_file</code></td>
+<td>path ของ CA ถ้า registry ใช้ internal CA (เว้นว่าง = ไม่ต้องลง)</td>
+</tr>
+</tbody>
+</table>
+<div class="cb"><pre><code class="language-bash">curl -sI https://registry.myhr.co.th/v2/ || curl -sI http://registry.myhr.co.th/v2/
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<hr />
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>แก้ปัญหาที่เคยเจอจริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<h3><code>container-runtime.yml</code> ค้างนานตอนดาวน์โหลด</h3>
+<p>release asset ของ GitHub <strong>redirect ไป <code>release-assets.githubusercontent.com</code></strong>
+ซึ่งเป็นคนละ host กับ <code>github.com</code> และช้ากว่ามาก (วัดจาก node จริง: github.com 1.3 วิ
+vs asset host 11.4 วิ แค่ HEAD) ดาวน์โหลด 35-55 MB จึงกินเวลาเป็นนาที</p>
+<p>playbook จะ<strong>ข้ามการดาวน์โหลดถ้าเวอร์ชันที่ติดตั้งอยู่ตรงแล้ว</strong> ดูบรรทัด
+<code>สิ่งที่ต้องทำบนเครื่องนี้</code> ตอนต้นว่ามันตัดสินใจยังไง</p>
+<p>ถ้ายังช้าและอยากตัดปัญหา — โหลดครั้งเดียวแล้วกระจายเอง:</p>
+<div class="cb"><pre><code class="language-bash"># จากเครื่องที่โหลดเสร็จแล้ว
+for ip in 102 103 104 105 106; do
+  scp /root/k8s/dl/{containerd*.tar.gz*,runc.amd64,cni-plugins*.tgz,containerd.service} \
+      root@192.168.50.$ip:/root/k8s/dl/
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>playbook เห็นไฟล์ที่ checksum ตรงแล้วจะไม่โหลดซ้ำ</p>
+<h3><code>--check</code> ล้มบนเครื่องเปล่า — <code>dest '...' must be an existing dir</code></h3>
+<p><strong>ไม่ใช่บั๊ก</strong> — ใน check mode Ansible ไม่ได้สร้างของจริง task ที่พึ่งผลของ
+task ก่อนหน้าจึงล้ม เช่น <code>unarchive</code> ลง <code>/opt/cni/bin</code> ที่ <code>file</code> module
+เพิ่งรายงานว่า <em>จะ</em> สร้าง แต่ยังไม่ได้สร้าง</p>
+<table>
+<thead>
+<tr>
+<th>เครื่อง</th>
+<th>ใช้ <code>--check</code> ได้ไหม</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ติดตั้งเสร็จแล้ว</td>
+<td>✅ <strong>มีประโยชน์ที่สุด</strong> — <code>changed=0</code> แปลว่ายังตรงสเปก</td>
+</tr>
+<tr>
+<td>ยังเปล่าอยู่</td>
+<td>❌ จะล้มที่ task แรกที่ต่อเนื่องกัน — <strong>รันจริงไปเลย</strong></td>
+</tr>
+</tbody>
+</table>
+<p><code>--check</code> มีค่าตอนใช้ตรวจ drift ไม่ใช่ตอนติดตั้งครั้งแรก</p>
+<h3><code>scp: Permission denied</code> ตอนกระจายไฟล์จาก master01</h3>
+<p>คีย์ที่แจกคือของ <strong>WSL → root@nodes</strong> ส่วน root บน master01 ไม่มีคีย์ไปเครื่องอื่น
+ส่ง agent ไปด้วยเพื่อให้ไฟล์วิ่งใน LAN ไม่ผ่าน VPN:</p>
+<div class="cb"><pre><code class="language-bash">eval "$(ssh-agent -s)" &amp;&amp; ssh-add ~/.ssh/id_ed25519
+ssh -A root@192.168.50.101
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>แล้วบน master01:</p>
+<div class="cb"><pre><code class="language-bash">for ip in 102 103 104 105 106; do
+  ssh -o StrictHostKeyChecking=accept-new root@192.168.50.$ip 'mkdir -p /root/k8s/dl'
+  scp /root/k8s/dl/* root@192.168.50.$ip:/root/k8s/dl/
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<h3><code>Permission denied (publickey,gssapi-keyex,...)</code></h3>
+<p>ยังไม่ได้แลก SSH key กับเครื่องนั้น:</p>
+<div class="cb"><pre><code class="language-bash">ssh-copy-id -o StrictHostKeyChecking=accept-new root@192.168.50.&lt;ip&gt;
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<h3><code>UNREACHABLE</code> / <code>Connection closed by ... port 22</code> ทั้งที่ ssh ธรรมดาผ่าน</h3>
+<p>Ansible เปิด SSH socket ค้างไว้ 60 วินาที (<code>ControlPersist</code>) เพื่อใช้ซ้ำ
+ถ้าเครื่องปลายทาง reboot หรือ sshd รีสตาร์ทระหว่างนั้น socket เดิมตายแต่ Ansible ยังหยิบมาใช้</p>
+<div class="cb"><pre><code class="language-bash">rm -f ~/.ansible/cp/*
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>หรือรอ 60 วินาทีให้หมดอายุเอง · <strong>ไม่ต้องปิด multiplexing</strong> — มันช่วยเรื่องความเร็วมาก</p>
+<h3><code>object of type 'HostVarsVars' has no attribute 'v'</code></h3>
+<p><code>--limit</code> ตัด play ที่โหลด <code>versions.env</code> ทิ้ง — แก้แล้วตั้งแต่ 27 ส.ค. 2026
+(ย้ายไปเป็น <code>pre_tasks</code> ใน play เดียวกับ node) ถ้ายังเจอแปลว่าใช้ playbook เวอร์ชันเก่า</p>
+<h3><code>The 'community.general.yaml' callback plugin has been removed</code></h3>
+<p><code>ansible.cfg</code> ชี้ callback ที่ถูกถอดใน community.general 12.0.0 — แก้แล้ว
+ใช้ <code>stdout_callback = default</code> + <code>result_format = yaml</code> แทน</p>
+<h3>WSL ทะลุ VPN ไม่ได้</h3>
+<p>ถ้า <code>ping 192.168.50.101</code> จาก WSL ไม่ผ่านทั้งที่ Windows ผ่าน — โหมด NAT ของ WSL
+ไม่ได้รับ route ของ VPN มาด้วย เปิด mirrored networking:</p>
+<div class="cb"><pre><code class="language-powershell">@"
+[wsl2]
+networkingMode=mirrored
+dnsTunneling=true
+autoProxy=true
+"@ | Out-File -FilePath "$env:USERPROFILE\.wslconfig" -Encoding utf8
+wsl --shutdown
+</code></pre><div class="cb-bar"><span class="cb-lang">powershell</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>⚠️ <code>.wslconfig</code> มีผลกับ WSL <strong>ทุก distro รวม <code>docker-desktop</code></strong> ถ้า container มีปัญหา
+ย้อนกลับด้วย <code>Remove-Item &quot;$env:USERPROFILE\.wslconfig&quot;; wsl --shutdown</code></p>
+</blockquote>
+<hr />
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>คำสั่งที่ใช้บ่อย</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<table>
+<thead>
+<tr>
+<th>อยากทำอะไร</th>
+<th>คำสั่ง</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ดูว่าจะเปลี่ยนอะไร ไม่แก้จริง</td>
+<td><code>ansible-playbook prepare-os.yml --check --diff</code></td>
+</tr>
+<tr>
+<td>รันแค่เครื่องเดียว</td>
+<td><code>ansible-playbook prepare-os.yml --limit k8s-worker01</code></td>
+</tr>
+<tr>
+<td>รันแค่ worker ทั้งกลุ่ม</td>
+<td><code>ansible-playbook prepare-os.yml --limit workers</code></td>
+</tr>
+<tr>
+<td>ข้ามการ reboot</td>
+<td><code>... --skip-tags reboot</code></td>
+</tr>
+<tr>
+<td>ดูรายละเอียดตอนพัง</td>
+<td>เติม <code>-vvv</code></td>
+</tr>
+<tr>
+<td>ทดสอบว่าคุยกับทุกเครื่องได้</td>
+<td><code>ansible k8s_nodes -m ping</code></td>
+</tr>
+<tr>
+<td>รัน audit ทุกเครื่อง</td>
+<td><code>ansible k8s_nodes -m script -a '../config/audit-node.sh'</code></td>
+</tr>
+<tr>
+<td>ตรวจว่าเครื่องยังตรงสเปกไหม</td>
+<td><code>ansible-playbook prepare-os.yml --check</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>ข้อสุดท้ายคือประโยชน์ที่แท้จริง</strong> — playbook idempotent รันซ้ำกี่รอบก็ได้ผลเดิม
+เอามาใช้เป็นเครื่องมือ <strong>ตรวจ config drift</strong> ได้ตลอดอายุ cluster ไม่ใช่แค่ตอนติดตั้ง
+ซึ่งตอบความเสี่ยงข้อ &quot;node บูตคนละ kernel โดยไม่รู้ตัว&quot; ใน blueprint โดยตรง</p>
+<hr />
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>เมื่อไหร่ควรใช้จริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>ใช้ยังไง</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Phase 1 lab</strong></td>
+<td>ทำมือ 1 เครื่อง → รัน playbook ใส่ที่เหลือ → เทียบผล → แก้ playbook</td>
+</tr>
+<tr>
+<td><strong>Phase 3 รื้อสร้างใหม่</strong></td>
+<td>รอบที่คุ้มที่สุด และเป็นการทดสอบ playbook ไปในตัว</td>
+</tr>
+<tr>
+<td><strong>Phase 4 production</strong></td>
+<td>ใช้ตัวที่ผ่าน Phase 3 มาแล้วเท่านั้น</td>
+</tr>
+</tbody>
+</table>
+<p><strong>อย่าใช้ playbook นี้กับ production ก่อนที่มันจะผ่าน Phase 3</strong></p>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
+    <div class="pn-row"><a class="pn" href="CHECKLIST.html">← เช็กลิสต์งานค้าง</a><span class="pn dim">— บทสุดท้าย —</span></div>
+  </main>
+</div>
+
+<button class="fab" id="fab" type="button">
+  <span class="fab-ico">↓</span><span class="fab-txt">ขั้นที่ต้องทำ</span>
+</button>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var CH    = document.body.dataset.chapter;
+  var TOTAL = +document.body.dataset.total;
+  var KEY   = 'myhr-k8s-progress';
+
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ return {}; } }
+  function save(o){ try{ localStorage.setItem(KEY, JSON.stringify(o)); }catch(e){} }
+  function mine(){ var a=load(); return (a[CH]||[]); }
+  function setMine(list){ var a=load(); a[CH]=list; save(a); }
+
+  var toastEl=document.getElementById('toast'), toastT;
+  function toast(msg){
+    toastEl.textContent=msg; toastEl.classList.add('show');
+    clearTimeout(toastT); toastT=setTimeout(function(){toastEl.classList.remove('show');},1600);
+  }
+
+  /* ---------- ทำแล้ว / ยังไม่ทำ ---------- */
+  function paint(){
+    var done=mine();
+    document.querySelectorAll('.step').forEach(function(s){
+      var n=+s.dataset.step, is=done.indexOf(n)>=0;
+      s.classList.toggle('done', is);
+      var b=s.querySelector('.done-btn');
+      if(b) b.querySelector('.lbl').textContent = is ? 'ทำแล้ว' : 'ทำแล้ว';
+    });
+    var n=done.length;
+    document.getElementById('pcount').textContent=n+'/'+TOTAL;
+    document.getElementById('pbar').style.width=(TOTAL?100*n/TOTAL:0)+'%';
+    paintFab();
+    paintNav();
+  }
+
+  document.querySelectorAll('.done-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      var marking = i<0;
+      if(i>=0){ done.splice(i,1); } else { done.push(n); }
+      setMine(done); paint();
+      // กดทำแล้ว = พาไปขั้นถัดไปให้เลย ไม่ต้องเลื่อนหาเอง
+      // ตอนยกเลิกไม่พาไปไหน เพราะคนน่าจะอยากอยู่ตรงนั้นต่อ
+      if(marking){
+        var nx=nextStep();
+        if(nx){ nx.scrollIntoView({behavior:'smooth', block:'start'}); }
+        else { toast('ครบทุกขั้นของบทนี้แล้ว'); }
+      }
+    });
+  });
+
+  document.getElementById('reset').addEventListener('click', function(){
+    if(!confirm('ล้างสถานะ "ทำแล้ว" ทั้งหมดของบทนี้?')) return;
+    setMine([]); paint(); toast('ล้างแล้ว');
+  });
+
+  /* ---------- ขั้นที่ต้องทำต่อไป ---------- */
+  function nextStep(){
+    var done=mine(), out=null;
+    document.querySelectorAll('.step').forEach(function(s){
+      if(out) return;
+      if(done.indexOf(+s.dataset.step)<0) out=s;
+    });
+    return out;
+  }
+  function paintFab(){
+    var fab=document.getElementById('fab'), s=nextStep();
+    if(s){
+      fab.classList.remove('alldone');
+      fab.querySelector('.fab-ico').textContent='↓';
+      fab.querySelector('.fab-txt').textContent='ขั้นที่ต้องทำ';
+      fab.title='ไปที่: '+s.querySelector('h2').textContent.trim();
+    }else{
+      fab.classList.add('alldone');
+      fab.querySelector('.fab-ico').textContent='✓';
+      fab.querySelector('.fab-txt').textContent='บทนี้เสร็จแล้ว';
+      fab.title='ไปบทถัดไป';
+    }
+  }
+  document.getElementById('fab').addEventListener('click', function(){
+    var s=nextStep();
+    if(s){
+      s.scrollIntoView({behavior:'smooth', block:'start'});
+      s.animate([{outline:'2px solid var(--accent)'},{outline:'2px solid transparent'}],
+                {duration:1100});
+    }else{
+      var nx=document.querySelector('.pn-row a:last-child');
+      if(nx && nx.classList.contains('pn')) nx.click(); else toast('ครบทุกขั้นแล้ว');
+    }
+  });
+
+  /* ---------- ความคืบหน้าใน sidebar ---------- */
+  function paintNav(){
+    var all=load();
+    document.querySelectorAll('[data-progress-for]').forEach(function(el){
+      var f=el.dataset.progressFor, d=(all[f]||[]).length, t=+el.dataset.total||0;
+      el.textContent = d ? (d+'/'+t) : '';
+      el.classList.toggle('full', t>0 && d>=t);
+    });
+  }
+
+  /* ---------- ปุ่มคัดลอก ---------- */
+  function copyText(t){
+    if(navigator.clipboard && window.isSecureContext){
+      return navigator.clipboard.writeText(t);
+    }
+    return new Promise(function(res,rej){
+      var ta=document.createElement('textarea');
+      ta.value=t; ta.setAttribute('readonly','');
+      ta.style.cssText='position:fixed;top:-1000px;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy') ? res() : rej(); }
+      catch(e){ rej(e); }
+      finally{ document.body.removeChild(ta); }
+    });
+  }
+  document.querySelectorAll('.cb-copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var code=btn.closest('.cb').querySelector('code');
+      copyText(code.innerText).then(function(){
+        btn.textContent='คัดลอกแล้ว'; btn.classList.add('ok');
+        setTimeout(function(){ btn.textContent='คัดลอก'; btn.classList.remove('ok'); },1400);
+      }).catch(function(){
+        // คัดลอกอัตโนมัติไม่ได้ (เบราว์เซอร์บล็อก) — เลือกข้อความให้เลย เหลือแค่กด Ctrl+C
+        try{
+          var sel=window.getSelection(), rng=document.createRange();
+          rng.selectNodeContents(code); sel.removeAllRanges(); sel.addRange(rng);
+          toast('เบราว์เซอร์บล็อกการคัดลอก — เลือกให้แล้ว กด Ctrl+C ได้เลย');
+        }catch(e){ toast('คัดลอกไม่สำเร็จ — ลากเลือกข้อความแล้วกด Ctrl+C'); }
+      });
+    });
+  });
+
+  /* ---------- เมนูบนจอเล็ก ---------- */
+  var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');
+  if(burger) burger.addEventListener('click', function(){ sb.classList.toggle('open'); });
+
+  paint();
+})();
+</script>
+</body>
+</html>

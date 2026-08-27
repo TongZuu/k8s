@@ -15,6 +15,7 @@
 # =============================================================================
 import io
 import json
+import posixpath
 import re
 import sys
 from pathlib import Path
@@ -29,6 +30,9 @@ DOCS = ROOT / "docs"
 OUT = ROOT / "html"
 
 # ลำดับบทตามที่ควรอ่าน — ไฟล์ที่ไม่อยู่ในนี้จะไม่ถูกแปลง
+ANSIBLE_SRC = "ansible/README.md"   # runbook ของ Ansible — คนละโฟลเดอร์กับ docs/
+ANSIBLE_OUT = "ansible.html"
+
 CHAPTERS = [
     ("00-overview.md", "ภาพรวมและลำดับงาน"),
     ("01-prepare-os.md", "เตรียม OS"),
@@ -70,24 +74,30 @@ def make_md():
     return md
 
 
-def rewrite_links(html: str) -> str:
-    """ลิงก์ระหว่างบท .md -> .html · ลิงก์ออกนอก docs/ ให้ชี้กลับไปที่ repo"""
+def rewrite_links(html: str, src_dir: str = "docs") -> str:
+    """แปลงลิงก์ให้ถูกเมื่ออ่านจาก html/
+
+    src_dir คือโฟลเดอร์ของไฟล์ .md ต้นทาง (เทียบจาก root ของ repo)
+    ต้องรู้เพราะลิงก์ในไฟล์เป็น relative กับที่มันอยู่ ไม่ใช่กับ html/
+    """
     def repl(m):
         href = m.group(1)
         if href.startswith(("http://", "https://", "#", "mailto:")):
             return m.group(0)
         base, _, frag = href.partition("#")
+        tail = ("#" + frag) if frag else ""
+
+        # แปลงเป็น path เทียบจาก root ของ repo ก่อน แล้วค่อยคิดว่าจะชี้ยังไงจาก html/
+        abs_path = posixpath.normpath(posixpath.join(src_dir, base))
+
         if base.endswith(".md"):
-            name = Path(base).name
+            name = Path(abs_path).name
             if any(name == c for c, _ in CHAPTERS):
-                new = name[:-3] + ".html"
-            else:
-                new = "../docs/" + base.lstrip("./")
-            return f'href="{new}{"#" + frag if frag else ""}"'
-        # ไฟล์อื่นในrepo (config/, ansible/, .env) ชี้กลับออกไปจาก html/
-        if base.startswith("../"):
-            return f'href="../{base[3:]}{"#" + frag if frag else ""}"'
-        return f'href="../docs/{base}{"#" + frag if frag else ""}"'
+                return f'href="{name[:-3]}.html{tail}"'
+            if abs_path == ANSIBLE_SRC:
+                return f'href="{ANSIBLE_OUT}{tail}"'
+        # ไฟล์อื่นในrepo — html/ อยู่ชั้นเดียวกับ docs/ จึงถอยออกหนึ่งชั้น
+        return f'href="../{abs_path}{tail}"'
 
     return re.sub(r'href="([^"]+)"', repl, html)
 
@@ -567,25 +577,42 @@ INDEX_TEMPLATE = """<!doctype html>
 """
 
 
+def sources():
+    """ทุกหน้าที่จะสร้าง — (ชื่อเสมือน, ชื่อสั้น, path จริง, โฟลเดอร์ต้นทาง)
+
+    ansible/README.md อยู่คนละโฟลเดอร์กับ docs/ จึงต้องบอกโฟลเดอร์ต้นทางด้วย
+    ไม่งั้นลิงก์ relative ในไฟล์จะถูกแปลผิด
+    """
+    out = []
+    for f, t in CHAPTERS:
+        if (DOCS / f).exists():
+            out.append((f, t, DOCS / f, "docs"))
+    ans = ROOT / ANSIBLE_SRC
+    if ans.exists():
+        out.append((ANSIBLE_OUT[:-5] + ".md", "Ansible runbook", ans, "ansible"))
+    return out
+
+
 def main():
     md = make_md()
     OUT.mkdir(exist_ok=True)
-    nav = [(f, t) for f, t in CHAPTERS if (DOCS / f).exists()]
+    srcs = sources()
+    nav = [(f, t) for f, t, _, _ in srcs]
 
     missing = [f for f, _ in CHAPTERS if not (DOCS / f).exists()]
     if missing:
         print("  ข้าม (ไม่มีไฟล์): " + ", ".join(missing))
 
-    # รอบแรก: นับจำนวนขั้นของทุกบทก่อน เพื่อให้ sidebar โชว์ x/y ได้ครบ
+    # รอบแรก: นับจำนวนขั้นของทุกหน้าก่อน เพื่อให้ sidebar โชว์ x/y ได้ครบ
     totals = {}
-    for fname, _ in nav:
-        body = io.open(DOCS / fname, encoding="utf-8").read()
+    for fname, _, path, _sd in srcs:
+        body = io.open(path, encoding="utf-8").read()
         body = re.sub(r"^#\s+.+\n", "", body, count=1)
         totals[fname] = len(split_steps(md.render(body))[1])
 
     cards = []
-    for i, (fname, short) in enumerate(nav):
-        raw = io.open(DOCS / fname, encoding="utf-8").read()
+    for i, (fname, short, path, src_dir) in enumerate(srcs):
+        raw = io.open(path, encoding="utf-8").read()
 
         m = re.match(r"#\s+(.+)", raw)
         title = m.group(1).strip() if m else short
@@ -600,7 +627,7 @@ def main():
             sub = re.sub(r"`(.*?)`", r"\1", sub)
             raw = raw[sm.end():]
 
-        html = rewrite_links(md.render(raw))
+        html = rewrite_links(md.render(raw), src_dir)
         intro, steps = split_steps(html)
 
         prev_ch = nav[i - 1] if i > 0 else None
@@ -612,19 +639,19 @@ def main():
         io.open(dest, "w", encoding="utf-8", newline="\n").write(out)
         print(f"  {dest.name:28} {len(steps):2} ขั้นตอน")
 
-        num = fname[:2] if fname[0].isdigit() else "•"
+        # หน้าที่ไม่ใช่บท (ansible, checklist) ไม่ควรขึ้นว่า "บทที่ •"
+        num = ("บทที่ " + fname[:2]) if fname[0].isdigit() else "เครื่องมือ"
         cards.append(
             f'<a class="card" href="{fname[:-3]}.html" data-file="{fname}" data-total="{len(steps)}">'
-            f'<div class="card-n">บทที่ {num}</div><h3>{short}</h3>'
+            f'<div class="card-n">{num}</div><h3>{short}</h3>'
             '<div class="bar"><i></i></div>'
             f'<div class="card-p"><span>0/{len(steps)}</span><span>{len(steps)} ขั้นตอน</span></div></a>'
         )
 
     idx = INDEX_TEMPLATE.replace("{css}", CSS).replace("{cards}", "".join(cards))
     io.open(OUT / "index.html", "w", encoding="utf-8", newline="\n").write(idx)
-    print(f"  {'index.html':28} {len(cards)} บท")
+    print(f"  {'index.html':28} {len(cards)} หน้า")
     print(f"\nเปิดที่: {OUT / 'index.html'}")
-
 
 if __name__ == "__main__":
     main()
