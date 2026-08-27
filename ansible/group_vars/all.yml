@@ -8,9 +8,21 @@
 # ที่อยู่ของ versions.env บนเครื่องที่รัน Ansible (ไม่ใช่บนเครื่องปลายทาง)
 versions_env: "{{ playbook_dir }}/../docs/versions.env"
 
-# registry เป็น HTTP หรือ HTTPS — ต้องยืนยันของจริงก่อน (บท 02 หัวข้อ 4)
-#   curl -sI https://registry.myhr.co.th/v2/ || curl -sI http://registry.myhr.co.th/v2/
-registry_scheme: https        # https | http
+# ---------------------------------------------------------------------------
+#  registry — ยืนยันจากของจริงแล้ว 27 ส.ค. 2026
+# ---------------------------------------------------------------------------
+#  cert : wildcard CN=*.myhr.co.th ออกโดย GlobalSign AlphaSSL (CA สาธารณะ)
+#         SAN มี *.myhr.co.th และ myhr.co.th → ครอบคลุม registry.myhr.co.th
+#  IP ภายใน (192.168.30.207) กับ DNS สาธารณะ (122.155.204.129)
+#         ใช้ cert ตัวเดียวกัน
+#  http → redirect 301 ไป https
+#
+#  🔴 cert หมดอายุ 6 ก.ย. 2026 — ต่ออายุก่อน ไม่งั้นทุก node pull image ไม่ได้
+#     ตรวจซ้ำได้ด้วย:
+#     openssl s_client -connect registry.myhr.co.th:443 -servername registry.myhr.co.th \
+#       </dev/null 2>/dev/null | openssl x509 -noout -dates
+# ---------------------------------------------------------------------------
+registry_scheme: https
 
-# มี CA ของ registry ให้ติดตั้งไหม (วางไฟล์ที่ config/registry/ca.crt)
-registry_ca_file: ""          # เว้นว่าง = ไม่ต้องติดตั้ง CA
+# CA สาธารณะ — OL 9.8 trust อยู่แล้ว ไม่ต้องแจกไฟล์ CA ไปเครื่องไหนเลย
+registry_ca_file: ""

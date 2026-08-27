@@ -51,6 +51,16 @@
 
 ---
 
+## A2 · 🔴 ด่วน — มีวันหมดอายุ
+
+- [ ] 🔴 **cert ของ `registry.myhr.co.th` หมดอายุ 6 ก.ย. 2026** (เหลือ 10 วันนับจาก 27 ส.ค.)
+      wildcard `*.myhr.co.th` จาก GlobalSign AlphaSSL · ออก 5 ส.ค. 2025
+      · หมดเมื่อไหร่ **ทุก node pull image ไม่ได้พร้อมกัน** และอาการจะดูเหมือนปัญหา containerd
+      · แจ้งคนดูแล registry ให้ต่ออายุ แล้วจดวันหมดอายุใหม่ลงปฏิทินทีม
+      · ตรวจซ้ำ: `openssl s_client -connect registry.myhr.co.th:443 -servername registry.myhr.co.th </dev/null 2>/dev/null | openssl x509 -noout -dates`
+
+---
+
 ## B · Secret ที่ต้องสร้างและเก็บก่อนลงมือ
 
 ค่าจริงทั้งหมดอยู่ใน **`secrets.env`** ที่ root ของ repo (`.gitignore` กันไว้ · `chmod 600`)
