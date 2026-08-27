@@ -99,7 +99,47 @@
         _online: "{{ (_net.status | default(0)) in [200, 301, 302] }}"
 
     # -------------------------------------------------------------------------
-    #  1 · ดาวน์โหลด + ตรวจ checksum
+    #  1 · เช็กก่อนว่าต้องดาวน์โหลดอะไรจริง ๆ บ้าง
+    # -------------------------------------------------------------------------
+    #  release asset ของ GitHub redirect ไป release-assets.githubusercontent.com
+    #  ซึ่งช้ากว่า github.com มาก (วัดได้ ~11 วิ แค่ HEAD) ดาวน์โหลดซ้ำทั้งที่
+    #  ติดตั้งไปแล้วจึงเสียเวลาเป็นนาทีต่อเครื่องโดยไม่ได้อะไร
+    # -------------------------------------------------------------------------
+    - name: containerd ที่ติดตั้งอยู่เป็นเวอร์ชันไหน
+      ansible.builtin.command: containerd --version
+      register: _ctd_cur
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: runc ที่ติดตั้งอยู่เป็นเวอร์ชันไหน
+      ansible.builtin.command: runc --version
+      register: _runc_cur
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: อ่าน stamp เวอร์ชัน CNI ที่ติดตั้งไว้
+      ansible.builtin.slurp:
+        src: /opt/cni/bin/.cni-version
+      register: _cni_stamp
+      failed_when: false
+      check_mode: false
+
+    - name: สรุปว่าต้องติดตั้งอะไรใหม่บ้าง
+      ansible.builtin.set_fact:
+        _need_ctd:  "{{ 'v' ~ v.CONTAINERD_VERSION not in (_ctd_cur.stdout | default('')) }}"
+        _need_runc: "{{ v.RUNC_VERSION not in (_runc_cur.stdout | default('')) }}"
+        _need_cni:  "{{ (_cni_stamp.content | default('') | b64decode | trim) != v.CNI_PLUGINS_VERSION }}"
+
+    - name: สิ่งที่ต้องทำบนเครื่องนี้
+      ansible.builtin.debug:
+        msg: >-
+          containerd={{ 'ติดตั้งใหม่' if _need_ctd else 'ตรงแล้ว' }}
+          runc={{ 'ติดตั้งใหม่' if _need_runc else 'ตรงแล้ว' }}
+          cni={{ 'ติดตั้งใหม่' if _need_cni else 'ตรงแล้ว' }}
+    # -------------------------------------------------------------------------
+    #  2 · ดาวน์โหลดเฉพาะที่ต้องใช้ + ตรวจ checksum
     # -------------------------------------------------------------------------
     - name: สร้างที่เก็บไฟล์ดาวน์โหลด
       ansible.builtin.file:
@@ -111,12 +151,14 @@
       ansible.builtin.get_url:
         url: "https://github.com/containerd/containerd/releases/download/v{{ v.CONTAINERD_VERSION }}/containerd-{{ v.CONTAINERD_VERSION }}-linux-amd64.tar.gz.sha256sum"
         dest: "{{ dl }}/containerd.sha256sum"
+        timeout: 60
         mode: "0644"
-      when: _online
+      when: _online and (_need_ctd | bool)
 
     - name: อ่านค่า checksum
       ansible.builtin.command: "awk '{print $1}' {{ dl }}/containerd.sha256sum"
       register: _sha
+      when: _need_ctd | bool
       changed_when: false
       # ใน --check หรือกรณี offline ไฟล์อาจยังไม่มี — ปล่อยผ่านแล้วข้ามการตรวจ checksum
       failed_when: false
@@ -126,31 +168,35 @@
       ansible.builtin.get_url:
         url: "https://github.com/containerd/containerd/releases/download/v{{ v.CONTAINERD_VERSION }}/containerd-{{ v.CONTAINERD_VERSION }}-linux-amd64.tar.gz"
         dest: "{{ dl }}/containerd.tar.gz"
+        timeout: 60
         checksum: "{{ ('sha256:' + _sha.stdout) if (_sha.stdout | default('')) else omit }}"
         mode: "0644"
-      when: _online
+      when: _online and (_need_ctd | bool)
 
     - name: ดาวน์โหลด runc
       ansible.builtin.get_url:
         url: "https://github.com/opencontainers/runc/releases/download/v{{ v.RUNC_VERSION }}/runc.amd64"
         dest: "{{ dl }}/runc.amd64"
+        timeout: 60
         mode: "0755"
-      when: _online
+      when: _online and (_need_runc | bool)
 
     - name: ดาวน์โหลด CNI plugins
       ansible.builtin.get_url:
         url: "https://github.com/containernetworking/plugins/releases/download/v{{ v.CNI_PLUGINS_VERSION }}/cni-plugins-linux-amd64-v{{ v.CNI_PLUGINS_VERSION }}.tgz"
         dest: "{{ dl }}/cni-plugins.tgz"
+        timeout: 60
         mode: "0644"
-      when: _online
+      when: _online and (_need_cni | bool)
 
     - name: ดาวน์โหลด systemd unit ของ containerd
       ansible.builtin.get_url:
         # ไม่ได้อยู่ใน release asset — อยู่ในซอร์สตาม tag (ยืนยันแล้วว่า v2.2.7 มีจริง)
         url: "https://raw.githubusercontent.com/containerd/containerd/v{{ v.CONTAINERD_VERSION }}/containerd.service"
         dest: "{{ dl }}/containerd.service"
+        timeout: 60
         mode: "0644"
-      when: _online
+      when: _online and (_need_ctd | bool)
 
     # -------------------------------------------------------------------------
     #  2 · ติดตั้ง — เทียบ "เวอร์ชันที่ติดตั้งอยู่" ไม่ใช่ดูแค่ว่ามีไฟล์
@@ -158,27 +204,15 @@
     #  ใช้ creates: ไม่ได้ เพราะมันดูแค่ว่าไฟล์มีอยู่ไหม พอ bump เวอร์ชันใน
     #  versions.env แล้ว playbook จะไม่ทำอะไรเลย — เงียบและหลอกมาก
     # -------------------------------------------------------------------------
-    - name: containerd ที่ติดตั้งอยู่เป็นเวอร์ชันไหน
-      ansible.builtin.command: containerd --version
-      register: _ctd_cur
-      changed_when: false
-      failed_when: false
-      check_mode: false
 
     - name: แตก containerd ลง /usr/local
       ansible.builtin.unarchive:
         src: "{{ dl }}/containerd.tar.gz"
         dest: /usr/local
         remote_src: true
-      when: "'v' ~ v.CONTAINERD_VERSION not in (_ctd_cur.stdout | default(''))"
+      when: _need_ctd | bool
       notify: restart containerd
 
-    - name: runc ที่ติดตั้งอยู่เป็นเวอร์ชันไหน
-      ansible.builtin.command: runc --version
-      register: _runc_cur
-      changed_when: false
-      failed_when: false
-      check_mode: false
 
     - name: ติดตั้ง runc
       ansible.builtin.copy:
@@ -186,7 +220,7 @@
         dest: /usr/local/sbin/runc
         mode: "0755"
         remote_src: true
-      when: v.RUNC_VERSION not in (_runc_cur.stdout | default(''))
+      when: _need_runc | bool
 
     - name: สร้าง /opt/cni/bin
       ansible.builtin.file:
@@ -195,19 +229,13 @@
         mode: "0755"
 
     # CNI plugin ไม่มีคำสั่งบอกเวอร์ชันที่เชื่อถือได้ จึงจดไว้เองเป็น stamp
-    - name: อ่าน stamp เวอร์ชัน CNI ที่ติดตั้งไว้
-      ansible.builtin.slurp:
-        src: /opt/cni/bin/.cni-version
-      register: _cni_stamp
-      failed_when: false
-      check_mode: false
 
     - name: แตก CNI plugins
       ansible.builtin.unarchive:
         src: "{{ dl }}/cni-plugins.tgz"
         dest: /opt/cni/bin
         remote_src: true
-      when: (_cni_stamp.content | default('') | b64decode | trim) != v.CNI_PLUGINS_VERSION
+      when: _need_cni | bool
 
     - name: จด stamp เวอร์ชัน CNI
       ansible.builtin.copy:

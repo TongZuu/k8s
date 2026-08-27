@@ -326,6 +326,27 @@ curl -sI https://registry.myhr.co.th/v2/ || curl -sI http://registry.myhr.co.th/
 
 ## แก้ปัญหาที่เคยเจอจริง
 
+### `container-runtime.yml` ค้างนานตอนดาวน์โหลด
+
+release asset ของ GitHub **redirect ไป `release-assets.githubusercontent.com`**
+ซึ่งเป็นคนละ host กับ `github.com` และช้ากว่ามาก (วัดจาก node จริง: github.com 1.3 วิ
+vs asset host 11.4 วิ แค่ HEAD) ดาวน์โหลด 35-55 MB จึงกินเวลาเป็นนาที
+
+playbook จะ**ข้ามการดาวน์โหลดถ้าเวอร์ชันที่ติดตั้งอยู่ตรงแล้ว** ดูบรรทัด
+`สิ่งที่ต้องทำบนเครื่องนี้` ตอนต้นว่ามันตัดสินใจยังไง
+
+ถ้ายังช้าและอยากตัดปัญหา — โหลดครั้งเดียวแล้วกระจายเอง:
+
+```bash
+# จากเครื่องที่โหลดเสร็จแล้ว
+for ip in 102 103 104 105 106; do
+  scp /root/k8s/dl/{containerd*.tar.gz*,runc.amd64,cni-plugins*.tgz,containerd.service} \
+      root@192.168.50.$ip:/root/k8s/dl/
+done
+```
+
+playbook เห็นไฟล์ที่ checksum ตรงแล้วจะไม่โหลดซ้ำ
+
 ### `Permission denied (publickey,gssapi-keyex,...)`
 
 ยังไม่ได้แลก SSH key กับเครื่องนั้น:
