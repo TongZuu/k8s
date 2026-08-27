@@ -91,7 +91,21 @@ if [ -f config/kubeadm/kubeadm-config.yaml ]; then
     [ "${FAILED:-0}" -eq 0 ] && ok "kubeadm-config.yaml ตรงกับ versions.env"
 fi
 
-echo "6 · ความลับที่ไม่ควรอยู่ในrepo"
+echo "6 · html/ ต้องตามหลัง docs/*.md"
+# ลืม build ใหม่หลังแก้ .md เป็นเรื่องที่พึ่งความจำแล้วพลาดง่าย ให้ตัวตรวจจำแทน
+STALE=0
+for md in docs/*.md; do
+    base=$(basename "$md" .md)
+    h="html/${base}.html"
+    [ -f "$h" ] || continue
+    if [ "$md" -nt "$h" ]; then
+        fail "$md ใหม่กว่า $h — ต้องรัน python tools/build-html.py"
+        STALE=1; FAILED=1
+    fi
+done
+[ $STALE -eq 0 ] && ok "html/ ตรงกับ docs/ แล้ว"
+
+echo "7 · ความลับที่ไม่ควรอยู่ในrepo"
 LEAK=0
 # placeholder ต้องยังเป็น placeholder — ไม่ใช่ค่าจริง
 for pat in 'auth_pass' 'adminPassword' 'docker-password'; do
