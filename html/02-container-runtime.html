@@ -195,7 +195,8 @@ curl -fsSLO "https://github.com/containerd/containerd/releases/download/v${CONTA
 curl -fsSLO "https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VERSION}/containerd-${CONTAINERD_VERSION}-linux-amd64.tar.gz.sha256sum"
 curl -fsSLO "https://github.com/opencontainers/runc/releases/download/v${RUNC_VERSION}/runc.amd64"
 curl -fsSLO "https://github.com/containernetworking/plugins/releases/download/v${CNI_PLUGINS_VERSION}/cni-plugins-linux-amd64-v${CNI_PLUGINS_VERSION}.tgz"
-curl -fsSLO "https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VERSION}/containerd.service"
+# containerd.service ไม่ได้อยู่ใน release asset — อยู่ในซอร์สตาม tag
+curl -fsSLO "https://raw.githubusercontent.com/containerd/containerd/v${CONTAINERD_VERSION}/containerd.service"
 
 sha256sum -c "containerd-${CONTAINERD_VERSION}-linux-amd64.tar.gz.sha256sum"
 </code></pre></div>

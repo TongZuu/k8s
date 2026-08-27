@@ -205,10 +205,12 @@ kubeadm config images pull --kubernetes-version "v${K8S_VERSION}"
 # ตรวจ config ก่อนใช้จริง
 kubeadm init phase preflight --config=/root/k8s/config/kubeadm/kubeadm-config.yaml --dry-run 2&gt;&amp;1 | tail -20
 </code></pre></div>
-<p><strong>สร้าง bootstrap token แล้วใส่ลง config</strong> (หรือลบบล็อก <code>bootstrapTokens</code> ออกให้ kubeadm สร้างเอง):</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">TOKEN=$(kubeadm token generate)
-sed -i "s|&lt;BOOTSTRAP_TOKEN&gt;|${TOKEN}|" /root/k8s/config/kubeadm/kubeadm-config.yaml
-</code></pre></div>
+<blockquote>
+<p><strong>ไม่ต้องสร้าง token เอง</strong> — <a href="../config/kubeadm/kubeadm-config.yaml"><code>kubeadm-config.yaml</code></a> ตั้ง <code>token: &quot;&quot;</code> ไว้
+ซึ่งแปลว่าให้ kubeadm สร้างให้เองตอน <code>init</code> และมีอายุตาม <code>ttl: 2h</code> ที่ระบุไว้</p>
+<p>token ที่ได้จะโผล่ในคำสั่ง join ท้าย log · ถ้าหมดอายุแล้วออกใหม่ได้ตลอดด้วย
+<code>kubeadm token create --print-join-command</code> (ดูข้อ 4)</p>
+</blockquote>
 <h3>🔴 คำสั่ง init</h3>
 <div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubeadm init \
   --config=/root/k8s/config/kubeadm/kubeadm-config.yaml \

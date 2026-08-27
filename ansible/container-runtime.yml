@@ -146,7 +146,8 @@
 
     - name: ดาวน์โหลด systemd unit ของ containerd
       ansible.builtin.get_url:
-        url: "https://github.com/containerd/containerd/releases/download/v{{ v.CONTAINERD_VERSION }}/containerd.service"
+        # ไม่ได้อยู่ใน release asset — อยู่ในซอร์สตาม tag (ยืนยันแล้วว่า v2.2.7 มีจริง)
+        url: "https://raw.githubusercontent.com/containerd/containerd/v{{ v.CONTAINERD_VERSION }}/containerd.service"
         dest: "{{ dl }}/containerd.service"
         mode: "0644"
       when: _online
