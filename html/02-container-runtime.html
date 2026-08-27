@@ -396,16 +396,23 @@ EOF
 ต้องใส่ <code>--disableexcludes=kubernetes</code> เจตนาเท่านั้นถึงจะขยับได้ — นี่คือการป้องกันชั้นแรก</p>
 </blockquote>
 <div class="cb"><pre><code class="language-bash">dnf install -y --disableexcludes=kubernetes \
-  "kubelet-${K8S_VERSION}" "kubeadm-${K8S_VERSION}" "kubectl-${K8S_VERSION}"
+  "kubelet-${K8S_VERSION}" "kubeadm-${K8S_VERSION}" "kubectl-${K8S_VERSION}" \
+  "cri-tools-${CRICTL_VERSION}"
 
 systemctl enable kubelet
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
+<p><strong>ทำไมต้องระบุ <code>cri-tools</code> เอง</strong> — <code>kubeadm</code> ประกาศว่าต้องการ <code>cri-tools &gt;= 1.30.0</code>
+แต่ <code>exclude=</code> ที่เราใส่ไว้ใน repo กันมันไว้ ทำให้ <code>dnf</code> ลง kubeadm ได้โดยไม่ลาก
+<code>cri-tools</code> มาด้วย ผลคือ <strong>ไม่มี <code>crictl</code> บนเครื่อง</strong> แล้วขั้นตรวจของบทนี้กับ
+บท 04/13 จะใช้ไม่ได้ทั้งหมด — ระบุเวอร์ชันเองจึงชัวร์กว่าและตรึงเลขได้ด้วย</p>
+</blockquote>
+<blockquote>
 <p><strong>ยังไม่ต้อง start kubelet</strong> — มันจะ crash loop จนกว่าจะมี cluster ซึ่งเป็นเรื่องปกติ</p>
 </blockquote>
 <p><strong>ตรึงเวอร์ชันซ้ำอีกชั้น:</strong></p>
-<div class="cb"><pre><code class="language-bash">dnf versionlock add kubelet kubeadm kubectl
-dnf versionlock list | grep -E 'kube'
+<div class="cb"><pre><code class="language-bash">dnf versionlock add kubelet kubeadm kubectl cri-tools
+dnf versionlock list | grep -E 'kube|cri-tools'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>5.1 ตรวจ sandbox image — ทำได้ตรงนี้เพราะเพิ่งมี kubeadm</h3>
 <p>containerd มีค่า <code>sandbox</code> (pause image) ของตัวเอง ส่วน kubeadm ก็มีค่าที่มันคาดไว้

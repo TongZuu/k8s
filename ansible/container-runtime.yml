@@ -337,12 +337,16 @@
           gpgkey=https://pkgs.k8s.io/core:/stable:/{{ v.K8S_REPO_MINOR }}/rpm/repodata/repomd.xml.key
           exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
 
-    - name: ลง kubelet / kubeadm / kubectl ตามเวอร์ชันที่ตรึงไว้
+    # cri-tools ต้องระบุเอง — kubeadm ประกาศว่าต้องการมัน แต่ exclude= ใน repo
+    # กันไว้ ทำให้ dnf ลง kubeadm ได้โดยไม่ลาก cri-tools มาด้วย ผลคือไม่มี crictl
+    # แล้วขั้นตรวจของบทนี้และบท 04/13 ใช้ไม่ได้ทั้งหมด
+    - name: ลง kubelet / kubeadm / kubectl / cri-tools ตามเวอร์ชันที่ตรึงไว้
       ansible.builtin.dnf:
         name:
           - "kubelet-{{ v.K8S_VERSION }}"
           - "kubeadm-{{ v.K8S_VERSION }}"
           - "kubectl-{{ v.K8S_VERSION }}"
+          - "cri-tools-{{ v.CRICTL_VERSION }}"
         state: present
         disable_excludes: kubernetes
 
@@ -359,7 +363,7 @@
           if dnf versionlock list 2>/dev/null | grep -q '^kubelet'; then
             echo NOOP
           else
-            dnf versionlock add kubelet kubeadm kubectl >/dev/null && echo LOCKED
+            dnf versionlock add kubelet kubeadm kubectl cri-tools >/dev/null && echo LOCKED
           fi
       register: _kvlock
       # เทียบตรง ๆ ไม่ใช้ 'in' — กันบั๊ก substring แบบที่เคยเจอกับ unchanged/changed
@@ -393,6 +397,7 @@
           echo "containerd_from_dnf=$(dnf list installed 2>/dev/null | grep -c '^containerd' || true)"
           echo "runtime=$(crictl version 2>/dev/null | awk -F': ' '/RuntimeVersion/{print $2}')"
           echo "cni_plugins=$(ls /opt/cni/bin 2>/dev/null | grep -cE '^(bridge|host-local|loopback|portmap)$')"
+          echo "crictl=$(crictl --version 2>/dev/null | awk '{print $NF}')"
       register: _final
       changed_when: false
       # อ่านอย่างเดียว — ต้องรันแม้ใน --check ไม่งั้นตัวแปรที่ register หายทั้งชุด
@@ -411,6 +416,8 @@
           - "'runtime=v' ~ v.CONTAINERD_VERSION in _final.stdout"
           # loopback คือตัวที่ Cilium ต้องใช้จริง ขาดแล้ว pod ไม่มี lo
           - "'cni_plugins=4' in _final.stdout"
+          # ไม่มี crictl แปลว่า cri-tools ไม่ได้ลง แล้วขั้นตรวจอื่นจะ false negative หมด
+          - "'crictl=v' ~ v.CRICTL_VERSION in _final.stdout"
         fail_msg: >-
           ไม่ผ่านเกณฑ์บท 02 — ถ้า containerd_from_dnf ไม่ใช่ 0
           แปลว่า ol9_addons ยังเปิดอยู่ กลับไปดูบท 01 ข้อ 3

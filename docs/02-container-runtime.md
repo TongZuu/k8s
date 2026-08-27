@@ -227,17 +227,24 @@ EOF
 
 ```bash
 dnf install -y --disableexcludes=kubernetes \
-  "kubelet-${K8S_VERSION}" "kubeadm-${K8S_VERSION}" "kubectl-${K8S_VERSION}"
+  "kubelet-${K8S_VERSION}" "kubeadm-${K8S_VERSION}" "kubectl-${K8S_VERSION}" \
+  "cri-tools-${CRICTL_VERSION}"
 
 systemctl enable kubelet
 ```
+
+> **ทำไมต้องระบุ `cri-tools` เอง** — `kubeadm` ประกาศว่าต้องการ `cri-tools >= 1.30.0`
+> แต่ `exclude=` ที่เราใส่ไว้ใน repo กันมันไว้ ทำให้ `dnf` ลง kubeadm ได้โดยไม่ลาก
+> `cri-tools` มาด้วย ผลคือ **ไม่มี `crictl` บนเครื่อง** แล้วขั้นตรวจของบทนี้กับ
+> บท 04/13 จะใช้ไม่ได้ทั้งหมด — ระบุเวอร์ชันเองจึงชัวร์กว่าและตรึงเลขได้ด้วย
+
 
 > **ยังไม่ต้อง start kubelet** — มันจะ crash loop จนกว่าจะมี cluster ซึ่งเป็นเรื่องปกติ
 
 **ตรึงเวอร์ชันซ้ำอีกชั้น:**
 ```bash
-dnf versionlock add kubelet kubeadm kubectl
-dnf versionlock list | grep -E 'kube'
+dnf versionlock add kubelet kubeadm kubectl cri-tools
+dnf versionlock list | grep -E 'kube|cri-tools'
 ```
 
 ### 5.1 ตรวจ sandbox image — ทำได้ตรงนี้เพราะเพิ่งมี kubeadm
