@@ -236,9 +236,21 @@ install -m 644 containerd.service /usr/local/lib/systemd/system/containerd.servi
 systemctl daemon-reload
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจ:</strong></p>
-<div class="cb"><pre><code class="language-bash">containerd --version &amp;&amp; runc --version &amp;&amp; ls /opt/cni/bin | head -5
+<div class="cb"><pre><code class="language-bash">containerd --version &amp;&amp; runc --version
+
+# ตรวจ plugin ที่ต้องมีจริง ๆ — อย่าใช้ head เพราะเรียงตามตัวอักษรแล้วตัวสำคัญหลุด
+ls /opt/cni/bin | grep -cE '^(bridge|host-local|loopback|portmap)$'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>containerd github.com/containerd/containerd/v2 v2.2.7</code> · <code>runc version 1.5.1</code> · มีไฟล์อย่าง <code>bridge</code>, <code>host-local</code>, <code>loopback</code></p>
+<p><strong>ควรเห็น:</strong></p>
+<ul>
+<li><code>containerd github.com/containerd/containerd/v2 v${CONTAINERD_VERSION}</code></li>
+<li><code>runc version ${RUNC_VERSION}</code></li>
+<li>บรรทัดสุดท้ายเป็น <strong><code>4</code></strong> — ครบทั้ง <code>bridge</code>, <code>host-local</code>, <code>loopback</code>, <code>portmap</code></li>
+</ul>
+<blockquote>
+<p><code>loopback</code> คือตัวที่ Cilium ต้องใช้จริง (ให้ pod มี <code>lo</code>) ส่วน <code>portmap</code> ใช้ตอนมี <code>hostPort</code>
+ถ้าได้น้อยกว่า 4 แปลว่าแตก tarball ไม่ครบ ให้ลบ <code>/opt/cni/bin</code> แล้วแตกใหม่</p>
+</blockquote>
 <hr />
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>3 · สร้าง config.toml</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>คู่มือชุดเดิม<strong>ไม่มีไฟล์นี้เลย</strong> ทำให้ containerd ใช้ค่า default ซึ่งเป็น <code>cgroupfs</code>
@@ -251,13 +263,9 @@ containerd config default &gt; /etc/containerd/config.toml
 grep -n 'SystemdCgroup' /etc/containerd/config.toml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>SystemdCgroup = true</code> (ต้องไม่เหลือ <code>false</code> แม้แต่บรรทัดเดียว)</p>
-<p><strong>ตรวจ sandbox image ให้ตรงกับที่ kubeadm คาด:</strong></p>
-<div class="cb"><pre><code class="language-bash">grep -n 'sandbox' /etc/containerd/config.toml
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>เทียบกับสิ่งที่ kubeadm ต้องการ (รันได้หลังลง kubeadm ในขั้นที่ 5):</p>
-<div class="cb"><pre><code class="language-bash">kubeadm config images list --kubernetes-version "v${K8S_VERSION}" | grep pause
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>ถ้าไม่ตรง ให้แก้ค่า <code>sandbox</code> ใน config.toml ให้ตรงกับที่ kubeadm บอก</p>
+<blockquote>
+<p><strong>sandbox image ตรวจที่ขั้นที่ 5</strong> หลังลง kubeadm แล้ว — ตอนนี้ยังเทียบไม่ได้</p>
+</blockquote>
 <blockquote>
 <p>containerd 2.x ใช้ config <strong>version 3</strong> และ CRI plugin ถูกแยกเป็น
 <code>io.containerd.cri.v1.runtime</code> กับ <code>io.containerd.cri.v1.images</code>
@@ -328,6 +336,24 @@ systemctl enable kubelet
 <div class="cb"><pre><code class="language-bash">dnf versionlock add kubelet kubeadm kubectl
 dnf versionlock list | grep -E 'kube'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<h3>5.1 ตรวจ sandbox image — ทำได้ตรงนี้เพราะเพิ่งมี kubeadm</h3>
+<p>containerd มีค่า <code>sandbox</code> (pause image) ของตัวเอง ส่วน kubeadm ก็มีค่าที่มันคาดไว้
+ถ้าสองอันไม่ตรงกัน cluster จะมี pause image สองตัวโดยไม่จำเป็น และเวลามีปัญหาจะไล่ยากขึ้น</p>
+<div class="cb"><pre><code class="language-bash">want=$(kubeadm config images list --kubernetes-version "v${K8S_VERSION}" | grep pause)
+have=$(grep -oE '^[[:space:]]*sandbox[a-z_]*[[:space:]]*=[[:space:]]*"[^"]+"' /etc/containerd/config.toml \
+       | grep -oE '"[^"]+"' | tr -d '"' | head -1)
+echo "kubeadm อยาก : ${want:-หาไม่เจอ}"
+echo "containerd มี: ${have:-หาไม่เจอ}"
+[ "$want" = "$have" ] &amp;&amp; echo "ตรงกัน ✓" || echo "ไม่ตรง — ต้องแก้"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ถ้าไม่ตรง</strong> แก้ค่า <code>sandbox</code> ใน <code>/etc/containerd/config.toml</code> ให้เป็นค่าที่ kubeadm บอก แล้ว:</p>
+<div class="cb"><pre><code class="language-bash">systemctl restart containerd
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>containerd 2.x ใช้ config <strong>version 3</strong> และ CRI plugin แยกเป็น
+<code>io.containerd.cri.v1.runtime</code> กับ <code>io.containerd.cri.v1.images</code> — ชื่อ key ของ
+<code>sandbox</code> จึงอาจไม่เหมือนตัวอย่างเก่าในอินเทอร์เน็ต ให้ยึดจากไฟล์จริงบนเครื่อง</p>
+</blockquote>
 <hr />
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>6 · ตั้ง crictl</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><code>crictl</code> ไม่รู้เองว่า containerd อยู่ที่ไหน ถ้าไม่ตั้งจะเจอ warning ทุกครั้งที่รัน</p>

@@ -107,17 +107,8 @@ grep -n 'SystemdCgroup' /etc/containerd/config.toml
 ```
 **ควรเห็น:** `SystemdCgroup = true` (ต้องไม่เหลือ `false` แม้แต่บรรทัดเดียว)
 
-**ตรวจ sandbox image ให้ตรงกับที่ kubeadm คาด:**
+> **sandbox image ตรวจที่ขั้นที่ 5** หลังลง kubeadm แล้ว — ตอนนี้ยังเทียบไม่ได้
 
-```bash
-grep -n 'sandbox' /etc/containerd/config.toml
-```
-
-เทียบกับสิ่งที่ kubeadm ต้องการ (รันได้หลังลง kubeadm ในขั้นที่ 5):
-```bash
-kubeadm config images list --kubernetes-version "v${K8S_VERSION}" | grep pause
-```
-ถ้าไม่ตรง ให้แก้ค่า `sandbox` ใน config.toml ให้ตรงกับที่ kubeadm บอก
 
 > containerd 2.x ใช้ config **version 3** และ CRI plugin ถูกแยกเป็น
 > `io.containerd.cri.v1.runtime` กับ `io.containerd.cri.v1.images`
@@ -208,6 +199,30 @@ systemctl enable kubelet
 dnf versionlock add kubelet kubeadm kubectl
 dnf versionlock list | grep -E 'kube'
 ```
+
+### 5.1 ตรวจ sandbox image — ทำได้ตรงนี้เพราะเพิ่งมี kubeadm
+
+containerd มีค่า `sandbox` (pause image) ของตัวเอง ส่วน kubeadm ก็มีค่าที่มันคาดไว้
+ถ้าสองอันไม่ตรงกัน cluster จะมี pause image สองตัวโดยไม่จำเป็น และเวลามีปัญหาจะไล่ยากขึ้น
+
+```bash
+want=$(kubeadm config images list --kubernetes-version "v${K8S_VERSION}" | grep pause)
+have=$(grep -oE '^[[:space:]]*sandbox[a-z_]*[[:space:]]*=[[:space:]]*"[^"]+"' /etc/containerd/config.toml \
+       | grep -oE '"[^"]+"' | tr -d '"' | head -1)
+echo "kubeadm อยาก : ${want:-หาไม่เจอ}"
+echo "containerd มี: ${have:-หาไม่เจอ}"
+[ "$want" = "$have" ] && echo "ตรงกัน ✓" || echo "ไม่ตรง — ต้องแก้"
+```
+
+**ถ้าไม่ตรง** แก้ค่า `sandbox` ใน `/etc/containerd/config.toml` ให้เป็นค่าที่ kubeadm บอก แล้ว:
+
+```bash
+systemctl restart containerd
+```
+
+> containerd 2.x ใช้ config **version 3** และ CRI plugin แยกเป็น
+> `io.containerd.cri.v1.runtime` กับ `io.containerd.cri.v1.images` — ชื่อ key ของ
+> `sandbox` จึงอาจไม่เหมือนตัวอย่างเก่าในอินเทอร์เน็ต ให้ยึดจากไฟล์จริงบนเครื่อง
 
 ---
 
