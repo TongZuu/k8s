@@ -118,11 +118,17 @@ grep -n 'SystemdCgroup' /etc/containerd/config.toml
 
 ## 4 · ตั้งค่า private registry
 
+> **ยืนยันจากของจริงแล้วเมื่อ 27 ส.ค. 2026 — ไม่ต้องเดาและไม่ต้องเลือกทาง**
+> `registry.myhr.co.th` เป็น **HTTPS** · cert เป็น wildcard `CN=*.myhr.co.th`
+> ออกโดย **GlobalSign AlphaSSL ซึ่งเป็น CA สาธารณะ** → Oracle Linux 9.8 trust อยู่แล้ว
+>
+> 🔴 cert หมดอายุ **6 ก.ย. 2026** — ดู [CHECKLIST หมวด A2](CHECKLIST.md)
+
+**รันสองบล็อกนี้ จบ:**
+
 ```bash
 mkdir -p "/etc/containerd/certs.d/${REGISTRY_HOST}"
 ```
-
-### ถ้า registry เป็น HTTPS ที่มี cert ให้ trust ได้ (แนะนำ)
 
 ```bash
 cat > "/etc/containerd/certs.d/${REGISTRY_HOST}/hosts.toml" <<EOF
@@ -133,33 +139,67 @@ server = "https://${REGISTRY_HOST}"
 EOF
 ```
 
-ถ้าเป็น cert ที่ออกโดย internal CA ให้วาง CA ลงเครื่องด้วย:
+> ✅ **ไม่มีขั้นตอนเรื่อง CA ในบทนี้** — เพราะ cert ออกโดย CA สาธารณะ
+> ถ้าเคยเห็นคู่มือรุ่นเก่าที่ให้ `cp ca.crt` แล้ว `update-ca-trust` **ข้ามได้เลย**
+> ไฟล์ `config/registry/ca.crt` ไม่มีอยู่จริงและไม่จำเป็นต้องมี
+
+**ตรวจ:**
+```bash
+cat "/etc/containerd/certs.d/${REGISTRY_HOST}/hosts.toml"
+
+# TLS ผ่านไหม
+curl -sS -o /dev/null -w "HTTP %{http_code}\n" "https://${REGISTRY_HOST}/v2/"
+
+# cert เหลืออีกกี่วัน
+openssl s_client -connect "${REGISTRY_HOST}:443" -servername "${REGISTRY_HOST}" \
+  </dev/null 2>/dev/null | openssl x509 -noout -enddate
+```
+
+**ควรเห็น:**
+- `HTTP 401` — **401 คือผ่าน** แปลว่า TLS verify สำเร็จ เหลือแค่ยังไม่ได้ล็อกอิน
+  (credential ใส่ตอนบท 10) · ถ้าได้ `curl: (60) SSL certificate problem` แปลว่า cert เปลี่ยนไปแล้ว
+- `notAfter=Sep  6 06:00:55 2026 GMT` — **ถ้าใกล้หมดหรือหมดแล้ว หยุดแล้วไปต่ออายุก่อน**
+
+> ⚠️ cert ของ registry หมดอายุเมื่อไหร่ ทุก node จะ pull image ไม่ได้พร้อมกัน
+> และอาการจะโผล่เป็น `x509: certificate has expired` ซึ่งดูเหมือนปัญหา containerd
+> ทำให้ไล่ผิดทาง — จึงใส่การดู `notAfter` ไว้ในขั้นตรวจของบทนี้
+
+---
+
+<details>
+<summary><b>ถ้าวันหนึ่ง registry เปลี่ยนไปจากนี้</b> — ตอนนี้ไม่ต้องทำ</summary>
+
+**วิธีตรวจว่าเป็นแบบไหน:**
+```bash
+openssl s_client -connect "${REGISTRY_HOST}:443" -servername "${REGISTRY_HOST}" \
+  </dev/null 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName
+```
+
+| `issuer` | แปลว่า | ต้องทำเพิ่ม |
+|---|---|---|
+| เป็น CA สาธารณะ (GlobalSign, Let's Encrypt, DigiCert) | trust ได้เลย | **ไม่ต้องทำอะไร** ← สถานะปัจจุบัน |
+| เป็นชื่อ CA ขององค์กร | internal CA | ต้องวางไฟล์ CA |
+| เหมือน `subject` เป๊ะ | self-signed | ต้องเอา cert ตัวมันเองมาเป็น CA |
+
+**ถ้าต้องวาง CA:**
 ```bash
 cp /root/k8s/config/registry/ca.crt /etc/pki/ca-trust/source/anchors/myhr-registry-ca.crt
 update-ca-trust
 ```
 
-### ถ้า registry เป็น HTTP ล้วน
-
+**ถ้าย้ายไปเป็น HTTP ล้วน:**
 ```bash
 cat > "/etc/containerd/certs.d/${REGISTRY_HOST}/hosts.toml" <<EOF
 server = "http://${REGISTRY_HOST}"
 
 [host."http://${REGISTRY_HOST}"]
   capabilities = ["pull", "resolve"]
-  skip_verify = true
 EOF
 ```
 
-> ⚠️ **ต้องรู้ก่อนว่า registry เป็นแบบไหน** — ถ้าเดาผิดจะเจอ `failed to pull image`
-> ตอน deploy แล้วมาไล่หาสาเหตุทีหลัง ตรวจได้จากเครื่องไหนก็ได้ด้วย:
-> ```bash
-> curl -sI https://registry.myhr.co.th/v2/ || curl -sI http://registry.myhr.co.th/v2/
-> ```
-> ตัวไหนตอบ `401` หรือ `200` คือตัวนั้น
+</details>
 
 ---
-
 ## 5 · เปิด containerd และลง kubeadm/kubelet/kubectl
 
 ```bash

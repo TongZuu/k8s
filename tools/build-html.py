@@ -322,6 +322,19 @@ img{max-width:100%}
 .cb pre code{background:none;padding:0;color:inherit;font-size:inherit}
 
 /* ---------- prev/next ---------- */
+/* <details> ที่ใช้เก็บทางเลือกที่ยังไม่ต้องทำ */
+.step-body details{margin:16px 0;border:1px solid var(--line);border-radius:8px;
+  background:rgba(128,128,128,.05)}
+.step-body details[open]{background:transparent}
+.step-body summary{cursor:pointer;padding:10px 14px;font-size:14px;color:var(--dim);
+  user-select:none;list-style:none}
+.step-body summary::-webkit-details-marker{display:none}
+.step-body summary::before{content:'▸ ';color:var(--accent)}
+.step-body details[open] summary::before{content:'▾ '}
+.step-body summary:hover{color:var(--accent)}
+.step-body details > *:not(summary){margin-left:14px;margin-right:14px}
+.step-body details > *:last-child{margin-bottom:14px}
+
 .pn-row{display:flex;justify-content:space-between;gap:14px;margin-top:34px;
   padding-top:18px;border-top:1px solid var(--line)}
 .pn{color:var(--accent);text-decoration:none;font-size:14px}

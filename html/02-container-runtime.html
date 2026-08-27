@@ -122,6 +122,19 @@ img{max-width:100%}
 .cb pre code{background:none;padding:0;color:inherit;font-size:inherit}
 
 /* ---------- prev/next ---------- */
+/* <details> ที่ใช้เก็บทางเลือกที่ยังไม่ต้องทำ */
+.step-body details{margin:16px 0;border:1px solid var(--line);border-radius:8px;
+  background:rgba(128,128,128,.05)}
+.step-body details[open]{background:transparent}
+.step-body summary{cursor:pointer;padding:10px 14px;font-size:14px;color:var(--dim);
+  user-select:none;list-style:none}
+.step-body summary::-webkit-details-marker{display:none}
+.step-body summary::before{content:'▸ ';color:var(--accent)}
+.step-body details[open] summary::before{content:'▾ '}
+.step-body summary:hover{color:var(--accent)}
+.step-body details > *:not(summary){margin-left:14px;margin-right:14px}
+.step-body details > *:last-child{margin-bottom:14px}
+
 .pn-row{display:flex;justify-content:space-between;gap:14px;margin-top:34px;
   padding-top:18px;border-top:1px solid var(--line)}
 .pn{color:var(--accent);text-decoration:none;font-size:14px}
@@ -273,9 +286,15 @@ grep -n 'SystemdCgroup' /etc/containerd/config.toml
 </blockquote>
 <hr />
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>4 · ตั้งค่า private registry</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<blockquote>
+<p><strong>ยืนยันจากของจริงแล้วเมื่อ 27 ส.ค. 2026 — ไม่ต้องเดาและไม่ต้องเลือกทาง</strong>
+<code>registry.myhr.co.th</code> เป็น <strong>HTTPS</strong> · cert เป็น wildcard <code>CN=*.myhr.co.th</code>
+ออกโดย <strong>GlobalSign AlphaSSL ซึ่งเป็น CA สาธารณะ</strong> → Oracle Linux 9.8 trust อยู่แล้ว</p>
+<p>🔴 cert หมดอายุ <strong>6 ก.ย. 2026</strong> — ดู <a href="CHECKLIST.html">CHECKLIST หมวด A2</a></p>
+</blockquote>
+<p><strong>รันสองบล็อกนี้ จบ:</strong></p>
 <div class="cb"><pre><code class="language-bash">mkdir -p "/etc/containerd/certs.d/${REGISTRY_HOST}"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>ถ้า registry เป็น HTTPS ที่มี cert ให้ trust ได้ (แนะนำ)</h3>
 <div class="cb"><pre><code class="language-bash">cat &gt; "/etc/containerd/certs.d/${REGISTRY_HOST}/hosts.toml" &lt;&lt;EOF
 server = "https://${REGISTRY_HOST}"
 
@@ -283,26 +302,78 @@ server = "https://${REGISTRY_HOST}"
   capabilities = ["pull", "resolve"]
 EOF
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>ถ้าเป็น cert ที่ออกโดย internal CA ให้วาง CA ลงเครื่องด้วย:</p>
+<blockquote>
+<p>✅ <strong>ไม่มีขั้นตอนเรื่อง CA ในบทนี้</strong> — เพราะ cert ออกโดย CA สาธารณะ
+ถ้าเคยเห็นคู่มือรุ่นเก่าที่ให้ <code>cp ca.crt</code> แล้ว <code>update-ca-trust</code> <strong>ข้ามได้เลย</strong>
+ไฟล์ <code>config/registry/ca.crt</code> ไม่มีอยู่จริงและไม่จำเป็นต้องมี</p>
+</blockquote>
+<p><strong>ตรวจ:</strong></p>
+<div class="cb"><pre><code class="language-bash">cat "/etc/containerd/certs.d/${REGISTRY_HOST}/hosts.toml"
+
+# TLS ผ่านไหม
+curl -sS -o /dev/null -w "HTTP %{http_code}\n" "https://${REGISTRY_HOST}/v2/"
+
+# cert เหลืออีกกี่วัน
+openssl s_client -connect "${REGISTRY_HOST}:443" -servername "${REGISTRY_HOST}" \
+  &lt;/dev/null 2&gt;/dev/null | openssl x509 -noout -enddate
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong></p>
+<ul>
+<li><code>HTTP 401</code> — <strong>401 คือผ่าน</strong> แปลว่า TLS verify สำเร็จ เหลือแค่ยังไม่ได้ล็อกอิน
+(credential ใส่ตอนบท 10) · ถ้าได้ <code>curl: (60) SSL certificate problem</code> แปลว่า cert เปลี่ยนไปแล้ว</li>
+<li><code>notAfter=Sep  6 06:00:55 2026 GMT</code> — <strong>ถ้าใกล้หมดหรือหมดแล้ว หยุดแล้วไปต่ออายุก่อน</strong></li>
+</ul>
+<blockquote>
+<p>⚠️ cert ของ registry หมดอายุเมื่อไหร่ ทุก node จะ pull image ไม่ได้พร้อมกัน
+และอาการจะโผล่เป็น <code>x509: certificate has expired</code> ซึ่งดูเหมือนปัญหา containerd
+ทำให้ไล่ผิดทาง — จึงใส่การดู <code>notAfter</code> ไว้ในขั้นตรวจของบทนี้</p>
+</blockquote>
+<hr />
+<details>
+<summary><b>ถ้าวันหนึ่ง registry เปลี่ยนไปจากนี้</b> — ตอนนี้ไม่ต้องทำ</summary>
+<p><strong>วิธีตรวจว่าเป็นแบบไหน:</strong></p>
+<div class="cb"><pre><code class="language-bash">openssl s_client -connect "${REGISTRY_HOST}:443" -servername "${REGISTRY_HOST}" \
+  &lt;/dev/null 2&gt;/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<table>
+<thead>
+<tr>
+<th><code>issuer</code></th>
+<th>แปลว่า</th>
+<th>ต้องทำเพิ่ม</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>เป็น CA สาธารณะ (GlobalSign, Let's Encrypt, DigiCert)</td>
+<td>trust ได้เลย</td>
+<td><strong>ไม่ต้องทำอะไร</strong> ← สถานะปัจจุบัน</td>
+</tr>
+<tr>
+<td>เป็นชื่อ CA ขององค์กร</td>
+<td>internal CA</td>
+<td>ต้องวางไฟล์ CA</td>
+</tr>
+<tr>
+<td>เหมือน <code>subject</code> เป๊ะ</td>
+<td>self-signed</td>
+<td>ต้องเอา cert ตัวมันเองมาเป็น CA</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ถ้าต้องวาง CA:</strong></p>
 <div class="cb"><pre><code class="language-bash">cp /root/k8s/config/registry/ca.crt /etc/pki/ca-trust/source/anchors/myhr-registry-ca.crt
 update-ca-trust
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>ถ้า registry เป็น HTTP ล้วน</h3>
+<p><strong>ถ้าย้ายไปเป็น HTTP ล้วน:</strong></p>
 <div class="cb"><pre><code class="language-bash">cat &gt; "/etc/containerd/certs.d/${REGISTRY_HOST}/hosts.toml" &lt;&lt;EOF
 server = "http://${REGISTRY_HOST}"
 
 [host."http://${REGISTRY_HOST}"]
   capabilities = ["pull", "resolve"]
-  skip_verify = true
 EOF
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<blockquote>
-<p>⚠️ <strong>ต้องรู้ก่อนว่า registry เป็นแบบไหน</strong> — ถ้าเดาผิดจะเจอ <code>failed to pull image</code>
-ตอน deploy แล้วมาไล่หาสาเหตุทีหลัง ตรวจได้จากเครื่องไหนก็ได้ด้วย:</p>
-<div class="cb"><pre><code class="language-bash">curl -sI https://registry.myhr.co.th/v2/ || curl -sI http://registry.myhr.co.th/v2/
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>ตัวไหนตอบ <code>401</code> หรือ <code>200</code> คือตัวนั้น</p>
-</blockquote>
+</details>
 <hr />
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>5 · เปิด containerd และลง kubeadm/kubelet/kubectl</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <div class="cb"><pre><code class="language-bash">systemctl enable --now containerd
