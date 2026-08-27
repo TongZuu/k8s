@@ -22,7 +22,7 @@
 | playbook | แทนบท | สถานะ |
 |---|---|---|
 | `prepare-os.yml` | 01 | ✅ ใช้จริงครบ 6 เครื่อง |
-| `container-runtime.yml` | 02 | ⬜ **ยังไม่เคยรัน** |
+| `container-runtime.yml` | 02 | 🔄 `--check` บน master01 ได้ `changed=0 failed=0` · **ยังไม่เคยติดตั้งของจริง** (master01 มีของครบอยู่ก่อนแล้ว) |
 | `create-cluster.yml` | 04 | ⬜ **ยังไม่เคยรัน** |
 | `cilium.yml` | 05 | ⬜ **ยังไม่เคยรัน** |
 
