@@ -419,7 +419,8 @@
           echo "systemdcgroup=$(crictl info 2>/dev/null | jq -r '.config.containerd.runtimes.runc.options.SystemdCgroup')"
           echo "kubeadm=$(kubeadm version -o short 2>/dev/null)"
           echo "containerd_from_dnf=$(dnf list installed 2>/dev/null | grep -c '^containerd' || true)"
-          echo "runtime=$(crictl version 2>/dev/null | awk -F': ' '/RuntimeVersion/{print $2}')"
+          # crictl เว้น 2 ช่องหลัง colon — ใช้ awk แบบแยกตามช่องว่างปกติ ไม่ใช่ -F': '
+          echo "runtime=$(crictl version 2>/dev/null | awk '/RuntimeVersion/{print $2}')"
           echo "cni_plugins=$(ls /opt/cni/bin 2>/dev/null | grep -cE '^(bridge|host-local|loopback|portmap)$')"
           echo "crictl=$(crictl --version 2>/dev/null | awk '{print $NF}')"
       register: _final
@@ -442,9 +443,13 @@
           - "'cni_plugins=4' in _final.stdout"
           # ไม่มี crictl แปลว่า cri-tools ไม่ได้ลง แล้วขั้นตรวจอื่นจะ false negative หมด
           - "'crictl=v' ~ v.CRICTL_VERSION in _final.stdout"
-        fail_msg: >-
-          ไม่ผ่านเกณฑ์บท 02 — ถ้า containerd_from_dnf ไม่ใช่ 0
-          แปลว่า ol9_addons ยังเปิดอยู่ กลับไปดูบท 01 ข้อ 3
+        fail_msg: |-
+          ไม่ผ่านเกณฑ์บท 02 — ค่าที่วัดได้จริงคือ:
+          {{ _final.stdout }}
+          · systemdcgroup ต้องเป็น true (บท 02 ข้อ 3)
+          · kubeadm/runtime ต้องตรงกับ versions.env
+          · containerd_from_dnf ต้องเป็น 0 — ถ้าไม่ใช่ แปลว่า ol9_addons ยังเปิด (บท 01 ข้อ 3)
+          · cni_plugins ต้องเป็น 4 · crictl ต้องมี (บท 02 ข้อ 5)
 
     # -------------------------------------------------------------------------
     #  sandbox image — คู่มือข้อ 3 ให้เทียบกับที่ kubeadm คาด
