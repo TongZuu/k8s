@@ -1,0 +1,63 @@
+{#
+  =============================================================================
+   keepalived.conf.j2 — ปลายทาง /etc/keepalived/keepalived.conf  (chmod 600)
+  =============================================================================
+   แทนไฟล์ config/keepalived/keepalived-master0{1,2,3}.conf ทั้ง 3 ไฟล์
+   ถ้าแก้ที่นี่ ต้องแก้ไฟล์ทั้งสามให้ตรงกันด้วย — ทางทำมือในบท 03 ยังใช้ไฟล์พวกนั้น
+
+   ค่าที่ต่างกันรายเครื่องมาจาก ha-layer.yml ไม่ใช่จากไฟล์คนละใบ:
+     router_id  ← inventory_hostname
+     state      ← keepalived_nodes[inventory_hostname].state
+     priority   ← keepalived_nodes[inventory_hostname].priority
+     interface  ← node_iface (ตรวจจากเครื่องจริง ไม่ hardcode)
+  =============================================================================
+#}
+! ไฟล์นี้สร้างโดย ansible/ha-layer.yml — แก้ตรงนี้แล้วจะถูกทับรอบหน้า
+! แก้ที่ ansible/templates/keepalived.conf.j2 แทน
+
+global_defs {
+    router_id {{ inventory_hostname }}
+    script_user root
+    enable_script_security
+    ! ไม่ส่งอีเมล — ให้ alert ไปทาง Prometheus แทน
+    enable_traps
+}
+
+vrrp_script check_apiserver {
+    script   "/etc/keepalived/check_apiserver.sh"
+    interval 3        ! เรียกทุก 3 วินาที
+    timeout  5        ! เกิน 5 วิถือว่าล้ม
+    weight  -20       ! ล้มแล้วลด priority 20 → ต่ำกว่าเครื่องถัดไปทันที
+    fall     2        ! ล้ม 2 ครั้งติดถึงจะนับว่าตาย
+    rise     2        ! ผ่าน 2 ครั้งติดถึงจะนับว่ากลับมา
+}
+
+vrrp_instance VI_K8S {
+    state             {{ keepalived_nodes[inventory_hostname].state }}
+    interface         {{ node_iface }}
+    virtual_router_id {{ v.VRRP_ROUTER_ID }}
+    priority          {{ keepalived_nodes[inventory_hostname].priority }}
+    advert_int        1
+
+    ! ---------------------------------------------------------------------
+    !  priority ต่างกันเจตนา: 110 / 100 / 90
+    !  cluster เดิมตั้งทั้ง 3 เครื่องเป็น MASTER priority 100 เท่ากันหมด
+    !  ซึ่งทำให้แย่ง VIP กันเองตอน network สะดุด — อย่าทำซ้ำ
+    !
+    !  virtual_router_id ห้ามซ้ำกับ VRRP instance อื่นใน L2 domain เดียวกัน
+    !  cluster ฝึกอบรมเดิมที่ 192.168.50.180-183 ใช้ 51
+    ! ---------------------------------------------------------------------
+
+    authentication {
+        auth_type PASS
+        auth_pass {{ vrrp_auth_pass }}
+    }
+
+    virtual_ipaddress {
+        {{ v.VIP }}/24 dev {{ node_iface }}
+    }
+
+    track_script {
+        check_apiserver
+    }
+}
