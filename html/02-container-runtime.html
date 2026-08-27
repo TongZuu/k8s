@@ -65,13 +65,22 @@ main{max-width:920px;padding:24px 30px 120px}
   padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
 .step.done{background:var(--done-bg);border-color:var(--done-line)}
 .step.done .step-body{opacity:.62}
-.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head{display:flex;align-items:flex-start;gap:10px;padding-top:14px}
 .step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
 .step.done .step-head h2{color:var(--done-ink)}
-.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-  border:1px solid var(--line);background:transparent;color:var(--dim);
-  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
-  transition:all .2s;margin-top:3px}
+/* เครื่องหมายถูกที่หัวข้อ — โผล่เฉพาะตอนทำแล้ว ให้กวาดตาหาได้เร็วตอนเลื่อนผ่าน */
+.head-tick{display:none;flex-shrink:0;color:var(--done-ink);font-size:19px;
+  font-weight:700;line-height:1.5}
+.step.done .head-tick{display:block}
+
+/* ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง */
+.step-foot{display:flex;justify-content:flex-end;padding:6px 0 2px;margin-top:14px;
+  border-top:1px dashed var(--line)}
+.step.done .step-foot{border-top-color:var(--done-line)}
+.done-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:20px;padding:7px 18px;font-size:13px;font-family:var(--font);
+  transition:all .2s;margin-top:10px}
 .done-btn:hover{border-color:var(--accent);color:var(--accent)}
 .done-btn .tick{opacity:.35;font-weight:700}
 .step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
@@ -100,7 +109,7 @@ img{max-width:100%}
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .cb-bar{display:flex;align-items:center;justify-content:space-between;
-  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-top:1px solid var(--line)}
 .cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
   letter-spacing:.5px}
 .cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
@@ -174,7 +183,7 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ทำไมลงจาก tarball ไม่ใช่ dnf</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ทำไมลงจาก tarball ไม่ใช่ dnf</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>เพื่อคุมเวอร์ชันให้เป๊ะตามหลัก reproducible — repo ของ distro จะอัปเดตเองและทำให้ node
 สองเครื่องไม่เหมือนกันโดยไม่มีใครสังเกต แลกมาด้วยการต้องอัปเดตเองด้วยมือ ซึ่งยอมรับได้</p>
 <blockquote>
@@ -182,14 +191,14 @@ img{max-width:100%}
 ที่จะมาทับตัวนี้ตอน <code>dnf update</code> รอบหน้า</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>0 · โหลดตัวแปร</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>0 · โหลดตัวแปร</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 echo "containerd=$CONTAINERD_VERSION runc=$RUNC_VERSION cni=$CNI_PLUGINS_VERSION"
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>containerd=2.2.7 runc=1.5.1 cni=1.9.1</code></p>
 <hr />
-</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>1 · ดาวน์โหลดและตรวจ checksum</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">mkdir -p /root/k8s/dl &amp;&amp; cd /root/k8s/dl
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>1 · ดาวน์โหลดและตรวจ checksum</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">mkdir -p /root/k8s/dl &amp;&amp; cd /root/k8s/dl
 
 curl -fsSLO "https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VERSION}/containerd-${CONTAINERD_VERSION}-linux-amd64.tar.gz"
 curl -fsSLO "https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VERSION}/containerd-${CONTAINERD_VERSION}-linux-amd64.tar.gz.sha256sum"
@@ -199,7 +208,7 @@ curl -fsSLO "https://github.com/containernetworking/plugins/releases/download/v$
 curl -fsSLO "https://raw.githubusercontent.com/containerd/containerd/v${CONTAINERD_VERSION}/containerd.service"
 
 sha256sum -c "containerd-${CONTAINERD_VERSION}-linux-amd64.tar.gz.sha256sum"
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>containerd-2.2.7-linux-amd64.tar.gz: OK</code>
 ถ้าไม่ใช่ <code>OK</code> <strong>ให้หยุด</strong> — อย่าติดตั้งไฟล์ที่ checksum ไม่ตรง</p>
 <blockquote>
@@ -207,8 +216,8 @@ sha256sum -c "containerd-${CONTAINERD_VERSION}-linux-amd64.tar.gz.sha256sum"
 แล้ว <code>scp</code> มาวางที่ <code>/root/k8s/dl/</code> บนทุกเครื่อง — ขั้นตอนที่เหลือเหมือนกัน</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>2 · ติดตั้ง</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cd /root/k8s/dl
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>2 · ติดตั้ง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">cd /root/k8s/dl
 
 # containerd
 tar Cxzvf /usr/local "containerd-${CONTAINERD_VERSION}-linux-amd64.tar.gz"
@@ -225,29 +234,29 @@ install -m 644 containerd.service /usr/local/lib/systemd/system/containerd.servi
   || { mkdir -p /usr/local/lib/systemd/system &amp;&amp; install -m 644 containerd.service /usr/local/lib/systemd/system/containerd.service; }
 
 systemctl daemon-reload
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจ:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">containerd --version &amp;&amp; runc --version &amp;&amp; ls /opt/cni/bin | head -5
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">containerd --version &amp;&amp; runc --version &amp;&amp; ls /opt/cni/bin | head -5
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>containerd github.com/containerd/containerd/v2 v2.2.7</code> · <code>runc version 1.5.1</code> · มีไฟล์อย่าง <code>bridge</code>, <code>host-local</code>, <code>loopback</code></p>
 <hr />
-</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>3 · สร้าง config.toml</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>3 · สร้าง config.toml</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>คู่มือชุดเดิม<strong>ไม่มีไฟล์นี้เลย</strong> ทำให้ containerd ใช้ค่า default ซึ่งเป็น <code>cgroupfs</code>
 ขณะที่ kubelet ถูกตั้งเป็น <code>systemd</code> — เป็น mismatch ที่ทำให้ node evict pod มั่วตอนโหลดสูง</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">mkdir -p /etc/containerd
+<div class="cb"><pre><code class="language-bash">mkdir -p /etc/containerd
 containerd config default &gt; /etc/containerd/config.toml
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>แก้ 1 ค่า — <code>SystemdCgroup</code>:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+<div class="cb"><pre><code class="language-bash">sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
 grep -n 'SystemdCgroup' /etc/containerd/config.toml
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>SystemdCgroup = true</code> (ต้องไม่เหลือ <code>false</code> แม้แต่บรรทัดเดียว)</p>
 <p><strong>ตรวจ sandbox image ให้ตรงกับที่ kubeadm คาด:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">grep -n 'sandbox' /etc/containerd/config.toml
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">grep -n 'sandbox' /etc/containerd/config.toml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>เทียบกับสิ่งที่ kubeadm ต้องการ (รันได้หลังลง kubeadm ในขั้นที่ 5):</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubeadm config images list --kubernetes-version "v${K8S_VERSION}" | grep pause
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubeadm config images list --kubernetes-version "v${K8S_VERSION}" | grep pause
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ถ้าไม่ตรง ให้แก้ค่า <code>sandbox</code> ใน config.toml ให้ตรงกับที่ kubeadm บอก</p>
 <blockquote>
 <p>containerd 2.x ใช้ config <strong>version 3</strong> และ CRI plugin ถูกแยกเป็น
@@ -255,45 +264,45 @@ grep -n 'SystemdCgroup' /etc/containerd/config.toml
 (เดิมรวมกันที่ <code>io.containerd.grpc.v1.cri</code>) — ถ้าเจอตัวอย่างเก่าในอินเทอร์เน็ตที่ใช้ชื่อเดิม อย่าลอกมาใช้</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>4 · ตั้งค่า private registry</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">mkdir -p "/etc/containerd/certs.d/${REGISTRY_HOST}"
-</code></pre></div>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>4 · ตั้งค่า private registry</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">mkdir -p "/etc/containerd/certs.d/${REGISTRY_HOST}"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>ถ้า registry เป็น HTTPS ที่มี cert ให้ trust ได้ (แนะนำ)</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cat &gt; "/etc/containerd/certs.d/${REGISTRY_HOST}/hosts.toml" &lt;&lt;EOF
+<div class="cb"><pre><code class="language-bash">cat &gt; "/etc/containerd/certs.d/${REGISTRY_HOST}/hosts.toml" &lt;&lt;EOF
 server = "https://${REGISTRY_HOST}"
 
 [host."https://${REGISTRY_HOST}"]
   capabilities = ["pull", "resolve"]
 EOF
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ถ้าเป็น cert ที่ออกโดย internal CA ให้วาง CA ลงเครื่องด้วย:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cp /root/k8s/config/registry/ca.crt /etc/pki/ca-trust/source/anchors/myhr-registry-ca.crt
+<div class="cb"><pre><code class="language-bash">cp /root/k8s/config/registry/ca.crt /etc/pki/ca-trust/source/anchors/myhr-registry-ca.crt
 update-ca-trust
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>ถ้า registry เป็น HTTP ล้วน</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cat &gt; "/etc/containerd/certs.d/${REGISTRY_HOST}/hosts.toml" &lt;&lt;EOF
+<div class="cb"><pre><code class="language-bash">cat &gt; "/etc/containerd/certs.d/${REGISTRY_HOST}/hosts.toml" &lt;&lt;EOF
 server = "http://${REGISTRY_HOST}"
 
 [host."http://${REGISTRY_HOST}"]
   capabilities = ["pull", "resolve"]
   skip_verify = true
 EOF
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p>⚠️ <strong>ต้องรู้ก่อนว่า registry เป็นแบบไหน</strong> — ถ้าเดาผิดจะเจอ <code>failed to pull image</code>
 ตอน deploy แล้วมาไล่หาสาเหตุทีหลัง ตรวจได้จากเครื่องไหนก็ได้ด้วย:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">curl -sI https://registry.myhr.co.th/v2/ || curl -sI http://registry.myhr.co.th/v2/
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">curl -sI https://registry.myhr.co.th/v2/ || curl -sI http://registry.myhr.co.th/v2/
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ตัวไหนตอบ <code>401</code> หรือ <code>200</code> คือตัวนั้น</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>5 · เปิด containerd และลง kubeadm/kubelet/kubectl</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">systemctl enable --now containerd
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>5 · เปิด containerd และลง kubeadm/kubelet/kubectl</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">systemctl enable --now containerd
 systemctl status containerd --no-pager | head -5
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>Active: active (running)</code></p>
 <p><strong>เพิ่ม repo ของ Kubernetes:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cat &gt; /etc/yum.repos.d/kubernetes.repo &lt;&lt;EOF
+<div class="cb"><pre><code class="language-bash">cat &gt; /etc/yum.repos.d/kubernetes.repo &lt;&lt;EOF
 [kubernetes]
 name=Kubernetes
 baseurl=https://pkgs.k8s.io/core:/stable:/${K8S_REPO_MINOR}/rpm/
@@ -302,41 +311,41 @@ gpgcheck=1
 gpgkey=https://pkgs.k8s.io/core:/stable:/${K8S_REPO_MINOR}/rpm/repodata/repomd.xml.key
 exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
 EOF
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p><code>exclude=</code> ทำให้ <code>dnf update</code> ปกติไม่ยก Kubernetes ขึ้นเอง
 ต้องใส่ <code>--disableexcludes=kubernetes</code> เจตนาเท่านั้นถึงจะขยับได้ — นี่คือการป้องกันชั้นแรก</p>
 </blockquote>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">dnf install -y --disableexcludes=kubernetes \
+<div class="cb"><pre><code class="language-bash">dnf install -y --disableexcludes=kubernetes \
   "kubelet-${K8S_VERSION}" "kubeadm-${K8S_VERSION}" "kubectl-${K8S_VERSION}"
 
 systemctl enable kubelet
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p><strong>ยังไม่ต้อง start kubelet</strong> — มันจะ crash loop จนกว่าจะมี cluster ซึ่งเป็นเรื่องปกติ</p>
 </blockquote>
 <p><strong>ตรึงเวอร์ชันซ้ำอีกชั้น:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">dnf versionlock add kubelet kubeadm kubectl
+<div class="cb"><pre><code class="language-bash">dnf versionlock add kubelet kubeadm kubectl
 dnf versionlock list | grep -E 'kube'
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>6 · ตั้ง crictl</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>6 · ตั้ง crictl</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><code>crictl</code> ไม่รู้เองว่า containerd อยู่ที่ไหน ถ้าไม่ตั้งจะเจอ warning ทุกครั้งที่รัน</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cat &gt; /etc/crictl.yaml &lt;&lt;'EOF'
+<div class="cb"><pre><code class="language-bash">cat &gt; /etc/crictl.yaml &lt;&lt;'EOF'
 runtime-endpoint: unix:///run/containerd/containerd.sock
 image-endpoint: unix:///run/containerd/containerd.sock
 timeout: 10
 EOF
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">echo "=== $(hostname) ==="
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">echo "=== $(hostname) ==="
 crictl info | jq -r '.config.containerd.runtimes.runc.options.SystemdCgroup'
 crictl version | grep -E 'RuntimeName|RuntimeVersion'
 kubeadm version -o short
 kubelet --version
 dnf list installed 2&gt;/dev/null | grep -c containerd
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ต้องได้:</strong></p>
 <table>
 <thead>
@@ -373,13 +382,13 @@ dnf list installed 2&gt;/dev/null | grep -c containerd
 </tbody>
 </table>
 <p><strong>ทดสอบ pull จริงจาก registry:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">crictl pull "${REGISTRY_HOST}/library/busybox:latest" 2&gt;&amp;1 | tail -3
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">crictl pull "${REGISTRY_HOST}/library/busybox:latest" 2&gt;&amp;1 | tail -3
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>Image is up to date</code> หรือ <code>Pulling image...</code> สำเร็จ
 ถ้าได้ <code>401 Unauthorized</code> ถือว่า<strong>ผ่าน</strong>สำหรับขั้นนี้ (แปลว่าคุยกับ registry ได้แล้ว แค่ยังไม่มี credential)
 ถ้าได้ <code>connection refused</code>, <code>x509</code> หรือ <code>no such host</code> <strong>ให้หยุดแล้วกลับไปแก้ขั้นที่ 4</strong></p>
 <p><strong>➡️ ต่อที่ <a href="03-ha-layer.html">บทที่ 03 — HA Layer</a></strong></p>
-</div></section>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="01-prepare-os.html">← เตรียม OS</a><a class="pn" href="03-ha-layer.html">HA Layer →</a></div>
   </main>
 </div>
@@ -426,8 +435,16 @@ dnf list installed 2&gt;/dev/null | grep -c containerd
   document.querySelectorAll('.done-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      var marking = i<0;
       if(i>=0){ done.splice(i,1); } else { done.push(n); }
       setMine(done); paint();
+      // กดทำแล้ว = พาไปขั้นถัดไปให้เลย ไม่ต้องเลื่อนหาเอง
+      // ตอนยกเลิกไม่พาไปไหน เพราะคนน่าจะอยากอยู่ตรงนั้นต่อ
+      if(marking){
+        var nx=nextStep();
+        if(nx){ nx.scrollIntoView({behavior:'smooth', block:'start'}); }
+        else { toast('ครบทุกขั้นของบทนี้แล้ว'); }
+      }
     });
   });
 

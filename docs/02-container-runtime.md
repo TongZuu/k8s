@@ -74,9 +74,18 @@ systemctl daemon-reload
 
 **ตรวจ:**
 ```bash
-containerd --version && runc --version && ls /opt/cni/bin | head -5
+containerd --version && runc --version
+
+# ตรวจ plugin ที่ต้องมีจริง ๆ — อย่าใช้ head เพราะเรียงตามตัวอักษรแล้วตัวสำคัญหลุด
+ls /opt/cni/bin | grep -cE '^(bridge|host-local|loopback|portmap)$'
 ```
-**ควรเห็น:** `containerd github.com/containerd/containerd/v2 v2.2.7` · `runc version 1.5.1` · มีไฟล์อย่าง `bridge`, `host-local`, `loopback`
+**ควรเห็น:**
+- `containerd github.com/containerd/containerd/v2 v${CONTAINERD_VERSION}`
+- `runc version ${RUNC_VERSION}`
+- บรรทัดสุดท้ายเป็น **`4`** — ครบทั้ง `bridge`, `host-local`, `loopback`, `portmap`
+
+> `loopback` คือตัวที่ Cilium ต้องใช้จริง (ให้ pod มี `lo`) ส่วน `portmap` ใช้ตอนมี `hostPort`
+> ถ้าได้น้อยกว่า 4 แปลว่าแตก tarball ไม่ครบ ให้ลบ `/opt/cni/bin` แล้วแตกใหม่
 
 ---
 

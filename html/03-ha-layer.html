@@ -65,13 +65,22 @@ main{max-width:920px;padding:24px 30px 120px}
   padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
 .step.done{background:var(--done-bg);border-color:var(--done-line)}
 .step.done .step-body{opacity:.62}
-.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head{display:flex;align-items:flex-start;gap:10px;padding-top:14px}
 .step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
 .step.done .step-head h2{color:var(--done-ink)}
-.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-  border:1px solid var(--line);background:transparent;color:var(--dim);
-  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
-  transition:all .2s;margin-top:3px}
+/* เครื่องหมายถูกที่หัวข้อ — โผล่เฉพาะตอนทำแล้ว ให้กวาดตาหาได้เร็วตอนเลื่อนผ่าน */
+.head-tick{display:none;flex-shrink:0;color:var(--done-ink);font-size:19px;
+  font-weight:700;line-height:1.5}
+.step.done .head-tick{display:block}
+
+/* ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง */
+.step-foot{display:flex;justify-content:flex-end;padding:6px 0 2px;margin-top:14px;
+  border-top:1px dashed var(--line)}
+.step.done .step-foot{border-top-color:var(--done-line)}
+.done-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:20px;padding:7px 18px;font-size:13px;font-family:var(--font);
+  transition:all .2s;margin-top:10px}
 .done-btn:hover{border-color:var(--accent);color:var(--accent)}
 .done-btn .tick{opacity:.35;font-weight:700}
 .step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
@@ -100,7 +109,7 @@ img{max-width:100%}
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .cb-bar{display:flex;align-items:center;justify-content:space-between;
-  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-top:1px solid var(--line)}
 .cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
   letter-spacing:.5px}
 .cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
@@ -174,12 +183,12 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ทำไมบทนี้ห้ามข้าม</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ทำไมบทนี้ห้ามข้าม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><code>controlPlaneEndpoint</code> ที่ใส่ตอน <code>kubeadm init</code> จะถูกฝังลงใน <strong>certificate ของทั้ง cluster</strong>
 และ kubeconfig ของทุก component แก้ทีหลังหมายถึงต้องออก certificate ใหม่ทั้งชุดและแก้ทุก node</p>
 <p>ถ้าไป <code>kubeadm init</code> โดย VIP ยังไม่ทำงาน <strong>คุณจะต้องรื้อ cluster ทำใหม่ทั้งหมด</strong></p>
 <hr />
-</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>ทำไมเป็น systemd ไม่ใช่ static pod</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>ทำไมเป็น systemd ไม่ใช่ static pod</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>cluster เดิมรัน keepalived/HAProxy เป็น static pod ใน <code>/etc/kubernetes/manifests</code>
 ซึ่งมีปัญหาสองข้อ:</p>
 <ol>
@@ -189,50 +198,50 @@ img{max-width:100%}
 <p>เป็น systemd แล้ว: อยู่รอดข้าม <code>kubeadm reset</code>/upgrade, debug ด้วย <code>journalctl</code> ได้ตั้งแต่ก่อนมี cluster
 และ image <code>osixia/keepalived</code> ที่ของเดิมใช้ก็ไม่มีคนดูแลมาหลายปีแล้ว</p>
 <hr />
-</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>0 · โหลดตัวแปร</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>0 · โหลดตัวแปร</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 echo "VIP=$VIP:$VIP_PORT  IFACE=$NODE_IFACE  VRID=$VRRP_ROUTER_ID"
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>VIP=192.168.50.100:8443  IFACE=ens192  VRID=60</code></p>
 <p><strong>ยืนยันชื่อ interface จริง — อย่าเชื่อค่าใน versions.env โดยไม่ตรวจ:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">ip -br addr show | grep 192.168.50
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">ip -br addr show | grep 192.168.50
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>ens192  UP  192.168.50.10X/24</code>
 ถ้าชื่อไม่ใช่ <code>ens192</code> ให้แก้ทั้งใน <code>versions.env</code> และในไฟล์ <code>keepalived-*.conf</code> ทั้ง 3 ไฟล์</p>
 <p><strong>ยืนยันว่ายังไม่มีใครใช้ VIP:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">ping -c2 -W1 "$VIP"
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">ping -c2 -W1 "$VIP"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>100% packet loss</code> — ถ้ามีคนตอบ <strong>ให้หยุด</strong> แล้วไปคุยกับทีม network</p>
 <hr />
-</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>1 · ติดตั้ง</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">dnf install -y keepalived haproxy
-</code></pre></div>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>1 · ติดตั้ง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">dnf install -y keepalived haproxy
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจว่าได้ package ของ OS ไม่ใช่ container image:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">keepalived --version 2&gt;&amp;1 | head -1
+<div class="cb"><pre><code class="language-bash">keepalived --version 2&gt;&amp;1 | head -1
 haproxy -v | head -1
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> keepalived 2.2.x และ HAProxy 3.x (เลขแน่นอนตามที่ OL 9.8 ให้มา — <strong>จดลง <code>versions.env</code></strong>)</p>
 <hr />
-</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>2 · วาง HAProxy config</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>2 · วาง HAProxy config</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>ไฟล์เดียวกันทั้ง 3 เครื่อง ไม่มีอะไรต่างกัน:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cp /root/k8s/config/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg
+<div class="cb"><pre><code class="language-bash">cp /root/k8s/config/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg
 haproxy -c -f /etc/haproxy/haproxy.cfg
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>Configuration file is valid</code></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">systemctl enable --now haproxy
+<div class="cb"><pre><code class="language-bash">systemctl enable --now haproxy
 ss -lnt | grep ':8443'
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>LISTEN 0 ... *:8443</code></p>
 <blockquote>
 <p>ตอนนี้ backend ทั้ง 3 ตัวจะ <strong>DOWN</strong> หมด เพราะยังไม่มี kube-apiserver — <strong>ถูกต้องแล้ว</strong>
 ดูได้ด้วย <code>curl -s http://127.0.0.1:8404/stats</code></p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>3 · วาง keepalived config</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>3 · วาง keepalived config</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <blockquote>
 <p><strong>ระวัง: ไฟล์ต่างกันต่อเครื่อง</strong> เลือกให้ตรงกับเครื่องที่กำลังทำอยู่</p>
 </blockquote>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># บน master01 เท่านั้น
+<div class="cb"><pre><code class="language-bash"># บน master01 เท่านั้น
 cp /root/k8s/config/keepalived/keepalived-master01.conf /etc/keepalived/keepalived.conf
 
 # บน master02 เท่านั้น
@@ -240,16 +249,16 @@ cp /root/k8s/config/keepalived/keepalived-master02.conf /etc/keepalived/keepaliv
 
 # บน master03 เท่านั้น
 cp /root/k8s/config/keepalived/keepalived-master03.conf /etc/keepalived/keepalived.conf
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ใส่รหัส VRRP จริง — ต้องเหมือนกันทั้ง 3 เครื่อง:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">read -rsp 'VRRP auth_pass: ' VRRP_PASS &amp;&amp; echo
+<div class="cb"><pre><code class="language-bash">read -rsp 'VRRP auth_pass: ' VRRP_PASS &amp;&amp; echo
 sed -i "s|&lt;VRRP_AUTH_PASS&gt;|${VRRP_PASS}|" /etc/keepalived/keepalived.conf
 unset VRRP_PASS
 chmod 600 /etc/keepalived/keepalived.conf
 
 # ตรวจว่าแทนที่สำเร็จจริง — ต้องไม่เหลือ placeholder
 grep -c '&lt;VRRP_AUTH_PASS&gt;' /etc/keepalived/keepalived.conf
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>0</code> — ถ้าได้ <code>1</code> แปลว่า <code>sed</code> ไม่โดน ให้ตรวจว่า copy ไฟล์ถูกตัวหรือยัง</p>
 <blockquote>
 <p>⚠️ <code>auth_pass</code> ของ keepalived ใช้ได้ <strong>ไม่เกิน 8 ตัวอักษร</strong> ตัวที่เกินจะถูกตัดทิ้งเงียบ ๆ
@@ -257,28 +266,28 @@ grep -c '&lt;VRRP_AUTH_PASS&gt;' /etc/keepalived/keepalived.conf
 รหัสนี้กัน VRRP packet หลงเข้ามาเท่านั้น ไม่ใช่ระบบความปลอดภัยจริง</p>
 </blockquote>
 <p><strong>วาง health check script:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cp /root/k8s/config/keepalived/check_apiserver.sh /etc/keepalived/check_apiserver.sh
+<div class="cb"><pre><code class="language-bash">cp /root/k8s/config/keepalived/check_apiserver.sh /etc/keepalived/check_apiserver.sh
 chmod 700 /etc/keepalived/check_apiserver.sh
 
 # ทดสอบสคริปต์ก่อนให้ keepalived เรียก
 /etc/keepalived/check_apiserver.sh; echo "exit=$?"
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>exit=0</code> (ตอนนี้ยังไม่มี apiserver แต่ HAProxy ฟัง 8443 อยู่แล้วจึงผ่าน)</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">systemctl enable --now keepalived
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">systemctl enable --now keepalived
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>4 · ตรวจว่า VIP ขึ้นที่ master01</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>4 · ตรวจว่า VIP ขึ้นที่ master01</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><strong>บน master01:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">ip -4 addr show "$NODE_IFACE" | grep "$VIP"
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">ip -4 addr show "$NODE_IFACE" | grep "$VIP"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>inet 192.168.50.100/24 scope global secondary ens192</code></p>
 <p><strong>บน master02 และ master03:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">ip -4 addr show "$NODE_IFACE" | grep "$VIP" || echo "ไม่มี VIP — ถูกต้อง"
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">ip -4 addr show "$NODE_IFACE" | grep "$VIP" || echo "ไม่มี VIP — ถูกต้อง"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>ไม่มี VIP — ถูกต้อง</code></p>
 <p><strong>จากเครื่องไหนก็ได้:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">ping -c3 "$VIP"
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">ping -c3 "$VIP"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ตอบครบ 3 packet</p>
 <blockquote>
 <p>ถ้า VIP ขึ้นมากกว่าหนึ่งเครื่องพร้อมกัน = <strong>split brain</strong> สาเหตุที่พบบ่อย 3 ข้อ:</p>
@@ -290,47 +299,47 @@ chmod 700 /etc/keepalived/check_apiserver.sh
 <p>ดู log ด้วย: <code>journalctl -u keepalived -n 50 --no-pager</code></p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>5 · 🔴 ทดสอบ failover — ห้ามข้ามข้อนี้</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>5 · 🔴 ทดสอบ failover — ห้ามข้ามข้อนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>นี่คือขั้นตอนเดียวที่พิสูจน์ว่า HA ทำงานจริง ไม่ใช่แค่ config ดูถูก</p>
 <h3>เตรียม — เปิดหน้าต่างที่ 2 ค้างไว้ ping VIP ตลอดเวลา</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">ping "$VIP" | ts '%H:%M:%.S' 2&gt;/dev/null || ping "$VIP"
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">ping "$VIP" | ts '%H:%M:%.S' 2&gt;/dev/null || ping "$VIP"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>ทดสอบ 5.1 — หยุด keepalived บนเครื่องที่ถือ VIP</h3>
 <p><strong>บน master01:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">systemctl stop keepalived
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">systemctl stop keepalived
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจภายใน 5 วินาที บน master02:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">ip -4 addr show "$NODE_IFACE" | grep "$VIP"
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">ip -4 addr show "$NODE_IFACE" | grep "$VIP"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> VIP ย้ายมาที่ master02 แล้ว · หน้าต่าง ping ขาดไม่เกิน <strong>2-3 packet</strong></p>
 <p><strong>คืนค่า:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">systemctl start keepalived    # บน master01
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">systemctl start keepalived    # บน master01
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> VIP กลับไปที่ master01 ภายในไม่กี่วินาที (เพราะ priority สูงกว่า)</p>
 <h3>ทดสอบ 5.2 — หยุด HAProxy (health check ต้องจับได้)</h3>
 <p><strong>บนเครื่องที่ถือ VIP อยู่:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">systemctl stop haproxy
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">systemctl stop haproxy
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ภายใน ~10 วินาที (<code>interval 3</code> × <code>fall 2</code> + margin) VIP ย้ายไปเครื่องอื่น
 เพราะ <code>check_apiserver.sh</code> คืน exit 1 → priority ลด 20 → ต่ำกว่าเครื่องถัดไป</p>
 <p>ดู log ยืนยัน:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">journalctl -u keepalived -n 20 --no-pager | grep -i -E 'script|priority|state'
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">journalctl -u keepalived -n 20 --no-pager | grep -i -E 'script|priority|state'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>คืนค่า:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">systemctl start haproxy
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">systemctl start haproxy
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>ทดสอบ 5.3 — reboot เครื่องที่ถือ VIP</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">reboot
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">reboot
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> VIP ย้ายทันที · หลังเครื่องกลับมา keepalived และ HAProxy ขึ้นเองโดยไม่ต้องสั่ง
 (นี่คือสิ่งที่ <code>systemctl enable</code> ทำ — และคือเหตุผลที่เราไม่ใช้ static pod)</p>
 <p><strong>ตรวจหลังกลับมา:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">systemctl is-enabled keepalived haproxy
+<div class="cb"><pre><code class="language-bash">systemctl is-enabled keepalived haproxy
 systemctl is-active  keepalived haproxy
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>enabled</code> ทั้งคู่ และ <code>active</code> ทั้งคู่</p>
 <hr />
-</div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <ul>
 <li>[ ] VIP <code>192.168.50.100</code> ขึ้นที่ <strong>เครื่องเดียวเท่านั้น</strong></li>
 <li>[ ] <code>ping $VIP</code> ได้จากทุก node รวมทั้ง worker</li>
@@ -345,7 +354,7 @@ systemctl is-active  keepalived haproxy
 ถ้าวันหนึ่ง failover ช้ากว่านี้มาก แปลว่ามีอะไรเปลี่ยนไป</p>
 </blockquote>
 <p><strong>➡️ ต่อที่ <a href="04-create-cluster.html">บทที่ 04 — สร้าง Cluster</a></strong></p>
-</div></section>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="02-container-runtime.html">← Container Runtime</a><a class="pn" href="04-create-cluster.html">สร้าง Cluster →</a></div>
   </main>
 </div>
@@ -392,8 +401,16 @@ systemctl is-active  keepalived haproxy
   document.querySelectorAll('.done-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      var marking = i<0;
       if(i>=0){ done.splice(i,1); } else { done.push(n); }
       setMine(done); paint();
+      // กดทำแล้ว = พาไปขั้นถัดไปให้เลย ไม่ต้องเลื่อนหาเอง
+      // ตอนยกเลิกไม่พาไปไหน เพราะคนน่าจะอยากอยู่ตรงนั้นต่อ
+      if(marking){
+        var nx=nextStep();
+        if(nx){ nx.scrollIntoView({behavior:'smooth', block:'start'}); }
+        else { toast('ครบทุกขั้นของบทนี้แล้ว'); }
+      }
     });
   });
 

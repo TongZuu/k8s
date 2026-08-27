@@ -65,13 +65,22 @@ main{max-width:920px;padding:24px 30px 120px}
   padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
 .step.done{background:var(--done-bg);border-color:var(--done-line)}
 .step.done .step-body{opacity:.62}
-.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head{display:flex;align-items:flex-start;gap:10px;padding-top:14px}
 .step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
 .step.done .step-head h2{color:var(--done-ink)}
-.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-  border:1px solid var(--line);background:transparent;color:var(--dim);
-  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
-  transition:all .2s;margin-top:3px}
+/* เครื่องหมายถูกที่หัวข้อ — โผล่เฉพาะตอนทำแล้ว ให้กวาดตาหาได้เร็วตอนเลื่อนผ่าน */
+.head-tick{display:none;flex-shrink:0;color:var(--done-ink);font-size:19px;
+  font-weight:700;line-height:1.5}
+.step.done .head-tick{display:block}
+
+/* ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง */
+.step-foot{display:flex;justify-content:flex-end;padding:6px 0 2px;margin-top:14px;
+  border-top:1px dashed var(--line)}
+.step.done .step-foot{border-top-color:var(--done-line)}
+.done-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:20px;padding:7px 18px;font-size:13px;font-family:var(--font);
+  transition:all .2s;margin-top:10px}
 .done-btn:hover{border-color:var(--accent);color:var(--accent)}
 .done-btn .tick{opacity:.35;font-weight:700}
 .step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
@@ -100,7 +109,7 @@ img{max-width:100%}
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .cb-bar{display:flex;align-items:center;justify-content:space-between;
-  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-top:1px solid var(--line)}
 .cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
   letter-spacing:.5px}
 .cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
@@ -174,17 +183,17 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ทำไมบทนี้จำเป็น ไม่ใช่ของฟุ่มเฟือย</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ทำไมบทนี้จำเป็น ไม่ใช่ของฟุ่มเฟือย</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>cluster เดิมไม่มี metric ย้อนหลังเลย ทำให้ตอบคำถาม <strong>&quot;เมื่อคืนตอนตีสามเกิดอะไรขึ้น&quot;</strong>
 ไม่ได้ และเมื่อตอบไม่ได้ก็แก้ที่ต้นเหตุไม่ได้ — วนกลับมาเจอปัญหาเดิมซ้ำ</p>
 <p><strong>และสำหรับ cluster ชุดนี้มีเหตุผลเพิ่มอีกข้อ:</strong> เราไม่มี Ksplice จึงต้อง drain node
 ทุก 1-2 เดือน ถ้าไม่มี alert เตือนว่า Deployment ไหนไม่มี PDB หรือ capacity ใกล้เต็ม
 วันที่ patch จริงจะกลายเป็นวันที่ service ล่ม</p>
 <hr />
-</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · metrics-server</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · metrics-server</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>ตัวนี้ไม่เก็บข้อมูลย้อนหลัง แค่ป้อนตัวเลขปัจจุบันให้ <code>kubectl top</code> และ HPA
 <strong>ไม่ต้องใช้ storage</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 helm repo update
@@ -196,11 +205,11 @@ helm install metrics-server metrics-server/metrics-server \
   --set 'args={--kubelet-preferred-address-types=InternalIP}'
 
 kubectl -n kube-system rollout status deploy/metrics-server --timeout=3m
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจ — รอ ~60 วินาทีให้เก็บ metric รอบแรกก่อน:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl top nodes
+<div class="cb"><pre><code class="language-bash">kubectl top nodes
 kubectl top pods -A | head
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ตัวเลข CPU/MEM ของทั้ง 6 node ไม่มี <code>&lt;unknown&gt;</code></p>
 <blockquote>
 <p>ถ้าเจอ <code>error: Metrics API not available</code> ให้รออีก 1 นาที ถ้ายังไม่ได้ให้ดู
@@ -209,10 +218,10 @@ certificate ของ kubelet ไม่ผ่านการตรวจ ซึ�
 <strong>แต่ให้ดูสาเหตุจริงก่อน อย่าเติม flag นี้แบบไม่คิด</strong></p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · kube-prometheus-stack</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · kube-prometheus-stack</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>ชุดนี้รวม Prometheus + Alertmanager + Grafana + node-exporter + kube-state-metrics
 มาให้ในครั้งเดียว</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+<div class="cb"><pre><code class="language-bash">helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 
 helm install monitoring prometheus-community/kube-prometheus-stack \
@@ -221,35 +230,35 @@ helm install monitoring prometheus-community/kube-prometheus-stack \
   -f /root/k8s/config/monitoring/kube-prometheus-values.yaml
 
 kubectl -n monitoring rollout status statefulset/prometheus-monitoring-kube-prometheus-prometheus --timeout=10m
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจ PV ผูกแล้ว:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get pv
+<div class="cb"><pre><code class="language-bash">kubectl get pv
 kubectl -n monitoring get pvc
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>prometheus-data</code> และ <code>grafana-data</code> เปลี่ยนจาก <code>Available</code> เป็น <strong><code>Bound</code></strong></p>
 <blockquote>
 <p>ถ้า PVC ค้าง <code>Pending</code> ให้ดู <code>kubectl -n monitoring describe pvc &lt;ชื่อ&gt;</code>
 สาเหตุที่พบบ่อยคือขนาดที่ขอไม่ตรงกับ PV หรือ <code>storageClassName</code> ไม่ตรง</p>
 </blockquote>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n monitoring get pods
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring get pods
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ทุก pod <code>Running</code> · <code>node-exporter</code> ต้องมี <strong>6 ตัว</strong> (ครบทุก node)</p>
 <p><strong>ตรวจว่า Prometheus scrape ได้จริง:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &amp;
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &amp;
 sleep 3
 curl -s 'http://localhost:9090/api/v1/targets?state=active' | jq -r '.data.activeTargets[] | "\(.health)  \(.labels.job)"' | sort | uniq -c
 kill %1
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ทุกบรรทัดเป็น <code>up</code> — ถ้ามี <code>down</code> ให้ไล่ดูทีละตัวก่อนไปต่อ</p>
 <hr />
-</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · Loki + Alloy (รวม log)</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · Loki + Alloy (รวม log)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>pod ตายแล้ว log หายไปด้วยถ้าไม่มีที่รวม</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">helm repo add grafana https://grafana.github.io/helm-charts &amp;&amp; helm repo update
+<div class="cb"><pre><code class="language-bash">helm repo add grafana https://grafana.github.io/helm-charts &amp;&amp; helm repo update
 
 # ⚠️ pin chart version ก่อน แล้วเขียนกลับลง versions.env
 helm search repo grafana/loki --versions | head -3
-</code></pre></div>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">helm install loki grafana/loki \
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">helm install loki grafana/loki \
   --namespace monitoring \
   --version "${LOKI_CHART}" \
   -f /root/k8s/config/monitoring/loki-values.yaml
@@ -261,19 +270,19 @@ helm install alloy grafana/alloy \
 
 kubectl -n monitoring get pods -l app.kubernetes.io/name=loki
 kubectl -n monitoring get ds -l app.kubernetes.io/name=alloy
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> Loki <code>Running</code> และ Alloy DaemonSet <code>6/6</code></p>
 <hr />
-</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · เข้า Grafana</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n monitoring get secret monitoring-grafana \
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · เข้า Grafana</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring get secret monitoring-grafana \
   -o jsonpath='{.data.admin-password}' | base64 -d; echo
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>เปิดผ่าน Gateway</strong> (แนะนำ — จะได้ไม่ต้อง port-forward ทุกครั้ง):</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/monitoring/grafana-route.yaml
+<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/monitoring/grafana-route.yaml
 GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
 curl -I --cacert /root/k8s/myhr-root-ca.crt \
      --resolve "grafana.myhr.co.th:443:${GW_IP}" https://grafana.myhr.co.th
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>เปลี่ยนรหัส admin ทันทีหลังเข้าครั้งแรก</strong> และเก็บลงที่เก็บ secret ไม่ใช่ในไฟล์นี้</p>
 <p><strong>ตรวจ dashboard ที่ควรใช้ได้เลย:</strong></p>
 <ul>
@@ -283,15 +292,15 @@ curl -I --cacert /root/k8s/myhr-root-ca.crt \
 </ul>
 <p><strong>เพิ่ม Loki เป็น data source</strong> (chart ตั้งให้อัตโนมัติถ้าใช้ values ที่ให้มา)
 แล้วลองค้น log:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">{namespace="kube-system"} |= "error"
-</code></pre></div>
+<div class="cb"><pre><code class="language-text">{namespace="kube-system"} |= "error"
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · 🔴 Alert ขั้นต่ำที่ต้องมี</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · 🔴 Alert ขั้นต่ำที่ต้องมี</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>chart มาพร้อม alert ของ Kubernetes พื้นฐานแล้ว แต่ <strong>ขาด 4 ข้อที่เฉพาะกับ cluster ชุดนี้</strong>
 ซึ่งมาจากข้อจำกัดที่เราเลือกไว้เอง</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/monitoring/myhr-alerts.yaml
+<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/monitoring/myhr-alerts.yaml
 kubectl -n monitoring get prometheusrule
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <table>
 <thead>
 <tr>
@@ -321,30 +330,30 @@ kubectl -n monitoring get prometheusrule
 <p>พร้อมของมาตรฐานที่ต้องเปิดด้วย: <code>KubeNodeNotReady</code>, <code>KubePodCrashLooping</code>,
 <code>etcdInsufficientMembers</code>, <code>NodeFilesystemAlmostOutOfSpace</code>, <code>CiliumAgentDown</code></p>
 <p><strong>ตรวจว่า rule โหลดแล้ว:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &amp;
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &amp;
 sleep 3
 curl -s 'http://localhost:9090/api/v1/rules' | jq -r '.data.groups[].name' | sort -u
 kill %1
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ตั้งปลายทางของ alert</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ตั้งปลายทางของ alert</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><strong>alert ที่ไม่มีใครเห็น = ไม่มี alert</strong> — ข้อนี้ห้ามข้าม</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n monitoring edit secret alertmanager-monitoring-kube-prometheus-alertmanager
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring edit secret alertmanager-monitoring-kube-prometheus-alertmanager
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>หรือแก้ที่ <code>config/monitoring/alertmanager-config.yaml</code> แล้ว apply
 ตั้งปลายทางเป็น email / Line Notify / Teams ตามที่ทีมใช้จริง</p>
 <p><strong>ทดสอบว่าส่งถึงจริง:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 &amp;
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 &amp;
 sleep 3
 curl -s -XPOST http://localhost:9093/api/v2/alerts -H 'Content-Type: application/json' -d '[{
   "labels": {"alertname":"TestAlert","severity":"warning"},
   "annotations": {"summary":"ทดสอบว่า alert ส่งถึงจริง"}
 }]'
 kill %1
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ต้องเห็นข้อความจริงเข้ามาที่ปลายทาง</strong> ถ้าไม่เข้าให้แก้จนกว่าจะเข้า</p>
 <hr />
-</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>7 · กันไม่ให้ monitoring กิน disk จนเต็ม</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>7 · กันไม่ให้ monitoring กิน disk จนเต็ม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><code>/var/lib/monitoring</code> อยู่บน <strong>root partition</strong> ร่วมกับ log และ OS
 ถ้า Prometheus โตจนเต็ม node จะกลายเป็น <code>NotReady</code> ทั้งเครื่อง</p>
 <p>ค่า retention ที่ตั้งไว้ใน values:</p>
@@ -370,13 +379,13 @@ kill %1
 </tbody>
 </table>
 <p><strong>ตรวจของจริงหลังใช้ไป 1 สัปดาห์:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n monitoring exec -it prometheus-monitoring-kube-prometheus-prometheus-0 -c prometheus -- df -h /prometheus
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring exec -it prometheus-monitoring-kube-prometheus-prometheus-0 -c prometheus -- df -h /prometheus
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>และตรวจบน worker03 โดยตรง:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">ssh root@192.168.50.106 'du -sh /var/lib/monitoring/* &amp;&amp; df -h /'
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">ssh root@192.168.50.106 'du -sh /var/lib/monitoring/* &amp;&amp; df -h /'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <ul>
 <li>[ ] <code>kubectl top nodes</code> ขึ้นตัวเลขครบ 6 เครื่อง</li>
 <li>[ ] PV <code>prometheus-data</code>, <code>grafana-data</code>, <code>loki-data</code> เป็น <strong><code>Bound</code></strong></li>
@@ -388,7 +397,7 @@ kill %1
 <li>[ ] จด disk usage เริ่มต้นไว้เป็น baseline</li>
 </ul>
 <p><strong>➡️ ต่อที่ <a href="10-security.html">บทที่ 10 — Security Baseline</a></strong></p>
-</div></section>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="08-storage.html">← Storage</a><a class="pn" href="10-security.html">Security →</a></div>
   </main>
 </div>
@@ -435,8 +444,16 @@ kill %1
   document.querySelectorAll('.done-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      var marking = i<0;
       if(i>=0){ done.splice(i,1); } else { done.push(n); }
       setMine(done); paint();
+      // กดทำแล้ว = พาไปขั้นถัดไปให้เลย ไม่ต้องเลื่อนหาเอง
+      // ตอนยกเลิกไม่พาไปไหน เพราะคนน่าจะอยากอยู่ตรงนั้นต่อ
+      if(marking){
+        var nx=nextStep();
+        if(nx){ nx.scrollIntoView({behavior:'smooth', block:'start'}); }
+        else { toast('ครบทุกขั้นของบทนี้แล้ว'); }
+      }
     });
   });
 

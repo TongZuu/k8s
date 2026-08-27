@@ -65,13 +65,22 @@ main{max-width:920px;padding:24px 30px 120px}
   padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
 .step.done{background:var(--done-bg);border-color:var(--done-line)}
 .step.done .step-body{opacity:.62}
-.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head{display:flex;align-items:flex-start;gap:10px;padding-top:14px}
 .step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
 .step.done .step-head h2{color:var(--done-ink)}
-.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-  border:1px solid var(--line);background:transparent;color:var(--dim);
-  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
-  transition:all .2s;margin-top:3px}
+/* เครื่องหมายถูกที่หัวข้อ — โผล่เฉพาะตอนทำแล้ว ให้กวาดตาหาได้เร็วตอนเลื่อนผ่าน */
+.head-tick{display:none;flex-shrink:0;color:var(--done-ink);font-size:19px;
+  font-weight:700;line-height:1.5}
+.step.done .head-tick{display:block}
+
+/* ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง */
+.step-foot{display:flex;justify-content:flex-end;padding:6px 0 2px;margin-top:14px;
+  border-top:1px dashed var(--line)}
+.step.done .step-foot{border-top-color:var(--done-line)}
+.done-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:20px;padding:7px 18px;font-size:13px;font-family:var(--font);
+  transition:all .2s;margin-top:10px}
 .done-btn:hover{border-color:var(--accent);color:var(--accent)}
 .done-btn .tick{opacity:.35;font-weight:700}
 .step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
@@ -100,7 +109,7 @@ img{max-width:100%}
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .cb-bar{display:flex;align-items:center;justify-content:space-between;
-  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-top:1px solid var(--line)}
 .cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
   letter-spacing:.5px}
 .cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
@@ -174,10 +183,10 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>สิ่งที่กำลังจะสร้าง</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>สิ่งที่กำลังจะสร้าง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>Kubernetes <strong>1.36.3</strong> แบบ HA บน Oracle Linux 9.8 — control plane 3 เครื่อง (stacked etcd)
 worker 3 เครื่อง โดยมี Cilium ทำหน้าที่ CNI, แทน kube-proxy และจ่าย LoadBalancer IP ในตัวเดียว</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">                        ┌──────────────────────────────┐
+<div class="cb"><pre><code class="language-text">                        ┌──────────────────────────────┐
    client ──────────────►  VIP 192.168.50.100:8443     │  keepalived + HAProxy
                         │  (ลอยอยู่บน master ตัวใดตัวหนึ่ง) │  เป็น systemd service
                         └───────────────┬──────────────┘
@@ -190,9 +199,9 @@ worker 3 เครื่อง โดยมี Cilium ทำหน้าที�
                     ┌───────────────────┼───────────────────┐
                     ▼                   ▼                   ▼
               worker01 .104       worker02 .105       worker03 .106
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>บทบาทของเครื่อง — มีแค่ 3 แบบ</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>บทบาทของเครื่อง — มีแค่ 3 แบบ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>คู่มือทั้งชุดเขียนตาม <strong>บทบาท</strong> ไม่ใช่ตามชื่อเครื่อง ทุกบทจะบอกหัวบทว่ารันที่ไหน</p>
 <table>
 <thead>
@@ -226,7 +235,7 @@ worker 3 เครื่อง โดยมี Cilium ทำหน้าที�
 </tbody>
 </table>
 <hr />
-</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>ลำดับการทำ — ห้ามข้ามขั้น</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>ลำดับการทำ — ห้ามข้ามขั้น</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>ชั้นล่างต้องผ่าน verify ก่อนขึ้นชั้นบนเสมอ ถ้าข้ามลำดับ อาการจะไปโผล่ที่ชั้นบนสุด
 แบบไม่มีเบาะแส (เช่น pod ข้าม node ไม่ได้ ทั้งที่จริงเป็นเรื่อง firewall ที่บทที่ 01)</p>
 <table>
@@ -283,7 +292,7 @@ worker 3 เครื่อง โดยมี Cilium ทำหน้าที�
 เพราะ <code>controlPlaneEndpoint</code> แก้ทีหลังไม่ได้โดยไม่ออก certificate ใหม่ทั้งหมด</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>ก่อนเริ่ม — ต้องมีครบ 6 ข้อ</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>ก่อนเริ่ม — ต้องมีครบ 6 ข้อ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <ul>
 <li>[ ] VM 6 เครื่องพร้อม ตาม IP ในตารางด้านล่าง และ <strong>master ทั้ง 3 อยู่คนละ ESXi host</strong> (DRS anti-affinity)</li>
 <li>[ ] <strong>VIP <code>192.168.50.100</code> จองแล้ว</strong> และยังไม่มีเครื่องไหนใช้ — ตรวจด้วย <code>ping -c2 192.168.50.100</code> ต้องไม่มีคนตอบ</li>
@@ -293,7 +302,7 @@ worker 3 เครื่อง โดยมี Cilium ทำหน้าที�
 <li>[ ] คัดลอก <code>versions.env</code> และโฟลเดอร์ <code>config/</code> ไปไว้ที่ <code>/root/k8s/</code> บนทุกเครื่องแล้ว</li>
 </ul>
 <hr />
-</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>ตารางเครื่อง</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>ตารางเครื่อง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <table>
 <thead>
 <tr>
@@ -357,12 +366,12 @@ worker 3 เครื่อง โดยมี Cilium ทำหน้าที�
 </tbody>
 </table>
 <hr />
-</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>กติกา 4 ข้อของคู่มือชุดนี้</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>กติกา 4 ข้อของคู่มือชุดนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><strong>1 · ทุกเวอร์ชันมาจาก <code>versions.env</code> เท่านั้น</strong>
 รันบรรทัดนี้ก่อนเริ่มทุก session บนทุกเครื่อง — ถ้าลืม คำสั่งจะ error ทันทีเพราะตัวแปรว่าง
 ซึ่งดีกว่าเผลอไปติดตั้งเวอร์ชันผิด</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>2 · ทุกคำสั่งมี &quot;ผลลัพธ์ที่ควรเห็น&quot;</strong>
 ถ้าผลไม่ตรง <strong>ให้หยุดตรงนั้น</strong> อย่าไปต่อแล้วค่อยกลับมาแก้</p>
 <p><strong>3 · ไม่มีความลับในไฟล์นี้</strong>
@@ -370,7 +379,7 @@ password, token และ key ทั้งหมดเป็น placeholder ค�
 <p><strong>4 · ห้าม <code>kubectl edit</code> บน cluster ตรง ๆ</strong>
 ทุกอย่างที่ apply ต้องมาจากไฟล์ใน git เพราะเราไม่มี GitOps มาบังคับให้</p>
 <hr />
-</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>ความจริงสองข้อที่ส่งผลกับทุกอย่างหลังจากนี้</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>ความจริงสองข้อที่ส่งผลกับทุกอย่างหลังจากนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><strong>ไม่มี Ksplice</strong> — ใช้ Oracle Linux แบบฟรี จึงปะ kernel โดยไม่ reboot ไม่ได้
 แปลว่าต้อง drain ทุก node ทุก 1-2 เดือน ผลคือ <strong>ทุก Deployment ต้องมี PodDisruptionBudget
 และ replica ≥ 2</strong> ไม่ใช่ข้อแนะนำแต่เป็นข้อบังคับ</p>
@@ -378,12 +387,12 @@ password, token และ key ทั้งหมดเป็น placeholder ค�
 แต่แลกมาด้วยว่า Cilium มีปัญหาทีเดียว pod network, Service และ LoadBalancer ดับพร้อมกัน
 และ <strong>ไม่มี kube-proxy ให้ถอยกลับไปใช้</strong> เพราะไม่ได้ติดตั้งไว้เลย</p>
 <hr />
-</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>capacity ที่ใช้ได้จริง</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>capacity ที่ใช้ได้จริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>worker รวมกันได้ 48 vCPU / 144 GB <strong>แต่วางแผนได้แค่ 32 vCPU / 96 GB</strong>
 เพราะเวลา drain หนึ่งเครื่องจะเหลือ worker ทำงาน 2 ตัว</p>
 <p>ผลรวมของ <code>requests</code> ทุก pod ต้องไม่เกินตัวเลขนี้ ไม่งั้นวันที่ patch kernel
 จะมี pod ค้าง <code>Pending</code> และ drain ไม่จบ</p>
-</div></section>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><span class="pn dim">— เริ่มที่นี่ —</span><a class="pn" href="01-prepare-os.html">เตรียม OS →</a></div>
   </main>
 </div>
@@ -430,8 +439,16 @@ password, token และ key ทั้งหมดเป็น placeholder ค�
   document.querySelectorAll('.done-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      var marking = i<0;
       if(i>=0){ done.splice(i,1); } else { done.push(n); }
       setMine(done); paint();
+      // กดทำแล้ว = พาไปขั้นถัดไปให้เลย ไม่ต้องเลื่อนหาเอง
+      // ตอนยกเลิกไม่พาไปไหน เพราะคนน่าจะอยากอยู่ตรงนั้นต่อ
+      if(marking){
+        var nx=nextStep();
+        if(nx){ nx.scrollIntoView({behavior:'smooth', block:'start'}); }
+        else { toast('ครบทุกขั้นของบทนี้แล้ว'); }
+      }
     });
   });
 

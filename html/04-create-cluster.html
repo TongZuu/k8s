@@ -65,13 +65,22 @@ main{max-width:920px;padding:24px 30px 120px}
   padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
 .step.done{background:var(--done-bg);border-color:var(--done-line)}
 .step.done .step-body{opacity:.62}
-.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head{display:flex;align-items:flex-start;gap:10px;padding-top:14px}
 .step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
 .step.done .step-head h2{color:var(--done-ink)}
-.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-  border:1px solid var(--line);background:transparent;color:var(--dim);
-  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
-  transition:all .2s;margin-top:3px}
+/* เครื่องหมายถูกที่หัวข้อ — โผล่เฉพาะตอนทำแล้ว ให้กวาดตาหาได้เร็วตอนเลื่อนผ่าน */
+.head-tick{display:none;flex-shrink:0;color:var(--done-ink);font-size:19px;
+  font-weight:700;line-height:1.5}
+.step.done .head-tick{display:block}
+
+/* ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง */
+.step-foot{display:flex;justify-content:flex-end;padding:6px 0 2px;margin-top:14px;
+  border-top:1px dashed var(--line)}
+.step.done .step-foot{border-top-color:var(--done-line)}
+.done-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:20px;padding:7px 18px;font-size:13px;font-family:var(--font);
+  transition:all .2s;margin-top:10px}
 .done-btn:hover{border-color:var(--accent);color:var(--accent)}
 .done-btn .tick{opacity:.35;font-weight:700}
 .step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
@@ -100,7 +109,7 @@ img{max-width:100%}
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .cb-bar{display:flex;align-items:center;justify-content:space-between;
-  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-top:1px solid var(--line)}
 .cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
   letter-spacing:.5px}
 .cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
@@ -174,37 +183,37 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ตรวจก่อนเริ่ม — 4 ข้อ</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ตรวจก่อนเริ่ม — 4 ข้อ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>รันบน <strong>master01</strong>:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 
 ip -4 addr show | grep -q "$VIP" &amp;&amp; echo "1. VIP อยู่ที่เครื่องนี้ ✓" || echo "1. VIP ไม่ได้อยู่ที่นี่ — ตรวจก่อน"
 ss -lnt | grep -q ':8443' &amp;&amp; echo "2. HAProxy ฟังอยู่ ✓"
 systemctl is-active containerd | grep -q active &amp;&amp; echo "3. containerd ทำงาน ✓"
 crictl info | jq -r '.config.containerd.runtimes.runc.options.SystemdCgroup' | grep -q true &amp;&amp; echo "4. SystemdCgroup=true ✓"
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ต้องได้ ✓ ครบ 4 ข้อ</strong> ถ้าข้อไหนไม่ผ่านให้กลับไปแก้บทก่อนหน้า</p>
 <blockquote>
 <p>VIP <strong>ไม่จำเป็น</strong> ต้องอยู่ที่ master01 ตอน init (HAProxy จะ forward ให้เอง)
 แต่ทำตอนอยู่ที่ master01 จะไล่ log ง่ายกว่า</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · 👑 ดึง image ล่วงหน้า</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubeadm config images list --kubernetes-version "v${K8S_VERSION}"
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · 👑 ดึง image ล่วงหน้า</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">kubeadm config images list --kubernetes-version "v${K8S_VERSION}"
 kubeadm config images pull --kubernetes-version "v${K8S_VERSION}"
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> รายการ image และข้อความ <code>Pulled</code> ทีละบรรทัด ไม่มี error</p>
 <blockquote>
 <p>ทำแยกขั้นเพื่อให้แยกได้ว่าปัญหาคือ &quot;ดึง image ไม่ได้&quot; กับ &quot;init ไม่ผ่าน&quot;
 ถ้ารวมกันแล้วพัง จะไล่หาสาเหตุยากกว่า</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · 👑 เตรียม config และ init</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">mkdir -p /var/log/kubernetes    # ปลายทางของ audit log ที่ระบุใน config
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · 👑 เตรียม config และ init</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">mkdir -p /var/log/kubernetes    # ปลายทางของ audit log ที่ระบุใน config
 
 # ตรวจ config ก่อนใช้จริง
 kubeadm init phase preflight --config=/root/k8s/config/kubeadm/kubeadm-config.yaml --dry-run 2&gt;&amp;1 | tail -20
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p><strong>ไม่ต้องสร้าง token เอง</strong> — <a href="../config/kubeadm/kubeadm-config.yaml"><code>kubeadm-config.yaml</code></a> ตั้ง <code>token: &quot;&quot;</code> ไว้
 ซึ่งแปลว่าให้ kubeadm สร้างให้เองตอน <code>init</code> และมีอายุตาม <code>ttl: 2h</code> ที่ระบุไว้</p>
@@ -212,12 +221,12 @@ kubeadm init phase preflight --config=/root/k8s/config/kubeadm/kubeadm-config.ya
 <code>kubeadm token create --print-join-command</code> (ดูข้อ 4)</p>
 </blockquote>
 <h3>🔴 คำสั่ง init</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubeadm init \
+<div class="cb"><pre><code class="language-bash">kubeadm init \
   --config=/root/k8s/config/kubeadm/kubeadm-config.yaml \
   --upload-certs \
   --skip-phases=addon/kube-proxy \
   | tee /root/k8s/kubeadm-init.log
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p><strong><code>--skip-phases=addon/kube-proxy</code> ห้ามลืม</strong> — ถ้าลืม kube-proxy จะถูกติดตั้ง
 แล้วไปชนกับ Cilium kube-proxy replacement ในบทที่ 05
@@ -225,30 +234,30 @@ kubeadm init phase preflight --config=/root/k8s/config/kubeadm/kubeadm-config.ya
 แต่ทำให้ถูกตั้งแต่แรกดีกว่า</p>
 </blockquote>
 <p><strong>ควรเห็นท้ายสุด:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">Your Kubernetes control-plane has initialized successfully!
+<div class="cb"><pre><code class="language-text">Your Kubernetes control-plane has initialized successfully!
 ...
 You can now join any number of control-plane nodes ...
   kubeadm join 192.168.50.100:8443 --token ... --control-plane --certificate-key ...
 Then you can join any number of worker nodes ...
   kubeadm join 192.168.50.100:8443 --token ... 
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p>🔒 <strong><code>kubeadm-init.log</code> มี certificate key และ token อยู่ข้างใน</strong>
 เก็บให้ปลอดภัย และ <strong>ห้าม commit ลง git</strong> — <code>certificate-key</code> หมดอายุใน 2 ชั่วโมง
 ส่วน token หมดตาม <code>ttl</code> ที่ตั้งไว้</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · 👑 ตั้ง kubeconfig</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">mkdir -p "$HOME/.kube"
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · 👑 ตั้ง kubeconfig</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">mkdir -p "$HOME/.kube"
 cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
 chown "$(id -u):$(id -g)" "$HOME/.kube/config"
 
 kubectl cluster-info
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>Kubernetes control plane is running at https://192.168.50.100:8443</code>
 ← <strong>ต้องเป็น VIP:8443</strong> ถ้าเห็น IP ของ master01 แปลว่า <code>controlPlaneEndpoint</code> ไม่ได้ผล ให้หยุดและรื้อทำใหม่</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get nodes
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl get nodes
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>k8s-master01   NotReady   control-plane   ...</code>
 <strong><code>NotReady</code> ถูกต้องแล้ว</strong> — เพราะยังไม่มี CNI (จะลงในบทที่ 05)</p>
 <h3>เรื่อง <code>admin.conf</code> กับ <code>super-admin.conf</code></h3>
@@ -279,83 +288,83 @@ kubectl cluster-info
 เก็บไว้เป็นทางออกสุดท้ายเวลาเผลอลบ ClusterRoleBinding ของตัวเอง</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · 🎩 Join master02 และ master03</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · 🎩 Join master02 และ master03</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>รันบน <strong>master02 ก่อน แล้วรอให้เสร็จ</strong> จึงทำ master03 — อย่าทำพร้อมกัน
 เพราะ etcd ต้องการให้ member เข้าทีละตัว</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ใช้คำสั่งจาก <code>kubeadm-init.log</code> — หน้าตาแบบนี้:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubeadm join 192.168.50.100:8443 \
+<div class="cb"><pre><code class="language-bash">kubeadm join 192.168.50.100:8443 \
   --token &lt;BOOTSTRAP_TOKEN&gt; \
   --discovery-token-ca-cert-hash sha256:&lt;CA_CERT_HASH&gt; \
   --control-plane \
   --certificate-key &lt;CERTIFICATE_KEY&gt; \
   --cri-socket unix:///run/containerd/containerd.sock
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>ถ้าเกิน 2 ชั่วโมงไปแล้ว (certificate-key หมดอายุ)</h3>
 <p>รันบน <strong>master01</strong> เพื่อออกชุดใหม่:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubeadm init phase upload-certs --upload-certs        # ได้ certificate-key ใหม่
+<div class="cb"><pre><code class="language-bash">kubeadm init phase upload-certs --upload-certs        # ได้ certificate-key ใหม่
 kubeadm token create --print-join-command             # ได้ token + hash ใหม่
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>แล้วเอาสองอย่างมาต่อกันเป็นคำสั่ง join ข้างบน</p>
 <p><strong>ตรวจหลัง join แต่ละตัว (บน master01):</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get nodes
+<div class="cb"><pre><code class="language-bash">kubectl get nodes
 kubectl -n kube-system get pods -l component=etcd -o wide
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> node เพิ่มขึ้นทีละตัว และมี pod <code>etcd-k8s-masterXX</code> เพิ่มตาม</p>
 <p><strong>ตั้ง kubeconfig บน master02/03 ด้วย:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">mkdir -p "$HOME/.kube"
+<div class="cb"><pre><code class="language-bash">mkdir -p "$HOME/.kube"
 cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
 chown "$(id -u):$(id -g)" "$HOME/.kube/config"
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · ⚙️ Join worker ทั้ง 3 เครื่อง</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · ⚙️ Join worker ทั้ง 3 เครื่อง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>worker join พร้อมกันได้ ไม่ต้องรอทีละตัว</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubeadm join 192.168.50.100:8443 \
+<div class="cb"><pre><code class="language-bash">kubeadm join 192.168.50.100:8443 \
   --token &lt;BOOTSTRAP_TOKEN&gt; \
   --discovery-token-ca-cert-hash sha256:&lt;CA_CERT_HASH&gt; \
   --cri-socket unix:///run/containerd/containerd.sock
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p><strong>ไม่มี <code>--control-plane</code> และไม่มี <code>--certificate-key</code></strong> — สองอย่างนี้ใช้เฉพาะ master</p>
 </blockquote>
 <p>ถ้า token หมดอายุ รันบน master01: <code>kubeadm token create --print-join-command</code></p>
 <hr />
-</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ตรวจสถานะรวม</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ตรวจสถานะรวม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>รันบน <strong>master01</strong>:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get nodes -o wide
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl get nodes -o wide
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็นครบ 6 เครื่อง สถานะ <code>NotReady</code> ทั้งหมด:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">NAME            STATUS     ROLES           VERSION   INTERNAL-IP
+<div class="cb"><pre><code class="language-text">NAME            STATUS     ROLES           VERSION   INTERNAL-IP
 k8s-master01    NotReady   control-plane   v1.36.3   192.168.50.101
 k8s-master02    NotReady   control-plane   v1.36.3   192.168.50.102
 k8s-master03    NotReady   control-plane   v1.36.3   192.168.50.103
 k8s-worker01    NotReady   &lt;none&gt;          v1.36.3   192.168.50.104
 k8s-worker02    NotReady   &lt;none&gt;          v1.36.3   192.168.50.105
 k8s-worker03    NotReady   &lt;none&gt;          v1.36.3   192.168.50.106
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong><code>NotReady</code> ทั้งหมดคือสิ่งที่ถูกต้องในขั้นนี้</strong> — จะกลายเป็น <code>Ready</code> หลังลง Cilium</p>
 <p><strong>ยืนยันว่าไม่มี kube-proxy:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n kube-system get ds
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system get ds
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ต้องไม่เห็น</strong> <code>kube-proxy</code> ในรายการ — ถ้าเห็นแปลว่าลืม <code>--skip-phases</code> ให้ลบทิ้ง:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n kube-system delete ds kube-proxy
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system delete ds kube-proxy
 kubectl -n kube-system delete cm kube-proxy
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจ etcd ว่าครบ 3 member และมี leader:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n kube-system exec -it etcd-k8s-master01 -- etcdctl \
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec -it etcd-k8s-master01 -- etcdctl \
   --endpoints=https://127.0.0.1:2379 \
   --cacert=/etc/kubernetes/pki/etcd/ca.crt \
   --cert=/etc/kubernetes/pki/etcd/server.crt \
   --key=/etc/kubernetes/pki/etcd/server.key \
   endpoint status --cluster -w table
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> 3 แถว และมีเครื่องเดียวที่ <code>IS LEADER = true</code></p>
 <p><strong>ตรวจว่า HAProxy เห็น backend ขึ้นครบแล้ว</strong> (บน master ตัวใดก็ได้):</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">curl -s http://127.0.0.1:8404/stats | grep -o 'k8s-master0[123]' | head
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">curl -s http://127.0.0.1:8404/stats | grep -o 'k8s-master0[123]' | head
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <ul>
 <li>[ ] <code>kubectl cluster-info</code> ชี้ไปที่ <strong><code>https://192.168.50.100:8443</code></strong></li>
 <li>[ ] <code>kubectl get nodes</code> เห็นครบ <strong>6 เครื่อง</strong> ทุกตัว version <code>v1.36.3</code></li>
@@ -365,12 +374,12 @@ kubectl -n kube-system delete cm kube-proxy
 <li>[ ] เก็บ <code>kubeadm-init.log</code> ไว้ที่ปลอดภัยแล้ว และ<strong>ไม่ได้อยู่ใน git</strong></li>
 </ul>
 <p><strong>ตรวจอายุ certificate ไว้เป็น baseline:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubeadm certs check-expiration
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubeadm certs check-expiration
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> cert ทั่วไปเหลือ ~364 วัน · CA เหลือ ~3649 วัน
 <strong>จดวันหมดอายุลงปฏิทินทีมทันที</strong> — นี่คือสิ่งที่ cluster เดิมพลาดจนต้องรื้อทำใหม่</p>
 <p><strong>➡️ ต่อที่ <a href="05-cilium.html">บทที่ 05 — Cilium</a></strong></p>
-</div></section>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="03-ha-layer.html">← HA Layer</a><a class="pn" href="05-cilium.html">Cilium →</a></div>
   </main>
 </div>
@@ -417,8 +426,16 @@ kubectl -n kube-system delete cm kube-proxy
   document.querySelectorAll('.done-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      var marking = i<0;
       if(i>=0){ done.splice(i,1); } else { done.push(n); }
       setMine(done); paint();
+      // กดทำแล้ว = พาไปขั้นถัดไปให้เลย ไม่ต้องเลื่อนหาเอง
+      // ตอนยกเลิกไม่พาไปไหน เพราะคนน่าจะอยากอยู่ตรงนั้นต่อ
+      if(marking){
+        var nx=nextStep();
+        if(nx){ nx.scrollIntoView({behavior:'smooth', block:'start'}); }
+        else { toast('ครบทุกขั้นของบทนี้แล้ว'); }
+      }
     });
   });
 

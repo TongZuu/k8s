@@ -65,13 +65,22 @@ main{max-width:920px;padding:24px 30px 120px}
   padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
 .step.done{background:var(--done-bg);border-color:var(--done-line)}
 .step.done .step-body{opacity:.62}
-.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head{display:flex;align-items:flex-start;gap:10px;padding-top:14px}
 .step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
 .step.done .step-head h2{color:var(--done-ink)}
-.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-  border:1px solid var(--line);background:transparent;color:var(--dim);
-  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
-  transition:all .2s;margin-top:3px}
+/* เครื่องหมายถูกที่หัวข้อ — โผล่เฉพาะตอนทำแล้ว ให้กวาดตาหาได้เร็วตอนเลื่อนผ่าน */
+.head-tick{display:none;flex-shrink:0;color:var(--done-ink);font-size:19px;
+  font-weight:700;line-height:1.5}
+.step.done .head-tick{display:block}
+
+/* ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง */
+.step-foot{display:flex;justify-content:flex-end;padding:6px 0 2px;margin-top:14px;
+  border-top:1px dashed var(--line)}
+.step.done .step-foot{border-top-color:var(--done-line)}
+.done-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:20px;padding:7px 18px;font-size:13px;font-family:var(--font);
+  transition:all .2s;margin-top:10px}
 .done-btn:hover{border-color:var(--accent);color:var(--accent)}
 .done-btn .tick{opacity:.35;font-weight:700}
 .step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
@@ -100,7 +109,7 @@ img{max-width:100%}
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .cb-bar{display:flex;align-items:center;justify-content:space-between;
-  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-top:1px solid var(--line)}
 .cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
   letter-spacing:.5px}
 .cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
@@ -174,33 +183,33 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ทำไมเป็น Gateway API ไม่ใช่ Ingress</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ทำไมเป็น Gateway API ไม่ใช่ Ingress</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><code>ingress-nginx</code> <strong>ปิดโปรเจกต์ไปแล้วเมื่อ มี.ค. 2026</strong> ไม่มี security patch อีกและตัวที่ตั้งใจให้มาแทนก็ถูกยกเลิก
 ในเมื่อรอบนี้เขียนคู่มือใหม่หมดอยู่แล้ว การเริ่มที่ Gateway API เลยแทบไม่มีต้นทุนเพิ่ม
 และตัดปัญหาต้องย้ายสองรอบ</p>
 <p><strong>ภาพรวมที่จะได้ — 1 IP รองรับทุก service:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">ads.myhr.co.th ─┐
+<div class="cb"><pre><code class="language-text">ads.myhr.co.th ─┐
 hr.myhr.co.th  ─┼─→ 192.168.50.200 ─→ Envoy Gateway ─┬─→ zeeme-ads  (ClusterIP)
 api.myhr.co.th ─┘      LB IP เดียว    (แยกด้วย host)  ├─→ zeeme-hr   (ClusterIP)
                                                      └─→ zeeme-api  (ClusterIP)
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>microservice ทุกตัวเป็น <code>ClusterIP</code> ธรรมดา <strong>ไม่กิน IP ของ LAN เลย</strong></p>
 <hr />
-</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · ติดตั้ง Gateway API CRD</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · ติดตั้ง Gateway API CRD</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>Envoy Gateway ต้องการ CRD ชุดนี้ก่อน — เป็นของกลางไม่ผูกกับ implementation ไหน</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 
 kubectl apply -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/v${GATEWAY_API_VERSION}/standard-install.yaml"
 kubectl get crd | grep gateway.networking.k8s.io
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>gatewayclasses</code>, <code>gateways</code>, <code>httproutes</code>, <code>grpcroutes</code>, <code>referencegrants</code></p>
 <blockquote>
 <p>ใช้ <code>standard-install.yaml</code> ไม่ใช่ <code>experimental</code> — <code>TCPRoute</code>/<code>UDPRoute</code> อยู่ใน experimental
 ถ้าวันหนึ่งต้องเปิด TCP ตรง ๆ ค่อยมาเปลี่ยน แต่ตอนนี้ยังไม่มีความจำเป็น</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · ติดตั้ง cert-manager</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">helm repo add jetstack https://charts.jetstack.io &amp;&amp; helm repo update
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · ติดตั้ง cert-manager</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">helm repo add jetstack https://charts.jetstack.io &amp;&amp; helm repo update
 
 helm install cert-manager jetstack/cert-manager \
   --namespace cert-manager --create-namespace \
@@ -212,32 +221,32 @@ helm install cert-manager jetstack/cert-manager \
 
 kubectl -n cert-manager rollout status deploy/cert-manager --timeout=3m
 kubectl -n cert-manager get pods
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> 3 deployment (<code>cert-manager</code>, <code>cert-manager-webhook</code>, <code>cert-manager-cainjector</code>) <code>Running</code> อย่างละ 2 pod</p>
 <blockquote>
 <p><strong><code>replicaCount=2</code> ไม่ใช่ของแถม</strong> — เราต้อง drain node ทุก 1-2 เดือน
 ถ้า webhook เหลือ pod เดียวแล้ว node นั้นถูก drain การสร้าง Certificate ทุกอันจะค้าง</p>
 </blockquote>
 <p><strong>เพิ่ม PDB:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/cert-manager/pdb.yaml
+<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/cert-manager/pdb.yaml
 kubectl -n cert-manager get pdb
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · สร้าง internal CA</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · สร้าง internal CA</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>ระบบภายในไม่ต้องใช้ cert จาก public CA — ออก CA เองแล้วกระจาย root ไปเครื่อง client
 ดีกว่า self-signed รายตัวมาก เพราะไม่ต้องกด &quot;ยอมรับความเสี่ยง&quot; ทุกครั้ง และ cert ต่ออายุเองอัตโนมัติ</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/cert-manager/internal-ca.yaml
+<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/cert-manager/internal-ca.yaml
 
 kubectl -n cert-manager get certificate myhr-internal-ca
 kubectl get clusterissuer myhr-internal-ca-issuer
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> Certificate <code>READY=True</code> และ ClusterIssuer <code>READY=True</code></p>
 <p><strong>ดึง root CA ออกมาแจกให้เครื่อง client:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n cert-manager get secret myhr-internal-ca-key-pair \
+<div class="cb"><pre><code class="language-bash">kubectl -n cert-manager get secret myhr-internal-ca-key-pair \
   -o jsonpath='{.data.tls\.crt}' | base64 -d &gt; /root/k8s/myhr-root-ca.crt
 
 openssl x509 -in /root/k8s/myhr-root-ca.crt -noout -subject -dates
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> subject เป็น <code>CN=MyHR Internal CA</code> และหมดอายุอีก ~10 ปี</p>
 <blockquote>
 <p>📋 <strong>งานที่ต้องทำต่อ (ไม่ใช่งานของ cluster):</strong> เอา <code>myhr-root-ca.crt</code> ไปลงเป็น trusted root
@@ -245,56 +254,56 @@ openssl x509 -in /root/k8s/myhr-root-ca.crt -noout -subject -dates
 ถ้าข้ามข้อนี้ ทุกคนจะเจอ cert warning และจะเริ่มกด &quot;ผ่าน ๆ ไป&quot; ซึ่งอันตรายกว่าไม่มี TLS</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · ติดตั้ง Envoy Gateway</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">helm install envoy-gateway oci://docker.io/envoyproxy/gateway-helm \
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · ติดตั้ง Envoy Gateway</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">helm install envoy-gateway oci://docker.io/envoyproxy/gateway-helm \
   --version "v${ENVOY_GATEWAY_VERSION}" \
   --namespace envoy-gateway-system --create-namespace
 
 kubectl -n envoy-gateway-system rollout status deploy/envoy-gateway --timeout=5m
 kubectl get gatewayclass
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> GatewayClass <code>eg</code> สถานะ <code>ACCEPTED=True</code></p>
 <hr />
-</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · สร้าง Gateway</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/gateway/gateway.yaml
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · สร้าง Gateway</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/gateway/gateway.yaml
 kubectl -n envoy-gateway-system get gateway myhr-gateway
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>PROGRAMMED=True</code> และคอลัมน์ <code>ADDRESS</code> เป็น IP จาก pool เช่น <code>192.168.50.200</code></p>
 <blockquote>
 <p>Envoy Gateway จะสร้าง Service <code>type: LoadBalancer</code> ให้อัตโนมัติ
 ซึ่ง Cilium LB-IPAM จะจ่าย IP ให้ — <strong>นี่คือ IP เดียวที่กินจาก pool ทั้ง 10 ตัว</strong></p>
 </blockquote>
 <p><strong>ถ้า <code>ADDRESS</code> ว่าง:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n envoy-gateway-system get svc
+<div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get svc
 kubectl get ciliumloadbalancerippool default-pool -o yaml | grep -A5 status
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>แปลว่า pool หมดหรือ LB-IPAM มีปัญหา — กลับไปดูบทที่ 05</p>
 <p><strong>ตรวจจากเครื่องนอก cluster:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
+<div class="cb"><pre><code class="language-bash">GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
 echo "Gateway IP = $GW_IP"
 curl -I "http://${GW_IP}"
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>404 Not Found</code> จาก Envoy ← <strong>ถูกต้องแล้ว</strong> เพราะยังไม่มี HTTPRoute
 ถ้า <code>connection refused</code> หรือ timeout ให้กลับไปดูเรื่อง ARP ที่บทที่ 05</p>
 <hr />
-</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ทดสอบด้วย HTTPRoute จริง</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl create ns demo
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ทดสอบด้วย HTTPRoute จริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">kubectl create ns demo
 kubectl -n demo create deployment echo --image=nginx:alpine --replicas=2
 kubectl -n demo expose deployment echo --port=80
 
 kubectl apply -f /root/k8s/config/gateway/httproute-example.yaml
 kubectl -n demo get httproute echo-route
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>PARENTS</code> ผูกกับ <code>myhr-gateway</code> และ <code>ACCEPTED=True</code></p>
 <p><strong>ทดสอบ hostname routing จากเครื่องนอก cluster:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">curl -I -H 'Host: echo.myhr.co.th' "http://${GW_IP}"          # ต้องได้ 200
+<div class="cb"><pre><code class="language-bash">curl -I -H 'Host: echo.myhr.co.th' "http://${GW_IP}"          # ต้องได้ 200
 curl -I -H 'Host: ไม่มีจริง.myhr.co.th' "http://${GW_IP}"      # ต้องได้ 404
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ทดสอบ HTTPS:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">curl -I --cacert /root/k8s/myhr-root-ca.crt \
+<div class="cb"><pre><code class="language-bash">curl -I --cacert /root/k8s/myhr-root-ca.crt \
      --resolve "echo.myhr.co.th:443:${GW_IP}" \
      https://echo.myhr.co.th
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>HTTP/2 200</code> <strong>ไม่มี</strong> cert warning</p>
 <blockquote>
 <p>ถ้าเจอ <code>x509: certificate signed by unknown authority</code> แปลว่า root CA ไม่ถูกต้อง
@@ -302,19 +311,19 @@ curl -I -H 'Host: ไม่มีจริง.myhr.co.th' "http://${GW_IP}"     
 ไม่ตรงกับที่ curl เรียก</p>
 </blockquote>
 <p><strong>เก็บกวาด:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl delete ns demo
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl delete ns demo
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>7 · บังคับ HTTPS</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/gateway/https-redirect.yaml
-</code></pre></div>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>7 · บังคับ HTTPS</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/gateway/https-redirect.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ทำให้ทุก request ที่เข้ามาทาง HTTP ถูก redirect เป็น HTTPS อัตโนมัติ</p>
 <p><strong>ตรวจ:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">curl -I -H 'Host: echo.myhr.co.th' "http://${GW_IP}"
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">curl -I -H 'Host: echo.myhr.co.th' "http://${GW_IP}"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>301 Moved Permanently</code> และ header <code>location: https://...</code></p>
 <hr />
-</div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <ul>
 <li>[ ] Gateway API CRD ครบ (<code>standard-install</code>)</li>
 <li>[ ] cert-manager 3 deployment × 2 replica + PDB</li>
@@ -332,7 +341,7 @@ curl -I -H 'Host: ไม่มีจริง.myhr.co.th' "http://${GW_IP}"     
 <code>*.myhr.co.th</code> (หรือรายตัว) มาที่ IP นี้ ไม่งั้นต้องใช้ <code>--resolve</code> ตลอดไป</p>
 </blockquote>
 <p><strong>➡️ ต่อที่ <a href="08-storage.html">บทที่ 08 — Storage</a></strong></p>
-</div></section>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="06-verify.html">← ตรวจรับระบบ</a><a class="pn" href="08-storage.html">Storage →</a></div>
   </main>
 </div>
@@ -379,8 +388,16 @@ curl -I -H 'Host: ไม่มีจริง.myhr.co.th' "http://${GW_IP}"     
   document.querySelectorAll('.done-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      var marking = i<0;
       if(i>=0){ done.splice(i,1); } else { done.push(n); }
       setMine(done); paint();
+      // กดทำแล้ว = พาไปขั้นถัดไปให้เลย ไม่ต้องเลื่อนหาเอง
+      // ตอนยกเลิกไม่พาไปไหน เพราะคนน่าจะอยากอยู่ตรงนั้นต่อ
+      if(marking){
+        var nx=nextStep();
+        if(nx){ nx.scrollIntoView({behavior:'smooth', block:'start'}); }
+        else { toast('ครบทุกขั้นของบทนี้แล้ว'); }
+      }
     });
   });
 

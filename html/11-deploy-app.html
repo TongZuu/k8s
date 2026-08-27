@@ -65,13 +65,22 @@ main{max-width:920px;padding:24px 30px 120px}
   padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
 .step.done{background:var(--done-bg);border-color:var(--done-line)}
 .step.done .step-body{opacity:.62}
-.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head{display:flex;align-items:flex-start;gap:10px;padding-top:14px}
 .step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
 .step.done .step-head h2{color:var(--done-ink)}
-.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-  border:1px solid var(--line);background:transparent;color:var(--dim);
-  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
-  transition:all .2s;margin-top:3px}
+/* เครื่องหมายถูกที่หัวข้อ — โผล่เฉพาะตอนทำแล้ว ให้กวาดตาหาได้เร็วตอนเลื่อนผ่าน */
+.head-tick{display:none;flex-shrink:0;color:var(--done-ink);font-size:19px;
+  font-weight:700;line-height:1.5}
+.step.done .head-tick{display:block}
+
+/* ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง */
+.step-foot{display:flex;justify-content:flex-end;padding:6px 0 2px;margin-top:14px;
+  border-top:1px dashed var(--line)}
+.step.done .step-foot{border-top-color:var(--done-line)}
+.done-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:20px;padding:7px 18px;font-size:13px;font-family:var(--font);
+  transition:all .2s;margin-top:10px}
 .done-btn:hover{border-color:var(--accent);color:var(--accent)}
 .done-btn .tick{opacity:.35;font-weight:700}
 .step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
@@ -100,7 +109,7 @@ img{max-width:100%}
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .cb-bar{display:flex;align-items:center;justify-content:space-between;
-  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-top:1px solid var(--line)}
 .cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
   letter-spacing:.5px}
 .cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
@@ -174,7 +183,7 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>🔴 อ่านตรงนี้ก่อน — เราไม่มี GitOps</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>🔴 อ่านตรงนี้ก่อน — เราไม่มี GitOps</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>D9 เลือก <code>kubectl apply</code> มือ ซึ่งเป็นการตัดสินใจที่สมเหตุสมผลในรอบนี้
 (ของใหม่เยอะพออยู่แล้ว) แต่แลกมาด้วยว่า <strong>ไม่มีอะไรบังคับให้ manifest ผ่านมาตรฐาน</strong></p>
 <p>และมันไปชนกับข้อเท็จจริงจากบทที่ 12 พอดี:</p>
@@ -206,8 +215,8 @@ img{max-width:100%}
 </tbody>
 </table>
 <hr />
-</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · โครงสร้าง repo ของ manifest</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">myhr-k8s-manifests/
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · โครงสร้าง repo ของ manifest</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-text">myhr-k8s-manifests/
 ├── prod/
 │   ├── zeeme-ads/{deployment.yaml, service.yaml, pdb.yaml, httproute.yaml}
 │   ├── zeeme-hr/...
@@ -215,14 +224,14 @@ img{max-width:100%}
 ├── uat/
 │   └── ...
 └── .gitlab-ci.yml          หรือ .github/workflows/validate.yaml
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>กติกา:</strong> ทุกอย่างที่อยู่บน cluster ต้องมีต้นฉบับในนี้
 ถ้าของบน cluster ไม่ตรงกับ git ให้ถือว่า <strong>git ถูก</strong> แล้ว apply ทับ</p>
 <hr />
-</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · แม่แบบ manifest</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cp /root/k8s/config/app/deployment-template.yaml ./zeeme-ads.yaml
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · แม่แบบ manifest</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">cp /root/k8s/config/app/deployment-template.yaml ./zeeme-ads.yaml
 sed -i 's/APPNAME/zeeme-ads/g' ./zeeme-ads.yaml
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>แล้วแก้ image digest, พอร์ต และ resources ให้ตรงกับ service จริง</p>
 <h3>สิ่งที่เปลี่ยนจาก <code>zeeme-ads/deployment.yml</code> เดิม</h3>
 <table>
@@ -303,29 +312,29 @@ sed -i 's/APPNAME/zeeme-ads/g' ./zeeme-ads.yaml
 มีแต่ OOM kill</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · Deploy</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f zeeme-ads.yaml
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · Deploy</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">kubectl apply -f zeeme-ads.yaml
 kubectl -n myhr-prod rollout status deploy/zeeme-ads --timeout=5m
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจครบ 5 ข้อ:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n myhr-prod get deploy,svc,pdb,httproute -l app.kubernetes.io/name=zeeme-ads
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod get deploy,svc,pdb,httproute -l app.kubernetes.io/name=zeeme-ads
 kubectl -n myhr-prod get pods -l app.kubernetes.io/name=zeeme-ads -o wide
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> pod <strong>กระจายคนละ node</strong> · PDB มี <code>ALLOWED DISRUPTIONS = 1</code> · HTTPRoute <code>ACCEPTED=True</code></p>
 <p><strong>ทดสอบจากนอก cluster:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
+<div class="cb"><pre><code class="language-bash">GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
 curl -I --cacert /root/k8s/myhr-root-ca.crt \
      --resolve "zeeme-ads.myhr.co.th:443:${GW_IP}" https://zeeme-ads.myhr.co.th
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · ถ้า deploy ไม่ผ่าน — 3 สาเหตุที่พบบ่อยที่สุด</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · ถ้า deploy ไม่ผ่าน — 3 สาเหตุที่พบบ่อยที่สุด</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <h3><code>violates PodSecurity &quot;restricted&quot;</code></h3>
 <p>manifest ยังใช้ <code>runAsUser: 0</code> หรือขาด <code>securityContext</code> — เทียบกับแม่แบบ</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n myhr-prod get events --sort-by=.lastTimestamp | tail -10
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod get events --sort-by=.lastTimestamp | tail -10
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>pod ค้าง <code>Pending</code></h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n myhr-prod describe pod &lt;ชื่อ&gt; | tail -20
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod describe pod &lt;ชื่อ&gt; | tail -20
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <ul>
 <li><code>Insufficient cpu/memory</code> → ชน ResourceQuota หรือ cluster เต็ม</li>
 <li><code>didn't match pod topology spread constraints</code> → replica มากกว่าจำนวน node</li>
@@ -333,15 +342,15 @@ curl -I --cacert /root/k8s/myhr-root-ca.crt \
 </ul>
 <h3>pod <code>Running</code> แต่เรียกไม่ได้</h3>
 <p>เกือบทุกครั้งเป็น NetworkPolicy — ดูของจริงอย่าเดา:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n kube-system exec -it ds/cilium -- \
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec -it ds/cilium -- \
   hubble observe --namespace myhr-prod --verdict DROPPED --last 50
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>แล้วเปิดเฉพาะเส้นที่ถูก drop จริง</p>
 <hr />
-</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · 🔴 Policy check ที่ CI</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · 🔴 Policy check ที่ CI</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><strong>นี่คือสิ่งที่มาแทน GitOps</strong> ถ้าข้ามข้อนี้ ข้อ 1-4 จะไร้ความหมายภายในไม่กี่เดือน</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cp /root/k8s/config/app/validate-manifests.sh ./scripts/
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">cp /root/k8s/config/app/validate-manifests.sh ./scripts/
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ตัวสคริปต์ตรวจ 6 ข้อและ <strong>exit 1 ถ้าไม่ผ่าน</strong>:</p>
 <ol>
 <li>schema ถูกต้องตาม Kubernetes 1.36 (<code>kubeconform</code>)</li>
@@ -351,7 +360,7 @@ curl -I --cacert /root/k8s/myhr-root-ca.crt \
 <li>มี <code>readinessProbe</code> และ <code>livenessProbe</code></li>
 <li>ไม่มี <code>runAsUser: 0</code> และไม่มี image ที่เป็น <code>:latest</code></li>
 </ol>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-yaml"># .gitlab-ci.yml
+<div class="cb"><pre><code class="language-yaml"># .gitlab-ci.yml
 validate:
   stage: test
   image: alpine:3.20
@@ -360,14 +369,14 @@ validate:
     - curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz -C /usr/local/bin
   script:
     - ./scripts/validate-manifests.sh prod/
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p><strong>ถูกกว่า Argo CD มากและได้ประโยชน์หลักไปแล้ว</strong>
 ถ้าภายหลังอยากได้ Argo CD ให้ทำหลัง Phase 5 ตอน manifest ทุกตัวอยู่ใน git เรียบร้อยแล้ว
 ตอนนั้นจะเหลือแค่ชี้ Argo ไปที่ repo ที่มีอยู่ ไม่ใช่โครงการใหญ่</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ย้าย workload จาก cluster เดิม — ทีละตัว</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ย้าย workload จาก cluster เดิม — ทีละตัว</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><strong>อย่าย้ายทีเดียวหมด</strong> ลำดับที่ปลอดภัย:</p>
 <ol>
 <li>เลือก service ที่<strong>ไม่มีใครพึ่ง</strong>ก่อน (leaf service)</li>
@@ -379,15 +388,15 @@ validate:
 <li>เฝ้า Grafana 24 ชั่วโมง แล้วค่อยไป service ถัดไป</li>
 </ol>
 <p><strong>ก่อนย้ายทุกตัว ตรวจ capacity:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get pods -A -o json | jq -r '
+<div class="cb"><pre><code class="language-bash">kubectl get pods -A -o json | jq -r '
   [.items[] | select(.spec.nodeName | test("worker"))
    | .spec.containers[].resources.requests.cpu // "0"]
   | map(sub("m$";"") | tonumber / (if test("m") then 1 else 0.001 end))
   | add / 1000' 2&gt;/dev/null || kubectl describe nodes | grep -A5 'Allocated resources'
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ผลรวมต้องไม่เกิน 32 vCPU / 96 GB</strong> — นั่นคือเพดาน N+1 ไม่ใช่ 48/144</p>
 <hr />
-</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <ul>
 <li>[ ] repo ของ manifest สร้างแล้วและมีทุกอย่างที่อยู่บน cluster</li>
 <li>[ ] service แรก deploy ผ่านและเรียกได้จากนอก cluster ผ่าน HTTPS</li>
@@ -399,7 +408,7 @@ validate:
 <li>[ ] ผลรวม requests ยังไม่เกินเพดาน N+1</li>
 </ul>
 <p><strong>➡️ ต่อที่ <a href="12-day2-operations.html">บทที่ 12 — Day-2 Operations</a></strong> ← <strong>บทที่สำคัญที่สุด</strong></p>
-</div></section>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="10-security.html">← Security</a><a class="pn" href="12-day2-operations.html">Day-2 Operations →</a></div>
   </main>
 </div>
@@ -446,8 +455,16 @@ validate:
   document.querySelectorAll('.done-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      var marking = i<0;
       if(i>=0){ done.splice(i,1); } else { done.push(n); }
       setMine(done); paint();
+      // กดทำแล้ว = พาไปขั้นถัดไปให้เลย ไม่ต้องเลื่อนหาเอง
+      // ตอนยกเลิกไม่พาไปไหน เพราะคนน่าจะอยากอยู่ตรงนั้นต่อ
+      if(marking){
+        var nx=nextStep();
+        if(nx){ nx.scrollIntoView({behavior:'smooth', block:'start'}); }
+        else { toast('ครบทุกขั้นของบทนี้แล้ว'); }
+      }
     });
   });
 

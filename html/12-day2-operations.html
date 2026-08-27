@@ -65,13 +65,22 @@ main{max-width:920px;padding:24px 30px 120px}
   padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
 .step.done{background:var(--done-bg);border-color:var(--done-line)}
 .step.done .step-body{opacity:.62}
-.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head{display:flex;align-items:flex-start;gap:10px;padding-top:14px}
 .step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
 .step.done .step-head h2{color:var(--done-ink)}
-.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-  border:1px solid var(--line);background:transparent;color:var(--dim);
-  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
-  transition:all .2s;margin-top:3px}
+/* เครื่องหมายถูกที่หัวข้อ — โผล่เฉพาะตอนทำแล้ว ให้กวาดตาหาได้เร็วตอนเลื่อนผ่าน */
+.head-tick{display:none;flex-shrink:0;color:var(--done-ink);font-size:19px;
+  font-weight:700;line-height:1.5}
+.step.done .head-tick{display:block}
+
+/* ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง */
+.step-foot{display:flex;justify-content:flex-end;padding:6px 0 2px;margin-top:14px;
+  border-top:1px dashed var(--line)}
+.step.done .step-foot{border-top-color:var(--done-line)}
+.done-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:20px;padding:7px 18px;font-size:13px;font-family:var(--font);
+  transition:all .2s;margin-top:10px}
 .done-btn:hover{border-color:var(--accent);color:var(--accent)}
 .done-btn .tick{opacity:.35;font-weight:700}
 .step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
@@ -100,7 +109,7 @@ img{max-width:100%}
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .cb-bar{display:flex;align-items:center;justify-content:space-between;
-  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-top:1px solid var(--line)}
 .cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
   letter-spacing:.5px}
 .cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
@@ -174,13 +183,13 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>🔴 ทำไมบทนี้คือเหตุผลของการรื้อทำใหม่ทั้งหมด</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>🔴 ทำไมบทนี้คือเหตุผลของการรื้อทำใหม่ทั้งหมด</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>คู่มือชุดเดิมพา cluster ขึ้นมาได้ แต่<strong>ไม่มีบทไหนบอกวิธีทำให้มันอยู่ต่อ</strong> —
 ไม่มี backup, ไม่มีการต่ออายุ cert, ไม่มีวิธี upgrade</p>
 <p>พอ cert หมดอายุและเวอร์ชัน EOL ทางเดียวที่เหลือคือรื้อทำใหม่ ซึ่งคือสิ่งที่กำลังทำอยู่ตอนนี้</p>
 <p><strong>ถ้าเลือกได้แค่บทเดียวที่จะทำให้ดีที่สุด เลือกบทนี้</strong></p>
 <hr />
-</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>ตารางงานประจำ</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>ตารางงานประจำ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <table>
 <thead>
 <tr>
@@ -248,17 +257,17 @@ img{max-width:100%}
 </tbody>
 </table>
 <hr />
-</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>1 · etcd backup</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>1 · etcd backup</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <h3>ตั้งอัตโนมัติ</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/day2/etcd-backup-cronjob.yaml
+<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/day2/etcd-backup-cronjob.yaml
 kubectl -n kube-system get cronjob etcd-backup
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ทดสอบทันทีอย่ารอถึงพรุ่งนี้:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n kube-system create job --from=cronjob/etcd-backup etcd-backup-test
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system create job --from=cronjob/etcd-backup etcd-backup-test
 kubectl -n kube-system logs job/etcd-backup-test
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>backup ด้วยมือ — ทำก่อนแตะอะไรก็ตาม</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">TS=$(date +%Y%m%d-%H%M%S)
+<div class="cb"><pre><code class="language-bash">TS=$(date +%Y%m%d-%H%M%S)
 kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl \
   --endpoints=https://127.0.0.1:2379 \
   --cacert=/etc/kubernetes/pki/etcd/ca.crt \
@@ -273,7 +282,7 @@ kubectl -n kube-system exec etcd-k8s-master01 -- \
 # 🔴 คัดลอกออกนอก cluster ทันที
 scp root@192.168.50.101:/var/lib/etcd/snap-${TS}.db /backup/etcd/
 sha256sum "/backup/etcd/snap-${TS}.db" &gt; "/backup/etcd/snap-${TS}.db.sha256"
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p>🔴 <strong>snapshot ที่อยู่บนเครื่องเดียวกับ etcd ไม่ช่วยอะไรตอนเครื่องพัง</strong>
 ต้องออกไปอยู่นอก cluster และ<strong>ต้องมี checksum</strong> ไม่งั้นจะไม่รู้ว่าไฟล์เสียจนถึงวันที่ต้องกู้</p>
@@ -281,7 +290,7 @@ sha256sum "/backup/etcd/snap-${TS}.db" &gt; "/backup/etcd/snap-${TS}.db.sha256"
 ถ้า key หายจะถอดรหัสไม่ได้เลย — เก็บ key แยกจาก backup และเก็บสำเนาออฟไลน์</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>2 · กู้ etcd</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>2 · กู้ etcd</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <blockquote>
 <p><strong>ซ้อมใน lab เท่านั้น</strong> ห้ามซ้อมบน production
 จดเวลาที่ใช้จริงเป็น RTO baseline</p>
@@ -289,7 +298,7 @@ sha256sum "/backup/etcd/snap-${TS}.db" &gt; "/backup/etcd/snap-${TS}.db.sha256"
 <h3>กรณี A — เสีย master 1 ตัว (quorum ยังอยู่)</h3>
 <p><strong>ไม่ต้องกู้จาก backup</strong> ให้ถอด member เดิมออกแล้ว join ใหม่ (ดูหัวข้อ 7)</p>
 <h3>กรณี B — เสีย quorum (master ตาย 2 ใน 3)</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># 1. หยุด control plane ทุกเครื่อง
+<div class="cb"><pre><code class="language-bash"># 1. หยุด control plane ทุกเครื่อง
 mv /etc/kubernetes/manifests /etc/kubernetes/manifests.off      # ทำทั้ง 3 master
 crictl ps | grep -E 'etcd|apiserver'                            # ต้องไม่เหลือ
 
@@ -306,23 +315,23 @@ mv /etc/kubernetes/manifests.off /etc/kubernetes/manifests
 kubectl get nodes                       # ต้องกลับมาใช้งานได้
 
 # 4. master02/03 ล้างแล้ว join ใหม่เป็น control plane (ดูหัวข้อ 7)
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจหลังกู้:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get nodes &amp;&amp; kubectl get pods -A | grep -v Running
+<div class="cb"><pre><code class="language-bash">kubectl get nodes &amp;&amp; kubectl get pods -A | grep -v Running
 kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl \
   --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt \
   --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key \
   endpoint status --cluster -w table
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>3 · ต่ออายุ certificate</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>3 · ต่ออายุ certificate</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><strong>cert ของ kubeadm อายุ 1 ปี</strong> และต่ออายุอัตโนมัติ<strong>เฉพาะตอน upgrade เท่านั้น</strong>
 cluster ที่ตั้งไว้แล้วไม่เคย upgrade จะมี cert หมดอายุเงียบ ๆ</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># ตรวจทุกเดือน — ทำบนทุก master
+<div class="cb"><pre><code class="language-bash"># ตรวจทุกเดือน — ทำบนทุก master
 kubeadm certs check-expiration
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ต่ออายุ — ทำทีละ master:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># 1. backup ก่อนเสมอ
+<div class="cb"><pre><code class="language-bash"># 1. backup ก่อนเสมอ
 cp -r /etc/kubernetes/pki /root/k8s/pki-backup-$(date +%Y%m%d)
 
 # 2. ต่ออายุทั้งชุด
@@ -341,20 +350,20 @@ until kubectl get --raw='/healthz' 2&gt;/dev/null | grep -q ok; do sleep 3; done
 cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
 
 kubeadm certs check-expiration
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ทุกบรรทัดกลับไปเป็น ~364 วัน</p>
 <blockquote>
 <p><strong>CA มีอายุ 10 ปี</strong> ตราบใดที่ CA ยังไม่หมด cert อื่นต่ออายุได้เสมอ
 แม้จะหมดอายุไปแล้วก็ตาม — <strong>cert หมดไม่ใช่จุดจบ</strong> แต่ก็อย่าปล่อยให้ถึงจุดนั้น</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>4 · Rolling reboot (patch kernel)</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>4 · Rolling reboot (patch kernel)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <blockquote>
 <p>🔴 <strong>งานประจำที่หนักที่สุดของ cluster ชุดนี้</strong>
 เราใช้ Oracle Linux แบบฟรีจึงไม่มี Ksplice — ปะ kernel ต้อง reboot ทุกครั้ง</p>
 </blockquote>
 <h3>ก่อนเริ่ม — ตรวจ 3 ข้อ</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># 1. ทุก Deployment มี PDB และ replica &gt;= 2
+<div class="cb"><pre><code class="language-bash"># 1. ทุก Deployment มี PDB และ replica &gt;= 2
 kubectl get deploy -A -o json | jq -r '.items[]
   | select(.spec.replicas &lt; 2)
   | "\(.metadata.namespace)/\(.metadata.name): replicas=\(.spec.replicas)"'
@@ -366,28 +375,28 @@ kubectl describe nodes | grep -A5 'Allocated resources'
 
 # 3. ไม่มี pod ที่ผิดปกติค้างอยู่
 kubectl get pods -A | grep -v -E 'Running|Completed'
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>ลำดับ — สำคัญ</h3>
 <blockquote>
 <p><strong>เริ่มจาก <code>k8s-worker03</code> เสมอ</strong> เพราะเป็นเครื่องที่ถือ local PV ของ monitoring
 ทำเครื่องนี้ก่อนจะได้มี monitoring ครบตอนทำเครื่องที่เหลือ</p>
 </blockquote>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">worker03 → worker01 → worker02 → master02 → master03 → master01
-</code></pre></div>
+<div class="cb"><pre><code class="language-text">worker03 → worker01 → worker02 → master02 → master03 → master01
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>master01 ทำท้ายสุดเพราะถือ VIP อยู่ (priority สูงสุด)</p>
 <h3>ทำทีละเครื่อง</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">NODE=k8s-worker03
+<div class="cb"><pre><code class="language-bash">NODE=k8s-worker03
 
 # --- 1. ย้าย pod ออก -------------------------------------------------------
 kubectl cordon "$NODE"
 kubectl drain "$NODE" --ignore-daemonsets --delete-emptydir-data --timeout=600s
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ถ้า drain ค้าง:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get pods -o wide --field-selector spec.nodeName="$NODE" -A
+<div class="cb"><pre><code class="language-bash">kubectl get pods -o wide --field-selector spec.nodeName="$NODE" -A
 kubectl get pdb -A     # ดูว่า ALLOWED DISRUPTIONS เป็น 0 ตัวไหน
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>สาเหตุที่พบบ่อย: PDB ที่ <code>minAvailable</code> เท่ากับ <code>replicas</code> → <strong>ไม่มีวันปล่อย</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># --- 2. patch แล้ว reboot (บนเครื่องนั้น) ----------------------------------
+<div class="cb"><pre><code class="language-bash"># --- 2. patch แล้ว reboot (บนเครื่องนั้น) ----------------------------------
 ssh root@&lt;NODE_IP&gt;
 set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 
@@ -397,8 +406,8 @@ dnf versionlock add kernel-uek kernel-uek-core kernel-uek-modules   # 🔴 ล�
 dnf versionlock list | grep kernel-uek                              # ยืนยัน
 
 reboot
-</code></pre></div>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># --- 3. ตรวจหลังกลับมา -----------------------------------------------------
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash"># --- 3. ตรวจหลังกลับมา -----------------------------------------------------
 uname -r                                    # ต้องลงท้าย uek
 systemctl is-active containerd kubelet
 findmnt /var/lib/containerd || findmnt /var/lib/etcd    # partition ยัง mount
@@ -409,39 +418,39 @@ systemctl is-active keepalived haproxy
 # --- 4. เปิดรับ pod กลับ ---------------------------------------------------
 kubectl uncordon "$NODE"
 kubectl get nodes                           # ต้องกลับเป็น Ready
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>รอจน <code>Ready</code> และ pod กลับมาครบก่อนไปเครื่องถัดไป — ห้ามทำสองเครื่องพร้อมกัน</strong></p>
 <h3>หลังจบทุกเครื่อง</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># kernel ต้องตรงกันทั้ง 6 เครื่อง
+<div class="cb"><pre><code class="language-bash"># kernel ต้องตรงกันทั้ง 6 เครื่อง
 for ip in 101 102 103 104 105 106; do
   echo -n "192.168.50.$ip: "; ssh "root@192.168.50.$ip" uname -r
 done
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>อัปเดตเลข <code>KERNEL_UEK</code> ใน <code>versions.env</code> ถ้ามีการเปลี่ยน</strong></p>
 <blockquote>
 <p>alert <code>NodeKernelVersionMismatch</code> จะดังระหว่างทำ — <strong>เป็นเรื่องปกติ</strong>
 แต่ถ้ายังดังหลังจบงานแล้ว แปลว่ามีเครื่องที่ patch ไม่สำเร็จ</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>5 · Upgrade Kubernetes</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>5 · Upgrade Kubernetes</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <h3>Patch upgrade (1.36.3 → 1.36.x) — ความเสี่ยงต่ำ</h3>
 <p>รวมกับ rolling reboot ในหัวข้อ 4 ได้เลย ประหยัดรอบ drain</p>
 <p><strong>บน master01:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">NEW=1.36.5
+<div class="cb"><pre><code class="language-bash">NEW=1.36.5
 dnf install -y --disableexcludes=kubernetes "kubeadm-${NEW}"
 kubeadm upgrade plan
 kubeadm upgrade apply "v${NEW}"
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>บน master02/03:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">dnf install -y --disableexcludes=kubernetes "kubeadm-${NEW}"
+<div class="cb"><pre><code class="language-bash">dnf install -y --disableexcludes=kubernetes "kubeadm-${NEW}"
 kubeadm upgrade node
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ทุกเครื่อง (รวม worker) — ทีละเครื่องพร้อม drain:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl drain "$NODE" --ignore-daemonsets --delete-emptydir-data
+<div class="cb"><pre><code class="language-bash">kubectl drain "$NODE" --ignore-daemonsets --delete-emptydir-data
 dnf install -y --disableexcludes=kubernetes "kubelet-${NEW}" "kubectl-${NEW}"
 systemctl daemon-reload &amp;&amp; systemctl restart kubelet
 kubectl uncordon "$NODE"
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>อัปเดต <code>versions.env</code> แล้ว <code>dnf versionlock</code> ใหม่ทุกเครื่อง</strong></p>
 <h3>Minor upgrade (1.36 → 1.37) — ต้องวางแผน</h3>
 <blockquote>
@@ -449,31 +458,31 @@ kubectl uncordon "$NODE"
 แต่ละ release มี deprecation และ gotcha ของตัวเอง</p>
 </blockquote>
 <p><strong>ห้ามข้าม minor</strong> — ต้องไป 1.36 → 1.37 → 1.38 ทีละขั้น</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># 1. backup etcd ก่อนเสมอ (หัวข้อ 1)
+<div class="cb"><pre><code class="language-bash"># 1. backup etcd ก่อนเสมอ (หัวข้อ 1)
 
 # 2. เปลี่ยน repo เป็น minor ใหม่ — ขั้นที่คนลืมบ่อยที่สุด
 sed -i 's|/v1.36/|/v1.37/|g' /etc/yum.repos.d/kubernetes.repo
 dnf clean all &amp;&amp; dnf makecache
 
 # 3. ที่เหลือเหมือน patch upgrade
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจหลัง upgrade:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get nodes            # version ต้องตรงกันทั้ง 6
+<div class="cb"><pre><code class="language-bash">kubectl get nodes            # version ต้องตรงกันทั้ง 6
 kubeadm certs check-expiration   # upgrade ต่ออายุ cert ให้อัตโนมัติ — ควรกลับเป็น ~364 วัน
 cilium status
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p><strong>ข้อดีที่มักถูกมองข้าม:</strong> <code>kubeadm upgrade</code> ต่ออายุ certificate ให้อัตโนมัติ
 การ upgrade อย่างน้อยปีละครั้งจึงแก้ปัญหา cert หมดอายุไปในตัว</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>6 · Upgrade Cilium</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>6 · Upgrade Cilium</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <blockquote>
 <p>🔴 <strong>เสี่ยงกว่า Kubernetes upgrade สำหรับ cluster ชุดนี้</strong>
 Cilium ทำทั้ง CNI + kube-proxy + LB-IPAM — พลาดทีเดียวดับหมดทั้ง 3 อย่าง
 และ <strong>ไม่มี kube-proxy ให้ถอยกลับ</strong></p>
 </blockquote>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># 0. กำหนดเวอร์ชันปลายทาง แล้วเขียนกลับลง versions.env เมื่อ upgrade เสร็จ
+<div class="cb"><pre><code class="language-bash"># 0. กำหนดเวอร์ชันปลายทาง แล้วเขียนกลับลง versions.env เมื่อ upgrade เสร็จ
 NEW_CILIUM=1.20.2          # ← แก้เป็นเวอร์ชันที่จะขึ้นจริง
 
 # 1. อ่าน upgrade note ของเวอร์ชันปลายทางก่อน — บังคับ
@@ -493,57 +502,57 @@ helm upgrade cilium cilium/cilium --version "${NEW_CILIUM}" \
   --namespace kube-system -f /root/k8s/config/cilium/values.yaml
 
 kubectl -n kube-system rollout status ds/cilium --timeout=10m
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจทันทีหลังเสร็จ:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
+<div class="cb"><pre><code class="language-bash">GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
 cilium status --wait
 kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep KubeProxyReplacement
 kubectl get svc -A | grep LoadBalancer        # EXTERNAL-IP ต้องยังอยู่
 curl -I "http://${GW_IP}"                     # จากเครื่องนอก cluster
 cilium connectivity test
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ถ้าพัง — rollback:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">helm rollback cilium -n kube-system
+<div class="cb"><pre><code class="language-bash">helm rollback cilium -n kube-system
 kubectl -n kube-system rollout status ds/cilium
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>7 · เพิ่ม หรือ ถอด node</h2><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>7 · เพิ่ม หรือ ถอด node</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <h3>เพิ่ม worker</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># บน master01 — token เดิมหมดอายุแล้วแน่นอน ต้องออกใหม่
+<div class="cb"><pre><code class="language-bash"># บน master01 — token เดิมหมดอายุแล้วแน่นอน ต้องออกใหม่
 kubeadm token create --print-join-command
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>บนเครื่องใหม่: ทำ<strong>บทที่ 01 และ 02 ให้ครบก่อน</strong> แล้วค่อย join</p>
 <h3>เพิ่ม control plane</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># บน master01 — ต้องได้ทั้ง certificate-key และ token ใหม่
+<div class="cb"><pre><code class="language-bash"># บน master01 — ต้องได้ทั้ง certificate-key และ token ใหม่
 kubeadm init phase upload-certs --upload-certs      # certificate-key อายุ 2 ชม.
 kubeadm token create --print-join-command
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>แล้วต่อท้ายด้วย <code>--control-plane --certificate-key &lt;KEY&gt;</code></p>
 <h3>ถอด node</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl drain "$NODE" --ignore-daemonsets --delete-emptydir-data
+<div class="cb"><pre><code class="language-bash">kubectl drain "$NODE" --ignore-daemonsets --delete-emptydir-data
 kubectl delete node "$NODE"
 
 # บนเครื่องที่ถอด
 kubeadm reset -f
 rm -rf /etc/cni/net.d /var/lib/cni
 iptables -F &amp;&amp; iptables -t nat -F 2&gt;/dev/null || true
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ถ้าถอด control plane ต้องเอา etcd member ออกด้วย:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl \
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl \
   --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt \
   --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key \
   member list
 
 kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl ... member remove &lt;MEMBER_ID&gt;
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p>⚠️ <strong>keepalived/HAProxy เป็น systemd จึงอยู่รอด <code>kubeadm reset</code></strong>
 ถ้าถอด master ออกถาวร ต้องไปแก้ <code>haproxy.cfg</code> บนเครื่องที่เหลือให้เอา backend นั้นออกด้วย
 และแก้ <code>priority</code> ของ keepalived ให้ยังเรียงกันถูก</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-10" data-step="10"><div class="step-head"><h2>8 · งานทบทวนรายไตรมาส</h2><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># 1. capacity — เทียบ requests กับที่ใช้จริง
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10"><div class="step-head"><h2>8 · งานทบทวนรายไตรมาส</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash"># 1. capacity — เทียบ requests กับที่ใช้จริง
 kubectl top nodes
 kubectl describe nodes | grep -A5 'Allocated resources'
 
@@ -561,9 +570,9 @@ kubectl get pods -A -o json | jq -r '.items[].spec.containers[].image' \
 # 5. registry garbage collection
 #    Docker Registry เปล่าไม่มี retention policy — disk จะโตไปเรื่อย ๆ จนเต็ม
 ssh root@${REGISTRY_IP} 'registry garbage-collect /etc/docker/registry/config.yml'
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-11" data-step="11"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <ul>
 <li>[ ] CronJob backup etcd ทำงานและ<strong>ทดสอบรันแล้ว</strong></li>
 <li>[ ] snapshot ออกไปอยู่นอก cluster พร้อม checksum</li>
@@ -577,7 +586,7 @@ ssh root@${REGISTRY_IP} 'registry garbage-collect /etc/docker/registry/config.ym
 <li>[ ] runbook ทุกหัวข้อมีคนที่ไม่ได้เขียนทำตามได้จริง</li>
 </ul>
 <p><strong>➡️ ต่อที่ <a href="13-troubleshooting.html">บทที่ 13 — Troubleshooting</a></strong></p>
-</div></section>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="11-deploy-app.html">← Deploy App</a><a class="pn" href="13-troubleshooting.html">Troubleshooting →</a></div>
   </main>
 </div>
@@ -624,8 +633,16 @@ ssh root@${REGISTRY_IP} 'registry garbage-collect /etc/docker/registry/config.ym
   document.querySelectorAll('.done-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      var marking = i<0;
       if(i>=0){ done.splice(i,1); } else { done.push(n); }
       setMine(done); paint();
+      // กดทำแล้ว = พาไปขั้นถัดไปให้เลย ไม่ต้องเลื่อนหาเอง
+      // ตอนยกเลิกไม่พาไปไหน เพราะคนน่าจะอยากอยู่ตรงนั้นต่อ
+      if(marking){
+        var nx=nextStep();
+        if(nx){ nx.scrollIntoView({behavior:'smooth', block:'start'}); }
+        else { toast('ครบทุกขั้นของบทนี้แล้ว'); }
+      }
     });
   });
 

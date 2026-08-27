@@ -65,13 +65,22 @@ main{max-width:920px;padding:24px 30px 120px}
   padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
 .step.done{background:var(--done-bg);border-color:var(--done-line)}
 .step.done .step-body{opacity:.62}
-.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head{display:flex;align-items:flex-start;gap:10px;padding-top:14px}
 .step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
 .step.done .step-head h2{color:var(--done-ink)}
-.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-  border:1px solid var(--line);background:transparent;color:var(--dim);
-  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
-  transition:all .2s;margin-top:3px}
+/* เครื่องหมายถูกที่หัวข้อ — โผล่เฉพาะตอนทำแล้ว ให้กวาดตาหาได้เร็วตอนเลื่อนผ่าน */
+.head-tick{display:none;flex-shrink:0;color:var(--done-ink);font-size:19px;
+  font-weight:700;line-height:1.5}
+.step.done .head-tick{display:block}
+
+/* ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง */
+.step-foot{display:flex;justify-content:flex-end;padding:6px 0 2px;margin-top:14px;
+  border-top:1px dashed var(--line)}
+.step.done .step-foot{border-top-color:var(--done-line)}
+.done-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:20px;padding:7px 18px;font-size:13px;font-family:var(--font);
+  transition:all .2s;margin-top:10px}
 .done-btn:hover{border-color:var(--accent);color:var(--accent)}
 .done-btn .tick{opacity:.35;font-weight:700}
 .step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
@@ -100,7 +109,7 @@ img{max-width:100%}
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .cb-bar{display:flex;align-items:center;justify-content:space-between;
-  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-top:1px solid var(--line)}
 .cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
   letter-spacing:.5px}
 .cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
@@ -174,11 +183,11 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>🔴 ข้อสรุป: cluster นี้ไม่มี CSI และไม่มี dynamic provisioning</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>🔴 ข้อสรุป: cluster นี้ไม่มี CSI และไม่มี dynamic provisioning</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><strong>ไม่ใช่เพราะลืม แต่เป็นการตัดสินใจ (D8)</strong> — workload ทั้งหมดเป็น stateless
 ฐานข้อมูลอยู่นอก cluster ตลอด</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get storageclass
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl get storageclass
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>No resources found</code> ← <strong>ถูกต้องแล้ว</strong></p>
 <p><strong>ผลที่ตามมา:</strong> <code>PersistentVolumeClaim</code> ที่ไม่ระบุ PV จะค้าง <code>Pending</code> ตลอดไป
 ไม่มีใครมา provision ให้ — และนั่นคือพฤติกรรมที่เราต้องการ เพราะมันบังคับให้
@@ -189,7 +198,7 @@ img{max-width:100%}
 ไม่ใช่เซอร์ไพรส์ตอนใกล้ deadline</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>แล้ว Prometheus กับ Loki ล่ะ</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>แล้ว Prometheus กับ Loki ล่ะ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>นี่คือคำถามที่ต้องตอบให้ชัด เพราะ <strong>บทที่ 09 ต้องเก็บข้อมูลลง disk จริง</strong>
 ถ้าใช้ <code>emptyDir</code> ข้อมูลจะหายทุกครั้งที่ pod restart ซึ่งทำให้ตอบคำถาม
 &quot;เมื่อคืนตอนตีสามเกิดอะไรขึ้น&quot; ไม่ได้ — ซึ่งเป็นเหตุผลเดียวที่เราติดตั้งมัน</p>
@@ -230,7 +239,7 @@ img{max-width:100%}
 <p><strong>นี่ไม่ได้ขัดกับ D8</strong> — D8 บอกว่าไม่มี CSI และไม่มี dynamic provisioning สำหรับ application
 ส่วนนี่คือ PV ที่เราสร้างเองสำหรับ infrastructure ของเราเอง 3 ตัว จบ</p>
 <hr />
-</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>ราคาที่ต้องยอมรับ</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>ราคาที่ต้องยอมรับ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>pod ที่ใช้ local PV <strong>ผูกกับ node นั้นถาวร</strong> ย้ายไม่ได้ ผลตรง ๆ คือ:</p>
 <blockquote>
 <p>ตอน rolling reboot เครื่องที่ถือ PV อยู่ <strong>Prometheus และ Loki จะดับประมาณ 5 นาที</strong>
@@ -241,13 +250,13 @@ img{max-width:100%}
 <p><strong>แต่ต้องรู้ตัว</strong> และเวลาทำ rolling reboot ให้ <strong>เริ่มจาก node ที่ถือ monitoring ก่อนเสมอ</strong>
 จะได้มี monitoring ครบตอนทำเครื่องที่เหลือ</p>
 <hr />
-</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>1 · เตรียม directory บน worker</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>1 · เตรียม directory บน worker</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>เลือก <code>k8s-worker03</code> เป็นเครื่องเก็บ monitoring — จะได้ไม่ปนกับ workload หลัก</p>
 <p><strong>⚙️ รันบน <code>k8s-worker03</code> (192.168.50.106) เท่านั้น:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">mkdir -p /var/lib/monitoring/{prometheus,loki,grafana}
+<div class="cb"><pre><code class="language-bash">mkdir -p /var/lib/monitoring/{prometheus,loki,grafana}
 chmod 700 /var/lib/monitoring/*
 df -h /var/lib/monitoring
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> พื้นที่ว่างอย่างน้อย ~200 GB บน root filesystem</p>
 <blockquote>
 <p>ระวัง: <code>/var/lib/containerd</code> เป็น partition แยก 100 GB แต่ <code>/var/lib/monitoring</code>
@@ -255,26 +264,26 @@ df -h /var/lib/monitoring
 ตั้ง retention ในบทที่ 09 ให้ไม่กินเกิน ~200 GB และ<strong>ต้องมี alert ที่ disk usage</strong></p>
 </blockquote>
 <p><strong>ติด label ให้ node เพื่อให้อ่านง่าย:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># บน master01
+<div class="cb"><pre><code class="language-bash"># บน master01
 kubectl label node k8s-worker03 myhr.co.th/monitoring=true
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>2 · สร้าง StorageClass และ PV</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/storage/local-storage-class.yaml
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>2 · สร้าง StorageClass และ PV</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/storage/local-storage-class.yaml
 kubectl apply -f /root/k8s/config/storage/monitoring-pv.yaml
 
 kubectl get sc
 kubectl get pv
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">NAME            PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE
+<div class="cb"><pre><code class="language-text">NAME            PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE
 local-storage   kubernetes.io/no-provisioner   Retain          WaitForFirstConsumer
 
 NAME              CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS
 prometheus-data   150Gi      RWO            Retain           Available
 loki-data         50Gi       RWO            Retain           Available
 grafana-data      5Gi        RWO            Retain           Available
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong><code>STATUS: Available</code> ถูกต้องแล้ว</strong> — จะกลายเป็น <code>Bound</code> เมื่อบทที่ 09 สร้าง PVC มาขอ</p>
 <blockquote>
 <p><strong><code>WaitForFirstConsumer</code> สำคัญ</strong> — ทำให้ scheduler เลือก node ก่อนแล้วค่อยผูก PV
@@ -283,7 +292,7 @@ grafana-data      5Gi        RWO            Retain           Available
 ปลอดภัยกว่า <code>Delete</code> มากสำหรับข้อมูลที่กู้กลับไม่ได้</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>ถ้าวันหนึ่งต้องเปิด D8 จริง</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>ถ้าวันหนึ่งต้องเปิด D8 จริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>ถ้ามี workload ที่ต้องการ persistent storage แบบ dynamic ขึ้นมา <strong>อย่าแก้ทีละเคส</strong>
 ให้กลับมาตัดสินใจใหม่ทั้งข้อ เรียงตามที่ควรพิจารณาก่อน:</p>
 <table>
@@ -319,7 +328,7 @@ grafana-data      5Gi        RWO            Retain           Available
 </table>
 <p><strong>ตัวที่ควรหยิบก่อนคือ vSphere CSI</strong> เพราะใช้ datastore เดิมที่มีอยู่ ไม่ต้องซื้อของใหม่</p>
 <hr />
-</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <ul>
 <li>[ ] <code>kubectl get storageclass</code> มีแค่ <code>local-storage</code> ตัวเดียว</li>
 <li>[ ] PV ทั้ง 3 ตัวสถานะ <code>Available</code></li>
@@ -329,7 +338,7 @@ grafana-data      5Gi        RWO            Retain           Available
 <li>[ ] บันทึกไว้ในเอกสารส่งมอบว่า <strong>rolling reboot ต้องเริ่มจาก worker03 เสมอ</strong></li>
 </ul>
 <p><strong>➡️ ต่อที่ <a href="09-observability.html">บทที่ 09 — Observability</a></strong></p>
-</div></section>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="07-gateway-tls.html">← Gateway + TLS</a><a class="pn" href="09-observability.html">Observability →</a></div>
   </main>
 </div>
@@ -376,8 +385,16 @@ grafana-data      5Gi        RWO            Retain           Available
   document.querySelectorAll('.done-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      var marking = i<0;
       if(i>=0){ done.splice(i,1); } else { done.push(n); }
       setMine(done); paint();
+      // กดทำแล้ว = พาไปขั้นถัดไปให้เลย ไม่ต้องเลื่อนหาเอง
+      // ตอนยกเลิกไม่พาไปไหน เพราะคนน่าจะอยากอยู่ตรงนั้นต่อ
+      if(marking){
+        var nx=nextStep();
+        if(nx){ nx.scrollIntoView({behavior:'smooth', block:'start'}); }
+        else { toast('ครบทุกขั้นของบทนี้แล้ว'); }
+      }
     });
   });
 

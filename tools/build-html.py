@@ -59,9 +59,10 @@ def make_md():
         label = lang or "text"
         return (
             '<div class="cb">'
+            # แถบ copy อยู่ใต้โค้ด — อ่านจบแล้วปุ่มอยู่ตรงนั้นพอดี ไม่ต้องเลื่อนย้อนขึ้น
+            f'<pre><code class="language-{label}">{esc}</code></pre>'
             f'<div class="cb-bar"><span class="cb-lang">{label}</span>'
             '<button class="cb-copy" type="button">คัดลอก</button></div>'
-            f'<pre><code class="language-{label}">{esc}</code></pre>'
             "</div>\n"
         )
 
@@ -114,10 +115,15 @@ def page(chapter_file, title, subtitle, intro, steps, prev_ch, next_ch, nav, tot
             f'<section class="step" id="step-{s["n"]}" data-step="{s["n"]}">'
             '<div class="step-head">'
             f'<h2>{s["title"]}</h2>'
-            f'<button class="done-btn" type="button" data-step="{s["n"]}">'
-            '<span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button>'
+            f'<span class="head-tick" title="ทำแล้ว">✓</span>'
             "</div>"
             f'<div class="step-body">{s["body"]}</div>'
+            # ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง:
+            # อ่าน -> copy -> รัน -> เช็ค expected -> กดทำแล้ว โดยไม่ต้องเลื่อนย้อน
+            '<div class="step-foot">'
+            f'<button class="done-btn" type="button" data-step="{s["n"]}">'
+            '<span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button>'
+            '</div>'
             "</section>"
         )
 
@@ -259,13 +265,22 @@ main{max-width:920px;padding:24px 30px 120px}
   padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
 .step.done{background:var(--done-bg);border-color:var(--done-line)}
 .step.done .step-body{opacity:.62}
-.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head{display:flex;align-items:flex-start;gap:10px;padding-top:14px}
 .step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
 .step.done .step-head h2{color:var(--done-ink)}
-.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-  border:1px solid var(--line);background:transparent;color:var(--dim);
-  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
-  transition:all .2s;margin-top:3px}
+/* เครื่องหมายถูกที่หัวข้อ — โผล่เฉพาะตอนทำแล้ว ให้กวาดตาหาได้เร็วตอนเลื่อนผ่าน */
+.head-tick{display:none;flex-shrink:0;color:var(--done-ink);font-size:19px;
+  font-weight:700;line-height:1.5}
+.step.done .head-tick{display:block}
+
+/* ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง */
+.step-foot{display:flex;justify-content:flex-end;padding:6px 0 2px;margin-top:14px;
+  border-top:1px dashed var(--line)}
+.step.done .step-foot{border-top-color:var(--done-line)}
+.done-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:20px;padding:7px 18px;font-size:13px;font-family:var(--font);
+  transition:all .2s;margin-top:10px}
 .done-btn:hover{border-color:var(--accent);color:var(--accent)}
 .done-btn .tick{opacity:.35;font-weight:700}
 .step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
@@ -294,7 +309,7 @@ img{max-width:100%}
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .cb-bar{display:flex;align-items:center;justify-content:space-between;
-  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-top:1px solid var(--line)}
 .cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
   letter-spacing:.5px}
 .cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
@@ -380,8 +395,16 @@ JS = r"""
   document.querySelectorAll('.done-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      var marking = i<0;
       if(i>=0){ done.splice(i,1); } else { done.push(n); }
       setMine(done); paint();
+      // กดทำแล้ว = พาไปขั้นถัดไปให้เลย ไม่ต้องเลื่อนหาเอง
+      // ตอนยกเลิกไม่พาไปไหน เพราะคนน่าจะอยากอยู่ตรงนั้นต่อ
+      if(marking){
+        var nx=nextStep();
+        if(nx){ nx.scrollIntoView({behavior:'smooth', block:'start'}); }
+        else { toast('ครบทุกขั้นของบทนี้แล้ว'); }
+      }
     });
   });
 

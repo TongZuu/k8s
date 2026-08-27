@@ -65,13 +65,22 @@ main{max-width:920px;padding:24px 30px 120px}
   padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
 .step.done{background:var(--done-bg);border-color:var(--done-line)}
 .step.done .step-body{opacity:.62}
-.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head{display:flex;align-items:flex-start;gap:10px;padding-top:14px}
 .step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
 .step.done .step-head h2{color:var(--done-ink)}
-.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-  border:1px solid var(--line);background:transparent;color:var(--dim);
-  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
-  transition:all .2s;margin-top:3px}
+/* เครื่องหมายถูกที่หัวข้อ — โผล่เฉพาะตอนทำแล้ว ให้กวาดตาหาได้เร็วตอนเลื่อนผ่าน */
+.head-tick{display:none;flex-shrink:0;color:var(--done-ink);font-size:19px;
+  font-weight:700;line-height:1.5}
+.step.done .head-tick{display:block}
+
+/* ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง */
+.step-foot{display:flex;justify-content:flex-end;padding:6px 0 2px;margin-top:14px;
+  border-top:1px dashed var(--line)}
+.step.done .step-foot{border-top-color:var(--done-line)}
+.done-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:20px;padding:7px 18px;font-size:13px;font-family:var(--font);
+  transition:all .2s;margin-top:10px}
 .done-btn:hover{border-color:var(--accent);color:var(--accent)}
 .done-btn .tick{opacity:.35;font-weight:700}
 .step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
@@ -100,7 +109,7 @@ img{max-width:100%}
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .cb-bar{display:flex;align-items:center;justify-content:space-between;
-  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-top:1px solid var(--line)}
 .cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
   letter-spacing:.5px}
 .cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
@@ -174,7 +183,7 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>Cilium ทำอะไรให้บ้าง</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>Cilium ทำอะไรให้บ้าง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <table>
 <thead>
 <tr>
@@ -211,8 +220,8 @@ img{max-width:100%}
 นี่คือราคาของการตัดชิ้นส่วนออก จึงต้องพิสูจน์ให้ได้ว่าทีม debug มันเป็นก่อนขึ้น production</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · ติดตั้ง Helm 4 และ Cilium CLI</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · ติดตั้ง Helm 4 และ Cilium CLI</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 cd /root/k8s/dl
 
 # Helm
@@ -220,23 +229,23 @@ curl -fsSLO "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz"
 tar -xzf "helm-v${HELM_VERSION}-linux-amd64.tar.gz"
 install -m 755 linux-amd64/helm /usr/local/bin/helm
 helm version --short
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>v4.2.4+...</code></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># Cilium CLI — ใช้ตอน debug เป็นหลัก
+<div class="cb"><pre><code class="language-bash"># Cilium CLI — ใช้ตอน debug เป็นหลัก
 CILIUM_CLI=$(curl -fsSL https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
 curl -fsSLO "https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI}/cilium-linux-amd64.tar.gz"
 tar -C /usr/local/bin -xzf cilium-linux-amd64.tar.gz
 cilium version --client
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p>Helm 4 ใช้ <strong>Server-Side Apply</strong> เป็นค่าเริ่มต้นและต้องการสิทธิ์ RBAC เพิ่มสำหรับ kstatus
 ถ้าเจอ error เรื่องสิทธิ์ตอน install ให้ดูตรงนี้ก่อน</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · ตรวจ values ก่อนติดตั้ง</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">grep -E 'k8sServiceHost|k8sServicePort|clusterPoolIPv4PodCIDRList|kubeProxyReplacement' \
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · ตรวจ values ก่อนติดตั้ง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">grep -E 'k8sServiceHost|k8sServicePort|clusterPoolIPv4PodCIDRList|kubeProxyReplacement' \
   /root/k8s/config/cilium/values.yaml
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ต้องตรงกับ <code>versions.env</code>:</strong></p>
 <table>
 <thead>
@@ -270,28 +279,28 @@ cilium version --client
 ถ้าชี้ไปที่ master01 ตรง ๆ วันที่ master01 ตาย Cilium ทั้ง cluster จะหลุด</p>
 </blockquote>
 <p><strong>ยืนยันชื่อ interface ใน L2 policy ให้ตรงของจริง:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">ip -br addr show | grep 192.168.50
+<div class="cb"><pre><code class="language-bash">ip -br addr show | grep 192.168.50
 grep 'ens192' /root/k8s/config/cilium/l2-announcement-policy.yaml
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · ติดตั้ง Cilium</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">helm repo add cilium https://helm.cilium.io/
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · ติดตั้ง Cilium</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">helm repo add cilium https://helm.cilium.io/
 helm repo update
 
 helm install cilium cilium/cilium \
   --version "${CILIUM_VERSION}" \
   --namespace kube-system \
   -f /root/k8s/config/cilium/values.yaml
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>รอให้ขึ้นครบ:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n kube-system rollout status ds/cilium --timeout=5m
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system rollout status ds/cilium --timeout=5m
 kubectl -n kube-system rollout status deploy/cilium-operator --timeout=5m
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจสถานะ:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cilium status --wait
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">cilium status --wait
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">    /¯¯\
+<div class="cb"><pre><code class="language-text">    /¯¯\
  /¯¯\__/¯¯\    Cilium:             OK
  \__/¯¯\__/    Operator:           OK
  /¯¯\__/¯¯\    Hubble Relay:       OK
@@ -299,74 +308,74 @@ kubectl -n kube-system rollout status deploy/cilium-operator --timeout=5m
     \__/
 
 DaemonSet    cilium    Desired: 6, Ready: 6/6, Available: 6/6
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจ node กลายเป็น Ready:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl get nodes
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl get nodes
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ทั้ง 6 เครื่องเป็น <strong><code>Ready</code></strong> แล้ว</p>
 <hr />
-</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · ยืนยันว่า kube-proxy replacement ทำงานจริง</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep -i 'KubeProxyReplacement'
-</code></pre></div>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · ยืนยันว่า kube-proxy replacement ทำงานจริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep -i 'KubeProxyReplacement'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>KubeProxyReplacement:   True   [ens192 192.168.50.10X ...]</code></p>
 <p>ถ้าเห็น <code>False</code> หรือ <code>Disabled</code> <strong>ให้หยุด</strong> — cluster จะไม่มีอะไรทำ Service เลย</p>
 <p><strong>ตรวจว่าไม่มี kube-proxy จริง ๆ:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n kube-system get ds
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system get ds
 kubectl get pods -A | grep -c kube-proxy
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ไม่มี <code>kube-proxy</code> ในรายการ ds และ grep คืน <code>0</code></p>
 <hr />
-</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · ทดสอบ connectivity เต็มรูปแบบ</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · ทดสอบ connectivity เต็มรูปแบบ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>Cilium มีชุดทดสอบในตัว ซึ่งครอบคลุมกว่าการ ping เอง — <strong>รันให้ผ่านก่อนไปต่อ</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cilium connectivity test
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">cilium connectivity test
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็นท้ายสุด:</strong> <code>✅ All ... tests successful</code>
 <strong>ใช้เวลา ~10-15 นาที</strong> และจะสร้าง namespace <code>cilium-test-1</code> ชั่วคราว</p>
 <p>ถ้าไม่ผ่าน ให้ดูก่อนว่าเป็นเรื่อง firewalld หรือเปล่า:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># ลองเพิ่ม interface ของ Cilium เข้า trusted zone แล้วทดสอบซ้ำ (ทำทุก node)
+<div class="cb"><pre><code class="language-bash"># ลองเพิ่ม interface ของ Cilium เข้า trusted zone แล้วทดสอบซ้ำ (ทำทุก node)
 firewall-cmd --permanent --zone=trusted --add-interface=cilium_host
 firewall-cmd --permanent --zone=trusted --add-interface=cilium_net
 firewall-cmd --permanent --zone=trusted --add-interface=cilium_vxlan
 firewall-cmd --reload
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>และทดสอบข้อนี้ด้วยเสมอ — จดผลลงบทที่ 13 ไม่ว่าจะผ่านหรือไม่:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># firewalld เขียนกฎ nftables ใหม่ทั้งชุดตอน reload — pod ต้องยังคุยกันได้หลังจากนี้
+<div class="cb"><pre><code class="language-bash"># firewalld เขียนกฎ nftables ใหม่ทั้งชุดตอน reload — pod ต้องยังคุยกันได้หลังจากนี้
 firewall-cmd --reload &amp;&amp; sleep 5 &amp;&amp; cilium connectivity test --test 'pod-to-pod'
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ลบ namespace ทดสอบทิ้ง:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl delete ns cilium-test-1 --ignore-not-found
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl delete ns cilium-test-1 --ignore-not-found
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ตั้ง LoadBalancer IP pool</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/cilium/lb-ippool.yaml
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ตั้ง LoadBalancer IP pool</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/cilium/lb-ippool.yaml
 kubectl get ciliumloadbalancerippool
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>default-pool</code> และคอลัมน์ <code>AVAILABLE</code> เป็น <code>10</code></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl apply -f /root/k8s/config/cilium/l2-announcement-policy.yaml
+<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/cilium/l2-announcement-policy.yaml
 kubectl get ciliuml2announcementpolicy
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>default-l2-policy</code></p>
 <blockquote>
 <p>ถ้า <code>kubectl apply</code> ฟ้องว่าไม่รู้จัก resource ให้ตรวจ apiVersion ของจริงก่อน:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl api-resources | grep -i -E 'ippool|l2announcement'
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl api-resources | grep -i -E 'ippool|l2announcement'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>LB-IPAM เป็น <code>cilium.io/v2</code> ส่วน L2AnnouncementPolicy ยังเป็น <code>cilium.io/v2alpha1</code> — <strong>คนละอันกัน</strong></p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>7 · 🔴 ทดสอบ LoadBalancer จริง</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>7 · 🔴 ทดสอบ LoadBalancer จริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>นี่คือขั้นที่พิสูจน์ว่า L2 announcement ผ่าน switch ได้จริง
 <strong>ถ้าองค์กรเปิด ARP inspection ไว้ ข้อนี้จะพังตรงนี้</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl create deployment lbtest --image=nginx:alpine --replicas=2
+<div class="cb"><pre><code class="language-bash">kubectl create deployment lbtest --image=nginx:alpine --replicas=2
 kubectl expose deployment lbtest --type=LoadBalancer --port=80
 kubectl get svc lbtest -w
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็นภายในไม่กี่วินาที:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-text">NAME     TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)
+<div class="cb"><pre><code class="language-text">NAME     TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)
 lbtest   LoadBalancer   10.247.x.x      192.168.50.200   80:3xxxx/TCP
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>ทดสอบจากเครื่อง <strong>นอก cluster</strong> — สำคัญมาก</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">curl -I http://192.168.50.200
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">curl -I http://192.168.50.200
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>HTTP/1.1 200 OK</code> และหน้า nginx</p>
 <blockquote>
 <p>⚠️ <strong>ถ้า <code>EXTERNAL-IP</code> ขึ้นแต่ curl ไม่ติด = ARP ถูกบล็อก</strong>
@@ -376,20 +385,20 @@ lbtest   LoadBalancer   10.247.x.x      192.168.50.200   80:3xxxx/TCP
 หรือถอยไปใช้ NodePort แล้วให้ hardware LB ยิงเข้ามา</p>
 </blockquote>
 <p><strong>ดูว่า node ไหนกำลังตอบ ARP:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl -n kube-system get lease | grep l2announce
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system get lease | grep l2announce
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>ทดสอบ failover ของ LB IP</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># หา node ที่ถือ IP อยู่ แล้ว drain มัน
+<div class="cb"><pre><code class="language-bash"># หา node ที่ถือ IP อยู่ แล้ว drain มัน
 kubectl drain k8s-worker01 --ignore-daemonsets --delete-emptydir-data
 # จากเครื่องนอก cluster — curl ต้องกลับมาได้ภายในไม่กี่วินาที
 curl -I http://192.168.50.200
 kubectl uncordon k8s-worker01
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>เก็บกวาด:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">kubectl delete svc lbtest &amp;&amp; kubectl delete deployment lbtest
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">kubectl delete svc lbtest &amp;&amp; kubectl delete deployment lbtest
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <ul>
 <li>[ ] <code>kubectl get nodes</code> — ทั้ง 6 เครื่อง <strong><code>Ready</code></strong></li>
 <li>[ ] <code>cilium status</code> — Cilium, Operator, Hubble Relay ทั้งหมด <strong>OK</strong></li>
@@ -403,7 +412,7 @@ kubectl uncordon k8s-worker01
 <li>[ ] ลบ resource ทดสอบทิ้งหมดแล้ว</li>
 </ul>
 <p><strong>➡️ ต่อที่ <a href="06-verify.html">บทที่ 06 — ตรวจรับระบบ</a></strong></p>
-</div></section>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="04-create-cluster.html">← สร้าง Cluster</a><a class="pn" href="06-verify.html">ตรวจรับระบบ →</a></div>
   </main>
 </div>
@@ -450,8 +459,16 @@ kubectl uncordon k8s-worker01
   document.querySelectorAll('.done-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      var marking = i<0;
       if(i>=0){ done.splice(i,1); } else { done.push(n); }
       setMine(done); paint();
+      // กดทำแล้ว = พาไปขั้นถัดไปให้เลย ไม่ต้องเลื่อนหาเอง
+      // ตอนยกเลิกไม่พาไปไหน เพราะคนน่าจะอยากอยู่ตรงนั้นต่อ
+      if(marking){
+        var nx=nextStep();
+        if(nx){ nx.scrollIntoView({behavior:'smooth', block:'start'}); }
+        else { toast('ครบทุกขั้นของบทนี้แล้ว'); }
+      }
     });
   });
 

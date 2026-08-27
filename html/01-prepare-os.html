@@ -65,13 +65,22 @@ main{max-width:920px;padding:24px 30px 120px}
   padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
 .step.done{background:var(--done-bg);border-color:var(--done-line)}
 .step.done .step-body{opacity:.62}
-.step-head{display:flex;align-items:flex-start;gap:14px;padding-top:14px}
+.step-head{display:flex;align-items:flex-start;gap:10px;padding-top:14px}
 .step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
 .step.done .step-head h2{color:var(--done-ink)}
-.done-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-  border:1px solid var(--line);background:transparent;color:var(--dim);
-  border-radius:20px;padding:5px 13px;font-size:12.5px;font-family:var(--font);
-  transition:all .2s;margin-top:3px}
+/* เครื่องหมายถูกที่หัวข้อ — โผล่เฉพาะตอนทำแล้ว ให้กวาดตาหาได้เร็วตอนเลื่อนผ่าน */
+.head-tick{display:none;flex-shrink:0;color:var(--done-ink);font-size:19px;
+  font-weight:700;line-height:1.5}
+.step.done .head-tick{display:block}
+
+/* ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง */
+.step-foot{display:flex;justify-content:flex-end;padding:6px 0 2px;margin-top:14px;
+  border-top:1px dashed var(--line)}
+.step.done .step-foot{border-top-color:var(--done-line)}
+.done-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:20px;padding:7px 18px;font-size:13px;font-family:var(--font);
+  transition:all .2s;margin-top:10px}
 .done-btn:hover{border-color:var(--accent);color:var(--accent)}
 .done-btn .tick{opacity:.35;font-weight:700}
 .step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
@@ -100,7 +109,7 @@ img{max-width:100%}
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .cb-bar{display:flex;align-items:center;justify-content:space-between;
-  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-bottom:1px solid var(--line)}
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-top:1px solid var(--line)}
 .cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
   letter-spacing:.5px}
 .cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
@@ -174,24 +183,24 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>0 · โหลดตัวแปร</h2><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>0 · โหลดตัวแปร</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 echo "K8S=$K8S_VERSION  VIP=$VIP  IFACE=$NODE_IFACE"
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>K8S=1.36.3  VIP=192.168.50.100  IFACE=ens192</code>
 ถ้าค่าไหนว่าง แปลว่ายังไม่ได้ source — หยุดแล้วแก้ก่อน</p>
 <hr />
-</div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · Hostname และ /etc/hosts</h2><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · Hostname และ /etc/hosts</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>รันเฉพาะบรรทัดที่ตรงกับเครื่องที่กำลังทำอยู่:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">hostnamectl set-hostname k8s-master01    # บน 192.168.50.101
+<div class="cb"><pre><code class="language-bash">hostnamectl set-hostname k8s-master01    # บน 192.168.50.101
 hostnamectl set-hostname k8s-master02    # บน 192.168.50.102
 hostnamectl set-hostname k8s-master03    # บน 192.168.50.103
 hostnamectl set-hostname k8s-worker01    # บน 192.168.50.104
 hostnamectl set-hostname k8s-worker02    # บน 192.168.50.105
 hostnamectl set-hostname k8s-worker03    # บน 192.168.50.106
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>จากนั้นวาง <code>/etc/hosts</code> ชุดเดียวกันนี้ลง <strong>ทุกเครื่อง</strong>:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># ลบบล็อกเดิมก่อน — ทำให้รันซ้ำได้โดยไม่มีบรรทัดซ้ำ
+<div class="cb"><pre><code class="language-bash"># ลบบล็อกเดิมก่อน — ทำให้รันซ้ำได้โดยไม่มีบรรทัดซ้ำ
 sed -i '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/d' /etc/hosts
 
 cat &gt;&gt; /etc/hosts &lt;&lt;EOF
@@ -206,34 +215,34 @@ ${WORKER03_IP}  ${WORKER03_NAME}
 ${REGISTRY_IP}  ${REGISTRY_HOST}
 # END k8s cluster
 EOF
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p><strong>บล็อกนี้รันซ้ำได้</strong> — <code>sed</code> ลบของเดิมก่อนทุกครั้ง และ Ansible ก็ใช้ marker
 <code># BEGIN k8s cluster</code> ชุดเดียวกัน ทำมือแล้วรัน playbook ทับได้เลย ไม่ซ้ำ</p>
 <p>ถ้าเครื่องไหนเคยรันด้วย <code>cat &gt;&gt;</code> แบบเดิมมาก่อน จะมีบรรทัดค้างอยู่นอกบล็อก
 ล้างทีเดียวด้วย (ทำครั้งเดียวพอ):</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cp /etc/hosts /etc/hosts.bak
+<div class="cb"><pre><code class="language-bash">cp /etc/hosts /etc/hosts.bak
 sed -i -E '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/!{/^[0-9.]+[[:space:]]+(k8s-(vip|master0[1-3]|worker0[1-3])|registry\.myhr\.co\.th)[[:space:]]*$/d}' /etc/hosts
 grep -c k8s-master01 /etc/hosts    # ต้องได้ 1
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 </blockquote>
 <blockquote>
 <p><code>/etc/hosts</code> ใช้ได้แต่เปราะ — เพิ่ม node ทีต้องไปแก้ทุกเครื่อง
 ถ้าทีม network ทำ DNS record ให้ได้ ให้ย้ายไป DNS แล้วลบบล็อกนี้ทิ้ง</p>
 </blockquote>
 <p><strong>ตรวจ:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># ดูก่อนว่าตัวแปรขยายครบจริง ไม่มีบรรทัดไหนเหลือ ${...}
+<div class="cb"><pre><code class="language-bash"># ดูก่อนว่าตัวแปรขยายครบจริง ไม่มีบรรทัดไหนเหลือ ${...}
 tail -8 /etc/hosts
 
 hostname &amp;&amp; ping -c1 ${MASTER01_NAME} &amp;&amp; ping -c1 ${REGISTRY_HOST}
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ชื่อเครื่องถูกต้อง และ ping ทั้งสองปลายทางได้</p>
 <hr />
-</div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · ยืนยัน kernel และตรึงไว้</h2><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · ยืนยัน kernel และตรึงไว้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>Oracle Linux ให้ kernel มาสองตัว เราใช้ <strong>UEK 8U2</strong> ตามค่า default
 <strong>ห้ามผสม UEK กับ RHCK ใน cluster เดียวกัน</strong> เด็ดขาด</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">uname -r
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">uname -r
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ลงท้าย <code>el9uek</code> และขึ้นต้น <code>6.12.0-</code> เช่น <code>6.12.0-204.92.4.3.1.el9uek.x86_64</code></p>
 <blockquote>
 <p><strong>สิ่งที่บังคับคือสาย <code>6.12</code> และต้องเป็น <code>uek</code></strong> — สองอย่างนี้เปลี่ยน feature set
@@ -245,63 +254,63 @@ hostname &amp;&amp; ping -c1 ${MASTER01_NAME} &amp;&amp; ping -c1 ${REGISTRY_HOS
 <p><strong>ทำให้ตรงตอนยังไม่มี workload ถูกที่สุด</strong> — reboot ได้อิสระ ไม่ต้อง drain ไม่ต้องรอ PDB</p>
 </blockquote>
 <p>ถ้าเครื่องบูต RHCK อยู่ (ไม่มีคำว่า <code>uek</code>) ให้สลับกลับ:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">grubby --info=ALL | grep -E '^(index|kernel)' | grep -B1 uek
+<div class="cb"><pre><code class="language-bash">grubby --info=ALL | grep -E '^(index|kernel)' | grep -B1 uek
 grubby --set-default /boot/vmlinuz-*uek*.x86_64
 reboot
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรึงเวอร์ชันไม่ให้ <code>dnf update</code> ยก kernel เอง:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">dnf install -y python3-dnf-plugin-versionlock
+<div class="cb"><pre><code class="language-bash">dnf install -y python3-dnf-plugin-versionlock
 dnf versionlock add kernel-uek kernel-uek-core kernel-uek-modules
 dnf versionlock list
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> รายการ <code>kernel-uek-*</code> โผล่ในลิสต์ versionlock</p>
 <blockquote>
 <p><strong>สำคัญ:</strong> ตอน patch kernel ตามรอบ (บทที่ 12) ต้อง <code>dnf versionlock delete</code> ชั่วคราว
 แล้ว <strong>ล็อกกลับทันทีหลัง reboot</strong> ไม่งั้น node จะค่อย ๆ ไหลไปคนละเวอร์ชันโดยไม่มีใครรู้</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · จัดการ repo</h2><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · จัดการ repo</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>ปิด repo ที่จะไปทับของที่เราติดตั้งเอง:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash"># ol9_addons มี containerd ของ Oracle ซึ่งจะไปทับตัวที่เราลงจาก tarball ในบทที่ 02
+<div class="cb"><pre><code class="language-bash"># ol9_addons มี containerd ของ Oracle ซึ่งจะไปทับตัวที่เราลงจาก tarball ในบทที่ 02
 dnf config-manager --disable ol9_addons 2&gt;/dev/null || true
 
 # เปิดเฉพาะที่ต้องใช้
 dnf config-manager --enable ol9_baseos_latest ol9_appstream ol9_UEKR8
 
 dnf repolist enabled
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> มีแค่ <code>ol9_baseos_latest</code>, <code>ol9_appstream</code>, <code>ol9_UEKR8</code> (+ repo ของ Kubernetes ที่จะเพิ่มในขั้นที่ 8)
 <strong>ต้องไม่เห็น</strong> <code>ol9_addons</code></p>
 <p><strong>ปิด Ksplice</strong> — เราใช้ Oracle Linux แบบฟรีจึงไม่มีสิทธิ์ใช้ ปล่อยไว้จะได้แค่ log error รกทุกวัน:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">systemctl disable --now ksplice-uptrack.service 2&gt;/dev/null || true
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">systemctl disable --now ksplice-uptrack.service 2&gt;/dev/null || true
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · ลง package พื้นฐาน</h2><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">dnf install -y \
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · ลง package พื้นฐาน</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">dnf install -y \
   chrony open-vm-tools tar curl wget \
   iproute-tc socat conntrack-tools ethtool \
   bash-completion jq
 
 systemctl enable --now chronyd
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจเวลา — ข้อนี้ห้ามข้าม เพราะ TLS cert และ etcd raft พังทันทีถ้าเวลาเพี้ยน:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">chronyc tracking | grep -E 'Reference ID|System time|Leap status'
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">chronyc tracking | grep -E 'Reference ID|System time|Leap status'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>Leap status : Normal</code> และ <code>System time</code> ต่างไม่เกินหลัก <strong>มิลลิวินาที</strong>
 ถ้าเห็น <code>Not synchronised</code> ให้หยุดแล้วแก้ NTP ก่อน</p>
 <hr />
-</div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · ย้าย partition /home</h2><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · ย้าย partition /home</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>Kubernetes ไม่ใช้ <code>/home</code> เลย ขณะที่ของที่โตเร็วทั้งหมดไปกองใต้ <code>/var</code>
 ย้าย partition 100 GB นี้ไปรับงานที่มีประโยชน์แทน</p>
 <blockquote>
 <p>⚠️ ทำ <strong>ก่อน</strong> ติดตั้ง containerd และก่อน <code>kubeadm init</code> — ย้ายทีหลังต้องหยุด service</p>
 </blockquote>
 <p><strong>ดูก่อนว่า <code>/home</code> คือ device อะไร:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">lsblk -f
+<div class="cb"><pre><code class="language-bash">lsblk -f
 findmnt /home
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>🎩 บน master ทั้ง 3 เครื่อง — ย้ายไปเป็น <code>/var/lib/etcd</code></h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">HOME_DEV=$(findmnt -no SOURCE /home)
+<div class="cb"><pre><code class="language-bash">HOME_DEV=$(findmnt -no SOURCE /home)
 echo "จะย้าย $HOME_DEV ไปเป็น /var/lib/etcd"
 
 umount /home
@@ -309,20 +318,20 @@ mkdir -p /var/lib/etcd
 sed -i 's|[[:space:]]/home[[:space:]]|  /var/lib/etcd  |' /etc/fstab
 mount -a
 chmod 700 /var/lib/etcd
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>⚙️ บน worker ทั้ง 3 เครื่อง — ย้ายไปเป็น <code>/var/lib/containerd</code></h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">HOME_DEV=$(findmnt -no SOURCE /home)
+<div class="cb"><pre><code class="language-bash">HOME_DEV=$(findmnt -no SOURCE /home)
 echo "จะย้าย $HOME_DEV ไปเป็น /var/lib/containerd"
 
 umount /home
 mkdir -p /var/lib/containerd
 sed -i 's|[[:space:]]/home[[:space:]]|  /var/lib/containerd  |' /etc/fstab
 mount -a
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจทั้งสองแบบ:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">findmnt /var/lib/etcd || findmnt /var/lib/containerd
+<div class="cb"><pre><code class="language-bash">findmnt /var/lib/etcd || findmnt /var/lib/containerd
 grep -v '^#' /etc/fstab | grep -E 'etcd|containerd'
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> mount point ใหม่ขึ้นมา และไม่มีบรรทัด <code>/home</code> เหลือใน fstab แล้ว</p>
 <blockquote>
 <p><strong>ทำไมต้องแยก</strong> — บน master ถ้า image กิน root จนเต็ม etcd จะเขียนไม่ได้และ <strong>ทั้ง cluster หยุด</strong>
@@ -331,8 +340,8 @@ grep -v '^#' /etc/fstab | grep -E 'etcd|containerd'
 ให้วัด fsync ในขั้นที่ 9 แล้วตัดสินว่าต้องขอ VMDK แยกให้ etcd ไหม</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · kernel module และ sysctl</h2><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">cat &gt; /etc/modules-load.d/k8s.conf &lt;&lt;'EOF'
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · kernel module และ sysctl</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">cat &gt; /etc/modules-load.d/k8s.conf &lt;&lt;'EOF'
 overlay
 br_netfilter
 EOF
@@ -347,11 +356,11 @@ net.bridge.bridge-nf-call-ip6tables = 1
 EOF
 
 sysctl --system &gt;/dev/null
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจ:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">lsmod | grep -E '^overlay|^br_netfilter'
+<div class="cb"><pre><code class="language-bash">lsmod | grep -E '^overlay|^br_netfilter'
 sysctl net.ipv4.ip_forward net.bridge.bridge-nf-call-iptables
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ทั้งสอง module โหลดอยู่ และ sysctl ทั้งสองค่าเป็น <code>= 1</code></p>
 <blockquote>
 <p>ต้องโหลด <code>br_netfilter</code> <strong>ก่อน</strong> ตั้ง sysctl ไม่งั้น <code>net.bridge.*</code> จะ set ไม่ติด
@@ -359,18 +368,18 @@ sysctl net.ipv4.ip_forward net.bridge.bridge-nf-call-iptables
 — คู่มือชุดเดิมไม่มีไฟล์นี้ พอ reboot แล้ว pod จึงคุยข้าม node ไม่ได้</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>7 · ปิด swap และตั้ง SELinux</h2><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">swapoff -a
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>7 · ปิด swap และตั้ง SELinux</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+<div class="cb"><pre><code class="language-bash">swapoff -a
 sed -i '/[[:space:]]swap[[:space:]]/s/^/#/' /etc/fstab
 
 setenforce 0
 sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจ:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">free -h | grep -i swap
+<div class="cb"><pre><code class="language-bash">free -h | grep -i swap
 getenforce
 grep -i '^SELINUX=' /etc/selinux/config
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> swap ทุกช่องเป็น <code>0B</code> · <code>getenforce</code> คืน <code>Permissive</code> · ไฟล์ config เป็น <code>SELINUX=permissive</code></p>
 <blockquote>
 <p><strong>SELinux permissive คือการยอมรับความเสี่ยง ไม่ใช่ best practice</strong>
@@ -378,11 +387,11 @@ grep -i '^SELINUX=' /etc/selinux/config
 ถ้าองค์กรมีข้อกำหนดว่าต้อง <code>enforcing</code> ต้องทำ policy module เพิ่มและทดสอบใน lab ก่อน</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>8 · firewalld</h2><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>8 · firewalld</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>firewalld <strong>เปิดอยู่</strong> ตามที่ทีมยืนยัน จึงต้องเปิดพอร์ตให้ครบ
 ถ้าขาดข้อใดข้อหนึ่ง อาการจะไปโผล่ตอน <code>kubeadm init</code> หรือตอน pod คุยข้าม node</p>
 <h3>🎩 บน master ทั้ง 3 เครื่อง</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">firewall-cmd --permanent --add-port=6443/tcp          # kube-apiserver
+<div class="cb"><pre><code class="language-bash">firewall-cmd --permanent --add-port=6443/tcp          # kube-apiserver
 firewall-cmd --permanent --add-port=8443/tcp          # HAProxy frontend (VIP)
 firewall-cmd --permanent --add-port=2379-2380/tcp     # etcd client + peer
 firewall-cmd --permanent --add-port=10250/tcp         # kubelet API
@@ -393,18 +402,18 @@ firewall-cmd --permanent --add-port=8472/udp          # Cilium VXLAN
 firewall-cmd --permanent --add-port=4240/tcp          # Cilium health
 firewall-cmd --permanent --add-port=4244-4245/tcp     # Hubble
 firewall-cmd --reload
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>⚙️ บน worker ทั้ง 3 เครื่อง</h3>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">firewall-cmd --permanent --add-port=10250/tcp         # kubelet API
+<div class="cb"><pre><code class="language-bash">firewall-cmd --permanent --add-port=10250/tcp         # kubelet API
 firewall-cmd --permanent --add-port=30000-32767/tcp   # NodePort range
 firewall-cmd --permanent --add-port=8472/udp          # Cilium VXLAN
 firewall-cmd --permanent --add-port=4240/tcp          # Cilium health
 firewall-cmd --permanent --add-port=4244-4245/tcp     # Hubble
 firewall-cmd --reload
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจทั้งสองแบบ:</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">firewall-cmd --list-all
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">firewall-cmd --list-all
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> พอร์ตครบตามรายการของบทบาทนั้น และ master ต้องมี <code>protocols: vrrp</code></p>
 <blockquote>
 <p><strong>ไม่ต้องเปิด <code>10256/tcp</code></strong> (kube-proxy health) เพราะเราไม่ติดตั้ง kube-proxy
@@ -413,43 +422,43 @@ firewall-cmd --reload
 <h3>หมายเหตุ — interface ของ Cilium กับ firewalld</h3>
 <p>หลังลง Cilium ในบทที่ 05 ถ้าเจอว่า pod ข้าม node ไม่ได้ ให้ลองเพิ่ม interface ของ Cilium
 เข้า zone <code>trusted</code> แล้วทดสอบซ้ำ:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">firewall-cmd --permanent --zone=trusted --add-interface=cilium_host
+<div class="cb"><pre><code class="language-bash">firewall-cmd --permanent --zone=trusted --add-interface=cilium_host
 firewall-cmd --permanent --zone=trusted --add-interface=cilium_net
 firewall-cmd --permanent --zone=trusted --add-interface=cilium_vxlan
 firewall-cmd --reload
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p><strong>ต้องทดสอบใน lab ว่าจำเป็นจริงไหม</strong> — อย่าใส่ไว้ล่วงหน้าโดยไม่รู้เหตุผล
 และต้องทดสอบด้วยว่า <code>firewall-cmd --reload</code> ตอน Cilium รันอยู่แล้ว pod ยังคุยกันได้
 เพราะ firewalld เขียนกฎ nftables ใหม่ทั้งชุดตอน reload · <strong>จดผลลง บทที่ 13 ไม่ว่าจะผ่านหรือไม่</strong></p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-10" data-step="10"><div class="step-head"><h2>9 · วัด disk latency ของ etcd</h2><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10"><div class="step-head"><h2>9 · วัด disk latency ของ etcd</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <blockquote>
 <p><strong>🎩 รันเฉพาะ master ทั้ง 3 เครื่อง</strong></p>
 </blockquote>
 <p>etcd ต้องการ fsync p99 ต่ำกว่า ~10 ms ถ้าไม่ผ่าน cluster จะตอบช้าและ leader election สะดุด
 โดยที่ log ไปโผล่ที่ apiserver ทำให้ไล่หาสาเหตุยากมาก</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">dnf install -y fio
+<div class="cb"><pre><code class="language-bash">dnf install -y fio
 fio --rw=write --ioengine=sync --fdatasync=1 --directory=/var/lib/etcd \
     --size=22m --bs=2300 --name=etcd-fsync-test
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> บรรทัด <code>fsync/fdatasync/sync_file_range:</code> แล้วดูค่า <code>99.00th</code> ใน <code>sync percentiles</code>
 <strong>ต้องต่ำกว่า 10000 (µs) = 10 ms</strong></p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">rm -f /var/lib/etcd/etcd-fsync-test*
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">rm -f /var/lib/etcd/etcd-fsync-test*
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p><strong>บันทึกตัวเลขที่วัดได้ลงคู่มือเป็น baseline</strong> เวลา cluster ช้าในอนาคตจะได้เทียบได้ว่า disk แย่ลงหรือเปล่า
 ถ้าไม่ผ่าน 10 ms ให้ขอ VMDK แยกสำหรับ etcd หรือย้ายไป datastore ที่ไม่แชร์กับ VM อื่นเยอะ</p>
 </blockquote>
 <hr />
-</div></section><section class="step" id="step-11" data-step="11"><div class="step-head"><h2>10 · Reboot แล้วตรวจซ้ำ</h2><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11"><div class="step-head"><h2>10 · Reboot แล้วตรวจซ้ำ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p><strong>ข้อนี้ห้ามข้าม</strong> — จุดประสงค์คือพิสูจน์ว่าทุกอย่างยังอยู่หลัง reboot
 ซึ่งเป็นสิ่งที่คู่มือชุดเดิมพลาด</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">reboot
-</code></pre></div>
+<div class="cb"><pre><code class="language-bash">reboot
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>หลังเครื่องกลับมา:</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">uname -r                                          # ต้องลงท้าย uek และตรงกับ versions.env
+<div class="cb"><pre><code class="language-bash">uname -r                                          # ต้องลงท้าย uek และตรงกับ versions.env
 lsmod | grep -E '^overlay|^br_netfilter'          # ต้องมีทั้งสอง
 sysctl net.ipv4.ip_forward                        # ต้องเป็น 1
 free -h | grep -i swap                            # ต้องเป็น 0B
@@ -457,25 +466,25 @@ getenforce                                        # ต้องเป็น Per
 findmnt /var/lib/etcd || findmnt /var/lib/containerd   # partition ต้องยัง mount อยู่
 firewall-cmd --list-ports                         # ต้องครบ
 chronyc tracking | grep 'Leap status'             # ต้อง Normal
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></section><section class="step" id="step-12" data-step="12"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><button class="done-btn" type="button" data-step="12"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div><div class="step-body">
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-12" data-step="12"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <p>รันบน <strong>ทุกเครื่อง</strong> แล้วเทียบกัน — ทั้ง 6 เครื่องต้องได้ผลเหมือนกันทุกข้อ</p>
-<div class="cb"><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div><pre><code class="language-bash">echo "=== $(hostname) ==="
+<div class="cb"><pre><code class="language-bash">echo "=== $(hostname) ==="
 echo "kernel : $(uname -r)"
 echo "swap   : $(free -h | awk '/Swap/{print $2}')"
 echo "selinux: $(getenforce)"
 echo "modules: $(lsmod | grep -cE '^overlay|^br_netfilter')/2"
 echo "fwd    : $(sysctl -n net.ipv4.ip_forward)"
 echo "time   : $(chronyc tracking | awk -F': ' '/Leap status/{print $2}')"
-</code></pre></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ต้องได้:</strong> kernel เลขเดียวกันทั้ง 6 เครื่อง · swap <code>0B</code> · selinux <code>Permissive</code> · modules <code>2/2</code> · fwd <code>1</code> · time <code>Normal</code></p>
 <blockquote>
 <p>ถ้า kernel ไม่ตรงกันแม้แต่เครื่องเดียว <strong>ให้หยุดแล้วแก้ก่อน</strong> อย่าไปบทที่ 02
 node ที่ kernel ต่างกันจะให้อาการ network ต่างกันเป็นราย node ซึ่งเป็นบั๊กที่หาสาเหตุยากที่สุดแบบหนึ่ง</p>
 </blockquote>
 <p><strong>➡️ ต่อที่ <a href="02-container-runtime.html">บทที่ 02 — Container Runtime</a></strong></p>
-</div></section>
+</div><div class="step-foot"><button class="done-btn" type="button" data-step="12"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="00-overview.html">← ภาพรวมและลำดับงาน</a><a class="pn" href="02-container-runtime.html">Container Runtime →</a></div>
   </main>
 </div>
@@ -522,8 +531,16 @@ node ที่ kernel ต่างกันจะให้อาการ networ
   document.querySelectorAll('.done-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      var marking = i<0;
       if(i>=0){ done.splice(i,1); } else { done.push(n); }
       setMine(done); paint();
+      // กดทำแล้ว = พาไปขั้นถัดไปให้เลย ไม่ต้องเลื่อนหาเอง
+      // ตอนยกเลิกไม่พาไปไหน เพราะคนน่าจะอยากอยู่ตรงนั้นต่อ
+      if(marking){
+        var nx=nextStep();
+        if(nx){ nx.scrollIntoView({behavior:'smooth', block:'start'}); }
+        else { toast('ครบทุกขั้นของบทนี้แล้ว'); }
+      }
     });
   });
 
