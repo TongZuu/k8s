@@ -335,8 +335,26 @@ dnf list installed 2>/dev/null | grep -c containerd
 ```bash
 crictl pull "${REGISTRY_HOST}/library/busybox:latest" 2>&1 | tail -3
 ```
-**ควรเห็น:** `Image is up to date` หรือ `Pulling image...` สำเร็จ
-ถ้าได้ `401 Unauthorized` ถือว่า**ผ่าน**สำหรับขั้นนี้ (แปลว่าคุยกับ registry ได้แล้ว แค่ยังไม่มี credential)
-ถ้าได้ `connection refused`, `x509` หรือ `no such host` **ให้หยุดแล้วกลับไปแก้ขั้นที่ 4**
+**ผลที่ถือว่าผ่าน** — ข้อความจริงที่ `crictl` พ่นออกมา (ยืนยันจากเครื่องจริง 27 ส.ค. 2026):
+
+```
+authorization failed: no basic auth credentials
+```
+
+อ่านจากท้ายไปหน้า: registry ตอบว่ายังไม่ได้ล็อกอิน → **ไปถึง registry แล้ว** →
+ไม่ใช่ TLS error ไม่ใช่ DNS error · แปลว่า DNS, TLS และ `hosts.toml` ถูกต้องหมด
+เหลือแค่ credential ซึ่งจะใส่ตอน**บทที่ 10**
+
+(ถ้า registry ตัวนั้นเปิดให้ pull สาธารณะได้ จะเห็น `Image is up to date` แทน ซึ่งก็ผ่าน)
+
+**ผลที่แปลว่ามีปัญหาจริง — ต้องหยุดแก้ก่อนไปต่อ:**
+
+| ข้อความ | แปลว่า | กลับไปแก้ที่ |
+|---|---|---|
+| `x509: certificate signed by unknown authority` | CA ไม่ถูก trust | ข้อ 4 |
+| `x509: certificate has expired` | 🔴 cert ของ registry หมดอายุ | แจ้งคนดูแล registry |
+| `no such host` | `/etc/hosts` ไม่มีบรรทัด registry | บท 01 ข้อ 1 |
+| `connection refused` · `i/o timeout` | เข้าไม่ถึงเครื่อง registry | ทีม network |
+| `crictl: command not found` | `cri-tools` ไม่ได้ลง | ข้อ 5 |
 
 **➡️ ต่อที่ [บทที่ 03 — HA Layer](03-ha-layer.md)**

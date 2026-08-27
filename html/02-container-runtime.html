@@ -511,9 +511,50 @@ dnf list installed 2&gt;/dev/null | grep -c containerd
 <p><strong>ทดสอบ pull จริงจาก registry:</strong></p>
 <div class="cb"><pre><code class="language-bash">crictl pull "${REGISTRY_HOST}/library/busybox:latest" 2&gt;&amp;1 | tail -3
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>Image is up to date</code> หรือ <code>Pulling image...</code> สำเร็จ
-ถ้าได้ <code>401 Unauthorized</code> ถือว่า<strong>ผ่าน</strong>สำหรับขั้นนี้ (แปลว่าคุยกับ registry ได้แล้ว แค่ยังไม่มี credential)
-ถ้าได้ <code>connection refused</code>, <code>x509</code> หรือ <code>no such host</code> <strong>ให้หยุดแล้วกลับไปแก้ขั้นที่ 4</strong></p>
+<p><strong>ผลที่ถือว่าผ่าน</strong> — ข้อความจริงที่ <code>crictl</code> พ่นออกมา (ยืนยันจากเครื่องจริง 27 ส.ค. 2026):</p>
+<div class="cb"><pre><code class="language-text">authorization failed: no basic auth credentials
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>อ่านจากท้ายไปหน้า: registry ตอบว่ายังไม่ได้ล็อกอิน → <strong>ไปถึง registry แล้ว</strong> →
+ไม่ใช่ TLS error ไม่ใช่ DNS error · แปลว่า DNS, TLS และ <code>hosts.toml</code> ถูกต้องหมด
+เหลือแค่ credential ซึ่งจะใส่ตอน<strong>บทที่ 10</strong></p>
+<p>(ถ้า registry ตัวนั้นเปิดให้ pull สาธารณะได้ จะเห็น <code>Image is up to date</code> แทน ซึ่งก็ผ่าน)</p>
+<p><strong>ผลที่แปลว่ามีปัญหาจริง — ต้องหยุดแก้ก่อนไปต่อ:</strong></p>
+<table>
+<thead>
+<tr>
+<th>ข้อความ</th>
+<th>แปลว่า</th>
+<th>กลับไปแก้ที่</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>x509: certificate signed by unknown authority</code></td>
+<td>CA ไม่ถูก trust</td>
+<td>ข้อ 4</td>
+</tr>
+<tr>
+<td><code>x509: certificate has expired</code></td>
+<td>🔴 cert ของ registry หมดอายุ</td>
+<td>แจ้งคนดูแล registry</td>
+</tr>
+<tr>
+<td><code>no such host</code></td>
+<td><code>/etc/hosts</code> ไม่มีบรรทัด registry</td>
+<td>บท 01 ข้อ 1</td>
+</tr>
+<tr>
+<td><code>connection refused</code> · <code>i/o timeout</code></td>
+<td>เข้าไม่ถึงเครื่อง registry</td>
+<td>ทีม network</td>
+</tr>
+<tr>
+<td><code>crictl: command not found</code></td>
+<td><code>cri-tools</code> ไม่ได้ลง</td>
+<td>ข้อ 5</td>
+</tr>
+</tbody>
+</table>
 <p><strong>➡️ ต่อที่ <a href="03-ha-layer.html">บทที่ 03 — HA Layer</a></strong></p>
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="01-prepare-os.html">← เตรียม OS</a><a class="pn" href="03-ha-layer.html">HA Layer →</a></div>
