@@ -81,7 +81,7 @@
 
     - name: มีไฟล์ที่ scp มาวางไว้แล้วหรือยัง
       ansible.builtin.stat:
-        path: "{{ dl }}/containerd.tar.gz"
+        path: "{{ dl }}/containerd-{{ v.CONTAINERD_VERSION }}-linux-amd64.tar.gz"
       register: _have_tar
       check_mode: false
 
@@ -90,7 +90,7 @@
         that:
           - (_net.status | default(0)) in [200, 301, 302] or _have_tar.stat.exists
         fail_msg: >-
-          node นี้ออกไป github.com ไม่ได้ และไม่มีไฟล์ที่ {{ dl }}/containerd.tar.gz
+          node นี้ออกไป github.com ไม่ได้ และไม่มีไฟล์ที่ {{ dl }}/containerd-{{ v.CONTAINERD_VERSION }}-linux-amd64.tar.gz
           → โหลดจากเครื่องที่ออกเน็ตได้แล้ว scp มาวางที่ {{ dl }}/ ก่อน (บท 02 ข้อ 1)
         quiet: true
 
@@ -119,10 +119,12 @@
       failed_when: false
       check_mode: false
 
-    - name: อ่าน stamp เวอร์ชัน CNI ที่ติดตั้งไว้
-      ansible.builtin.slurp:
-        src: /opt/cni/bin/.cni-version
-      register: _cni_stamp
+    # CNI plugin บอกเวอร์ชันตัวเองได้ ไม่ต้องพึ่ง stamp ที่เราจดเอง
+    # ใช้ได้ไม่ว่าใครติดตั้ง — ทำมือหรือ playbook ก็อ่านได้เหมือนกัน
+    - name: CNI plugins ที่ติดตั้งอยู่เป็นเวอร์ชันไหน
+      ansible.builtin.command: /opt/cni/bin/bridge --version
+      register: _cni_cur
+      changed_when: false
       failed_when: false
       check_mode: false
 
@@ -130,7 +132,7 @@
       ansible.builtin.set_fact:
         _need_ctd:  "{{ 'v' ~ v.CONTAINERD_VERSION not in (_ctd_cur.stdout | default('')) }}"
         _need_runc: "{{ v.RUNC_VERSION not in (_runc_cur.stdout | default('')) }}"
-        _need_cni:  "{{ (_cni_stamp.content | default('') | b64decode | trim) != v.CNI_PLUGINS_VERSION }}"
+        _need_cni:  "{{ 'v' ~ v.CNI_PLUGINS_VERSION not in (_cni_cur.stdout | default('')) }}"
 
     - name: สิ่งที่ต้องทำบนเครื่องนี้
       ansible.builtin.debug:
@@ -150,13 +152,13 @@
     - name: ดึง checksum ของ containerd มาก่อน
       ansible.builtin.get_url:
         url: "https://github.com/containerd/containerd/releases/download/v{{ v.CONTAINERD_VERSION }}/containerd-{{ v.CONTAINERD_VERSION }}-linux-amd64.tar.gz.sha256sum"
-        dest: "{{ dl }}/containerd.sha256sum"
+        dest: "{{ dl }}/containerd-{{ v.CONTAINERD_VERSION }}-linux-amd64.tar.gz.sha256sum"
         timeout: 60
         mode: "0644"
       when: _online and (_need_ctd | bool)
 
     - name: อ่านค่า checksum
-      ansible.builtin.command: "awk '{print $1}' {{ dl }}/containerd.sha256sum"
+      ansible.builtin.command: "awk '{print $1}' {{ dl }}/containerd-{{ v.CONTAINERD_VERSION }}-linux-amd64.tar.gz.sha256sum"
       register: _sha
       when: _need_ctd | bool
       changed_when: false
@@ -167,7 +169,7 @@
     - name: ดาวน์โหลด containerd — get_url ตรวจ checksum ให้เอง ถ้าไม่ตรงจะ fail
       ansible.builtin.get_url:
         url: "https://github.com/containerd/containerd/releases/download/v{{ v.CONTAINERD_VERSION }}/containerd-{{ v.CONTAINERD_VERSION }}-linux-amd64.tar.gz"
-        dest: "{{ dl }}/containerd.tar.gz"
+        dest: "{{ dl }}/containerd-{{ v.CONTAINERD_VERSION }}-linux-amd64.tar.gz"
         timeout: 60
         checksum: "{{ ('sha256:' + _sha.stdout) if (_sha.stdout | default('')) else omit }}"
         mode: "0644"
@@ -184,7 +186,7 @@
     - name: ดาวน์โหลด CNI plugins
       ansible.builtin.get_url:
         url: "https://github.com/containernetworking/plugins/releases/download/v{{ v.CNI_PLUGINS_VERSION }}/cni-plugins-linux-amd64-v{{ v.CNI_PLUGINS_VERSION }}.tgz"
-        dest: "{{ dl }}/cni-plugins.tgz"
+        dest: "{{ dl }}/cni-plugins-linux-amd64-v{{ v.CNI_PLUGINS_VERSION }}.tgz"
         timeout: 60
         mode: "0644"
       when: _online and (_need_cni | bool)
@@ -207,7 +209,7 @@
 
     - name: แตก containerd ลง /usr/local
       ansible.builtin.unarchive:
-        src: "{{ dl }}/containerd.tar.gz"
+        src: "{{ dl }}/containerd-{{ v.CONTAINERD_VERSION }}-linux-amd64.tar.gz"
         dest: /usr/local
         remote_src: true
       when: _need_ctd | bool
@@ -232,16 +234,10 @@
 
     - name: แตก CNI plugins
       ansible.builtin.unarchive:
-        src: "{{ dl }}/cni-plugins.tgz"
+        src: "{{ dl }}/cni-plugins-linux-amd64-v{{ v.CNI_PLUGINS_VERSION }}.tgz"
         dest: /opt/cni/bin
         remote_src: true
       when: _need_cni | bool
-
-    - name: จด stamp เวอร์ชัน CNI
-      ansible.builtin.copy:
-        dest: /opt/cni/bin/.cni-version
-        content: "{{ v.CNI_PLUGINS_VERSION }}\n"
-        mode: "0644"
 
     - name: สร้างที่วาง systemd unit
       ansible.builtin.file:
