@@ -69,11 +69,32 @@ grep -E 'k8sServiceHost|k8sServicePort|clusterPoolIPv4PodCIDRList|kubeProxyRepla
 > เพราะไม่มี kube-proxy Cilium จึงหา apiserver ผ่าน Service ClusterIP ไม่ได้
 > ถ้าชี้ไปที่ master01 ตรง ๆ วันที่ master01 ตาย Cilium ทั้ง cluster จะหลุด
 
-**ยืนยันชื่อ interface ใน L2 policy ให้ตรงของจริง:**
+**ยืนยันชื่อ interface ใน L2 policy ให้ตรงกับ worker จริง:**
+
+> ⚠️ **ต้องเทียบกับ worker ไม่ใช่เครื่องที่คุณกำลังยืนอยู่** — policy ตัด control plane
+> ออกด้วย `nodeSelector` แล้ว (กัน traffic ของ application ไม่ให้เบียด apiserver/etcd)
+> master จะชื่อ interface อะไรก็ไม่มีผล ถ้าเช็กบน master01 แล้วเห็นตรงกันพอดี
+> จะผ่านไปทั้งที่ยังไม่ได้ตรวจสิ่งที่ต้องตรวจเลย
+
 ```bash
-ip -br addr show | grep 192.168.50
-grep 'ens192' /root/k8s/config/cilium/l2-announcement-policy.yaml
+for ip in 104 105 106; do echo -n "worker$ip: "; ssh root@192.168.50.$ip "ip -br -4 a s | awk '/192.168.50./{print \$1}'"; done
+grep -A3 'interfaces:' /root/k8s/config/cilium/l2-announcement-policy.yaml
 ```
+**ควรเห็น:** ชื่อ interface ของ worker **ทั้ง 3 ตัว** เข้าเงื่อนไข regex ใน `interfaces:`
+
+**ถ้ามีตัวไหนไม่เข้า** ให้แก้ `l2-announcement-policy.yaml` เป็น regex ที่ครอบคลุมทุกชื่อ:
+```yaml
+  interfaces:
+    - ^ens[0-9]+$
+```
+
+> ชื่อ NIC ต่างกันได้รายเครื่องตามชนิด adapter ที่ VM ถูกสร้างมา
+> (`ens192` มักเป็น VMXNET3 · `ens33`/`ens32` มักเป็น E1000) — เคยเจอจริงใน cluster นี้
+>
+> **ผลถ้าปล่อยให้ไม่ตรง:** worker ตัวนั้นจะไม่ถูกเลือกเป็นคนตอบ ARP
+> · ไม่ตรงบางตัว → ยังใช้งานได้ แต่เหลือตัวสำรองน้อยลงโดยไม่มีอะไรเตือน
+> · **ไม่ตรงเลยสักตัว → Service ขึ้น `EXTERNAL-IP` ปกติ `kubectl` ไม่ฟ้องอะไร
+> แต่ ping จากข้างนอกไม่ติด** เป็นอาการเดียวกับตอนโดน Dynamic ARP Inspection บล็อก
 
 ---
 
@@ -125,7 +146,7 @@ kubectl get nodes
 ```bash
 kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep -i 'KubeProxyReplacement'
 ```
-**ควรเห็น:** `KubeProxyReplacement:   True   [ens192 192.168.50.10X ...]`
+**ควรเห็น:** `KubeProxyReplacement:   True   [<ชื่อ interface ของ node นั้น> 192.168.50.10X ...]`
 
 ถ้าเห็น `False` หรือ `Disabled` **ให้หยุด** — cluster จะไม่มีอะไรทำ Service เลย
 

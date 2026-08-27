@@ -291,10 +291,29 @@ cilium version --client
 เพราะไม่มี kube-proxy Cilium จึงหา apiserver ผ่าน Service ClusterIP ไม่ได้
 ถ้าชี้ไปที่ master01 ตรง ๆ วันที่ master01 ตาย Cilium ทั้ง cluster จะหลุด</p>
 </blockquote>
-<p><strong>ยืนยันชื่อ interface ใน L2 policy ให้ตรงของจริง:</strong></p>
-<div class="cb"><pre><code class="language-bash">ip -br addr show | grep 192.168.50
-grep 'ens192' /root/k8s/config/cilium/l2-announcement-policy.yaml
+<p><strong>ยืนยันชื่อ interface ใน L2 policy ให้ตรงกับ worker จริง:</strong></p>
+<blockquote>
+<p>⚠️ <strong>ต้องเทียบกับ worker ไม่ใช่เครื่องที่คุณกำลังยืนอยู่</strong> — policy ตัด control plane
+ออกด้วย <code>nodeSelector</code> แล้ว (กัน traffic ของ application ไม่ให้เบียด apiserver/etcd)
+master จะชื่อ interface อะไรก็ไม่มีผล ถ้าเช็กบน master01 แล้วเห็นตรงกันพอดี
+จะผ่านไปทั้งที่ยังไม่ได้ตรวจสิ่งที่ต้องตรวจเลย</p>
+</blockquote>
+<div class="cb"><pre><code class="language-bash">for ip in 104 105 106; do echo -n "worker$ip: "; ssh root@192.168.50.$ip "ip -br -4 a s | awk '/192.168.50./{print \$1}'"; done
+grep -A3 'interfaces:' /root/k8s/config/cilium/l2-announcement-policy.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ชื่อ interface ของ worker <strong>ทั้ง 3 ตัว</strong> เข้าเงื่อนไข regex ใน <code>interfaces:</code></p>
+<p><strong>ถ้ามีตัวไหนไม่เข้า</strong> ให้แก้ <code>l2-announcement-policy.yaml</code> เป็น regex ที่ครอบคลุมทุกชื่อ:</p>
+<div class="cb"><pre><code class="language-yaml">  interfaces:
+    - ^ens[0-9]+$
+</code></pre><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>ชื่อ NIC ต่างกันได้รายเครื่องตามชนิด adapter ที่ VM ถูกสร้างมา
+(<code>ens192</code> มักเป็น VMXNET3 · <code>ens33</code>/<code>ens32</code> มักเป็น E1000) — เคยเจอจริงใน cluster นี้</p>
+<p><strong>ผลถ้าปล่อยให้ไม่ตรง:</strong> worker ตัวนั้นจะไม่ถูกเลือกเป็นคนตอบ ARP
+· ไม่ตรงบางตัว → ยังใช้งานได้ แต่เหลือตัวสำรองน้อยลงโดยไม่มีอะไรเตือน
+· <strong>ไม่ตรงเลยสักตัว → Service ขึ้น <code>EXTERNAL-IP</code> ปกติ <code>kubectl</code> ไม่ฟ้องอะไร
+แต่ ping จากข้างนอกไม่ติด</strong> เป็นอาการเดียวกับตอนโดน Dynamic ARP Inspection บล็อก</p>
+</blockquote>
 <hr />
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · ติดตั้ง Cilium</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <div class="cb"><pre><code class="language-bash">helm repo add cilium https://helm.cilium.io/
@@ -330,7 +349,7 @@ DaemonSet    cilium    Desired: 6, Ready: 6/6, Available: 6/6
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · ยืนยันว่า kube-proxy replacement ทำงานจริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
 <div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep -i 'KubeProxyReplacement'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>KubeProxyReplacement:   True   [ens192 192.168.50.10X ...]</code></p>
+<p><strong>ควรเห็น:</strong> <code>KubeProxyReplacement:   True   [&lt;ชื่อ interface ของ node นั้น&gt; 192.168.50.10X ...]</code></p>
 <p>ถ้าเห็น <code>False</code> หรือ <code>Disabled</code> <strong>ให้หยุด</strong> — cluster จะไม่มีอะไรทำ Service เลย</p>
 <p><strong>ตรวจว่าไม่มี kube-proxy จริง ๆ:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl -n kube-system get ds

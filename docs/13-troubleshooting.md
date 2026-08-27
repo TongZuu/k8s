@@ -67,7 +67,7 @@ The connection to the server 192.168.50.100:8443 was refused
 # 1. VIP ยังมีอยู่ไหม และอยู่เครื่องเดียวหรือเปล่า
 for ip in 101 102 103; do
   echo -n "master$ip: "
-  ssh root@192.168.50.$ip "ip -4 addr show ens192 | grep -c 192.168.50.100"
+  ssh root@192.168.50.$ip "ip -4 addr show | grep -c 192.168.50.100"
 done
 ```
 - ได้ `0` ทั้งหมด → **ไม่มีใครถือ VIP** ไปข้อ 1.1
@@ -83,7 +83,14 @@ journalctl -u keepalived -n 50 --no-pager
 ถ้า script คืน exit 1 แปลว่า HAProxy ตาย → `systemctl restart haproxy`
 
 ### 1.2 Split brain (VIP ขึ้นหลายเครื่อง)
-สาเหตุ 3 ข้อ เรียงตามความน่าจะเป็น:
+
+**แยกให้ออกก่อนว่าเป็น split brain จริง หรือ VIP กระพริบ** — อาการคล้ายกันแต่คนละสาเหตุ
+รันคำสั่งข้อ 1 ซ้ำอีกรอบห่างกัน 10 วินาที:
+
+- **เลข `1` อยู่ที่เดิม แต่มีหลายเครื่อง** → split brain จริง อ่านต่อข้างล่าง
+- **เลข `1` ย้ายเครื่องไปมา** → **กระพริบ** ไปที่ [1.2b](#12b-vip-กระพริบ) ข้างล่างแทน
+
+สาเหตุของ split brain จริง 3 ข้อ เรียงตามความน่าจะเป็น:
 ```bash
 grep auth_pass /etc/keepalived/keepalived.conf   # ต้องตรงกันทั้ง 3 เครื่อง
 ```
@@ -95,6 +102,28 @@ firewall-cmd --list-protocols     # ต้องมี vrrp
 grep virtual_router_id /etc/keepalived/keepalived.conf   # ต้องเป็น 60 ทั้ง 3 เครื่อง
 ```
 ข้อสุดท้าย: switch บล็อก multicast `224.0.0.18` → ต้องคุยกับทีม network
+
+### 1.2b VIP กระพริบ
+
+VRRP ทำงานปกติ (ไม่ใช่ split brain) แต่ VIP ย้ายเครื่องไปมาไม่หยุด ยืนยันด้วย:
+```bash
+journalctl -u keepalived -n 40 --no-pager | grep -iE 'Entering|transition'
+```
+**อาการ:** เห็น `Entering MASTER STATE` / `Entering BACKUP STATE` สลับกันทุก ~6-12 วินาที
+
+สาเหตุคือ `check_apiserver.sh` ทำให้ **เครื่องที่ถือ VIP หัก priority ตัวเอง** จนเสีย VIP
+แล้วเครื่องที่รับไปก็ตกด้วยเหตุผลเดียวกัน วนไม่จบ ตรวจว่าสคริปต์บนเครื่องมีด่าน 2 หรือยัง:
+```bash
+grep -c "':6443 '" /etc/keepalived/check_apiserver.sh
+```
+**ควรเห็น:** `1` — ถ้าได้ `0` แปลว่าเป็นสคริปต์รุ่นเก่าที่ไม่มี guard ให้เอาจากรีโปมาทับ:
+```bash
+\cp -f /root/k8s/config/keepalived/check_apiserver.sh /etc/keepalived/check_apiserver.sh
+```
+
+> เจอบ่อยสุด**ตอน bootstrap ก่อน `kubeadm init`** เพราะ HAProxy ยังไม่มี backend เป็น ๆ
+> เครื่องที่ถือ VIP จึงยิง `/healthz` ไม่ผ่านเสมอ ด่าน 2 จึงข้ามการตรวจนั้นไปจนกว่าจะมี
+> `kube-apiserver` ฟังที่ `:6443` จริง
 
 ### 1.3 VIP ปกติ แต่ยังต่อไม่ได้
 ```bash
@@ -453,7 +482,7 @@ kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl \
   endpoint status --cluster -w table
 
 # ใครถือ VIP
-for ip in 101 102 103; do echo -n "$ip: "; ssh root@192.168.50.$ip 'ip -4 a s ens192 | grep -c 192.168.50.100'; done
+for ip in 101 102 103; do echo -n "$ip: "; ssh root@192.168.50.$ip 'ip -4 a s | grep -c 192.168.50.100'; done
 
 # kernel ตรงกันไหมทั้ง 6 เครื่อง
 for ip in 101 102 103 104 105 106; do echo -n "$ip: "; ssh root@192.168.50.$ip uname -r; done

@@ -293,7 +293,7 @@ echo "NS=$NS POD=$POD NODE=$NODE"
 <div class="cb"><pre><code class="language-bash"># 1. VIP ยังมีอยู่ไหม และอยู่เครื่องเดียวหรือเปล่า
 for ip in 101 102 103; do
   echo -n "master$ip: "
-  ssh root@192.168.50.$ip "ip -4 addr show ens192 | grep -c 192.168.50.100"
+  ssh root@192.168.50.$ip "ip -4 addr show | grep -c 192.168.50.100"
 done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <ul>
@@ -308,7 +308,13 @@ journalctl -u keepalived -n 50 --no-pager
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ถ้า script คืน exit 1 แปลว่า HAProxy ตาย → <code>systemctl restart haproxy</code></p>
 <h3>1.2 Split brain (VIP ขึ้นหลายเครื่อง)</h3>
-<p>สาเหตุ 3 ข้อ เรียงตามความน่าจะเป็น:</p>
+<p><strong>แยกให้ออกก่อนว่าเป็น split brain จริง หรือ VIP กระพริบ</strong> — อาการคล้ายกันแต่คนละสาเหตุ
+รันคำสั่งข้อ 1 ซ้ำอีกรอบห่างกัน 10 วินาที:</p>
+<ul>
+<li><strong>เลข <code>1</code> อยู่ที่เดิม แต่มีหลายเครื่อง</strong> → split brain จริง อ่านต่อข้างล่าง</li>
+<li><strong>เลข <code>1</code> ย้ายเครื่องไปมา</strong> → <strong>กระพริบ</strong> ไปที่ <a href="#12b-vip-%E0%B8%81%E0%B8%A3%E0%B8%B0%E0%B8%9E%E0%B8%A3%E0%B8%B4%E0%B8%9A">1.2b</a> ข้างล่างแทน</li>
+</ul>
+<p>สาเหตุของ split brain จริง 3 ข้อ เรียงตามความน่าจะเป็น:</p>
 <div class="cb"><pre><code class="language-bash">grep auth_pass /etc/keepalived/keepalived.conf   # ต้องตรงกันทั้ง 3 เครื่อง
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
@@ -319,6 +325,23 @@ journalctl -u keepalived -n 50 --no-pager
 grep virtual_router_id /etc/keepalived/keepalived.conf   # ต้องเป็น 60 ทั้ง 3 เครื่อง
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ข้อสุดท้าย: switch บล็อก multicast <code>224.0.0.18</code> → ต้องคุยกับทีม network</p>
+<h3>1.2b VIP กระพริบ</h3>
+<p>VRRP ทำงานปกติ (ไม่ใช่ split brain) แต่ VIP ย้ายเครื่องไปมาไม่หยุด ยืนยันด้วย:</p>
+<div class="cb"><pre><code class="language-bash">journalctl -u keepalived -n 40 --no-pager | grep -iE 'Entering|transition'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>อาการ:</strong> เห็น <code>Entering MASTER STATE</code> / <code>Entering BACKUP STATE</code> สลับกันทุก ~6-12 วินาที</p>
+<p>สาเหตุคือ <code>check_apiserver.sh</code> ทำให้ <strong>เครื่องที่ถือ VIP หัก priority ตัวเอง</strong> จนเสีย VIP
+แล้วเครื่องที่รับไปก็ตกด้วยเหตุผลเดียวกัน วนไม่จบ ตรวจว่าสคริปต์บนเครื่องมีด่าน 2 หรือยัง:</p>
+<div class="cb"><pre><code class="language-bash">grep -c "':6443 '" /etc/keepalived/check_apiserver.sh
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>1</code> — ถ้าได้ <code>0</code> แปลว่าเป็นสคริปต์รุ่นเก่าที่ไม่มี guard ให้เอาจากรีโปมาทับ:</p>
+<div class="cb"><pre><code class="language-bash">\cp -f /root/k8s/config/keepalived/check_apiserver.sh /etc/keepalived/check_apiserver.sh
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>เจอบ่อยสุด<strong>ตอน bootstrap ก่อน <code>kubeadm init</code></strong> เพราะ HAProxy ยังไม่มี backend เป็น ๆ
+เครื่องที่ถือ VIP จึงยิง <code>/healthz</code> ไม่ผ่านเสมอ ด่าน 2 จึงข้ามการตรวจนั้นไปจนกว่าจะมี
+<code>kube-apiserver</code> ฟังที่ <code>:6443</code> จริง</p>
+</blockquote>
 <h3>1.3 VIP ปกติ แต่ยังต่อไม่ได้</h3>
 <div class="cb"><pre><code class="language-bash">ss -lnt | grep 8443                          # HAProxy ฟังอยู่ไหม
 curl -s http://127.0.0.1:8404/stats | head   # backend ขึ้นกี่ตัว
@@ -682,7 +705,7 @@ kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl \
   endpoint status --cluster -w table
 
 # ใครถือ VIP
-for ip in 101 102 103; do echo -n "$ip: "; ssh root@192.168.50.$ip 'ip -4 a s ens192 | grep -c 192.168.50.100'; done
+for ip in 101 102 103; do echo -n "$ip: "; ssh root@192.168.50.$ip 'ip -4 a s | grep -c 192.168.50.100'; done
 
 # kernel ตรงกันไหมทั้ง 6 เครื่อง
 for ip in 101 102 103 104 105 106; do echo -n "$ip: "; ssh root@192.168.50.$ip uname -r; done
