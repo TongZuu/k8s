@@ -428,7 +428,9 @@
         cmd: |
           set -uo pipefail
           want=$(kubeadm config images list --kubernetes-version "v{{ v.K8S_VERSION }}" 2>/dev/null | grep pause || true)
-          have=$(grep -oE '^[[:space:]]*sandbox[a-z_]*[[:space:]]*=[[:space:]]*"[^"]+"' /etc/containerd/config.toml 2>/dev/null | grep -oE '"[^"]+"' | tr -d '"' | head -1)
+          # containerd 2.x เขียน TOML ด้วย single quote และมี key ชื่อ sandboxer อยู่ใกล้
+          # ต้องมี ' = ' คั่นเพื่อไม่ให้ไปโดน sandboxer
+          have=$(grep -oE "^[[:space:]]*sandbox = ['\"][^'\"]+['\"]" /etc/containerd/config.toml 2>/dev/null | grep -oE "['\"][^'\"]+['\"]" | tr -d "'\"" | head -1)
           echo "want=${want:-NOTFOUND}"
           echo "have=${have:-NOTFOUND}"
           if [ -n "$want" ] && [ "$want" = "$have" ]; then echo VERDICT=SAME; else echo VERDICT=DIFFERENT; fi
@@ -443,10 +445,11 @@
     - name: เตือนถ้า sandbox image ไม่ตรง — ไม่หยุดงาน แต่ต้องเห็น
       ansible.builtin.debug:
         msg: >-
-          ⚠️  sandbox image ใน config.toml ไม่ตรงกับที่ kubeadm คาด
-          · แก้ค่า sandbox ใน /etc/containerd/config.toml ให้เป็นค่า want ข้างบน
-          · แล้ว systemctl restart containerd
-          · ถ้าไม่แก้ จะมี pause image สองตัวใน cluster และ debug ยากขึ้นเวลามีปัญหา
+          ⚠️  sandbox image ไม่ตรงกับที่ kubeadm คาด — แก้ด้วย (ดูบท 02 ข้อ 5.1):
+          cp /etc/containerd/config.toml /etc/containerd/config.toml.bak
+          want=$(kubeadm config images list --kubernetes-version v{{ v.K8S_VERSION }} | grep pause)
+          sed -i "s|^\([[:space:]]*sandbox = \).*|\1'${want}'|" /etc/containerd/config.toml
+          systemctl restart containerd
       when: "'VERDICT=DIFFERENT' in _sandbox.stdout"
 
   handlers:

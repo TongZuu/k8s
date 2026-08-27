@@ -243,29 +243,51 @@ dnf versionlock list | grep -E 'kube'
 ### 5.1 ตรวจ sandbox image — ทำได้ตรงนี้เพราะเพิ่งมี kubeadm
 
 containerd มีค่า `sandbox` (pause image) ของตัวเอง ส่วน kubeadm ก็มีค่าที่มันคาดไว้
-ถ้าสองอันไม่ตรงกัน cluster จะมี pause image สองตัวโดยไม่จำเป็น และเวลามีปัญหาจะไล่ยากขึ้น
+สองอันนี้**มักไม่ตรงกัน** เพราะ containerd กับ Kubernetes ออกเวอร์ชันคนละรอบ
 
 ```bash
 want=$(kubeadm config images list --kubernetes-version "v${K8S_VERSION}" | grep pause)
-have=$(grep -oE '^[[:space:]]*sandbox[a-z_]*[[:space:]]*=[[:space:]]*"[^"]+"' /etc/containerd/config.toml \
-       | grep -oE '"[^"]+"' | tr -d '"' | head -1)
+
+# ⚠️ containerd 2.x เขียน TOML ด้วย single quote และมี key ชื่อ sandboxer อยู่ใกล้ ๆ
+#    regex จึงต้องรับทั้งสอง quote และต้องมี ' = ' คั่นเพื่อไม่ให้ไปโดน sandboxer
+have=$(grep -oE "^[[:space:]]*sandbox = ['\"][^'\"]+['\"]" /etc/containerd/config.toml \
+       | grep -oE "['\"][^'\"]+['\"]" | tr -d "'\"" | head -1)
+
 echo "kubeadm อยาก : ${want:-หาไม่เจอ}"
 echo "containerd มี: ${have:-หาไม่เจอ}"
-[ "$want" = "$have" ] && echo "ตรงกัน ✓" || echo "ไม่ตรง — ต้องแก้"
+[ "$want" = "$have" ] && echo "ตรงกัน ✓" || echo "ไม่ตรง — รันบล็อกถัดไป"
 ```
 
-**ถ้าไม่ตรง** แก้ค่า `sandbox` ใน `/etc/containerd/config.toml` ให้เป็นค่าที่ kubeadm บอก แล้ว:
+**ถ้าไม่ตรง — รันบล็อกนี้ต่อได้เลย** (ใช้ตัวแปร `$want` จากบล็อกบน):
 
 ```bash
+cp /etc/containerd/config.toml /etc/containerd/config.toml.bak
+
+# แก้เฉพาะบรรทัดที่เป็น 'sandbox = ' เป๊ะ ๆ — ไม่โดน sandboxer
+sed -i "s|^\([[:space:]]*sandbox = \).*|\1'${want}'|" /etc/containerd/config.toml
+
 systemctl restart containerd
 ```
 
+**ตรวจซ้ำ:**
+```bash
+grep -n 'sandbox' /etc/containerd/config.toml
+systemctl is-active containerd
+```
+**ควรเห็น:** ทุกบรรทัด `sandbox = ` เป็นค่าเดียวกับที่ kubeadm บอก · `sandboxer` ไม่เปลี่ยน
+· containerd ยัง `active`
+
+> ถ้า containerd ไม่ขึ้นหลัง restart ให้กู้ด้วย
+> `cp /etc/containerd/config.toml.bak /etc/containerd/config.toml && systemctl restart containerd`
+
+> **ไม่แก้ได้ไหม** — ได้ cluster ยังทำงาน แต่จะมี pause image สองตัวใน node
+> และเวลามีปัญหาเรื่อง sandbox จะไล่ยากขึ้นเพราะไม่รู้ว่าตัวไหนถูกใช้
+
 > containerd 2.x ใช้ config **version 3** และ CRI plugin แยกเป็น
-> `io.containerd.cri.v1.runtime` กับ `io.containerd.cri.v1.images` — ชื่อ key ของ
-> `sandbox` จึงอาจไม่เหมือนตัวอย่างเก่าในอินเทอร์เน็ต ให้ยึดจากไฟล์จริงบนเครื่อง
+> `io.containerd.cri.v1.runtime` กับ `io.containerd.cri.v1.images` — ค่า `sandbox`
+> อยู่ใต้ `images` และอาจมีซ้ำใต้ `pinned_images` ด้วย คำสั่งข้างบนแก้ให้ทุกจุด
 
 ---
-
 ## 6 · ตั้ง crictl
 
 `crictl` ไม่รู้เองว่า containerd อยู่ที่ไหน ถ้าไม่ตั้งจะเจอ warning ทุกครั้งที่รัน

@@ -409,21 +409,44 @@ dnf versionlock list | grep -E 'kube'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <h3>5.1 ตรวจ sandbox image — ทำได้ตรงนี้เพราะเพิ่งมี kubeadm</h3>
 <p>containerd มีค่า <code>sandbox</code> (pause image) ของตัวเอง ส่วน kubeadm ก็มีค่าที่มันคาดไว้
-ถ้าสองอันไม่ตรงกัน cluster จะมี pause image สองตัวโดยไม่จำเป็น และเวลามีปัญหาจะไล่ยากขึ้น</p>
+สองอันนี้<strong>มักไม่ตรงกัน</strong> เพราะ containerd กับ Kubernetes ออกเวอร์ชันคนละรอบ</p>
 <div class="cb"><pre><code class="language-bash">want=$(kubeadm config images list --kubernetes-version "v${K8S_VERSION}" | grep pause)
-have=$(grep -oE '^[[:space:]]*sandbox[a-z_]*[[:space:]]*=[[:space:]]*"[^"]+"' /etc/containerd/config.toml \
-       | grep -oE '"[^"]+"' | tr -d '"' | head -1)
+
+# ⚠️ containerd 2.x เขียน TOML ด้วย single quote และมี key ชื่อ sandboxer อยู่ใกล้ ๆ
+#    regex จึงต้องรับทั้งสอง quote และต้องมี ' = ' คั่นเพื่อไม่ให้ไปโดน sandboxer
+have=$(grep -oE "^[[:space:]]*sandbox = ['\"][^'\"]+['\"]" /etc/containerd/config.toml \
+       | grep -oE "['\"][^'\"]+['\"]" | tr -d "'\"" | head -1)
+
 echo "kubeadm อยาก : ${want:-หาไม่เจอ}"
 echo "containerd มี: ${have:-หาไม่เจอ}"
-[ "$want" = "$have" ] &amp;&amp; echo "ตรงกัน ✓" || echo "ไม่ตรง — ต้องแก้"
+[ "$want" = "$have" ] &amp;&amp; echo "ตรงกัน ✓" || echo "ไม่ตรง — รันบล็อกถัดไป"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ถ้าไม่ตรง</strong> แก้ค่า <code>sandbox</code> ใน <code>/etc/containerd/config.toml</code> ให้เป็นค่าที่ kubeadm บอก แล้ว:</p>
-<div class="cb"><pre><code class="language-bash">systemctl restart containerd
+<p><strong>ถ้าไม่ตรง — รันบล็อกนี้ต่อได้เลย</strong> (ใช้ตัวแปร <code>$want</code> จากบล็อกบน):</p>
+<div class="cb"><pre><code class="language-bash">cp /etc/containerd/config.toml /etc/containerd/config.toml.bak
+
+# แก้เฉพาะบรรทัดที่เป็น 'sandbox = ' เป๊ะ ๆ — ไม่โดน sandboxer
+sed -i "s|^\([[:space:]]*sandbox = \).*|\1'${want}'|" /etc/containerd/config.toml
+
+systemctl restart containerd
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ตรวจซ้ำ:</strong></p>
+<div class="cb"><pre><code class="language-bash">grep -n 'sandbox' /etc/containerd/config.toml
+systemctl is-active containerd
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ทุกบรรทัด <code>sandbox = </code> เป็นค่าเดียวกับที่ kubeadm บอก · <code>sandboxer</code> ไม่เปลี่ยน
+· containerd ยัง <code>active</code></p>
+<blockquote>
+<p>ถ้า containerd ไม่ขึ้นหลัง restart ให้กู้ด้วย
+<code>cp /etc/containerd/config.toml.bak /etc/containerd/config.toml &amp;&amp; systemctl restart containerd</code></p>
+</blockquote>
+<blockquote>
+<p><strong>ไม่แก้ได้ไหม</strong> — ได้ cluster ยังทำงาน แต่จะมี pause image สองตัวใน node
+และเวลามีปัญหาเรื่อง sandbox จะไล่ยากขึ้นเพราะไม่รู้ว่าตัวไหนถูกใช้</p>
+</blockquote>
 <blockquote>
 <p>containerd 2.x ใช้ config <strong>version 3</strong> และ CRI plugin แยกเป็น
-<code>io.containerd.cri.v1.runtime</code> กับ <code>io.containerd.cri.v1.images</code> — ชื่อ key ของ
-<code>sandbox</code> จึงอาจไม่เหมือนตัวอย่างเก่าในอินเทอร์เน็ต ให้ยึดจากไฟล์จริงบนเครื่อง</p>
+<code>io.containerd.cri.v1.runtime</code> กับ <code>io.containerd.cri.v1.images</code> — ค่า <code>sandbox</code>
+อยู่ใต้ <code>images</code> และอาจมีซ้ำใต้ <code>pinned_images</code> ด้วย คำสั่งข้างบนแก้ให้ทุกจุด</p>
 </blockquote>
 <hr />
 </div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>6 · ตั้ง crictl</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
