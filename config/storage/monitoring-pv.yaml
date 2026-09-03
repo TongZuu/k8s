@@ -12,6 +12,24 @@
 #  ต้องสร้าง directory บน worker03 ก่อน:
 #    mkdir -p /var/lib/monitoring/{prometheus,loki,grafana}
 # =============================================================================
+#  🔴 ทำไมทุกก้อนต้องมี claimRef — อ่านก่อนแก้ไฟล์นี้
+#
+#  Kubernetes จับคู่ PVC กับ PV โดย "ไม่ดูชื่อ" มันดูแค่ 3 อย่าง:
+#     1. storageClassName ตรงกัน   2. accessModes เข้ากันได้
+#     3. ขนาด PV >= ที่ PVC ขอ     แล้วเลือก PV ที่เล็กที่สุดที่ยังใหญ่พอ
+#
+#  ถ้าไม่ล็อกไว้ PVC ก้อนเล็ก (เช่นของ Alertmanager 2Gi) จะไปคว้า grafana-data (5Gi)
+#  แล้ว grafana ไปคว้า prometheus-data (150Gi) ต่อ สุดท้าย prometheus ไม่เหลือที่
+#  → ค้าง Pending ตลอดกาล และเพราะ WaitForFirstConsumer ทำให้ลำดับขึ้นกับว่า pod ไหน
+#  ถูก schedule ก่อน ผลคือ "ติดตั้งผ่านบ้างไม่ผ่านบ้าง" ซึ่งแย่กว่าพังทุกรอบ
+#
+#  claimRef = จองล่วงหน้าว่าก้อนนี้เป็นของ PVC ชื่ออะไร namespace ไหน ตัดการเดาทิ้งหมด
+#
+#  ⚠️ ชื่อ PVC ด้านล่างมาจากสูตรตั้งชื่อของ chart — ถ้า chart เปลี่ยนเวอร์ชันแล้วชื่อเพี้ยน
+#     อาการจะเป็น "PVC ค้าง Pending และ PV ยังขึ้น Available" ซึ่งเห็นชัดและแก้ง่าย
+#     ไม่ใช่การผูกผิดตัวแบบเงียบ ๆ  ตรวจชื่อจริงหลังติดตั้งบทที่ 09 ด้วย:
+#         kubectl -n monitoring get pvc -o custom-columns=NAME:.metadata.name,VOL:.spec.volumeName
+# =============================================================================
 
 ---
 apiVersion: v1
@@ -24,6 +42,14 @@ spec:
   accessModes: ["ReadWriteOnce"]
   persistentVolumeReclaimPolicy: Retain
   storageClassName: local-storage
+  # จองไว้ให้ PVC ของ prometheus-operator เท่านั้น
+  # สูตรชื่อ: <volumeClaimTemplate>-<statefulset>-<ordinal>
+  #   volumeClaimTemplate = prometheus-<ชื่อ Prometheus CR>-db
+  #   statefulset         = prometheus-<ชื่อ Prometheus CR>
+  #   ชื่อ Prometheus CR   = monitoring-kube-prometheus-prometheus (release ชื่อ monitoring)
+  claimRef:
+    namespace: monitoring
+    name: prometheus-monitoring-kube-prometheus-prometheus-db-prometheus-monitoring-kube-prometheus-prometheus-0
   local:
     path: /var/lib/monitoring/prometheus
   nodeAffinity:
@@ -45,6 +71,10 @@ spec:
   accessModes: ["ReadWriteOnce"]
   persistentVolumeReclaimPolicy: Retain
   storageClassName: local-storage
+  # Loki chart โหมด SingleBinary — volumeClaimTemplate ชื่อ "storage" · statefulset ชื่อ "loki"
+  claimRef:
+    namespace: monitoring
+    name: storage-loki-0
   local:
     path: /var/lib/monitoring/loki
   nodeAffinity:
@@ -66,6 +96,10 @@ spec:
   accessModes: ["ReadWriteOnce"]
   persistentVolumeReclaimPolicy: Retain
   storageClassName: local-storage
+  # Grafana chart สร้าง PVC ชื่อเดียวกับ fullname ของ chart = <release>-grafana
+  claimRef:
+    namespace: monitoring
+    name: monitoring-grafana
   local:
     path: /var/lib/monitoring/grafana
   nodeAffinity:

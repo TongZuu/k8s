@@ -130,6 +130,61 @@ spec:
               และไม่มี kube-proxy ให้ถอยกลับเพราะไม่ได้ติดตั้งไว้
 
     # =========================================================================
+    - name: myhr.logging
+      rules:
+
+        # --- Loki ทิ้ง log เพราะชนเพดาน --------------------------------------
+        # loki-values.yaml ตั้ง ingestion_rate_mb: 10 และ per_stream_rate_limit: 3MB ไว้
+        # ซึ่งจำเป็น — ไม่งั้น app ที่ log รัวจะกิน root partition ของ worker03 จนเต็ม
+        # แต่เวลาเพดานทำงาน Loki ตอบ 429 แล้ว Alloy retry จนยอมแพ้แล้วทิ้งแบบ "เงียบ"
+        # ทีม dev จะเห็นแค่ "log บางช่วงหาย" แล้วสรุปว่าระบบ log เชื่อไม่ได้
+        - alert: LokiDiscardingLogs
+          expr: |
+            sum by (reason) (rate(loki_discarded_samples_total[10m])) > 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Loki กำลังทิ้ง log · เหตุผล: {{ $labels.reason }}"
+            description: >-
+              log หายโดยไม่มีใครรู้ ถ้า reason เป็น rate_limited หรือ per_stream_rate_limit
+              แปลว่ามี app log รัวเกินโควตา — ไปหาตัวต้นเหตุด้วย
+              topk(5, sum by (namespace, app) (rate({namespace=~".+"}[5m]))) ใน Grafana
+              แล้วแก้ที่ app ก่อน ค่อยพิจารณาขยายเพดานใน loki-values.yaml
+
+        # --- ไม่มี log เข้าเลย ------------------------------------------------
+        # ดักกรณี Alloy พัง, NODE_NAME ไม่ถูกส่งเข้าไปจน selectors ไม่ match อะไรเลย,
+        # หรือ Loki ไม่รับ — ทั้งสามอย่างให้ผลเหมือนกันคือ "หน้าจอ log ว่างเปล่า"
+        # ซึ่งดูเหมือนระบบเงียบสงบ ทั้งที่จริงคือระบบเก็บ log ตายไปแล้ว
+        - alert: LokiNotReceivingLogs
+          expr: |
+            sum(rate(loki_distributor_lines_received_total[15m])) == 0
+          for: 20m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Loki ไม่ได้รับ log เลยใน 15 นาทีที่ผ่านมา"
+            description: >-
+              ไล่ตามลำดับ 1) kubectl -n monitoring get ds alloy ครบ 6/6 ไหม
+              2) kubectl -n monitoring logs ds/alloy มี error เรื่อง NODE_NAME หรือ 429 ไหม
+              3) Loki pod ขึ้นหรือเปล่า (อยู่บน worker03 — ถ้าเครื่องนั้น reboot อยู่ถือว่าปกติ)
+
+        # --- Alloy ไม่ครบทุก node --------------------------------------------
+        # node ที่ไม่มี Alloy = log ของเครื่องนั้นหายไปเงียบ ๆ โดยที่ Loki ยังดูปกติ
+        - alert: AlloyDaemonSetIncomplete
+          expr: |
+            kube_daemonset_status_number_ready{daemonset="alloy", namespace="monitoring"}
+            < kube_daemonset_status_desired_number_scheduled{daemonset="alloy", namespace="monitoring"}
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Alloy ไม่ครบทุก node — log ของบาง node หายไป"
+            description: >-
+              ต้องได้ครบ 6 ตัว รวม master ทั้ง 3 ด้วย
+              ถ้าขาดเฉพาะ master ให้ตรวจ tolerations ใน alloy-values.yaml
+
+    # =========================================================================
     - name: myhr.disk
       rules:
 

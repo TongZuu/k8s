@@ -104,19 +104,54 @@ kubectl get pv
 NAME            PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE
 local-storage   kubernetes.io/no-provisioner   Retain          WaitForFirstConsumer
 
-NAME              CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS
-prometheus-data   150Gi      RWO            Retain           Available
-loki-data         50Gi       RWO            Retain           Available
-grafana-data      5Gi        RWO            Retain           Available
+NAME              CAPACITY   RECLAIM POLICY   STATUS      CLAIM
+prometheus-data   150Gi      Retain           Available   monitoring/prometheus-monitoring-...-0
+loki-data         50Gi       Retain           Available   monitoring/storage-loki-0
+grafana-data      5Gi        Retain           Available   monitoring/monitoring-grafana
 ```
 
-**`STATUS: Available` ถูกต้องแล้ว** — จะกลายเป็น `Bound` เมื่อบทที่ 09 สร้าง PVC มาขอ
+**`STATUS: Available` แต่มีชื่อใน `CLAIM` แล้ว — ถูกต้อง** คือจองไว้ให้ PVC นั้นโดยเฉพาะ
+แล้วจะกลายเป็น `Bound` เมื่อบทที่ 09 สร้าง PVC มาขอจริง
 
 > **`WaitForFirstConsumer` สำคัญ** — ทำให้ scheduler เลือก node ก่อนแล้วค่อยผูก PV
 > ถ้าใช้ `Immediate` จะผูก PV ก่อนแล้ว pod อาจถูก schedule ไปคนละเครื่องจนค้างตลอดกาล
 >
 > **`Retain` ก็สำคัญ** — ลบ PVC แล้วข้อมูลยังอยู่ ต้องมาลบ directory เองด้วยมือ
 > ปลอดภัยกว่า `Delete` มากสำหรับข้อมูลที่กู้กลับไม่ได้
+
+---
+
+### 🔴 ทำไมทุก PV ต้องมี `claimRef` — ข้อนี้ห้ามลบ
+
+Kubernetes จับคู่ PVC กับ PV **โดยไม่ดูชื่อเลย** มันดูแค่ 3 อย่าง:
+
+1. `storageClassName` ตรงกันไหม
+2. `accessModes` เข้ากันได้ไหม
+3. ขนาด PV **≥** ที่ PVC ขอ
+
+แล้วเลือก **PV ที่เล็กที่สุดที่ยังใหญ่พอ**
+
+ถ้าไม่จองไว้ล่วงหน้า PVC ก้อนเล็กจะไปคว้าก้อนของคนอื่น แล้วไล่แย่งกันเป็นทอด ๆ:
+
+```
+PVC 2Gi     → คว้า grafana-data (5Gi)      ← ก้อนเล็กสุดที่พอ
+PVC 5Gi     → เหลือแต่ loki-data (50Gi)
+PVC 50Gi    → เหลือแต่ prometheus-data (150Gi)
+PVC 150Gi   → ไม่เหลือ → Pending ตลอดกาล
+```
+
+และเพราะ `WaitForFirstConsumer` ทำให้ลำดับขึ้นกับว่า pod ไหนถูก schedule ก่อน
+ผลคือ **ติดตั้งผ่านบ้างไม่ผ่านบ้าง** ซึ่งหาสาเหตุยากกว่าพังทุกรอบมาก
+
+`claimRef` คือการจองล่วงหน้าว่าก้อนนี้เป็นของ PVC ชื่ออะไร namespace ไหน — ตัดการเดาทิ้งหมด
+
+> **ถ้าชื่อ PVC ในไฟล์ไม่ตรงกับที่ chart สร้างจริง** (เช่น chart เปลี่ยนสูตรตั้งชื่อ)
+> อาการจะเป็น **PVC ค้าง `Pending` และ PV ยังขึ้น `Available`** ซึ่งเห็นชัดและแก้ง่าย
+> ไม่ใช่การผูกผิดตัวแบบเงียบ ๆ — ตรวจชื่อจริงได้หลังทำบทที่ 09:
+>
+> ```bash
+> kubectl -n monitoring get pvc -o custom-columns=NAME:.metadata.name,VOL:.spec.volumeName
+> ```
 
 ---
 
@@ -139,7 +174,8 @@ grafana-data      5Gi        RWO            Retain           Available
 ## ✅ เกณฑ์ผ่านของบทนี้
 
 - [ ] `kubectl get storageclass` มีแค่ `local-storage` ตัวเดียว
-- [ ] PV ทั้ง 3 ตัวสถานะ `Available`
+- [ ] PV ทั้ง 3 ตัวสถานะ `Available` **และคอลัมน์ `CLAIM` มีชื่อจองไว้แล้วทุกก้อน**
+- [ ] รู้ว่า **Alertmanager ไม่ใช้ PV** (ใช้ `emptyDir` + gossip) จึงมีแค่ 3 ก้อน ไม่ใช่ 4
 - [ ] directory บน `k8s-worker03` สร้างแล้ว และมีพื้นที่พอ
 - [ ] node `k8s-worker03` มี label `myhr.co.th/monitoring=true`
 - [ ] **ทีม dev รู้แล้วว่า cluster นี้ไม่มี dynamic storage**

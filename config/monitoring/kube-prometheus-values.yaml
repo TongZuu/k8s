@@ -39,17 +39,32 @@ prometheus:
         memory: 8Gi
 
 # --- Alertmanager -------------------------------------------------------------
+#  🔴 ตั้งใจไม่ใช้ PersistentVolume — อ่านเหตุผลก่อนแก้
+#
+#  เดิมตรงนี้ขอ PVC 2Gi บน local-storage ซึ่งพังสองชั้น:
+#    1. เราสร้าง PV ไว้แค่ 3 ก้อน (prometheus/loki/grafana) ไม่มีก้อนของ Alertmanager
+#       PVC 2Gi จึงไปคว้าก้อนของคนอื่นที่เล็กที่สุดที่ใหญ่พอ แล้วไล่แย่งกันเป็นทอด ๆ
+#       จนก้อนสุดท้ายไม่เหลือที่ (ดูคำอธิบายเต็มใน config/storage/monitoring-pv.yaml)
+#    2. local PV ตรึง pod ไว้ที่ worker03 ทั้ง 2 replica → drain เครื่องเดียวดับทั้งคู่
+#       ซึ่งสวนทางกับเหตุผลที่ตั้ง replicas: 2 ตั้งแต่แรก
+#
+#  Alertmanager เก็บแค่ silence กับสถานะการส่ง และ replica คุยกันผ่าน gossip อยู่แล้ว
+#  ตัวที่ restart จะ sync กลับจาก peer เอง → emptyDir พอ และได้ HA ที่จริงกว่าเดิม
 alertmanager:
   alertmanagerSpec:
     replicas: 2                    # HA — alert ห้ามหายตอน drain node
-    storage:
-      volumeClaimTemplate:
-        spec:
-          storageClassName: local-storage
-          accessModes: ["ReadWriteOnce"]
-          resources:
-            requests:
-              storage: 2Gi
+    # ไม่มี storage: → chart จะใช้ emptyDir ให้เอง
+
+    # บังคับให้ 2 replica อยู่คนละเครื่อง ไม่งั้น drain ทีเดียวดับทั้งคู่
+    # ใช้ required ไม่ใช่ preferred เพราะถ้าแยกเครื่องไม่ได้ก็ไม่ได้ HA อยู่ดี
+    # ควรเห็น pod ทั้งสองอยู่คนละ node: kubectl -n monitoring get pod -l app.kubernetes.io/name=alertmanager -o wide
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: alertmanager
+            topologyKey: kubernetes.io/hostname
   podDisruptionBudget:
     enabled: true
     minAvailable: 1

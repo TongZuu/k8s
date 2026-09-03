@@ -4,20 +4,51 @@
 #  รันเป็น DaemonSet ต้องได้ครบ 6 ตัว (ทั้ง master และ worker)
 #  log ของ control plane สำคัญพอ ๆ กับ log ของ application
 # =============================================================================
+#  🔴 กับดักใหญ่ที่สุดของไฟล์นี้: DaemonSet + discovery ที่ไม่กรอง node = เก็บซ้ำ 6 เท่า
+#
+#  discovery.kubernetes ถาม apiserver ว่ามี pod อะไรบ้าง — ถ้าไม่ใส่ selectors
+#  มันจะตอบ "pod ทั้ง cluster" กลับมาให้ Alloy ทุกตัวเหมือนกันหมด แล้ว Alloy ทั้ง 6 ตัว
+#  จะเก็บ log ชุดเดียวกันส่งเข้า Loki พร้อมกัน ผลคือ:
+#     · ทุกบรรทัดเข้า Loki 6 ครั้ง → PV 50Gi หมดเร็วกว่าที่คำนวณไว้ 6 เท่า
+#     · ชนเพดาน ingestion_rate_mb ใน loki-values.yaml เร็วกว่า 6 เท่า แล้วเริ่ม drop
+#     · apiserver ต้องแบก log stream ของทุก pod คูณ 6 ตลอดเวลา
+#     · หน้า Explore/Drilldown อ่านไม่รู้เรื่องเพราะทุกบรรทัดโผล่ซ้ำ 6 รอบ
+#
+#  selectors ด้านล่างกรองที่ฝั่ง apiserver (server-side) จึงเบากว่าการกรองทีหลัง
+#
+#  ตรวจหลังติดตั้ง — เปิด Grafana Explore เลือก pod ที่ log น้อย ๆ แล้วดูว่า
+#  บรรทัดเดียวกันโผล่ซ้ำหรือไม่ ถ้ายังซ้ำแปลว่า NODE_NAME ไม่ได้ถูกส่งเข้าไป
+# =============================================================================
 
 controller:
   type: daemonset
 
 alloy:
+  # ต้องรู้ว่าตัวเองอยู่ node ไหน เพื่อกรองให้เก็บเฉพาะ pod บนเครื่องตัวเอง
+  # ถ้าลืมบรรทัดนี้ selectors ข้างล่างจะกลายเป็น "spec.nodeName=" ซึ่งไม่ match อะไรเลย
+  # → ไม่มี log เข้า Loki เลยแม้แต่บรรทัดเดียว (ดังผ่าน alert LokiNotReceivingLogs)
+  extraEnv:
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+
   configMap:
     create: true
     content: |
-      // ค้นหา pod ทั้งหมดใน cluster
+      // ค้นหาเฉพาะ pod ที่อยู่บน node เดียวกับ Alloy ตัวนี้
       discovery.kubernetes "pods" {
         role = "pod"
+
+        selectors {
+          role  = "pod"
+          field = "spec.nodeName=" + env("NODE_NAME")
+        }
       }
 
       // แปลง label ของ Kubernetes เป็น label ของ Loki
+      // ⚠️ ห้ามเพิ่ม label ที่มีค่าไม่ซ้ำ (trace_id, request_id, user_id)
+      //    Loki index เฉพาะ label — label ที่ cardinality สูงคือวิธีฆ่า Loki ที่เร็วที่สุด
       discovery.relabel "pod_logs" {
         targets = discovery.kubernetes.pods.targets
 
@@ -43,18 +74,36 @@ alloy:
         }
       }
 
-      // อ่านไฟล์ log ของ container
+      // อ่าน log ของ container
       loki.source.kubernetes "pod_logs" {
         targets    = discovery.relabel.pod_logs.output
         forward_to = [loki.process.drop_noise.receiver]
       }
 
       // กรอง log ที่ไม่มีประโยชน์ออกก่อนส่ง — ประหยัด disk บน root partition
+      //
+      // ⚠️ ระวังมาก: stage.drop ทิ้งบรรทัด "ก่อน" เข้า Loki — ของที่ทิ้งแล้วหายถาวร
+      //    ไม่มีทางกู้ ตอน incident จะหาไม่เจอโดยไม่รู้ว่ามันเคยมี
+      //
+      // regex เดิมคือ (?i)(health|readyz|livez).*(200|OK) ซึ่งกินของที่ไม่ควรกิน:
+      //    "payment health degraded, retry in 200ms"   ← โดนทิ้ง (มี health แล้วมี 200)
+      //    "GET /healthz 500 upstream returned OK-ish" ← โดนทิ้ง (มี health แล้วมี OK)
+      //
+      // ที่แก้: บังคับให้ตรงรูป access log ที่สำเร็จเท่านั้น ครบทั้ง 4 เงื่อนไข
+      //    1. ต้องมี method (GET/HEAD)        → บรรทัดเล่าเรื่องทั่วไปไม่เข้าข่าย
+      //    2. path ต้องมี / นำหน้า            → "payment health degraded" ไม่โดน
+      //    3. status ต้องอยู่ติดหลัง request  → ".*" เดิมปล่อยให้ไปหยิบเลขที่ไหนก็ได้
+      //    4. ตัด OK ออกจากตัวเลือก           → "OK-ish" ในบรรทัด error ไม่ทำให้โดนทิ้ง
+      //  รองรับทั้งแบบมีและไม่มีเครื่องหมายคำพูดคร่อม request (nginx ใส่ให้ ส่วนอื่นไม่ใส่)
+      //
+      // ยังเหลือช่องเล็ก ๆ: log แบบไม่มีคำพูดคร่อมที่ status เป็น error แต่ byte count
+      // ดันเป็น 200 พอดี (เช่น "GET /healthz HTTP/1.1 503 200") จะยังโดนทิ้ง
+      // ยอมรับได้เพราะโอกาสต่ำมาก และ 3 เงื่อนไขแรกกันเคสที่เจอจริงไปหมดแล้ว
       loki.process "drop_noise" {
         forward_to = [loki.write.default.receiver]
 
         stage.drop {
-          expression = "(?i)(health|readyz|livez).*(200|OK)"
+          expression = "(?i)[\"']?(GET|HEAD) /(healthz|readyz|livez|health)\\b[^\"']*[\"']?\\s+(200|204)\\b"
           drop_counter_reason = "healthcheck_noise"
         }
       }
@@ -65,7 +114,9 @@ alloy:
         }
       }
 
-  # ต้องอ่าน /var/log/pods ของ host ได้
+  # loki.source.kubernetes ดึง log ผ่าน Kubernetes API ไม่ได้อ่านไฟล์บน host
+  # จึงไม่ได้ใช้ mount นี้ในตอนนี้ — เก็บไว้เพราะเป็น hostPath read-only ที่ไม่มีต้นทุน
+  # และจำเป็นทันทีถ้าเปลี่ยนไปเก็บแบบอ่านไฟล์ (ดูหัวข้อ "ทางเลือก" ในบทที่ 09)
   mounts:
     varlog: true
 
