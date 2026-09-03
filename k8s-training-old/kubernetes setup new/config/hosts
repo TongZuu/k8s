@@ -1,8 +1,0 @@
-192.168.30.207  registry.myhr.co.th     registry
-192.168.40.32  zeeme-Kubernetes-master01     master01
-192.168.40.33  zeeme-Kubernetes-master02     master02
-192.168.40.34  zeeme-Kubernetes-master03     master03
-192.168.30.145  zeeme-kubernetes-node1     kubenode1
-192.168.30.149  zeeme-kubernetes-node2     kubenode2
-192.168.40.30   zeeme-kubernetes-node3     kubenode3
-192.168.40.31   zeeme-kubernetes-node4     kubenode4

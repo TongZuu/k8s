@@ -2,7 +2,6 @@
 # ไฟล์ติดตั้งขนาดใหญ่ — ให้ดาวน์โหลดจาก upstream ตาม versions.env แทน
 # "install file.zip" มีขนาด 110 MB ซึ่งเกินลิมิต 100 MB ต่อไฟล์ของ GitHub
 # ---------------------------------------------------------------
-k8s-training-old/install file/
 *.zip
 *.tgz
 *.tar.gz
