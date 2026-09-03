@@ -47,6 +47,74 @@ else
     echo "  ข้าม  (ไม่มี python + pyyaml)"
 fi
 
+# pyyaml มองข้ามคอมเมนต์ที่อยู่ก่อน "---" บรรทัดแรกให้ แต่ kubeadm ไม่ข้าม
+# kubeadm หั่นไฟล์ที่บรรทัด "---" ตรง ๆ ก่อน แล้วบังคับว่าทุกชิ้นต้องมี apiVersion+kind
+# ไฟล์จึง "parse ผ่าน" ในข้อ 3 ได้ แต่ kubeadm init ตายตั้งแต่ยังไม่เริ่มทำอะไร
+# เช็คนี้จำลองวิธีหั่นของ kubeadm ไม่ใช่วิธีอ่านของ pyyaml
+SPLIT=0
+for f in config/kubeadm/*.yaml; do
+    [ -f "$f" ] || continue
+    # ต้องดักกรณี awk เองพัง ไม่งั้นไม่มี output = ผ่าน ซึ่งคือกับดักที่ตรวจแล้วไม่ได้ตรวจ
+    if ! OUT=$(awk -f config/kubeadm-docsplit.awk "$f" 2>&1); then
+        fail "$f — ตรวจไม่สำเร็จ: $OUT"
+        SPLIT=1
+        continue
+    fi
+    if [ -n "$OUT" ]; then
+        while IFS= read -r line; do fail "$line"; done <<< "$OUT"
+        SPLIT=1
+    fi
+done
+[ $SPLIT -eq 0 ] && ok "kubeadm หั่น config เป็น document ได้ครบทุกชิ้น"
+
+# token: "" ไม่ได้แปลว่า "ปล่อยว่างให้ kubeadm สุ่มเอง" — v1beta4 แปลงค่าว่างเป็น
+# BootstrapTokenString ไม่ได้ แล้วตายตอน unmarshal ถ้าจะให้สุ่มต้องไม่มี field token เลย
+TOKEN_BAD=0
+for f in config/kubeadm/*.yaml; do
+    [ -f "$f" ] || continue
+    while IFS= read -r hit; do
+        fail "$f:$hit  <- token ว่าง ให้ลบบรรทัด token: ทิ้งไปเลย kubeadm จะสุ่มให้เอง"
+        TOKEN_BAD=1
+    done < <(grep -nE "^[[:space:]-]*token:[[:space:]]*(\"\"|''|)[[:space:]]*(#.*)?$" "$f")
+done
+[ $TOKEN_BAD -eq 0 ] && ok "bootstrapTokens ไม่มี token ว่าง"
+
+# audit ต้องครบชุด ไม่งั้นได้โฟลเดอร์ว่างโดยไม่มี error ให้เห็น:
+#   audit-log-path อย่างเดียว = apiserver ขึ้นปกติแต่ไม่บันทึกอะไรเลย
+#   ไม่ mount policy/log dir = apiserver ไม่ขึ้น หรือเขียน log ลงในคอนเทนเนอร์
+AUDIT_BAD=0
+K=config/kubeadm/kubeadm-config.yaml
+if [ -f "$K" ] && grep -q 'audit-log-path' "$K"; then
+    grep -q 'audit-policy-file' "$K"         || { fail "$K: มี audit-log-path แต่ไม่มี audit-policy-file — apiserver จะไม่บันทึกอะไรเลย"; AUDIT_BAD=1; }
+    grep -q 'hostPath: "/etc/kubernetes/audit-policy.yaml"' "$K"         || { fail "$K: ไม่ได้ mount audit-policy.yaml ใน extraVolumes — apiserver อ่าน policy ไม่เจอ"; AUDIT_BAD=1; }
+    grep -q 'hostPath: "/var/log/kubernetes"' "$K"         || { fail "$K: ไม่ได้ mount /var/log/kubernetes ใน extraVolumes — log จะตกอยู่ในคอนเทนเนอร์"; AUDIT_BAD=1; }
+    [ -f config/kubeadm/audit-policy.yaml ]         || { fail "config/kubeadm/audit-policy.yaml หายไป — เครื่องจะ mount ไฟล์ที่ไม่มีอยู่จริง"; AUDIT_BAD=1; }
+    [ $AUDIT_BAD -eq 1 ] && FAILED=1
+    [ $AUDIT_BAD -eq 0 ] && ok "audit ครบชุด (policy + flag + volume ทั้งสอง)"
+fi
+
+# health check ของ haproxy ต้องมีแบบเดียว — httpchk กับ ssl-hello-chk ใช้ร่วมกันไม่ได้
+# ใส่ทั้งคู่แล้ว haproxy -c ยังผ่าน แต่ check ที่ทำงานจริงไม่ใช่ตัวที่คอมเมนต์บอกไว้
+H=config/haproxy/haproxy.cfg
+if [ -f "$H" ]; then
+    # ต้องไม่นับบรรทัดคอมเมนต์ที่พูดถึงตัวเลือกพวกนี้ ไม่งั้นคำเตือนในไฟล์จะทำให้ตัวเองไม่ผ่าน
+    if grep -qE '^[[:space:]]*option[[:space:]]+httpchk' "$H" && grep -qE '^[[:space:]]*option[[:space:]]+ssl-hello-chk' "$H"; then
+        fail "$H: มีทั้ง httpchk และ ssl-hello-chk — ใช้ร่วมกันไม่ได้ ต้องเลือกอย่างเดียว"
+        FAILED=1
+    else
+        ok "haproxy มี health check แบบเดียว ไม่ชนกัน"
+    fi
+fi
+
+# kubeadm token create มี default ttl 24 ชม. ซึ่งสวนทางกับ bootstrapTokens.ttl=2h ใน
+# kubeadm-config.yaml · ลืมใส่ --ttl = มีบัตรผ่านเข้า cluster อายุ 24 ชม. โดยไม่ตั้งใจ
+TTL_BAD=0
+while IFS= read -r hit; do
+    fail "$hit  <- ต้องใส่ --ttl 2h ให้ตรงกับ kubeadm-config.yaml"
+    TTL_BAD=1
+done < <(grep -rn "kubeadm token create" docs/*.md ansible/*.yml 2>/dev/null | grep -v -- "--ttl")
+[ $TTL_BAD -eq 0 ] && ok "kubeadm token create ระบุ --ttl ครบทุกที่"
+
 echo "4 · ตัวแปร \$UPPERCASE ที่ใช้แต่ไม่เคยประกาศ"
 UNDEF=0
 for f in docs/*.md config/*/*.sh config/*/*.yaml; do
@@ -55,7 +123,7 @@ for f in docs/*.md config/*/*.sh config/*/*.yaml; do
     case "$f" in */CHECKLIST.md) continue;; esac
     used=$(grep -oE '\$\{?[A-Z][A-Z0-9_]+\}?' "$f" 2>/dev/null | tr -d '${}' | sort -u)
     for v in $used; do
-        case "$v" in HOME|PATH|USER|PWD|SHELL|HOSTNAME|RANDOM|IFS) continue;; esac
+        case "$v" in HOME|PATH|USER|PWD|SHELL|HOSTNAME|RANDOM|IFS|PIPESTATUS|BASH_SOURCE|FUNCNAME|SECONDS) continue;; esac
         grep -qE "(^|[^A-Z_])$v=|read [^;]*\b$v\b|for $v in|export $v|declare $v" "$f" && continue
         grep -qE "^$v=" docs/versions.env && continue
         fail "$f — \$$v ไม่ได้ประกาศที่ไหนเลย (copy ไปวางแล้วจะได้ค่าว่าง)"
@@ -91,19 +159,68 @@ if [ -f config/kubeadm/kubeadm-config.yaml ]; then
     [ "${FAILED:-0}" -eq 0 ] && ok "kubeadm-config.yaml ตรงกับ versions.env"
 fi
 
-echo "6 · html/ ต้องตามหลัง docs/*.md"
+# inventory.ini กับ versions.env เก็บ IP ของเครื่องเดียวกันคนละที่
+# ถ้า drift กัน playbook จะไปคุยกับเครื่องผิดตัวโดยไม่มีอะไรเตือน
+# (ansible ไม่รู้จัก versions.env ส่วนคู่มือไม่รู้จัก inventory)
+INV=ansible/inventory.ini
+if [ -f "$INV" ]; then
+    INV_BAD=0
+    # อ่านรายชื่อ role จาก versions.env ไม่ไล่พิมพ์เอง — เพิ่มเครื่องใหม่แล้วตัวตรวจต้องเห็นเอง
+    # ไม่งั้นเครื่องที่เพิ่มทีหลังจะไม่มีใครตรวจ ซึ่งอันตรายกว่าไม่มีตัวตรวจเลย
+    ROLES=$(grep -oE '^(MASTER|WORKER)[0-9]+_IP=' docs/versions.env | sed 's/_IP=//' | sort -u)
+    for role in $ROLES; do
+        eval "want=\${${role}_IP:-}"
+        eval "name=\${${role}_NAME:-}"
+        [ -n "$want" ] && [ -n "$name" ] || continue
+        got=$(grep -E "^$name[[:space:]]+ansible_host=" "$INV" | sed 's/.*ansible_host=//' | tr -d '[:space:]')
+        if [ -z "$got" ]; then
+            fail "$INV: ไม่มีบรรทัดของ $name — versions.env ประกาศไว้แต่ inventory ไม่มี"
+            INV_BAD=1
+        elif [ "$got" != "$want" ]; then
+            fail "$INV: $name=$got แต่ versions.env บอก ${role}_IP=$want"
+            INV_BAD=1
+        fi
+    done
+    [ $INV_BAD -eq 1 ] && FAILED=1
+    [ $INV_BAD -eq 0 ] && ok "inventory.ini ตรงกับ versions.env ทุกเครื่อง"
+fi
+
+# Cilium ถือค่าเครือข่ายชุดเดียวกับ kubeadm-config แต่คนละไฟล์ ถ้า drift กันจะเจ็บกว่า
+# เพราะ pod จะขึ้นมาแล้วเครือข่ายพังทั้ง cluster โดยไม่มี kube-proxy ให้ถอยกลับ
+CIL=config/cilium/values.yaml
+if [ -f "$CIL" ]; then
+    CIL_BAD=0
+    grep -qE "^kubeProxyReplacement:[[:space:]]*true[[:space:]]*$" "$CIL"         || { fail "$CIL: kubeProxyReplacement ต้องเป็น true — cluster นี้ไม่มี kube-proxy ให้ใช้"; CIL_BAD=1; }
+    grep -qE "^k8sServiceHost:[[:space:]]*${VIP}[[:space:]]*$" "$CIL"         || { fail "$CIL: k8sServiceHost ต้องเป็น $VIP (VIP) ไม่ใช่ IP ของ master เครื่องใดเครื่องหนึ่ง"; CIL_BAD=1; }
+    grep -qE "^k8sServicePort:[[:space:]]*${VIP_PORT}[[:space:]]*$" "$CIL"         || { fail "$CIL: k8sServicePort ต้องเป็น $VIP_PORT"; CIL_BAD=1; }
+    grep -qE "^[[:space:]]*-[[:space:]]*\"${POD_CIDR}\"[[:space:]]*$" "$CIL"         || { fail "$CIL: clusterPoolIPv4PodCIDRList ไม่ใช่ $POD_CIDR — ต้องตรงกับ podSubnet ใน kubeadm-config"; CIL_BAD=1; }
+    grep -qE "clusterPoolIPv4MaskSize:[[:space:]]*${POD_CIDR_MASK_SIZE}([[:space:]]|$|#)" "$CIL"         || { fail "$CIL: clusterPoolIPv4MaskSize ไม่ใช่ $POD_CIDR_MASK_SIZE — ต้องตรงกับ node-cidr-mask-size"; CIL_BAD=1; }
+    [ $CIL_BAD -eq 1 ] && FAILED=1
+    [ $CIL_BAD -eq 0 ] && ok "cilium values.yaml ตรงกับ versions.env"
+fi
+
+POOL=config/cilium/lb-ippool.yaml
+if [ -f "$POOL" ]; then
+    grep -q "\"${LB_POOL_START}\"" "$POOL" && grep -q "\"${LB_POOL_STOP}\"" "$POOL"         && ok "lb-ippool.yaml ตรงกับ LB_POOL_START/STOP"         || { fail "$POOL: ช่วง IP ไม่ตรงกับ $LB_POOL_START-$LB_POOL_STOP ใน versions.env"; FAILED=1; }
+fi
+
+echo "6 · html/ ต้องตามหลัง docs/*.md และ ansible/README.md"
 # ลืม build ใหม่หลังแก้ .md เป็นเรื่องที่พึ่งความจำแล้วพลาดง่าย ให้ตัวตรวจจำแทน
+# ansible/README.md อยู่คนละโฟลเดอร์แต่ build เป็น html/ansible.html จึงต้องตรวจด้วย
 STALE=0
-for md in docs/*.md; do
-    base=$(basename "$md" .md)
-    h="html/${base}.html"
+for md in docs/*.md ansible/README.md; do
+    [ -f "$md" ] || continue
+    case "$md" in
+        ansible/README.md) h="html/ansible.html";;
+        *)                 h="html/$(basename "$md" .md).html";;
+    esac
     [ -f "$h" ] || continue
     if [ "$md" -nt "$h" ]; then
         fail "$md ใหม่กว่า $h — ต้องรัน python tools/build-html.py"
         STALE=1; FAILED=1
     fi
 done
-[ $STALE -eq 0 ] && ok "html/ ตรงกับ docs/ แล้ว"
+[ $STALE -eq 0 ] && ok "html/ ตรงกับ docs/ และ ansible/README.md แล้ว"
 
 echo "7 · ความลับที่ไม่ควรอยู่ในrepo"
 LEAK=0
