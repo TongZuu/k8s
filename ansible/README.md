@@ -23,8 +23,8 @@
 |---|---|---|
 | `prepare-os.yml` | 01 | ✅ ใช้จริงครบ 6 เครื่อง |
 | `container-runtime.yml` | 02 | 🔄 `--check` บน master01 ได้ `changed=0 failed=0` · **ยังไม่เคยติดตั้งของจริง** (master01 มีของครบอยู่ก่อนแล้ว) |
-| `ha-layer.yml` | 03 ข้อ 1-3 | ✅ รันจริงครบ 3 master (28 ส.ค. 2026) · VIP นิ่งที่ master01 · **ยังไม่ผ่าน failover test** |
-| `create-cluster.yml` | 04 | ⬜ **ยังไม่เคยรัน** |
+| `ha-layer.yml` | 03 ข้อ 1-3 | ✅ รันจริงครบ 3 master (28 ส.ค. 2026) · **failover test ผ่านแล้ว** (28 ส.ค. 2026 · 5.1 หยุด keepalived, 5.2 หยุด HAProxy, 5.4 `kubectl` ผ่าน VIP ไม่ขาด) · ⬜ ยังไม่ได้จดเวลา failover เป็นตัวเลข · ⬜ ข้อ 5.3 (reboot) เลื่อนไปทำหลังบท 05 |
+| `create-cluster.yml` | 04 | ⬜ **ยังไม่เคยรัน** — บท 04 ทำมือทั้งหมด (28 ส.ค. – 1 ก.ย. 2026): init + join master02/03 + join worker ครบ 6 node · **เส้นทางของ playbook จึงยังไม่เคยถูกพิสูจน์เลยสักบรรทัด** ถึงจะแก้ไปหลายรอบระหว่างทำมือก็ตาม |
 | `cilium.yml` | 05 | ⬜ **ยังไม่เคยรัน** |
 
 บท 03 ครอบคลุมแค่ **ข้อ 1-3 (วาง config)** — **ข้อ 5 (failover test) ยังต้องทำมือ**
@@ -38,6 +38,11 @@
 
 > ทั้งสามตัวที่ยังไม่เคยรัน ตรวจมาแล้วแค่ YAML syntax กับ scanner ไล่ pattern บั๊ก
 > ที่เคยเจอ — **ทำมือหนึ่งเครื่องก่อนเสมอ** แล้วค่อย `--check` ใส่เครื่องนั้น
+>
+> **`create-cluster.yml` ได้กับดักจากการทำมือรอบ 28 ส.ค. – 1 ก.ย. 2026 มาใส่ไว้แล้วทั้งหมด**
+> (audit policy ก่อน init/join · เคลียร์ `lost+found` · `kubeadm config validate` ·
+> รอ apiserver ขึ้นจริงหลัง join · ไม่หมุน certificate-key เกินจำเป็น · `--ttl 2h`)
+> แต่ **"ใส่ไว้แล้ว" ไม่เท่ากับ "ผ่านแล้ว"** — cluster ถัดไปต้องรันของจริงถึงจะรู้
 
 ---
 
@@ -236,6 +241,35 @@ ansible-playbook prepare-os.yml --limit k8s-master02                            
 **ไม่ใส่ `--skip-tags reboot` ตอนรันจริง** — บท 01 ข้อ 10 บอกว่าห้ามข้าม reboot
 ต้องพิสูจน์ว่าทุกอย่างยังอยู่หลังบูต · playbook รอเครื่องกลับมาเอง แล้ว assert ซ้ำให้
 
+### รัน `create-cluster.yml` เฉพาะบางเครื่อง (`--limit`)
+
+cluster สร้างไปแล้วบางส่วนด้วยมือ แล้วอยากให้ playbook ทำเครื่องที่เหลือ — ใช้ `--limit` ได้
+แต่**ต้องมี master01 อยู่ในรอบเสมอ** เพราะ token กับคำสั่ง join ออกจากเครื่องนั้น
+
+```bash
+ansible-playbook create-cluster.yml --limit 'k8s-master01,k8s-worker01'
+```
+
+playbook ข้ามงานที่ทำไปแล้วเอง: `kubeadm init` ข้ามถ้ามี `/etc/kubernetes/admin.conf` ·
+join ข้ามถ้ามี `/etc/kubernetes/kubelet.conf` · master ตัวอื่นที่ไม่ได้อยู่ใน `--limit`
+จะไม่ถูกแตะเลย
+
+สองอย่างที่ทำไว้เพื่อให้ `--limit` ใช้ได้จริง:
+
+- **ข้อตรวจท้าย playbook เทียบกับเครื่องที่อยู่ในรอบนี้ ไม่ใช่ทั้ง inventory** — `--limit`
+  ไม่ได้ทำให้ `groups['k8s_nodes']` เล็กลง ถ้าเทียบกับ group ตรง ๆ การรันทีละเครื่องจะ fail
+  ทุกครั้งทั้งที่ทำงานถูก · ความครบของ cluster เทียบกับ inventory ยังรายงานให้ดู แต่ไม่ fail
+- **`upload-certs` รันเฉพาะรอบที่มี master ซึ่งยังไม่มี `/etc/kubernetes/kubelet.conf`** —
+  คำสั่งนี้เข้ารหัส cert ใหม่ด้วย key ใหม่ทุกครั้ง ทำให้ `certificate-key` ที่ออกไปก่อนหน้า
+  ใช้ไม่ได้ทันที · เงื่อนไขจึงดูที่ "ยังมี master ที่ต้อง join จริงไหม" ไม่ใช่แค่ "มี master
+  อยู่ใน `--limit` ไหม" ไม่งั้นการรันเต็มบน cluster ที่ join ครบแล้วจะหมุน key ทิ้งฟรี ๆ
+  แล้วไปทำให้ key ที่คนอื่นถืออยู่ระหว่าง join ใช้ไม่ได้
+  (ดู [บท 13 ข้อ 12.5](../docs/13-troubleshooting.md))
+
+> `--check` กับ playbook นี้บอกอะไรได้ไม่มากในเครื่องที่ยังไม่ join เพราะ `kubeadm join`
+> เป็น command task ที่ถูกข้ามใน check mode แล้วข้อตรวจท้ายก็จะไม่ผ่านตามไปด้วย
+> ใช้ `--list-hosts` ดูว่าจะแตะเครื่องไหนบ้างจะตรงประเด็นกว่า
+
 ### ขั้น 4 · เส้นทาง worker ต้องทดสอบแยก
 
 master กับ worker เดินคนละกิ่งใน playbook — **ผ่าน master ไม่ได้แปลว่า worker ผ่าน**
@@ -414,6 +448,34 @@ rm -f ~/.ansible/cp/*
 
 `ansible.cfg` ชี้ callback ที่ถูกถอดใน community.general 12.0.0 — แก้แล้ว
 ใช้ `stdout_callback = default` + `result_format = yaml` แทน
+
+### `create-cluster.yml` ตายที่ task "ทุก document ใน kubeadm-config.yaml ต้องมี apiVersion และ kind"
+
+task นี้รันบน control node ก่อนส่งไฟล์ขึ้นเครื่อง มันจำลองวิธีที่ kubeadm หั่น `--config`
+คือหั่นที่บรรทัดขึ้นต้นด้วย `---` ตรง ๆ ไม่ได้ parse YAML ก่อน ชิ้นที่มีตัวอักษรอยู่
+แต่ไม่มี `apiVersion`+`kind` (เช่นคอมเมนต์หัวไฟล์ที่ถูก `---` คั่นออกมา) ทำให้ `kubeadm init`
+ตายด้วย `GroupVersionKind /, Kind=` โดยไม่บอกว่าไฟล์ไหนบรรทัดไหน
+
+ข้อความ fail ของ task บอกช่วงบรรทัดมาให้แล้ว — แก้ที่
+[`config/kubeadm/kubeadm-config.yaml`](../config/kubeadm/kubeadm-config.yaml) บน control node
+แล้วรันซ้ำ ตรวจเองก่อนได้ด้วย:
+
+```bash
+awk -f config/kubeadm-docsplit.awk config/kubeadm/kubeadm-config.yaml
+```
+
+> ต้องมี task นี้เพราะ `--syntax-check`, yamllint และ PyYAML ข้ามคอมเมนต์ก่อน `---` ให้หมด
+> ไฟล์จึงผ่านทุกด่านฝั่ง Ansible แล้วไปตายที่ kubeadm ตัวเดียว — ดู
+> [บท 13 ข้อ 12](../docs/13-troubleshooting.md)
+
+### `create-cluster.yml` ตายที่ task "kubeadm ต้องอ่าน config แล้วผ่าน validate"
+
+task นี้คือ `kubeadm config validate` ซึ่งอ่านแค่ไฟล์ ไม่แตะเครื่อง — ตายตรงนี้แปลว่า
+**ค่าใน config ผิด** ไม่ใช่เครื่องไม่พร้อม อ่านค่าที่มันบอกมาแล้วแก้ที่
+[`config/kubeadm/kubeadm-config.yaml`](../config/kubeadm/kubeadm-config.yaml) บน control node
+
+ตัวที่เคยเจอ: `token: ""` ใน `bootstrapTokens` — ไม่ได้แปลว่า "ปล่อยว่างให้สุ่มเอง"
+ต้องไม่มี field `token` เลย kubeadm ถึงจะสุ่มให้ (ดู [บท 13 ข้อ 12.2](../docs/13-troubleshooting.md))
 
 ### WSL ทะลุ VPN ไม่ได้
 

@@ -10,7 +10,6 @@
 #  เก็บไฟล์นี้ลง git — มันคือเอกสารว่า cluster ถูกสร้างด้วยค่าอะไร
 # =============================================================================
 
----
 apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
 localAPIEndpoint:
@@ -21,8 +20,11 @@ nodeRegistration:
   criSocket: unix:///run/containerd/containerd.sock
   imagePullPolicy: IfNotPresent
 bootstrapTokens:
-  - token: ""          # ปล่อยว่างให้ kubeadm สร้างเองก็ได้
-    ttl: "2h"                           # ของเดิม default 24 ชม. — สั้นกว่านี้ปลอดภัยกว่า
+  # ไม่มี field token เลย = kubeadm สุ่ม token ให้เองตอน init
+  # ห้ามใส่ token: "" — v1beta4 แปลงค่าว่างเป็น BootstrapTokenString ไม่ได้ แล้วตายด้วย
+  #   the bootstrap token "" was not of the form "\\A([a-z0-9]{6})\\.([a-z0-9]{16})\\z"
+  # ถ้าจะกำหนดเอง ต้องเป็นรูป abcdef.0123456789abcdef เท่านั้น
+  - ttl: "2h"                           # ของเดิม default 24 ชม. — สั้นกว่านี้ปลอดภัยกว่า
     usages: ["signing", "authentication"]
     groups: ["system:bootstrappers:kubeadm:default-node-token"]
 
@@ -60,7 +62,16 @@ apiServer:
     - "kubernetes.default.svc"
     - "kubernetes.default.svc.cluster.local"
   extraArgs:
-    # เก็บ audit log — จำเป็นสำหรับระบบที่เก็บข้อมูลพนักงาน
+    # --- audit log — จำเป็นสำหรับระบบที่เก็บข้อมูลพนักงาน --------------------
+    # ต้องครบ 3 อย่างถึงจะได้ log จริง ขาดข้อใดข้อหนึ่ง = ได้โฟลเดอร์ว่าง:
+    #   1. audit-policy-file  ไม่มี = apiserver ขึ้นปกติแต่ไม่บันทึกอะไรเลย
+    #                         (ได้แค่ warning "No audit policy file provided")
+    #   2. extraVolumes ของ policy file  ไม่มี = apiserver อ่านไฟล์ไม่เจอ
+    #   3. extraVolumes ของ /var/log/kubernetes  ไม่มี = log ตกอยู่ใน container
+    #                         หายทุกครั้งที่ pod restart และมองไม่เห็นจากโฮสต์
+    # kubeadm ไม่ mount อะไรพวกนี้ให้อัตโนมัติ mount ให้แค่ /etc/kubernetes/pki
+    - name: "audit-policy-file"
+      value: "/etc/kubernetes/audit-policy.yaml"
     - name: "audit-log-path"
       value: "/var/log/kubernetes/audit.log"
     - name: "audit-log-maxage"
@@ -69,6 +80,21 @@ apiServer:
       value: "10"
     - name: "audit-log-maxsize"
       value: "100"
+
+  # ไฟล์/โฟลเดอร์บนโฮสต์ที่ต้องยื่นเข้าไปใน static pod ของ apiserver
+  # 🔴 ต้องมีอยู่จริงบน master **ทุกตัว** ก่อน init และก่อน join
+  #    pathType: File = ถ้าไม่มีไฟล์ kubelet จะไม่ยอมสร้าง pod (apiserver ไม่ขึ้น)
+  extraVolumes:
+    - name: "audit-policy"
+      hostPath: "/etc/kubernetes/audit-policy.yaml"
+      mountPath: "/etc/kubernetes/audit-policy.yaml"
+      readOnly: true
+      pathType: File
+    - name: "audit-log"
+      hostPath: "/var/log/kubernetes"
+      mountPath: "/var/log/kubernetes"
+      readOnly: false
+      pathType: DirectoryOrCreate
 
 controllerManager:
   extraArgs:
@@ -95,11 +121,29 @@ evictionHard:
   nodefs.available: "10%"
   imagefs.available: "15%"
 
+# --- log ของ container ---------------------------------------------------------
+# stdout/stderr ของทุก pod ถูกเขียนเป็นไฟล์ที่ /var/log/pods/... ซึ่งอยู่บน root
+# ไม่ใช่ partition /var/lib/containerd ที่แยกไว้ในบทที่ 01 — ถ้า root เต็ม node ตายทั้งเครื่อง
+#
+# ค่าสองตัวนี้ตรงกับ default ของ kubelet อยู่แล้ว แต่เขียนไว้ให้ชัดตามกติกาข้อ 1
+# ของคู่มือ (ทุกค่ามาจากไฟล์เดียว ห้ามพึ่ง default ที่เปลี่ยนได้ตามเวอร์ชัน)
+#
+# เพดานจริง = 10Mi × 5 = 50Mi ต่อ container · worker ที่รัน ~150 container ใช้ ~8 GB
+# ซึ่งอยู่ในวิสัยของ root 400 GB สบาย ๆ และมี evictionHard nodefs 10% เป็นตาข่ายกันตก
+containerLogMaxSize: "10Mi"
+containerLogMaxFiles: 5
+
 # =============================================================================
 #  หมายเหตุ: ตั้งใจไม่มี KubeProxyConfiguration ในไฟล์นี้
 #  เพราะเราไม่ติดตั้ง kube-proxy เลย — Cilium ทำหน้าที่นี้ด้วย eBPF (บทที่ 05)
 #  จึงต้องสั่ง --skip-phases=addon/kube-proxy ตอน kubeadm init เสมอ
 #
-#  อย่าปิดท้ายไฟล์ด้วย "---" เปล่า ๆ เพราะจะกลายเป็น YAML document ว่าง
-#  ซึ่งทำให้ kubeadm ฟ้อง unknown kind
+#  ห้ามมี "---" ที่คร่อมไว้กับคอมเมนต์เพียว ๆ ทั้งหัวไฟล์และท้ายไฟล์
+#  kubeadm ตัด document ด้วยการหั่นบรรทัด "---" ตรง ๆ (ไม่ได้ parse YAML ก่อน)
+#  คอมเมนต์ที่อยู่ก่อน "---" บรรทัดแรกจึงนับเป็น document หนึ่งอันที่ไม่มี kind
+#  แล้วฟ้องว่า:
+#    invalid configuration for GroupVersionKind /, Kind=:
+#    kind and apiVersion is mandatory information that must be specified
+#  ข้อความนี้ไม่ได้บอกว่าไฟล์ไหน/บรรทัดไหน — จึงเสียเวลาไล่หานาน
+#  หมายเหตุ: kubectl ข้าม document ว่างให้เอง ไฟล์อื่นใน config/ จึงไม่เจอปัญหานี้
 # =============================================================================

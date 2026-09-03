@@ -52,6 +52,13 @@ echo "NS=$NS POD=$POD NODE=$NODE"
 | [9](#9-image-pull-ไม่ผ่าน) | image pull ไม่ผ่าน | registry / secret |
 | [10](#10-drain-ค้าง) | `drain` ค้าง | PDB / replica |
 | [11](#11-pod-running-แต่เรียกไม่ได้) | pod `Running` แต่เรียกไม่ได้ | NetworkPolicy |
+| [12](#12-kubeadm-init-ตายตั้งแต่ยังไม่เริ่ม) | `kubeadm init` ตายตั้งแต่ยังไม่เริ่ม | ไฟล์ `--config` — โครงไฟล์ / ค่าข้างใน |
+
+> **อาการที่เฉพาะเจาะจงกับ Cilium + Envoy Gateway** (404/503 จาก Gateway, HTTPRoute ไม่ผูก,
+> cert ของ listener, ARP/L2, NetworkPolicy ตัด Envoy) อยู่ในหน้าแยกที่ค้นด้วยข้อความ error ได้:
+> [`../html/cilium-envoy-scenarios.html`](../html/cilium-envoy-scenarios.html) —
+> **28 อาการ** เรียงตามความถี่ที่เจอจริง + **25 แบบแผน** ว่าควรออกแบบยังไงตั้งแต่แรก
+> บทนี้ยังเป็นจุดตั้งต้นเสมอ
 
 ---
 
@@ -126,12 +133,74 @@ grep -c "':6443 '" /etc/keepalived/check_apiserver.sh
 > `kube-apiserver` ฟังที่ `:6443` จริง
 
 ### 1.3 VIP ปกติ แต่ยังต่อไม่ได้
+
+**แยกให้ออกก่อนว่าเจอ `refused` หรือ `EOF`** — คนละสาเหตุกัน:
+
+| ข้อความ | แปลว่า |
+|---|---|
+| `connection refused` | ไม่มีใครฟังที่ `:8443` — HAProxy ตายหรือไม่ได้ start |
+| `EOF` / `broken pipe` | HAProxy รับ connection แล้วปิดทันที = **ไม่มี backend ตัวไหน UP** |
+
 ```bash
 ss -lnt | grep 8443                          # HAProxy ฟังอยู่ไหม
-curl -s http://127.0.0.1:8404/stats | head   # backend ขึ้นกี่ตัว
-crictl ps | grep kube-apiserver              # apiserver รันอยู่ไหม
+curl -s "http://127.0.0.1:8404/stats;csv" | awk -F, '$1=="kube-apiserver-backend"{print $2, $18, "check="$37, "code="$38}'
+```
+
+ช่อง `check` บอกว่า health check ล้มที่ชั้นไหน ซึ่งชี้สาเหตุได้ตรงกว่าคำว่า `DOWN`:
+
+| check | ชั้นที่ล้ม | มักเป็นเพราะ |
+|---|---|---|
+| `L4CON` | ต่อ TCP ไม่ติด | apiserver ไม่ได้รัน · firewalld ปิด `6443` ระหว่าง master |
+| `L6RSP` | TLS handshake | ค่า check ใน `haproxy.cfg` ชนกัน (`httpchk` + `ssl-hello-chk` ใช้ร่วมกันไม่ได้) — ดู 1.3b |
+| `L7STS` | HTTP ตอบมาแต่ status ไม่ใช่ 200 | `/healthz` ยังไม่พร้อม หรือ apiserver กำลัง start |
+| `L7OK` | ผ่าน | ปัญหาไม่ได้อยู่ที่ backend นี้ |
+
+> **DOWN ครบทั้ง 3 ตัวรวม master01 ตอนเพิ่ง `kubeadm init` เสร็จ** มักไม่ใช่ปัญหาของ HAProxy
+> แต่คือ apiserver ยังไม่ขึ้นจริง · **`/etc/kubernetes/admin.conf` มีอยู่ไม่ได้แปลว่า init สำเร็จ**
+> kubeadm เขียนไฟล์นี้ตั้งแต่ก่อนขั้น `wait-control-plane` ดังนั้น init ที่ล้มทีหลังก็ทิ้งไฟล์นี้ไว้ได้
+> ย้อนไปดูว่า `kubeadm init` จบด้วย `exit=0` และมีบรรทัด
+> `Your Kubernetes control-plane has initialized successfully!` หรือเปล่า
+
+```bash
+crictl ps -a --name kube-apiserver           # ขึ้นไหม restart ไปกี่รอบ
 crictl logs $(crictl ps -a --name kube-apiserver -q | head -1) 2>&1 | tail -30
 ```
+
+#### 1.3b ทุก backend `DOWN check=L6RSP` — config ของ HAProxy ชนกันเอง
+
+เกิดกับเครื่องที่ยังถือ `haproxy.cfg` รุ่นที่มีทั้ง `option httpchk` และ `option ssl-hello-chk`
+สองอันนี้ใช้ร่วมกันไม่ได้ · check เลยกลายเป็น "ทัก TLS แล้วรอ HTTP 200" ซึ่งไม่มีวันผ่าน
+
+**ตรวจให้ครบทุก master — เครื่องที่แก้ไปแล้วเครื่องเดียวไม่พอ:**
+
+```bash
+for ip in 101 102 103; do
+  echo "--- master$ip ---"
+  ssh root@192.168.50.$ip "grep -c '^[[:space:]]*option[[:space:]]\+ssl-hello-chk' /etc/haproxy/haproxy.cfg"
+done
+```
+
+**ควรเห็น:** `0` ทั้งสามเครื่อง — ได้ `1` ที่ไหนคือเครื่องนั้นยังพัง
+
+**แก้:**
+
+```bash
+for ip in 101 102 103; do
+  ssh root@192.168.50.$ip "sed -i '/^[[:space:]]*option[[:space:]]\+ssl-hello-chk/d' /etc/haproxy/haproxy.cfg && haproxy -c -f /etc/haproxy/haproxy.cfg && systemctl restart haproxy"
+done
+```
+
+> **ทำไมต้องแก้ทุกเครื่อง ไม่ใช่แค่เครื่องที่ถือ VIP** — HAProxy ของแต่ละ master ตรวจ backend
+> ของตัวเอง และ `check_apiserver.sh` ของ keepalived บนเครื่องนั้นก็อ่านผลจากตัวเดียวกัน
+> เครื่องที่ HAProxy เห็น backend DOWN หมดจะ**ไม่ยอมรับ VIP ตอน failover** —
+> cluster จะดูปกติทุกอย่างจนกว่าจะถึงวันที่ master01 ล่มจริง แล้วถึงรู้ว่าไม่มีใครรับ VIP ต่อ
+>
+> อย่าลืม sync `/root/k8s/config/haproxy/haproxy.cfg` บนเครื่องให้ตรงกับrepoด้วย
+> ไม่งั้นครั้งหน้าที่ใครก๊อปไฟล์นั้นไปวางทับ `/etc/haproxy/` ก็กลับไปพังเหมือนเดิม
+
+> **SELinux ไม่ใช่สาเหตุใน cluster นี้** — บทที่ 01 ข้อ 7 ตั้งเป็น `Permissive` ไว้แล้ว
+> (ถ้าเครื่องไหน `getenforce` ได้ `Enforcing` แปลว่าหลุดจากมาตรฐาน ให้แก้ที่บท 01 ก่อน
+> ไม่ใช่มาไล่เปิด boolean ทีละตัวอย่าง `haproxy_connect_any`)
 
 **ทางลัดฉุกเฉิน — ข้าม VIP ต่อตรงที่ master:**
 ```bash
@@ -329,7 +398,31 @@ kubectl apply -f /root/k8s/config/security/allow-dns.yaml
 kubectl get svc -A | grep LoadBalancer     # EXTERNAL-IP ขึ้นปกติ
 ```
 
-### จากเครื่องนอก cluster
+### 7.0 เช็คก่อนอย่างอื่น — เครื่องที่ใช้ทดสอบอยู่วงไหน
+
+```bash
+ip -br addr        # Linux
+ipconfig           # Windows
+```
+
+> 🔴 **ถ้า IP ไม่ได้ขึ้นต้นด้วย `192.168.50.` ให้หยุดตรงนี้ — ผลทดสอบใช้ไม่ได้**
+>
+> ARP ข้าม subnet ไม่ได้ เครื่องที่อยู่วงอื่นจะ**ไม่มีวัน**มี ARP entry ของ `192.168.50.200`
+> `arp -a` ที่ขึ้น `No ARP Entries Found` ในกรณีนี้ **ไม่ได้แปลว่าอะไรผิด** — มันปกติ
+> ที่เห็นเป็น "ติดครั้งแรกแล้วตายยาว" คืออายุ ARP cache ของ **router** ไม่ใช่อาการของ cluster
+>
+> หาเครื่องในวง `192.168.50.0/24` ที่ไม่ใช่ node มาทดสอบ
+> หรือใช้ `arping` จาก node ที่ไม่ได้ถือ lease แทน (วิธีอยู่ในบทที่ 05 หัวข้อ 7)
+
+> 🔴 **`curl http://192.168.50.200` บน node เองผ่านเสมอ — ห้ามใช้เป็นเกณฑ์ผ่าน**
+> บน node มี eBPF ของ Cilium ดัก LoadBalancer IP ตั้งแต่ชั้น socket
+> แพ็กเก็ตไม่เคยถูกแปลงเป็น ARP request ด้วยซ้ำ
+> **ต่อให้ L2 announcement พังสนิท curl บน node ก็ยังได้ `200 OK`**
+> มันยืนยันได้แค่ว่า Service + endpoint + pod ทำงาน ซึ่งคนละเรื่องกับ ARP
+> ใช้ `arping` เท่านั้นในการตัดสิน
+
+
+### 7.1 จากเครื่องทดสอบที่อยู่ในวง `192.168.50.0/24`
 ```bash
 ping -c2 192.168.50.200
 arp -n 192.168.50.200
@@ -350,7 +443,16 @@ kubectl get ciliumloadbalancerippool
 kubectl get ciliuml2announcementpolicy
 kubectl -n kube-system get lease | grep l2announce      # ใครกำลังตอบ ARP
 kubectl -n kube-system logs -l name=cilium-operator --tail=50 | grep -i l2
+
+# agent ของ node ที่ถือ lease program entry ลงไปจริงหรือยัง (แทน worker03 ด้วยตัวที่ถือ)
+NODE=k8s-worker03      # เปลี่ยนเป็นตัวที่ถือ lease จริง
+P=$(kubectl -n kube-system get pod -l k8s-app=cilium --field-selector spec.nodeName=$NODE -o name)
+kubectl -n kube-system exec $P -c cilium-agent -- cilium-dbg shell -- db/show l2-announce
 ```
+
+**ตาราง `l2-announce` ต้องมีแถว `192.168.50.200` คู่กับชื่อ NIC จริงของ node นั้น**
+ถ้าว่าง = ชื่อ NIC ไม่เข้า regex ใน `interfaces:` ของ policy
+ถ้ามีครบแต่ยิงจากในวงเดียวกันก็ไม่ตอบ = switch บล็อก ไม่ใช่เรื่อง Cilium
 
 **ถ้า `EXTERNAL-IP` เป็น `<pending>`:** pool หมดหรือยังไม่ได้สร้าง
 ```bash
@@ -379,7 +481,25 @@ kubeadm init phase certs apiserver --config=/root/k8s/config/kubeadm/kubeadm-con
 ```
 
 ### 8.3 client ฝั่งนอกฟ้อง unknown authority
-ยังไม่ได้ลง root CA ที่เครื่อง client — ดูบทที่ 07 ขั้นที่ 3
+
+ดูก่อนว่าบทที่ 07 เลือกทางไหน:
+
+```bash
+kubectl -n envoy-gateway-system get secret myhr-wildcard-tls \
+  -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -issuer -subject -dates
+```
+
+- **ทาง B (internal CA)** — `issuer` เป็น `CN=MyHR Internal CA`
+  แปลว่ายังไม่ได้ลง root CA ที่เครื่อง client นั้น ดูบทที่ 07 ขั้นที่ 3 ทาง B
+- **ทาง A (public cert)** — `issuer` เป็น CA ภายนอก แต่ client ยังฟ้อง
+  แปลว่า **chain ขาด intermediate** ไม่ใช่เรื่องของเครื่อง client
+  (เบราว์เซอร์ที่เคย cache intermediate ไว้จะยังผ่าน จึงดูเหมือนพังเป็นบางเครื่อง)
+  ตรวจและแก้ด้วย:
+
+```bash
+bash /root/k8s/config/gateway/import-public-cert.sh --dry-run \
+     /root/certs/fullchain.pem /root/certs/privkey.pem
+```
 
 ---
 
@@ -463,6 +583,183 @@ kubectl -n "$NS" run t --rm -it --restart=Never --image=curlimages/curl -- \
 
 ---
 
+## 12. `kubeadm init` ตายตั้งแต่ยังไม่เริ่ม
+
+**อาการ** — `kubeadm init` หรือ `kubeadm init phase preflight --dry-run` จบทันที
+ยังไม่ทันแตะเครื่องหรือดึง image
+
+**เช็คให้ไวที่สุด** — แยกก่อนว่าปัญหาอยู่ที่ "ไฟล์" หรือ "เครื่อง":
+
+```bash
+kubeadm config validate --config=/root/k8s/config/kubeadm/kubeadm-config.yaml
+```
+
+อ่านแค่ไฟล์ ไม่แตะเครื่องเลย · ผ่านแล้วจะพิมพ์ `ok` และ exit 0
+ถ้า `ok` แต่ preflight ยังฟ้อง แปลว่าปัญหาอยู่ที่เครื่อง ไม่ใช่ที่ไฟล์
+
+### 12.1 `GroupVersionKind /, Kind=` — kubeadm อ่านไฟล์ไม่ออก
+
+```
+error: invalid configuration for GroupVersionKind /, Kind=:
+kind and apiVersion is mandatory information that must be specified
+```
+
+**ไม่ใช่ค่าใน config ผิด** — แปลว่ามี YAML document ในไฟล์ `--config` ที่ไม่มี `kind`
+`/, Kind=` ที่ว่างเปล่าคือ GroupVersionKind ที่อ่านไม่ได้ ไม่ใช่ชื่อ kind ที่ผิด
+
+**สาเหตุ** — kubeadm หั่น document ด้วยการมองหาบรรทัดที่ขึ้นต้นด้วย `---` ตรง ๆ
+ไม่ได้ parse YAML ก่อน ชิ้นที่มีตัวอักษรอยู่แต่ไม่มี `apiVersion`+`kind` จะถูกปฏิเสธทันที
+ที่เจอบ่อยสุดคือ `---` ที่คั่นระหว่างคอมเมนต์หัวไฟล์กับ `apiVersion:` บรรทัดแรก —
+คอมเมนต์ที่ถูกคั่นออกมากลายเป็น document หนึ่งอันที่ไม่มี kind
+
+`---` ท้ายไฟล์ล้วน ๆ ไม่พัง แต่ `---` ที่ตามด้วยคอมเมนต์หรือบรรทัดว่างพังเหมือนกัน
+
+**หาให้เจอว่าบรรทัดไหน** — ข้อความของ kubeadm ไม่บอกทั้งไฟล์และบรรทัด:
+
+```bash
+cd /root/k8s && awk -f config/kubeadm-docsplit.awk config/kubeadm/kubeadm-config.yaml
+```
+
+ไม่พิมพ์อะไร = ผ่าน · พิมพ์ออกมา = บอกช่วงบรรทัดของ document ที่ไม่มี kind
+(`bash config/validate-repo.sh` ข้อ 3 เรียกตัวนี้ให้แล้ว)
+
+**แก้** — ลบบรรทัด `---` ที่ทำให้คอมเมนต์กลายเป็น document แยก แล้วรัน preflight ซ้ำ
+
+> **ทำไม lint ถึงไม่จับ** — PyYAML และ `kubectl apply` ข้าม document ว่างให้เอง
+> ไฟล์จึง "parse ผ่าน" ทุกเครื่องมือ แต่ตายที่ kubeadm ตัวเดียว
+> ไฟล์อื่นใน `config/` ที่เขียนแบบเดียวกันจึงไม่พัง เพราะไปทาง `kubectl`
+
+### 12.2 `the bootstrap token ""` — อ่านไฟล์ออกแล้วแต่ค่าข้างในผิด
+
+```
+error unmarshaling configuration schema.GroupVersionKind{Group:"kubeadm.k8s.io",
+Version:"v1beta4", Kind:"InitConfiguration"}:
+the bootstrap token "" was not of the form "\\A([a-z0-9]{6})\\.([a-z0-9]{16})\\z"
+```
+
+ต่างจาก 12.1 ตรงที่ครั้งนี้ kubeadm บอก kind มาครบ = หั่น document ได้แล้ว
+ติดที่ **ค่า** ไม่ใช่ที่โครงไฟล์
+
+`token: ""` **ไม่ได้แปลว่า "ปล่อยว่างให้สุ่มเอง"** — v1beta4 แปลงค่าว่างเป็น
+`BootstrapTokenString` ไม่ได้เลยตายตั้งแต่ตอน unmarshal
+วิธีให้ kubeadm สุ่ม token ให้คือ **ไม่ใส่ field `token`** ใน `bootstrapTokens` เลย
+(จะกำหนดเองก็ได้ แต่ต้องเป็นรูป `abcdef.0123456789abcdef` เท่านั้น)
+
+```yaml
+bootstrapTokens:
+  - ttl: "2h"                           # ไม่มีบรรทัด token: อยู่เหนือ ttl
+    usages: ["signing", "authentication"]
+    groups: ["system:bootstrappers:kubeadm:default-node-token"]
+```
+
+> อาการตระกูลนี้ (`error unmarshaling configuration ...`) คือ **ค่าใน config ผิด**
+> ทุกครั้ง ไล่จากชื่อ field และรูปแบบค่าที่ kubeadm บอกมาในบรรทัดเดียวกัน
+
+### 12.3 apiserver ไม่ขึ้น หรือขึ้นแล้วแต่ `audit.log` ว่าง
+
+audit ของ cluster นี้ประกอบด้วย 3 ชิ้นที่ต้องมาพร้อมกัน ขาดชิ้นไหนอาการต่างกัน
+
+| ขาดอะไร | อาการ |
+|---|---|
+| ไฟล์ `/etc/kubernetes/audit-policy.yaml` บนเครื่อง | **apiserver ไม่ขึ้นเลย** — `extraVolumes` เป็น `pathType: File` kubelet จึงไม่ยอมสร้าง pod · `kubeadm init` ค้างจนหมดเวลา หรือ node ที่เพิ่ง join ไม่ยอม Ready |
+| flag `audit-policy-file` | apiserver ขึ้นปกติ **แต่ไม่บันทึกอะไรเลย** — มีแค่ warning `No audit policy file provided, no events will be recorded for log backend` |
+| `extraVolumes` ของ `/var/log/kubernetes` | apiserver ขึ้นปกติ เขียน log ได้ **แต่เขียนลงในคอนเทนเนอร์** — โฟลเดอร์บนโฮสต์ว่าง และ log หายทุกครั้งที่ pod restart |
+
+**ไล่ตามลำดับนี้:**
+
+```bash
+ls -l /etc/kubernetes/audit-policy.yaml          # ต้องมีบน master ทุกตัว
+crictl ps -a --name kube-apiserver               # pod ขึ้นไหม restart รัวไหม
+journalctl -u kubelet --since "-10min" | grep -i "audit-policy\|failed to mount"
+```
+
+```bash
+grep -A20 'name: audit' /etc/kubernetes/manifests/kube-apiserver.yaml
+```
+**ควรเห็น:** ทั้ง `--audit-policy-file`, `--audit-log-path` ในส่วน `command:`
+และ volume ทั้ง `audit-policy` กับ `audit-log` ในส่วน `volumes:`
+
+> **บน master ที่เพิ่ง join** อาการจะหลอกเป็นพิเศษ เพราะ `kubeadm join --control-plane`
+> รอแค่ etcd member เข้าครบ ไม่ได้รอ apiserver ของเครื่องนั้น · **join จึงผ่านสวยทั้งที่ apiserver ไม่เกิด**
+> ตรวจด้วย `kubectl -n kube-system get pods -l component=kube-apiserver -o wide` ว่ามีครบทุก master
+> · แก้ได้โดยไม่ต้อง reset หรือ join ใหม่ แค่วางไฟล์ที่ขาด
+
+**แก้** — วางไฟล์ policy แล้วให้ kubelet สร้าง pod ใหม่:
+
+```bash
+mkdir -p /var/log/kubernetes
+install -D -m 0600 /root/k8s/config/kubeadm/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
+```
+
+kubelet เห็นไฟล์ครบแล้วจะสร้าง pod ให้เองภายในไม่กี่วินาที (static pod ไม่ต้องสั่งอะไร)
+
+> **แก้ค่า audit หลังสร้าง cluster ไปแล้ว** ต้องแก้ `/etc/kubernetes/manifests/kube-apiserver.yaml`
+> **ด้วยมือทีละ master** เพราะ kubeadm ไม่ได้ generate manifest ใหม่ให้จาก configmap
+> (แก้ configmap `kubeadm-config` อย่างเดียวไม่มีผลกับเครื่องที่ตั้งไปแล้ว)
+> จึงเป็นเหตุผลว่าทำไมต้องตั้งให้ถูกตั้งแต่บทที่ 04 ก่อน `init`
+
+### 12.4 preflight ฟ้อง `/var/lib/etcd is not empty`
+
+```
+[ERROR DirAvailable--var-lib-etcd]: /var/lib/etcd is not empty
+```
+
+kubeadm ขอ `dataDir` ที่ว่างเปล่าจริง ๆ — ไม่สนว่าของข้างในเป็นของ filesystem เอง
+บน cluster นี้ `/var/lib/etcd` เป็น partition แยกที่ย้ายมาจาก `/home` ในบทที่ 01
+ext4 จึงแถม `lost+found` มาให้ทุกเครื่องตั้งแต่แรก และถ้าเครื่องนั้นเคยมีคนใช้ `/home`
+โฟลเดอร์ของเดิมจะติดมาด้วย (เครื่องที่ VM template แบ่ง partition มาให้เลยจะมีแค่ `lost+found`)
+
+**ดูก่อนลบเสมอ:**
+
+```bash
+ls -la /var/lib/etcd
+```
+
+| เห็นอะไร | แปลว่า | ทำอะไร |
+|---|---|---|
+| มีแค่ `lost+found` | filesystem ใหม่ปกติ ไม่ใช่ข้อมูล | `rm -rf /var/lib/etcd/lost+found` |
+| มี `member/` | เคย init มาก่อน | `kubeadm reset -f --cri-socket unix:///run/containerd/containerd.sock` แล้วค่อยล้าง |
+| มีโฟลเดอร์อื่น (เช่น `myhr`) | ของที่ติดมาจาก `/home` ตอนย้าย partition ในบท 01 | ตรวจว่าว่างจริงแล้ว `rmdir` — มันจะปฏิเสธถ้าข้างในมีของ ต่างจาก `rm -rf` ที่ลบทิ้งเงียบ ๆ |
+
+**อย่าใช้ `--ignore-preflight-errors=DirAvailable--var-lib-etcd` เพื่อข้ามไป** —
+ถ้าเป็นข้อมูล etcd เก่าจริง cluster จะขึ้นมาพร้อม member เดิมที่ไม่มีอยู่แล้ว
+แล้วไปพังตอน join master ตัวที่สอง ซึ่งไล่หายากกว่ามาก
+
+> ป้องกันที่ต้นทางแล้วในบทที่ 01 ข้อ 5 (ลบ `lost+found` ตอนย้าย partition)
+> และ `create-cluster.yml` ลบให้อัตโนมัติเฉพาะกรณีที่ในโฟลเดอร์มี `lost+found` อย่างเดียว
+
+### 12.5 join master ล้มที่ `download-certs` — `cipher: message authentication failed`
+
+```
+[download-certs] Downloading the certificates in Secret "kubeadm-certs" in the "kube-system" Namespace
+error execution phase control-plane-prepare/download-certs: error downloading certs:
+error decoding secret data with provided key: cipher: message authentication failed
+```
+
+**ไม่ใช่ token ผิด และไม่ใช่ของหมดอายุ** — token ผ่านมาแล้ว (ถ้า token ผิดจะตายตั้งแต่ preflight)
+ที่ผิดคือ `--certificate-key` ถอดรหัส Secret `kubeadm-certs` ไม่ออก
+
+**สาเหตุ** — `kubeadm init phase upload-certs --upload-certs` **เข้ารหัส cert ใหม่ด้วย key ใหม่ทุกครั้ง**
+key ของรอบก่อนจึงใช้ไม่ได้ทันทีที่รันรอบใหม่ ไม่ต้องรอหมดอายุ
+เจอบ่อยตอน join master ตัวที่สองแล้วหยิบ key เดิมจาก `kubeadm-init.log` หรือจากรอบก่อนหน้ามาใช้
+
+**แก้ — ออกคู่ใหม่แล้วใช้ทันที (บน master01):**
+
+```bash
+kubeadm init phase upload-certs --upload-certs | tail -1
+kubeadm token create --ttl 2h --print-join-command
+```
+
+**ต้องเอาค่าจากการรันรอบเดียวกันเท่านั้น** · ทั้งสองอย่างมีอายุ 2 ชั่วโมง
+
+| ข้อความที่เจอ | แปลว่า |
+|---|---|
+| `cipher: message authentication failed` | key ไม่ตรงกับ Secret ปัจจุบัน — มีการ upload-certs ใหม่ไปแล้ว |
+| `secrets "kubeadm-certs" not found` | Secret หมดอายุหรือถูกลบไปแล้ว — ต้อง `upload-certs` ใหม่ |
+| `couldn't validate the identity of the API Server` | `--discovery-token-ca-cert-hash` ผิด ไม่ใช่เรื่อง key |
+
+---
+
 ## รวมคำสั่งที่ใช้บ่อย
 
 ```bash
@@ -496,6 +793,33 @@ for ip in 101 102 103 104 105 106; do echo -n "$ip: "; ssh root@192.168.50.$ip u
 
 นี่คือส่วนที่ทำให้คู่มือชุดนี้ต่างจากชุดเดิม
 คู่มือเดิมไม่มีบทนี้เลย ความรู้จึงอยู่ในหัวคนไม่กี่คน และหายไปพร้อมคนนั้น
+
+### บันทึกจากการติดตั้งจริง
+
+**28 ส.ค. 2026 · `kubectl` ได้ `EOF` จาก VIP ทั้งที่ `kubeadm init` สำเร็จ**
+
+- **อาการ** — `kubeadm init` จบสวย พิมพ์คำสั่ง join ครบ · `crictl ps` เห็น `kube-apiserver` `Running` ไม่ restart เลย
+  แต่ `kubectl cluster-info` ได้ `Get "https://192.168.50.100:8443/api?timeout=32s": EOF` ซ้ำ ๆ
+- **ที่ไล่ผิดทางตอนแรก** — เดาว่าเป็น SELinux (`haproxy_connect_any`) ทั้งที่บทที่ 01 ตั้ง `Permissive` ไว้แล้ว
+  · ตัวที่ชี้ถูกคือช่อง `check` ในหน้า stats ของ HAProxy ไม่ใช่คำว่า `DOWN` เฉย ๆ
+- **สาเหตุจริง** — `haproxy.cfg` มีทั้ง `option httpchk` + `http-check expect status 200` และ `option ssl-hello-chk`
+  สองอันนี้ใช้ร่วมกันไม่ได้ · check เลยกลายเป็น "ทัก TLS แล้วรอ HTTP 200" ซึ่งไม่มีวันผ่าน
+  backend จึง `DOWN` ครบทั้ง 3 ตัว แล้ว HAProxy ปิด connection ทันที = `EOF` ฝั่ง client
+- **แก้** — ถอด `option ssl-hello-chk` ออก (แก้ในrepoแล้ว) · หลัง restart ได้ `UP check=L7OK` ทันที
+- **กันไม่ให้เกิดซ้ำ** — `validate-repo.sh` ดักไม่ให้มี check สองแบบพร้อมกัน ·
+  ขั้นตรวจในบทที่ 04 เปลี่ยนจาก `grep` หาชื่อ server (ผ่านเสมอ) เป็นอ่านช่อง `status` กับ `check`
+
+**28 ส.ค. 2026 · failover test ผ่าน — แต่ลำดับในคู่มือเดิมผิด**
+
+- ข้อ 5.1 (หยุด keepalived) และ 5.2 (หยุด HAProxy) ผ่าน · ข้อ 5.4 (`kubectl` ผ่าน VIP
+  ระหว่างย้าย) ผ่าน ไม่มีปัญหา · ข้อ 5.3 (reboot) เลื่อนไปทำหลังบท 05
+- **สิ่งที่เรียนรู้:** คู่มือเดิมเขียนว่า "failover test ต้องผ่านก่อน `kubeadm init`"
+  ซึ่งทำได้แค่ครึ่งเดียว — ก่อนมี cluster ไม่มี apiserver ฟังที่ `:6443`
+  ด่าน 2 ของ [`check_apiserver.sh`](../config/keepalived/check_apiserver.sh) จึง `exit 0`
+  ออกไปก่อน **ด่าน 3 (ยิง `/healthz` ผ่าน VIP) ไม่เคยถูกรันเลย**
+  · การทดสอบก่อน init จึงพิสูจน์ได้แค่ว่า "IP ย้ายเป็น" ไม่ใช่ "ย้ายแล้วใช้งานต่อได้"
+- แก้แล้วในบท 03 (เพิ่มข้อ 5.4) และใน `CHECKLIST.md`
+- ⬜ **ยังค้าง: ยังไม่ได้จดเวลา failover เป็นตัวเลข** — ต้องวัดรอบหน้า ไม่ใช่เดา
 
 **สิ่งที่ต้องจดจาก Phase 1 (lab) โดยเฉพาะ:**
 - [ ] `firewall-cmd --reload` ตอน Cilium รันอยู่ — pod ยังคุยกันได้ไหม

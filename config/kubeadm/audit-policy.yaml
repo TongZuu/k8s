@@ -1,0 +1,70 @@
+# =============================================================================
+#  audit-policy.yaml — นโยบายว่า apiserver จะบันทึกอะไรลง audit log
+# =============================================================================
+#  ปลายทางบนเครื่อง: /etc/kubernetes/audit-policy.yaml  (ต้องมีบน master ทุกตัว)
+#  ถูก mount เข้า kube-apiserver ผ่าน apiServer.extraVolumes ใน kubeadm-config.yaml
+#
+#  🔴 ไฟล์นี้ไม่ใช่ของเสริม — ถ้าไม่มี:
+#     · ตอน init/join: apiserver mount ไม่ได้ (pathType: File) → pod ไม่ขึ้น
+#     · ถ้าถอด volume ออกแต่ยังตั้ง audit-log-path ไว้: apiserver ขึ้นปกติ
+#       แต่ไม่บันทึกอะไรเลย ได้แค่ warning บรรทัดเดียวใน log ของ apiserver:
+#       "No audit policy file provided, no events will be recorded for log backend"
+#       — โฟลเดอร์ /var/log/kubernetes จะว่างตลอดไปโดยไม่มีใครรู้
+#
+#  กติกาอ่านจากบนลงล่าง เจอ rule แรกที่ match แล้วหยุด ลำดับจึงสำคัญ
+#  ระดับ: None < Metadata < Request < RequestResponse
+# =============================================================================
+apiVersion: audit.k8s.io/v1
+kind: Policy
+
+# ไม่ต้องบันทึกตอน "รับ request" — ไม่งั้นทุกคำสั่งได้ 2 บรรทัด log โตเร็วเป็นเท่าตัว
+omitStages:
+  - "RequestReceived"
+
+rules:
+  # ---------------------------------------------------------------------------
+  #  1) ตัดเสียงรบกวนจากตัวระบบเองก่อน — พวกนี้อ่านสถานะตัวเองทุกไม่กี่วินาที
+  #     ถ้าไม่ตัด audit.log จะเต็มไปด้วย watch/get ของ component จนหาของจริงไม่เจอ
+  # ---------------------------------------------------------------------------
+  - level: None
+    userGroups: ["system:nodes"]
+    verbs: ["get", "list", "watch"]
+
+  - level: None
+    users:
+      - "system:apiserver"
+      - "system:kube-scheduler"
+      - "system:kube-controller-manager"
+    verbs: ["get", "list", "watch"]
+
+  - level: None
+    nonResourceURLs:
+      - "/healthz*"
+      - "/readyz*"
+      - "/livez*"
+      - "/version"
+      - "/metrics"
+      - "/openapi*"
+
+  # ---------------------------------------------------------------------------
+  #  2) secret / configmap / token — เก็บแค่ metadata เท่านั้น
+  #     ห้ามใช้ Request หรือ RequestResponse เด็ดขาด เพราะ body คือตัวค่าลับ
+  #     จะกลายเป็นการก๊อปรหัสผ่านทั้งระบบลงไฟล์ที่อ่านง่ายกว่า etcd เสียอีก
+  # ---------------------------------------------------------------------------
+  - level: Metadata
+    resources:
+      - group: ""
+        resources: ["secrets", "configmaps"]
+      - group: "authentication.k8s.io"
+        resources: ["tokenreviews"]
+
+  # ---------------------------------------------------------------------------
+  #  3) ทุกการ "แก้ของ" เก็บเต็ม — นี่คือส่วนที่ตอบคำถามว่าใครทำอะไรตอนไหน
+  # ---------------------------------------------------------------------------
+  - level: RequestResponse
+    verbs: ["create", "update", "patch", "delete", "deletecollection"]
+
+  # ---------------------------------------------------------------------------
+  #  4) ที่เหลือ (การอ่านของคน) เก็บ metadata พอ — รู้ว่าใครเปิดดูอะไร
+  # ---------------------------------------------------------------------------
+  - level: Metadata

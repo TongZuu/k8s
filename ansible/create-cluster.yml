@@ -42,7 +42,27 @@
       ansible.builtin.set_fact:
         v: "{{ _ver_raw.stdout | from_yaml }}"
 
+    # จำไว้ว่ารอบนี้มีเครื่องอะไรบ้าง — ใช้ตอนตรวจท้าย playbook
+    # ถ้าไปเทียบกับ groups['k8s_nodes'] ตรง ๆ การรันด้วย --limit จะ fail เสมอ
+    # ทั้งที่ทำงานถูกต้อง เพราะ --limit ไม่ได้ทำให้ groups เล็กลง
+    - name: จำรายชื่อเครื่องในรอบนี้
+      ansible.builtin.set_fact:
+        hosts_in_run: "{{ ansible_play_hosts_all }}"
+      run_once: true
+      delegate_to: localhost
+      delegate_facts: true
+      become: false
+
   tasks:
+    # เก็บไว้ให้ play "ออก token" ตัดสินใจว่าต้อง upload-certs ไหม
+    # ต้องดูจาก "ยังมี master ที่ต้อง join อยู่จริงหรือเปล่า" ไม่ใช่แค่ "มี master อยู่ในรอบนี้"
+    # ไม่งั้นการรันเต็มบน cluster ที่ join ครบแล้วจะไปหมุน certificate-key ทิ้งฟรี ๆ
+    - name: เครื่องนี้เข้า cluster ไปแล้วหรือยัง
+      ansible.builtin.stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: _kubelet_conf
+      check_mode: false
+
     - name: containerd ต้องทำงานและ SystemdCgroup ต้องเป็น true
       ansible.builtin.shell:
         executable: /bin/bash
@@ -100,6 +120,58 @@
         state: directory
         mode: "0700"
 
+    # 🔴 ต้องมาก่อน init — extraVolumes ของ apiserver เป็น pathType: File
+    #    ไม่มีไฟล์นี้ kubelet จะไม่สร้าง pod ของ apiserver แล้ว init ค้างจนหมดเวลา
+    #    โดยที่ข้อความ error ไม่พูดถึง audit เลยสักคำ
+    # copy ไม่สร้างโฟลเดอร์ปลายทางให้ — ก่อน init เครื่องอาจยังไม่มี /etc/kubernetes
+    - name: ต้องมี /etc/kubernetes ก่อนวางไฟล์
+      ansible.builtin.file:
+        path: /etc/kubernetes
+        state: directory
+        mode: "0755"
+
+    - name: วาง audit policy ที่ apiserver จะ mount
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../config/kubeadm/audit-policy.yaml"
+        dest: /etc/kubernetes/audit-policy.yaml
+        mode: "0600"
+
+    # -------------------------------------------------------------------------
+    #  kubeadm หั่น --config ที่บรรทัดขึ้นต้นด้วย "---" ตรง ๆ ไม่ได้ parse YAML ก่อน
+    #  ชิ้นที่มีแต่คอมเมนต์จึงเป็น document ที่ไม่มี kind แล้ว init ตายด้วยข้อความ
+    #  "GroupVersionKind /, Kind=" ซึ่งไม่บอกว่าไฟล์ไหนบรรทัดไหน
+    #  ตรวจบน control node ก่อนส่งไฟล์ขึ้นเครื่อง จะได้ตายตั้งแต่ยังไม่แตะเครื่องจริง
+    #  (yamllint/ansible parse ไฟล์นี้ผ่าน เพราะ YAML parser ข้ามคอมเมนต์ให้ kubeadm ไม่ข้าม)
+    # -------------------------------------------------------------------------
+    - name: จำลองวิธีที่ kubeadm หั่น kubeadm-config.yaml เป็น document
+      ansible.builtin.command:
+        cmd: >-
+          awk -f {{ playbook_dir }}/../config/kubeadm-docsplit.awk
+          {{ playbook_dir }}/../config/kubeadm/kubeadm-config.yaml
+      delegate_to: localhost
+      run_once: true
+      become: false
+      register: _docsplit
+      when: not _admin.stat.exists
+      changed_when: false
+      check_mode: false
+      failed_when: false
+
+    - name: ทุก document ใน kubeadm-config.yaml ต้องมี apiVersion และ kind
+      ansible.builtin.assert:
+        that:
+          - _docsplit.rc == 0
+          - _docsplit.stdout | trim | length == 0
+        fail_msg: >-
+          config/kubeadm/kubeadm-config.yaml มี document ที่ไม่มี apiVersion/kind —
+          kubeadm init จะตายด้วย "GroupVersionKind /, Kind=" · แก้ที่ control node ก่อนรันใหม่
+          · {{ _docsplit.stdout | default('') | trim }}{{ _docsplit.stderr | default('') | trim }}
+        quiet: true
+      delegate_to: localhost
+      run_once: true
+      become: false
+      when: not _admin.stat.exists
+
     - name: ส่ง kubeadm-config.yaml ขึ้นเครื่อง
       ansible.builtin.copy:
         src: "{{ playbook_dir }}/../config/kubeadm/kubeadm-config.yaml"
@@ -112,6 +184,54 @@
       when: not _admin.stat.exists
       changed_when: true
 
+    # -------------------------------------------------------------------------
+    #  /var/lib/etcd ต้องว่างเปล่าจริง ๆ ตอน init — kubeadm ไม่สนว่าของข้างใน
+    #  เป็นของ filesystem เอง partition ที่ย้ายมาจาก /home ในบท 01 จึงติด lost+found
+    #  ลบให้เฉพาะกรณีที่มี lost+found อย่างเดียว · ถ้ามีอย่างอื่นแปลว่าเคย init มาก่อน
+    #  แล้วต้องให้คนตัดสินใจเอง playbook ไม่ลบข้อมูล etcd ให้เด็ดขาด
+    # -------------------------------------------------------------------------
+    - name: ดูว่ามีอะไรอยู่ใน /var/lib/etcd บ้าง
+      ansible.builtin.find:
+        paths: /var/lib/etcd
+        patterns: "*"
+        hidden: true
+        file_type: any
+      register: _etcd_dir
+      when: not _admin.stat.exists
+      check_mode: false
+
+    - name: ลบ lost+found ที่ ext4 แถมมา (ลบตัวนี้ตัวเดียวเท่านั้น)
+      ansible.builtin.file:
+        path: /var/lib/etcd/lost+found
+        state: absent
+      when:
+        - not _admin.stat.exists
+        - _etcd_dir.files | map(attribute='path') | list == ['/var/lib/etcd/lost+found']
+
+    - name: /var/lib/etcd ต้องไม่มีข้อมูล etcd เก่าค้างอยู่
+      ansible.builtin.assert:
+        that:
+          - (_etcd_dir.files | map(attribute='path') | reject('search', 'lost\+found') | list | length) == 0
+        fail_msg: >-
+          /var/lib/etcd ไม่ว่าง และไม่ได้มีแค่ lost+found —
+          {{ _etcd_dir.files | map(attribute='path') | list | join(', ') }}
+          · ถ้ามี member/ = เคย kubeadm init มาก่อน ต้อง kubeadm reset ด้วยมือ
+          · ถ้าเป็นโฟลเดอร์อื่น = ของเดิมที่ติดมาจาก /home ตอนย้าย partition ในบท 01
+          playbook ไม่ลบอะไรนอกจาก lost+found ให้ (ดูบท 13 ข้อ 12.4)
+        quiet: true
+      when: not _admin.stat.exists
+
+    # ด่าน 1 — อ่านแค่ไฟล์ ไม่แตะเครื่อง จับ "ค่าใน config ผิด" เช่น token: ""
+    #          แยกจาก preflight เพราะ error คนละตระกูล ไล่ผิดทางเสียเวลา
+    - name: kubeadm ต้องอ่าน config แล้วผ่าน validate
+      ansible.builtin.command:
+        cmd: >-
+          kubeadm config validate
+          --config=/root/k8s/config/kubeadm/kubeadm-config.yaml
+      when: not _admin.stat.exists
+      changed_when: false
+
+    # ด่าน 2 — ตรวจว่าเครื่องพร้อมด้วย (port, swap, containerd, image)
     - name: preflight แบบ dry-run ก่อนของจริง
       ansible.builtin.command:
         cmd: >-
@@ -183,17 +303,26 @@
   tasks:
     # certificate-key หมดอายุ 2 ชม. · token หมดตาม ttl — ออกใหม่ทุกครั้งที่รัน
     # ถูกกว่าการไปงมหาใน kubeadm-init.log ว่าหมดอายุหรือยัง
-    - name: ออก certificate key ชุดใหม่
+    # 🔴 upload-certs เข้ารหัส cert ใหม่ด้วย key ใหม่ทุกครั้งที่รัน = key รอบก่อนตายทันที
+    #    รอบที่ join แต่ worker จึงไม่ควรรัน ไม่งั้นไปทำให้ key ที่คนอื่นถืออยู่ใช้ไม่ได้
+    - name: ออก certificate key ชุดใหม่ — เฉพาะรอบที่มี master จะ join
       ansible.builtin.shell:
         executable: /bin/bash
         cmd: kubeadm init phase upload-certs --upload-certs | tail -1
       register: _certkey
+      when: >-
+        hostvars['localhost']['hosts_in_run']
+        | intersect(groups['masters'] | difference([groups['masters'][0]]))
+        | map('extract', hostvars, ['_kubelet_conf', 'stat', 'exists'])
+        | reject | list | length > 0
       changed_when: false
       check_mode: false
       no_log: true
 
     - name: ออกคำสั่ง join ชุดใหม่
-      ansible.builtin.command: kubeadm token create --print-join-command
+      # --ttl 2h ให้ตรงกับ bootstrapTokens ใน kubeadm-config.yaml
+      # default ของคำสั่งนี้คือ 24h ซึ่งสวนทางกับที่ตั้งใจตั้งไว้ตอน init
+      ansible.builtin.command: kubeadm token create --ttl 2h --print-join-command
       register: _joincmd
       changed_when: false
       check_mode: false
@@ -202,7 +331,7 @@
     - name: เก็บไว้ให้ play ถัดไปใช้
       ansible.builtin.set_fact:
         join_cmd: "{{ _joincmd.stdout | trim }}"
-        cert_key: "{{ _certkey.stdout | trim }}"
+        cert_key: "{{ _certkey.stdout | default('') | trim }}"
       no_log: true
 
 - name: Join master ที่เหลือ — ทีละเครื่อง
@@ -218,6 +347,32 @@
       register: _joined
       check_mode: false
 
+    # master ที่ join ดึง ClusterConfiguration ชุดเดียวกันมาสร้าง manifest ของตัวเอง
+    # จึงต้องมี audit policy + ที่เก็บ log ครบเหมือน master01 ก่อน ไม่งั้น apiserver
+    # ของเครื่องนี้ไม่ขึ้น อาการจะเป็น "join ผ่านแต่ node ไม่ Ready" ซึ่งไล่หายาก
+    - name: สร้างที่เก็บ audit log บนเครื่องที่จะ join
+      ansible.builtin.file:
+        path: /var/log/kubernetes
+        state: directory
+        mode: "0700"
+      when: not _joined.stat.exists
+
+    - name: ต้องมี /etc/kubernetes ก่อนวางไฟล์
+      ansible.builtin.file:
+        path: /etc/kubernetes
+        state: directory
+        mode: "0755"
+      when: not _joined.stat.exists
+
+    - name: วาง audit policy บนเครื่องที่จะ join
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../config/kubeadm/audit-policy.yaml"
+        dest: /etc/kubernetes/audit-policy.yaml
+        mode: "0600"
+      when: not _joined.stat.exists
+
+    # join --control-plane รอแค่ etcd member ไม่ได้รอ apiserver ของเครื่องนี้
+    # ถ้าไม่ตรวจต่อ จะได้ cluster ที่ "join ครบ" แต่ control plane ใช้งานได้ไม่ครบ
     - name: join เข้า control plane
       ansible.builtin.shell:
         executable: /bin/bash
@@ -228,7 +383,34 @@
           --cri-socket unix:///run/containerd/containerd.sock
       when: not _joined.stat.exists
       changed_when: true
+      # cmd มีทั้ง bootstrap token และ certificate-key อยู่ในบรรทัดเดียว
+      # ถ้าไม่ปิด ทั้งสองค่าจะโผล่ใน output ตอน task นี้ fail และใน -v ทุกครั้ง
       no_log: true
+
+    # join --control-plane บอกว่าสำเร็จตั้งแต่ etcd member เข้าครบ
+    # ต้องยืนยันเองว่า apiserver ของเครื่องนี้ขึ้นจริง ไม่งั้นได้ cluster ที่
+    # "join ครบ" แต่ HAProxy จะเห็น backend ตัวนี้ DOWN ตลอดไปโดยไม่มีใครสังเกต
+    - name: apiserver ของเครื่องนี้ต้องขึ้นจริง ไม่ใช่แค่ join ผ่าน
+      ansible.builtin.command:
+        cmd: crictl ps --name kube-apiserver -q
+      register: _apisrv
+      until: _apisrv.stdout | trim | length > 0
+      retries: 12
+      delay: 10
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: บอกให้ชัดว่าต้องไปดูอะไรถ้า apiserver ไม่ขึ้น
+      ansible.builtin.assert:
+        that:
+          - _apisrv.stdout | trim | length > 0
+        fail_msg: >-
+          join ผ่านแต่ apiserver ของ {{ inventory_hostname }} ไม่ขึ้นภายใน 2 นาที
+          · สาเหตุที่เจอบ่อยสุดคือ /etc/kubernetes/audit-policy.yaml ไม่มีบนเครื่องนี้
+          (extraVolumes เป็น pathType: File — ไม่มีไฟล์ kubelet จะไม่สร้าง pod)
+          · วางไฟล์แล้ว kubelet สร้างให้เอง ไม่ต้อง reset (ดูบท 13 ข้อ 12.3)
+        quiet: true
 
     - name: ตั้ง kubeconfig
       ansible.builtin.file:
@@ -292,6 +474,7 @@
         cmd: |
           set -uo pipefail
           echo "nodes=$(kubectl get nodes --no-headers 2>/dev/null | wc -l)"
+          echo "names=$(kubectl get nodes --no-headers -o custom-columns=N:.metadata.name 2>/dev/null | tr '\n' ' ')"
           echo "versions_ok=$(kubectl get nodes --no-headers -o custom-columns=V:.status.nodeInfo.kubeletVersion 2>/dev/null | sort -u | tr -d '\n')"
           echo "kubeproxy=$(kubectl -n kube-system get ds kube-proxy --no-headers 2>/dev/null | wc -l)"
           echo "etcd_pods=$(kubectl -n kube-system get pods -l component=etcd --no-headers 2>/dev/null | wc -l)"
@@ -303,18 +486,35 @@
       ansible.builtin.debug:
         var: _sum.stdout_lines
 
-    - name: ต้องผ่านทุกข้อ
+    # เกณฑ์ที่ต้องจริงเสมอ ไม่ว่าจะรันเต็มหรือรันด้วย --limit:
+    # ทุกเครื่องที่อยู่ในรอบนี้ต้องโผล่ใน kubectl get nodes จริง
+    - name: ทุกเครื่องในรอบนี้ต้องเข้า cluster แล้ว
       ansible.builtin.assert:
         that:
-          - "'nodes=' ~ (groups['k8s_nodes'] | length) in _sum.stdout"
+          - hostvars['localhost']['hosts_in_run'] | difference(_names) | length == 0
           - "'versions_ok=v' ~ v.K8S_VERSION in _sum.stdout"
           - "'kubeproxy=0' in _sum.stdout"
-          - "'etcd_pods=' ~ (groups['masters'] | length) in _sum.stdout"
         fail_msg: >-
           ไม่ผ่านเกณฑ์บท 04
+          · เครื่องที่ยังไม่เข้า cluster: {{ hostvars['localhost']['hosts_in_run'] | difference(_names) | join(', ') }}
           · kubeproxy ต้องเป็น 0 — ถ้าไม่ใช่แปลว่าลืม --skip-phases=addon/kube-proxy
             ลบด้วย kubectl -n kube-system delete ds kube-proxy && delete cm kube-proxy
           · node ทุกตัวต้องเป็น NotReady ในขั้นนี้ ซึ่งถูกต้องแล้ว (ยังไม่มี CNI)
+      vars:
+        _names: "{{ (_sum.stdout_lines | select('match', '^names=') | first | default('names=')) | replace('names=', '') | trim | split(' ') | select() | list }}"
+
+    # ความครบของทั้ง cluster เป็นคนละเรื่องกับความสำเร็จของรอบนี้ — รายงานอย่างเดียว
+    # ไม่ fail เพราะการทยอย join ทีละเครื่องเป็นเรื่องปกติของบทนี้
+    - name: ความครบของ cluster เทียบกับ inventory
+      ansible.builtin.debug:
+        msg: >-
+          node ใน cluster {{ _got | length }}/{{ groups['k8s_nodes'] | length }} เครื่อง
+          · etcd pod ต้องเท่ากับจำนวน master ที่เข้าแล้ว
+          {{ '· ยังขาด: ' ~ (groups['k8s_nodes'] | difference(_got) | join(', '))
+             if (groups['k8s_nodes'] | difference(_got) | length > 0)
+             else '· ครบตาม inventory แล้ว' }}
+      vars:
+        _got: "{{ (_sum.stdout_lines | select('match', '^names=') | first | default('names=')) | replace('names=', '') | trim | split(' ') | select() | list }}"
 
     - name: อายุ certificate — จดลงปฏิทินทีมทันที
       ansible.builtin.command: kubeadm certs check-expiration
