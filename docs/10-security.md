@@ -15,6 +15,11 @@
 registry password, cluster-admin token และ client key **ฝังอยู่ในไฟล์แบบ plaintext**
 ทั้งหมดนั้น**ต้องถูกหมุนใหม่** ไม่ใช่แค่ลบไฟล์ทิ้ง
 
+> 📐 **ก่อนลงมือกับ NetworkPolicy** ให้อ่านแบบแผน P04 · P05 · P13 ใน
+> [`../html/cilium-envoy-scenarios.html`](../html/cilium-envoy-scenarios.html) —
+> ลำดับ rollout ที่ไม่ทำระบบดับ, การกัน namespace เรียกหากัน และ egress ออกนอก cluster
+> ที่แคบกว่าไฟล์ตั้งต้น · ฝั่ง P07 อธิบายว่าต้องเตรียมอะไรถึงจะตอบคำถาม audit ย้อนหลังได้
+
 ---
 
 ## 1 · 🔴 etcd encryption at rest

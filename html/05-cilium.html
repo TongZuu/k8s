@@ -170,13 +170,26 @@ img{max-width:100%}
   .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
   .wrap{margin-left:0}
 }
+
+/* ---------- แถบกรองตามเครื่อง ---------- */
+/* บทที่ join ทีละเครื่องมีขั้นของ master01 กับของเครื่องปลายทางสลับกัน
+   คนที่นั่งอยู่หน้าเครื่องไหนควรเห็นเฉพาะของเครื่องนั้นได้ ไม่ต้องเลื่อนข้าม */
+.mtabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 20px}
+.mtabs-l{color:var(--dim);font-size:13px;margin-right:2px}
+.mtab{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer;transition:all .15s}
+.mtab:hover{border-color:var(--accent);color:var(--accent)}
+.mtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.hide-m{display:none !important}
+.mnote{color:var(--dim);font-size:13px;margin:-10px 0 18px}
+
 </style>
 </head>
 <body data-chapter="05-cilium.md" data-total="9">
 
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
-  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item cur" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="9"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="16"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item cur" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="17"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
 </aside>
 
 <div class="wrap">
@@ -196,7 +209,8 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>Cilium ทำอะไรให้บ้าง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+    
+    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2>Cilium ทำอะไรให้บ้าง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <table>
 <thead>
 <tr>
@@ -232,8 +246,14 @@ img{max-width:100%}
 และ LoadBalancer ดับพร้อมกัน และ <strong>ไม่มี kube-proxy ให้ถอยกลับไปใช้</strong>
 นี่คือราคาของการตัดชิ้นส่วนออก จึงต้องพิสูจน์ให้ได้ว่าทีม debug มันเป็นก่อนขึ้น production</p>
 </blockquote>
+<blockquote>
+<p>🔎 <strong>ตอนของจริงพัง</strong> ให้เปิด <a href="../html/cilium-envoy-scenarios.html"><code>../html/cilium-envoy-scenarios.html</code></a>
+— 28 อาการของ Cilium + Envoy Gateway เรียงตามความถี่ที่เจอจริง ค้นด้วยข้อความ error ได้เลย
+และมีอีก 25 แบบแผนว่าควรออกแบบยังไงตั้งแต่แรก พร้อมภาพประกอบและขั้นตอนแบบทำตามได้
+(แบ่ง namespace/zone · กัน namespace เรียกหากัน · auth ที่ทางเข้า · เข้ารหัส pod network · เตรียม audit)</p>
+</blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · ติดตั้ง Helm 4 และ Cilium CLI</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2>1 · ติดตั้ง Helm 4 และ Cilium CLI</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 cd /root/k8s/dl
 
@@ -255,7 +275,7 @@ cilium version --client
 ถ้าเจอ error เรื่องสิทธิ์ตอน install ให้ดูตรงนี้ก่อน</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · ตรวจ values ก่อนติดตั้ง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>2 · ตรวจ values ก่อนติดตั้ง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">grep -E 'k8sServiceHost|k8sServicePort|clusterPoolIPv4PodCIDRList|kubeProxyReplacement' \
   /root/k8s/config/cilium/values.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -315,7 +335,7 @@ grep -A3 'interfaces:' /root/k8s/config/cilium/l2-announcement-policy.yaml
 แต่ ping จากข้างนอกไม่ติด</strong> เป็นอาการเดียวกับตอนโดน Dynamic ARP Inspection บล็อก</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · ติดตั้ง Cilium</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>3 · ติดตั้ง Cilium</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">helm repo add cilium https://helm.cilium.io/
 helm repo update
 
@@ -346,7 +366,7 @@ DaemonSet    cilium    Desired: 6, Ready: 6/6, Available: 6/6
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ทั้ง 6 เครื่องเป็น <strong><code>Ready</code></strong> แล้ว</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · ยืนยันว่า kube-proxy replacement ทำงานจริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>4 · ยืนยันว่า kube-proxy replacement ทำงานจริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep -i 'KubeProxyReplacement'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>KubeProxyReplacement:   True   [&lt;ชื่อ interface ของ node นั้น&gt; 192.168.50.10X ...]</code></p>
@@ -357,12 +377,31 @@ kubectl get pods -A | grep -c kube-proxy
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ไม่มี <code>kube-proxy</code> ในรายการ ds และ grep คืน <code>0</code></p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · ทดสอบ connectivity เต็มรูปแบบ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2>5 · ทดสอบ connectivity เต็มรูปแบบ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>Cilium มีชุดทดสอบในตัว ซึ่งครอบคลุมกว่าการ ping เอง — <strong>รันให้ผ่านก่อนไปต่อ</strong></p>
-<div class="cb"><pre><code class="language-bash">cilium connectivity test
+<p><strong>🔴 ต้องรันใน <code>tmux</code> เสมอ ห้ามรันตรง ๆ ผ่าน ssh</strong></p>
+<div class="cb"><pre><code class="language-bash">dnf install -y tmux 2&gt;/dev/null; tmux new -s cil "cilium connectivity test 2&gt;&amp;1 | tee /root/k8s/cilium-conn-test.log"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>หลุดแล้วกลับเข้าไปดูต่อ: <code>tmux attach -t cil</code> · ดู log ย้อนหลัง: <code>less /root/k8s/cilium-conn-test.log</code></p>
+<blockquote>
+<p><strong>ทำไมต้อง <code>tmux</code></strong> — เทสต์ใช้เวลา 10-20 นาที และระหว่างทางมันจะ <strong>apply NetworkPolicy
+ชุด deny-all ลงใน namespace ทดสอบเป็นระยะ</strong> (<code>all-ingress-deny</code>, <code>all-egress-deny</code>, …)
+ถ้า ssh หลุดกลางคัน process โดน SIGHUP ตาย <strong>แต่ policy ที่ apply ไปแล้วยังค้างอยู่</strong>
+ไม่มีใครเก็บกวาดให้ · แล้วถ้ารันซ้ำทับเลยจะเจอ pod ค้างกับ policy เก่าปนกันจนอ่านผลไม่ออก</p>
+<p>เจอจริงในการติดตั้งรอบแรก — ssh หลุดตอน test 12/137 (<code>all-egress-deny-knp</code>)</p>
+<p>ไม่อยากลง <code>tmux</code> ใช้ <code>nohup cilium connectivity test &gt; /root/k8s/cilium-conn-test.log 2&gt;&amp;1 &amp;</code>
+แล้ว <code>tail -f</code> ก็ได้ — <code>tail</code> หลุดไม่กระทบตัวเทสต์</p>
+</blockquote>
 <p><strong>ควรเห็นท้ายสุด:</strong> <code>✅ All ... tests successful</code>
-<strong>ใช้เวลา ~10-15 นาที</strong> และจะสร้าง namespace <code>cilium-test-1</code> ชั่วคราว</p>
+<strong>ใช้เวลา ~10-20 นาที</strong> และจะสร้าง namespace <code>cilium-test-1</code> ชั่วคราว</p>
+<p><strong>ถ้ารอบก่อนหลุดกลางคัน ต้องล้างก่อนรันใหม่เสมอ:</strong></p>
+<div class="cb"><pre><code class="language-bash">cilium connectivity test --test-namespace cilium-test-1 --cleanup 2&gt;/dev/null; kubectl delete ns cilium-test-1 --ignore-not-found
+kubectl get ns | grep cilium-test    # ต้องว่าง
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p><strong>&quot;ค้าง&quot; กับ &quot;พัง&quot; แยกกันที่ log ยังเดินอยู่ไหม</strong> ไม่ใช่ที่หน้าจอนิ่ง —
+บางเทสต์เงียบเป็นนาทีได้ปกติ นี่คือเหตุผลที่ต้องมี <code>tee</code> ไว้ดูย้อนหลัง</p>
+</blockquote>
 <p>ถ้าไม่ผ่าน ให้ดูก่อนว่าเป็นเรื่อง firewalld หรือเปล่า:</p>
 <div class="cb"><pre><code class="language-bash"># ลองเพิ่ม interface ของ Cilium เข้า trusted zone แล้วทดสอบซ้ำ (ทำทุก node)
 firewall-cmd --permanent --zone=trusted --add-interface=cilium_host
@@ -378,7 +417,7 @@ firewall-cmd --reload &amp;&amp; sleep 5 &amp;&amp; cilium connectivity test --t
 <div class="cb"><pre><code class="language-bash">kubectl delete ns cilium-test-1 --ignore-not-found
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ตั้ง LoadBalancer IP pool</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2>6 · ตั้ง LoadBalancer IP pool</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/cilium/lb-ippool.yaml
 kubectl get ciliumloadbalancerippool
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -394,43 +433,138 @@ kubectl get ciliuml2announcementpolicy
 <p>LB-IPAM เป็น <code>cilium.io/v2</code> ส่วน L2AnnouncementPolicy ยังเป็น <code>cilium.io/v2alpha1</code> — <strong>คนละอันกัน</strong></p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>7 · 🔴 ทดสอบ LoadBalancer จริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<p>นี่คือขั้นที่พิสูจน์ว่า L2 announcement ผ่าน switch ได้จริง
-<strong>ถ้าองค์กรเปิด ARP inspection ไว้ ข้อนี้จะพังตรงนี้</strong></p>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2>7 · 🔴 ทดสอบ LoadBalancer จริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>ขั้นนี้พิสูจน์ว่า Cilium ประกาศ LoadBalancer IP ออกมาบน LAN ได้จริง
+เป็นข้อที่พังบ่อยที่สุดในบทนี้ และพังด้วยสาเหตุที่มองไม่เห็นจาก <code>kubectl</code></p>
+</div><div class="sub" data-machine="all"><h3>7.1 สร้างของทดสอบ</h3>
 <div class="cb"><pre><code class="language-bash">kubectl create deployment lbtest --image=nginx:alpine --replicas=2
 kubectl expose deployment lbtest --type=LoadBalancer --port=80
-kubectl get svc lbtest -w
+kubectl get svc lbtest
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็นภายในไม่กี่วินาที:</strong></p>
 <div class="cb"><pre><code class="language-text">NAME     TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)
 lbtest   LoadBalancer   10.247.x.x      192.168.50.200   80:3xxxx/TCP
 </code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>ทดสอบจากเครื่อง <strong>นอก cluster</strong> — สำคัญมาก</h3>
+<p>ถ้า <code>EXTERNAL-IP</code> ยังเป็น <code>&lt;pending&gt;</code> แปลว่า pool มีปัญหา — ย้อนไปหัวข้อ 6 ก่อน</p>
+</div><div class="sub" data-machine="all"><h3>7.2 เลือกเครื่องที่จะใช้ยิง — อ่านตารางนี้ก่อนลงมือ</h3>
+<p>L2 announcement ทำงานด้วยการ <strong>ตอบ ARP</strong> ซึ่งวิ่งได้เฉพาะใน broadcast domain เดียวกัน
+<strong>เครื่องที่ใช้ยิงจึงเปลี่ยนความหมายของผลลัพธ์ทั้งหมด</strong></p>
+<table>
+<thead>
+<tr>
+<th>ยิงจาก</th>
+<th>ผลบอกอะไร</th>
+<th>ใช้ตัดสินข้อนี้ได้ไหม</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>เครื่องในวง <code>192.168.50.0/24</code> ที่ <strong>ไม่ใช่ node</strong></td>
+<td>ทั้ง ARP และเส้นทาง HTTP</td>
+<td>✅ <strong>ใช่ — ทางหลัก</strong></td>
+</tr>
+<tr>
+<td>node ของ cluster ด้วย <code>arping</code></td>
+<td>ARP อย่างเดียว</td>
+<td>✅ ใช้แทนได้</td>
+</tr>
+<tr>
+<td>node ของ cluster ด้วย <code>curl</code></td>
+<td>แค่ Service/pod ทำงาน <strong>ไม่ผ่าน ARP เลย</strong></td>
+<td>❌ <strong>ห้ามใช้</strong></td>
+</tr>
+<tr>
+<td>เครื่องวงอื่น เช่น <code>10.212.x.x</code></td>
+<td>ความสามารถ ARP ของ <strong>router</strong></td>
+<td>❌ ไม่เกี่ยวกับข้อนี้</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>🔴 <strong>สองแถวล่างคือกับดัก ทำให้ไล่ปัญหาผิดทางได้ง่ายมาก</strong></p>
+<p><code>curl</code> บน node โดน eBPF ของ Cilium ดักตั้งแต่ชั้น socket ไม่เคยกลายเป็น ARP request
+<strong>ต่อให้ L2 announcement พังสนิทก็ยังได้ <code>200 OK</code></strong></p>
+<p>เครื่องวงอื่นยิงผ่าน router — จะติดครั้งแรกแล้วค้างยาวตามอายุ ARP cache ของ router
+<code>arp -a</code> บนเครื่องนั้นขึ้น <code>No ARP Entries Found</code> เป็นเรื่องปกติ <strong>ไม่ใช่หลักฐานว่าอะไรพัง</strong></p>
+<p>ยืนยัน IP ของเครื่องที่จะใช้ก่อนเสมอ: <code>ip -br addr</code> (Linux) · <code>ipconfig</code> (Windows)</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3>7.3 ยิงทดสอบ</h3>
+<p><strong>ทางหลัก</strong> — จากเครื่องในวง <code>192.168.50.0/24</code> ที่ไม่ใช่ node:</p>
 <div class="cb"><pre><code class="language-bash">curl -I http://192.168.50.200
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>HTTP/1.1 200 OK</code> และหน้า nginx</p>
+<p><strong>ควรเห็น:</strong> <code>HTTP/1.1 200 OK</code> และ header ของ nginx</p>
+<p><strong>ทางสำรอง</strong> — ถ้ายังไม่มีเครื่องนั้น ให้ยิง <code>arping</code> จาก node ที่ <strong>ไม่ได้ถือ lease</strong>
+(<code>arping</code> คุยที่ชั้น L2 ตรง ๆ จึงไม่โดน eBPF ดัก)</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system get lease -o custom-columns=NAME:.metadata.name,HOLDER:.spec.holderIdentity | grep l2announce
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ได้ชื่อ node ที่ถือแล้ว ssh เข้า <strong>เครื่องอื่น</strong> แล้วยิง:</p>
+<div class="cb"><pre><code class="language-bash">IF=$(ip -br addr | awk '/192\.168\.50\./{print $1; exit}')
+arping -c3 -I "$IF" 192.168.50.200
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>Unicast reply from 192.168.50.200 [MAC]</code> ครบทั้ง 3 ครั้ง
+เทียบ MAC ให้ตรงกับ node ที่ถือ lease: <code>ssh &lt;node ที่ถือ&gt; &quot;ip -br link show ens192&quot;</code></p>
 <blockquote>
-<p>⚠️ <strong>ถ้า <code>EXTERNAL-IP</code> ขึ้นแต่ curl ไม่ติด = ARP ถูกบล็อก</strong>
-ตรวจจากเครื่องนอก cluster: <code>arp -n 192.168.50.200</code> ต้องเห็น MAC ของ worker ตัวใดตัวหนึ่ง
-ถ้าไม่เห็น ให้กลับไปคุยกับทีม network เรื่อง Dynamic ARP Inspection / port security</p>
-<p>ทางออกถ้าแก้ไม่ได้: เปลี่ยนไปใช้ BGP mode (ต้องให้ SE ตั้ง peer + เปิด <code>179/tcp</code>)
-หรือถอยไปใช้ NodePort แล้วให้ hardware LB ยิงเข้ามา</p>
+<p>ถ้าไม่มีคำสั่ง <code>arping</code>: <code>dnf install -y iputils</code></p>
+<p>ทางสำรองนี้ยืนยัน ARP ได้ แต่ยืนยันเส้นทางจากผู้ใช้จริงไม่ได้
+ต้องหาเครื่องในวงนั้นมาทดสอบซ้ำก่อนขึ้น production</p>
 </blockquote>
-<p><strong>ดูว่า node ไหนกำลังตอบ ARP:</strong></p>
-<div class="cb"><pre><code class="language-bash">kubectl -n kube-system get lease | grep l2announce
+</div><div class="sub" data-machine="all"><h3>7.4 ถ้าไม่ผ่าน — ไล่ทีละชั้น</h3>
+<p>ดูว่า agent ของ node ที่ถือ lease program ARP responder ลงไปจริงหรือยัง:</p>
+<div class="cb"><pre><code class="language-bash">NODE=k8s-worker03      # เปลี่ยนเป็นตัวที่ถือ lease จริง
+P=$(kubectl -n kube-system get pod -l k8s-app=cilium --field-selector spec.nodeName=$NODE -o name)
+kubectl -n kube-system exec $P -c cilium-agent -- cilium-dbg shell -- db/show l2-announce
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>ทดสอบ failover ของ LB IP</h3>
-<div class="cb"><pre><code class="language-bash"># หา node ที่ถือ IP อยู่ แล้ว drain มัน
-kubectl drain k8s-worker01 --ignore-daemonsets --delete-emptydir-data
-# จากเครื่องนอก cluster — curl ต้องกลับมาได้ภายในไม่กี่วินาที
-curl -I http://192.168.50.200
-kubectl uncordon k8s-worker01
+<p><strong>ควรเห็น:</strong> แถว <code>192.168.50.200</code> คู่กับชื่อ NIC จริงของ node นั้น</p>
+<table>
+<thead>
+<tr>
+<th>ผลที่ได้</th>
+<th>แปลว่า</th>
+<th>ไปที่</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ตารางว่าง</td>
+<td>ชื่อ NIC ไม่เข้า regex ใน <code>interfaces:</code> ของ policy</td>
+<td>หัวข้อ 2</td>
+</tr>
+<tr>
+<td>มีแถวครบ แต่ <code>arping</code> จากในวงเดียวกันไม่ตอบ</td>
+<td>switch บล็อก ARP</td>
+<td>ทีม network</td>
+</tr>
+<tr>
+<td>มีแถวครบ · <code>arping</code> ผ่าน · แต่ curl จากวงอื่นไม่ติด</td>
+<td>router ระหว่างวง</td>
+<td>ทีม network</td>
+</tr>
+</tbody>
+</table>
+<p>สองกรณีล่างเป็นเรื่องนอก cluster — <strong>อย่ารื้อ Cilium</strong> สิ่งที่ต้องขอทีม network คือ
+ยกเว้น <strong>Dynamic ARP Inspection · port security · IP source guard</strong> ให้ช่วง <code>192.168.50.200-209</code>
+เพราะ node ตอบ ARP แทน IP ที่ไม่ใช่ของตัวเอง ซึ่งหน้าตาเหมือน ARP spoofing เป๊ะ</p>
+<p>ถ้าองค์กรยกเว้นให้ไม่ได้: เปลี่ยนไปใช้ BGP mode (ให้ SE ตั้ง peer + เปิด <code>179/tcp</code>)
+หรือถอยไปใช้ NodePort แล้วให้ hardware LB ยิงเข้ามา</p>
+</div><div class="sub" data-machine="all"><h3>7.5 ทดสอบ failover ของ LB IP</h3>
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system get lease -o custom-columns=NAME:.metadata.name,HOLDER:.spec.holderIdentity | grep l2announce
+kubectl drain k8s-worker03 --ignore-daemonsets --delete-emptydir-data    # ตัวที่ถือ
+sleep 10
+curl -I http://192.168.50.200          # จากเครื่องทดสอบในวง — ต้องกลับมาได้
+kubectl uncordon k8s-worker03
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>เก็บกวาด:</strong></p>
-<div class="cb"><pre><code class="language-bash">kubectl delete svc lbtest &amp;&amp; kubectl delete deployment lbtest
+<p>ถ้าใช้ <code>arping</code> แทน ให้ดูที่ <strong>MAC ที่ตอบ</strong> — ต้องเปลี่ยนเป็นของ node อีกตัวหลัง drain
+ถ้า MAC เดิมยังตอบอยู่แปลว่า failover ไม่เกิดขึ้นจริง</p>
+<blockquote>
+<p><strong>อย่าลืม <code>uncordon</code></strong> — ลืมแล้วบทถัด ๆ ไปจะ schedule pod ไม่ลง
+และจะไปโผล่เป็นอาการอื่นที่ดูไม่เกี่ยวกันเลย</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3>7.6 เก็บกวาด</h3>
+<div class="cb"><pre><code class="language-bash">kubectl delete deploy,svc lbtest
+kubectl get nodes                      # ต้องไม่มี SchedulingDisabled ค้าง
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[ ] <code>kubectl get nodes</code> — ทั้ง 6 เครื่อง <strong><code>Ready</code></strong></li>
 <li>[ ] <code>cilium status</code> — Cilium, Operator, Hubble Relay ทั้งหมด <strong>OK</strong></li>
@@ -439,12 +573,13 @@ kubectl uncordon k8s-worker01
 <li>[ ] <code>cilium connectivity test</code> — <strong>ผ่านทุกข้อ</strong></li>
 <li>[ ] <code>firewall-cmd --reload</code> แล้ว pod ยังคุยกันได้ (จดผลลงบทที่ 13)</li>
 <li>[ ] LB pool <code>AVAILABLE = 10</code></li>
-<li>[ ] <strong>curl เข้า LoadBalancer IP จากเครื่องนอก cluster ได้</strong></li>
+<li>[ ] <strong>curl เข้า LoadBalancer IP จากเครื่องในวง <code>192.168.50.0/24</code> ที่ไม่ใช่ node ได้</strong>
+(ถ้าไม่มีเครื่องนั้น: <code>arping</code> จาก worker ตัวที่ไม่ได้ถือ lease ต้องได้ reply)</li>
 <li>[ ] drain node ที่ถือ IP แล้ว IP ย้ายเองและ curl กลับมาได้</li>
 <li>[ ] ลบ resource ทดสอบทิ้งหมดแล้ว</li>
 </ul>
 <p><strong>➡️ ต่อที่ <a href="06-verify.html">บทที่ 06 — ตรวจรับระบบ</a></strong></p>
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="04-create-cluster.html">← สร้าง Cluster</a><a class="pn" href="06-verify.html">ตรวจรับระบบ →</a></div>
   </main>
 </div>
@@ -585,6 +720,40 @@ kubectl uncordon k8s-worker01
       });
     });
   });
+
+  /* ---------- กรองตามเครื่อง ---------- */
+  /* จำไว้ข้ามบทด้วย เพราะคนหนึ่งรอบมักนั่งอยู่หน้าเครื่องเดียว
+     ถ้าบทถัดไปไม่มีเครื่องนั้น จะเด้งกลับเป็น "ทั้งหมด" เองไม่ให้หน้าว่างเปล่า */
+  var MKEY='myhr-k8s-machine';
+  var tabs=document.getElementById('mtabs');
+  if(tabs){
+    var avail=[].map.call(tabs.querySelectorAll('.mtab'), function(b){ return b.dataset.m; });
+    var applyM=function(m){
+      if(avail.indexOf(m)<0) m='all';
+      document.body.dataset.mfilter=m;
+      tabs.querySelectorAll('.mtab').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); });
+      document.querySelectorAll('.step').forEach(function(sec){
+        var list=(sec.dataset.machines||'all').split(' ');
+        /* ขั้นที่ไม่ได้ระบุเครื่องเลย = ใช้ได้ทุกเครื่อง ต้องเห็นเสมอ
+           ขั้นที่ระบุแล้ว ต้องมีเครื่องที่เลือกอยู่ในรายการถึงจะโชว์ */
+        var show = (m==='all') || (list.length===1 && list[0]==='all') || list.indexOf(m)>=0;
+        sec.classList.toggle('hide-m', !show);
+      });
+      document.querySelectorAll('.sub').forEach(function(d){
+        var dm=d.dataset.machine||'all';
+        d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
+      });
+      try{ localStorage.setItem(MKEY,m); }catch(e){}
+      paintFab();
+    };
+    tabs.addEventListener('click', function(e){
+      var b=e.target.closest('.mtab');
+      if(b){ applyM(b.dataset.m); }
+    });
+    var savedM='all';
+    try{ savedM=localStorage.getItem(MKEY)||'all'; }catch(e){}
+    applyM(savedM);
+  }
 
   /* ---------- เมนูบนจอเล็ก ---------- */
   var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');

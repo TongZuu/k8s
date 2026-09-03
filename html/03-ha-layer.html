@@ -170,13 +170,26 @@ img{max-width:100%}
   .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
   .wrap{margin-left:0}
 }
+
+/* ---------- แถบกรองตามเครื่อง ---------- */
+/* บทที่ join ทีละเครื่องมีขั้นของ master01 กับของเครื่องปลายทางสลับกัน
+   คนที่นั่งอยู่หน้าเครื่องไหนควรเห็นเฉพาะของเครื่องนั้นได้ ไม่ต้องเลื่อนข้าม */
+.mtabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 20px}
+.mtabs-l{color:var(--dim);font-size:13px;margin-right:2px}
+.mtab{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer;transition:all .15s}
+.mtab:hover{border-color:var(--accent);color:var(--accent)}
+.mtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.hide-m{display:none !important}
+.mnote{color:var(--dim);font-size:13px;margin:-10px 0 18px}
+
 </style>
 </head>
 <body data-chapter="03-ha-layer.md" data-total="9">
 
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
-  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item cur" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="9"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="16"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item cur" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="17"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
 </aside>
 
 <div class="wrap">
@@ -196,12 +209,13 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ทำไมบทนี้ห้ามข้าม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+    
+    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2>ทำไมบทนี้ห้ามข้าม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><code>controlPlaneEndpoint</code> ที่ใส่ตอน <code>kubeadm init</code> จะถูกฝังลงใน <strong>certificate ของทั้ง cluster</strong>
 และ kubeconfig ของทุก component แก้ทีหลังหมายถึงต้องออก certificate ใหม่ทั้งชุดและแก้ทุก node</p>
 <p>ถ้าไป <code>kubeadm init</code> โดย VIP ยังไม่ทำงาน <strong>คุณจะต้องรื้อ cluster ทำใหม่ทั้งหมด</strong></p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>ทำไมเป็น systemd ไม่ใช่ static pod</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2>ทำไมเป็น systemd ไม่ใช่ static pod</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>cluster เดิมรัน keepalived/HAProxy เป็น static pod ใน <code>/etc/kubernetes/manifests</code>
 ซึ่งมีปัญหาสองข้อ:</p>
 <ol>
@@ -218,7 +232,7 @@ img{max-width:100%}
 <p><strong>แต่ข้อ 5 (failover test) ยังต้องทำมือเสมอ</strong> — และแนะนำให้อ่านข้อ 1-3 ให้จบก่อนอยู่ดี
 เพราะเวลามีปัญหาคุณต้อง debug ที่ตัวเครื่อง ไม่ใช่ที่ playbook</p>
 </blockquote>
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>0 · โหลดตัวแปร</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>0 · โหลดตัวแปร</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 echo "VIP=$VIP:$VIP_PORT  IFACE=$NODE_IFACE  VRID=$VRRP_ROUTER_ID"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -239,7 +253,7 @@ echo "VIP=$VIP:$VIP_PORT  IFACE=$NODE_IFACE  VRID=$VRRP_ROUTER_ID"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>100% packet loss</code> — ถ้ามีคนตอบ <strong>ให้หยุด</strong> แล้วไปคุยกับทีม network</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>1 · ติดตั้ง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>1 · ติดตั้ง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">dnf install -y keepalived haproxy
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจว่าได้ package ของ OS ไม่ใช่ container image:</strong></p>
@@ -248,7 +262,7 @@ haproxy -v | head -1
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> keepalived 2.2.x และ HAProxy 3.x (เลขแน่นอนตามที่ OL 9.8 ให้มา — <strong>จดลง <code>versions.env</code></strong>)</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>2 · วาง HAProxy config</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>2 · วาง HAProxy config</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>ไฟล์เดียวกันทั้ง 3 เครื่อง ไม่มีอะไรต่างกัน:</p>
 <div class="cb"><pre><code class="language-bash">\cp -f /root/k8s/config/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg
 haproxy -c -f /etc/haproxy/haproxy.cfg
@@ -279,10 +293,12 @@ process เดิมยังถือไฟล์เก่าอยู่ แ�
 </blockquote>
 <blockquote>
 <p>ตอนนี้ backend ทั้ง 3 ตัวจะ <strong>DOWN</strong> หมด เพราะยังไม่มี kube-apiserver — <strong>ถูกต้องแล้ว</strong>
-ดูได้ด้วย <code>curl -s http://127.0.0.1:8404/stats</code></p>
+ดูได้ด้วย <code>curl -s &quot;http://127.0.0.1:8404/stats;csv&quot; | awk -F, '$1==&quot;kube-apiserver-backend&quot;{print $2, $18, &quot;check=&quot;$37}'</code>
+· ก่อนสร้าง cluster backend จะ <code>DOWN</code> ทั้งหมดเป็นเรื่องปกติ เพราะยังไม่มี apiserver ให้ตรวจ
+· หลังบทที่ 04 ต้องกลับมาดูอีกครั้งว่าขึ้น <code>UP check=L7OK</code> จริง</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>3 · วาง keepalived config</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2>3 · วาง keepalived config</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <blockquote>
 <p><strong>ระวัง: ไฟล์ต่างกันต่อเครื่อง</strong> สามบล็อกข้างล่างเป็นทางเลือก <strong>รันแค่บล็อกเดียว</strong>
 ให้ตรงกับเครื่องที่กำลังทำอยู่ — ถ้ารันทั้งสามบล็อกบนเครื่องเดียว จะเหลือของ master03
@@ -371,7 +387,7 @@ systemctl restart keepalived
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>(เหตุผลเดียวกับ HAProxy — <code>restart</code> ไม่ใช่ <code>enable --now</code> เพื่อให้ config ที่เพิ่งวางถูกโหลดแน่นอน)</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>4 · ตรวจว่า VIP ขึ้นที่ master01</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2>4 · ตรวจว่า VIP ขึ้นที่ master01</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>บน master01:</strong></p>
 <div class="cb"><pre><code class="language-bash">ip -4 addr show | grep "$VIP"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -409,12 +425,12 @@ systemctl restart keepalived
 <p>ดู log ด้วย: <code>journalctl -u keepalived -n 50 --no-pager</code></p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>5 · 🔴 ทดสอบ failover — ห้ามข้ามข้อนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2>5 · 🔴 ทดสอบ failover — ห้ามข้ามข้อนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>นี่คือขั้นตอนเดียวที่พิสูจน์ว่า HA ทำงานจริง ไม่ใช่แค่ config ดูถูก</p>
-<h3>เตรียม — เปิดหน้าต่างที่ 2 ค้างไว้ ping VIP ตลอดเวลา</h3>
+</div><div class="sub" data-machine="all"><h3>เตรียม — เปิดหน้าต่างที่ 2 ค้างไว้ ping VIP ตลอดเวลา</h3>
 <div class="cb"><pre><code class="language-bash">ping "$VIP" | ts '%H:%M:%.S' 2&gt;/dev/null || ping "$VIP"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>ทดสอบ 5.1 — หยุด keepalived บนเครื่องที่ถือ VIP</h3>
+</div><div class="sub" data-machine="all"><h3>ทดสอบ 5.1 — หยุด keepalived บนเครื่องที่ถือ VIP</h3>
 <p><strong>บน master01:</strong></p>
 <div class="cb"><pre><code class="language-bash">systemctl stop keepalived
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -426,7 +442,7 @@ systemctl restart keepalived
 <div class="cb"><pre><code class="language-bash">systemctl start keepalived    # บน master01
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> VIP กลับไปที่ master01 ภายในไม่กี่วินาที (เพราะ priority สูงกว่า)</p>
-<h3>ทดสอบ 5.2 — หยุด HAProxy (health check ต้องจับได้)</h3>
+</div><div class="sub" data-machine="all"><h3>ทดสอบ 5.2 — หยุด HAProxy (health check ต้องจับได้)</h3>
 <p><strong>บนเครื่องที่ถือ VIP อยู่:</strong></p>
 <div class="cb"><pre><code class="language-bash">systemctl stop haproxy
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -438,7 +454,7 @@ systemctl restart keepalived
 <p><strong>คืนค่า:</strong></p>
 <div class="cb"><pre><code class="language-bash">systemctl start haproxy
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>ทดสอบ 5.3 — reboot เครื่องที่ถือ VIP</h3>
+</div><div class="sub" data-machine="all"><h3>ทดสอบ 5.3 — reboot เครื่องที่ถือ VIP</h3>
 <div class="cb"><pre><code class="language-bash">reboot
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> VIP ย้ายทันที · หลังเครื่องกลับมา keepalived และ HAProxy ขึ้นเองโดยไม่ต้องสั่ง
@@ -448,8 +464,47 @@ systemctl restart keepalived
 systemctl is-active  keepalived haproxy
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>enabled</code> ทั้งคู่ และ <code>active</code> ทั้งคู่</p>
+</div><div class="sub" data-machine="all"><h3>🔴 ทดสอบ 5.4 — พิสูจน์ด้วย <code>kubectl</code> จริง (ทำได้หลัง<a href="04-create-cluster.html">บทที่ 04</a> เท่านั้น)</h3>
+<p>ข้อ 5.1-5.3 ทำได้ตั้งแต่ยังไม่มี cluster แต่มันพิสูจน์ได้แค่ว่า <strong>keepalived ย้าย IP เป็น</strong>
+ยังไม่ได้พิสูจน์ว่า <strong>ย้ายแล้วใช้งานต่อได้</strong> ซึ่งเป็นสิ่งที่เราต้องการจริง ๆ</p>
+<p>เหตุผลอยู่ใน <a href="../config/keepalived/check_apiserver.sh"><code>check_apiserver.sh</code></a> ด่าน 2 —
+ตอนยังไม่มี apiserver ฟังที่ <code>:6443</code> สคริปต์จะ <code>exit 0</code> ออกไปเลย <strong>ด่าน 3
+(ยิง <code>/healthz</code> ผ่าน VIP) จึงไม่เคยถูกรันเลยสักครั้ง</strong> จนกว่าจะมี cluster จริง</p>
+<p><strong>เงื่อนไขก่อนเริ่ม — ต้องผ่านทั้งหมด ไม่งั้นการทดสอบจะ &quot;ผ่าน&quot; แบบหลอก:</strong></p>
+<div class="cb"><pre><code class="language-bash">for ip in 101 102 103; do
+  echo -n "master$ip: "
+  ssh root@192.168.50.$ip 'curl -s "http://127.0.0.1:8404/stats;csv"'     | awk -F, '$1=="kube-apiserver-backend"{printf "%s=%s ", $2, $37}'
+  echo
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>L7OK</code> ครบ 3 ตัวในทุกเครื่อง (9 ช่อง) — ถ้าเครื่องไหนได้ <code>L6RSP</code> ให้แก้ก่อน
+(<a href="13-troubleshooting.html">บทที่ 13 ข้อ 1.3b</a>) เพราะ VIP อาจย้ายไปเครื่องที่ส่ง traffic ต่อไม่ได้
+ซึ่งแย่กว่าไม่ย้ายเลย</p>
+<p><strong>หน้าต่างที่ 2 — วน <code>kubectl</code> ผ่าน VIP ค้างไว้ตลอดการทดสอบ:</strong></p>
+<div class="cb"><pre><code class="language-bash">while true; do
+  printf '%s ' "$(date +%H:%M:%S)"
+  kubectl get --raw='/healthz' 2&gt;&amp;1 | tr -d '
+'
+  echo
+  sleep 1
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>หน้าต่างที่ 1 — หยุด keepalived บนเครื่องที่ถือ VIP:</strong></p>
+<div class="cb"><pre><code class="language-bash">systemctl stop keepalived
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>เกณฑ์ผ่านที่แท้จริง:</strong> หน้าต่างที่ 2 ขาดได้ไม่เกิน <strong>2-3 บรรทัด</strong> แล้วกลับมาเป็น <code>ok</code> เอง
+โดยไม่ต้องแตะ kubeconfig หรือรีสตาร์ตอะไรทั้งสิ้น</p>
+<p><strong>คืนค่า แล้วยืนยันว่า VIP กลับบ้าน:</strong></p>
+<div class="cb"><pre><code class="language-bash">systemctl start keepalived
+sleep 5; for ip in 101 102 103; do echo -n "master$ip: "; ssh root@192.168.50.$ip "ip -4 addr show | grep -c 192.168.50.100"; done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>1</code> ที่ master01 เครื่องเดียว · อีกสองเครื่องเป็น <code>0</code></p>
+<blockquote>
+<p><strong>จดผลลงบทที่ 13 ทุกครั้ง</strong> — เวลาที่ VIP ใช้ย้ายจริงกี่วินาที คือตัวเลขที่ต้องใช้
+ตอนตอบทีมว่า downtime ของ control plane ตอน failover เท่าไหร่ · เดาไม่ได้ ต้องวัด</p>
+</blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[ ] VIP <code>192.168.50.100</code> ขึ้นที่ <strong>เครื่องเดียวเท่านั้น</strong></li>
 <li>[ ] <code>ping $VIP</code> ได้จากทุก node รวมทั้ง worker</li>
@@ -458,13 +513,15 @@ systemctl is-active  keepalived haproxy
 <li>[ ] <strong>failover 5.2 ผ่าน</strong> — หยุด HAProxy แล้ว VIP ย้ายเองภายใน ~10 วินาที</li>
 <li>[ ] <strong>failover 5.3 ผ่าน</strong> — reboot แล้ว service ขึ้นเอง</li>
 <li>[ ] VIP กลับมาอยู่ที่ master01 หลังทดสอบเสร็จ</li>
+<li>[ ] <strong>failover 5.4 ผ่าน</strong> — 🔴 ทำหลังบทที่ 04 · <code>kubectl</code> ผ่าน VIP ขาดไม่เกิน 2-3 วินาทีตอนย้าย
+(ข้อ 5.1-5.3 ทำก่อนมี cluster ได้ แต่พิสูจน์แค่ว่า IP ย้ายเป็น ไม่ได้พิสูจน์ว่าใช้งานต่อได้)</li>
 </ul>
 <blockquote>
 <p><strong>จดเวลาที่ใช้ในการ failover จริงลงคู่มือ</strong> เป็น baseline
 ถ้าวันหนึ่ง failover ช้ากว่านี้มาก แปลว่ามีอะไรเปลี่ยนไป</p>
 </blockquote>
 <p><strong>➡️ ต่อที่ <a href="04-create-cluster.html">บทที่ 04 — สร้าง Cluster</a></strong></p>
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="02-container-runtime.html">← Container Runtime</a><a class="pn" href="04-create-cluster.html">สร้าง Cluster →</a></div>
   </main>
 </div>
@@ -605,6 +662,40 @@ systemctl is-active  keepalived haproxy
       });
     });
   });
+
+  /* ---------- กรองตามเครื่อง ---------- */
+  /* จำไว้ข้ามบทด้วย เพราะคนหนึ่งรอบมักนั่งอยู่หน้าเครื่องเดียว
+     ถ้าบทถัดไปไม่มีเครื่องนั้น จะเด้งกลับเป็น "ทั้งหมด" เองไม่ให้หน้าว่างเปล่า */
+  var MKEY='myhr-k8s-machine';
+  var tabs=document.getElementById('mtabs');
+  if(tabs){
+    var avail=[].map.call(tabs.querySelectorAll('.mtab'), function(b){ return b.dataset.m; });
+    var applyM=function(m){
+      if(avail.indexOf(m)<0) m='all';
+      document.body.dataset.mfilter=m;
+      tabs.querySelectorAll('.mtab').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); });
+      document.querySelectorAll('.step').forEach(function(sec){
+        var list=(sec.dataset.machines||'all').split(' ');
+        /* ขั้นที่ไม่ได้ระบุเครื่องเลย = ใช้ได้ทุกเครื่อง ต้องเห็นเสมอ
+           ขั้นที่ระบุแล้ว ต้องมีเครื่องที่เลือกอยู่ในรายการถึงจะโชว์ */
+        var show = (m==='all') || (list.length===1 && list[0]==='all') || list.indexOf(m)>=0;
+        sec.classList.toggle('hide-m', !show);
+      });
+      document.querySelectorAll('.sub').forEach(function(d){
+        var dm=d.dataset.machine||'all';
+        d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
+      });
+      try{ localStorage.setItem(MKEY,m); }catch(e){}
+      paintFab();
+    };
+    tabs.addEventListener('click', function(e){
+      var b=e.target.closest('.mtab');
+      if(b){ applyM(b.dataset.m); }
+    });
+    var savedM='all';
+    try{ savedM=localStorage.getItem(MKEY)||'all'; }catch(e){}
+    applyM(savedM);
+  }
 
   /* ---------- เมนูบนจอเล็ก ---------- */
   var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');

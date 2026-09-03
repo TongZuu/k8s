@@ -170,13 +170,26 @@ img{max-width:100%}
   .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
   .wrap{margin-left:0}
 }
+
+/* ---------- แถบกรองตามเครื่อง ---------- */
+/* บทที่ join ทีละเครื่องมีขั้นของ master01 กับของเครื่องปลายทางสลับกัน
+   คนที่นั่งอยู่หน้าเครื่องไหนควรเห็นเฉพาะของเครื่องนั้นได้ ไม่ต้องเลื่อนข้าม */
+.mtabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 20px}
+.mtabs-l{color:var(--dim);font-size:13px;margin-right:2px}
+.mtab{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer;transition:all .15s}
+.mtab:hover{border-color:var(--accent);color:var(--accent)}
+.mtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.hide-m{display:none !important}
+.mnote{color:var(--dim);font-size:13px;margin:-10px 0 18px}
+
 </style>
 </head>
-<body data-chapter="09-observability.md" data-total="9">
+<body data-chapter="09-observability.md" data-total="10">
 
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
-  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item cur" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="9"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="16"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item cur" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="17"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
 </aside>
 
 <div class="wrap">
@@ -187,7 +200,7 @@ img{max-width:100%}
       <p class="sub">รันที่: 👑 master01 · เวลาที่ใช้: ~45 นาที · ต้องผ่านบทที่ 08 — PV ทั้ง 3 ตัวต้องเป็น Available</p>
     </div>
     <div class="top-p">
-      <span id="pcount">0/9</span>
+      <span id="pcount">0/10</span>
       <div class="bar"><i id="pbar"></i></div>
       <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
     </div>
@@ -196,14 +209,15 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ทำไมบทนี้จำเป็น ไม่ใช่ของฟุ่มเฟือย</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+    
+    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2>ทำไมบทนี้จำเป็น ไม่ใช่ของฟุ่มเฟือย</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>cluster เดิมไม่มี metric ย้อนหลังเลย ทำให้ตอบคำถาม <strong>&quot;เมื่อคืนตอนตีสามเกิดอะไรขึ้น&quot;</strong>
 ไม่ได้ และเมื่อตอบไม่ได้ก็แก้ที่ต้นเหตุไม่ได้ — วนกลับมาเจอปัญหาเดิมซ้ำ</p>
 <p><strong>และสำหรับ cluster ชุดนี้มีเหตุผลเพิ่มอีกข้อ:</strong> เราไม่มี Ksplice จึงต้อง drain node
 ทุก 1-2 เดือน ถ้าไม่มี alert เตือนว่า Deployment ไหนไม่มี PDB หรือ capacity ใกล้เต็ม
 วันที่ patch จริงจะกลายเป็นวันที่ service ล่ม</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · metrics-server</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2>1 · metrics-server</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>ตัวนี้ไม่เก็บข้อมูลย้อนหลัง แค่ป้อนตัวเลขปัจจุบันให้ <code>kubectl top</code> และ HPA
 <strong>ไม่ต้องใช้ storage</strong></p>
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
@@ -231,7 +245,7 @@ certificate ของ kubelet ไม่ผ่านการตรวจ ซึ�
 <strong>แต่ให้ดูสาเหตุจริงก่อน อย่าเติม flag นี้แบบไม่คิด</strong></p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · kube-prometheus-stack</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>2 · kube-prometheus-stack</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>ชุดนี้รวม Prometheus + Alertmanager + Grafana + node-exporter + kube-state-metrics
 มาให้ในครั้งเดียว</p>
 <div class="cb"><pre><code class="language-bash">helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
@@ -244,14 +258,26 @@ helm install monitoring prometheus-community/kube-prometheus-stack \
 
 kubectl -n monitoring rollout status statefulset/prometheus-monitoring-kube-prometheus-prometheus --timeout=10m
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ตรวจ PV ผูกแล้ว:</strong></p>
-<div class="cb"><pre><code class="language-bash">kubectl get pv
-kubectl -n monitoring get pvc
+<p><strong>ตรวจ PV ผูกถูกตัว — ต้องดูคู่ ไม่ใช่ดูแค่คำว่า <code>Bound</code>:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring get pvc -o custom-columns=NAME:.metadata.name,VOL:.spec.volumeName,SIZE:.spec.resources.requests.storage
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>prometheus-data</code> และ <code>grafana-data</code> เปลี่ยนจาก <code>Available</code> เป็น <strong><code>Bound</code></strong></p>
+<p><strong>ควรเห็น:</strong> PVC ของ Prometheus ผูกกับ <code>prometheus-data</code> และของ Grafana ผูกกับ <code>grafana-data</code></p>
 <blockquote>
-<p>ถ้า PVC ค้าง <code>Pending</code> ให้ดู <code>kubectl -n monitoring describe pvc &lt;ชื่อ&gt;</code>
-สาเหตุที่พบบ่อยคือขนาดที่ขอไม่ตรงกับ PV หรือ <code>storageClassName</code> ไม่ตรง</p>
+<p>🔴 <strong>ดูแค่ <code>Bound</code> ไม่พอ</strong> — ก่อนที่ PV จะมี <code>claimRef</code> ทุกก้อน PVC สามารถขึ้น <code>Bound</code> ครบ
+ได้ทั้งที่<strong>ผูกผิดก้อน</strong> (Grafana ไปนอนบน PV 150Gi ของ Prometheus) จึงต้องดูคอลัมน์ <code>VOL</code> เสมอ</p>
+<p>ถ้า PVC ค้าง <code>Pending</code> ให้ดู <code>kubectl -n monitoring describe pvc &lt;ชื่อ&gt;</code> —
+เมื่อมี <code>claimRef</code> แล้ว สาเหตุที่เหลืออยู่คือ<strong>ชื่อ PVC ไม่ตรงกับที่จองไว้</strong> ใน
+<code>config/storage/monitoring-pv.yaml</code> ให้เอาชื่อจริงจากคำสั่งข้างบนไปแก้ในไฟล์นั้น</p>
+</blockquote>
+<p><strong>ตรวจว่า Alertmanager แยกเครื่องกันจริง:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring get pod -l app.kubernetes.io/name=alertmanager -o wide
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> 2 pod อยู่<strong>คนละ node</strong> — ถ้าอยู่เครื่องเดียวกันแปลว่า <code>podAntiAffinity</code> ไม่ทำงาน
+และ drain เครื่องเดียวจะดับ Alertmanager ทั้งคู่</p>
+<blockquote>
+<p><strong>Alertmanager ไม่มี PV โดยตั้งใจ</strong> มันเก็บแค่ silence กับสถานะการส่ง และ replica
+คุยกันผ่าน gossip อยู่แล้ว ตัวที่ restart จะ sync กลับจาก peer เอง — ถ้าให้มันใช้
+local PV จะถูกตรึงไว้ที่ worker03 ทั้งคู่ ซึ่งทำลายเหตุผลที่ตั้ง <code>replicas: 2</code> ตั้งแต่แรก</p>
 </blockquote>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring get pods
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -264,7 +290,7 @@ kill %1
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ทุกบรรทัดเป็น <code>up</code> — ถ้ามี <code>down</code> ให้ไล่ดูทีละตัวก่อนไปต่อ</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · Loki + Alloy (รวม log)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>3 · Loki + Alloy (รวม log)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>pod ตายแล้ว log หายไปด้วยถ้าไม่มีที่รวม</p>
 <div class="cb"><pre><code class="language-bash">helm repo add grafana https://grafana.github.io/helm-charts &amp;&amp; helm repo update
 
@@ -285,17 +311,35 @@ kubectl -n monitoring get pods -l app.kubernetes.io/name=loki
 kubectl -n monitoring get ds -l app.kubernetes.io/name=alloy
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> Loki <code>Running</code> และ Alloy DaemonSet <code>6/6</code></p>
+</div><div class="sub" data-machine="all"><h3>🔴 ตรวจว่า Alloy ไม่ได้เก็บ log ซ้ำ — ห้ามข้ามข้อนี้</h3>
+<p>Alloy รันเป็น DaemonSet 6 ตัว ถ้า <code>discovery.kubernetes</code> ไม่กรอง node <strong>ทุกตัวจะเก็บ log
+ของ pod ทั้ง cluster เหมือนกันหมด</strong> ผลคือทุกบรรทัดเข้า Loki 6 ครั้ง — PV หมดเร็วกว่าที่
+คำนวณไว้ 6 เท่า ชนเพดาน ingestion เร็วกว่า 6 เท่า และหน้าจอ log อ่านไม่รู้เรื่อง</p>
+<p><code>config/monitoring/alloy-values.yaml</code> กรองไว้แล้วด้วย <code>selectors</code> ที่อ่านค่าจาก <code>NODE_NAME</code>
+แต่ต้องยืนยันว่ามันถูกส่งเข้าไปจริง:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring get ds alloy -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="NODE_NAME")]}'; echo
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> JSON ที่มี <code>fieldPath: spec.nodeName</code> — ถ้าได้ค่าว่าง แปลว่า <code>extraEnv</code> ไม่ได้ถูก
+apply แล้ว <code>selectors</code> จะกลายเป็น <code>spec.nodeName=</code> ซึ่งไม่ match อะไรเลย → <strong>ไม่มี log เข้า Loki
+แม้แต่บรรทัดเดียว</strong> (จะดังผ่าน alert <code>LokiNotReceivingLogs</code> ในหัวข้อถัดไป)</p>
+<p><strong>แล้วยืนยันด้วยตาที่ Grafana</strong> — เลือก pod ที่ log น้อย ๆ แล้วดูว่าบรรทัดเดียวกัน
+โผล่ซ้ำหรือไม่ ต้องเห็นครั้งเดียวต่อหนึ่ง event:</p>
+<div class="cb"><pre><code class="language-text">{namespace="kube-system", container="cilium-agent"}
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · เข้า Grafana</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>4 · เข้า Grafana</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring get secret monitoring-grafana \
   -o jsonpath='{.data.admin-password}' | base64 -d; echo
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>เปิดผ่าน Gateway</strong> (แนะนำ — จะได้ไม่ต้อง port-forward ทุกครั้ง):</p>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/monitoring/grafana-route.yaml
 GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
-curl -I --cacert /root/k8s/myhr-root-ca.crt \
-     --resolve "grafana.myhr.co.th:443:${GW_IP}" https://grafana.myhr.co.th
+curl -I --resolve "grafana.myhr.co.th:443:${GW_IP}" https://grafana.myhr.co.th
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>ถ้าบทที่ 07 เลือก <strong>ทาง B (internal CA)</strong> ให้เพิ่ม <code>--cacert /root/k8s/myhr-root-ca.crt</code>
+ในคำสั่ง curl ข้างบน — ทาง A (public cert) ไม่ต้อง เพราะเครื่องเชื่อ CA นั้นอยู่แล้ว</p>
+</blockquote>
 <p><strong>เปลี่ยนรหัส admin ทันทีหลังเข้าครั้งแรก</strong> และเก็บลงที่เก็บ secret ไม่ใช่ในไฟล์นี้</p>
 <p><strong>ตรวจ dashboard ที่ควรใช้ได้เลย:</strong></p>
 <ul>
@@ -308,8 +352,8 @@ curl -I --cacert /root/k8s/myhr-root-ca.crt \
 <div class="cb"><pre><code class="language-text">{namespace="kube-system"} |= "error"
 </code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · 🔴 Alert ขั้นต่ำที่ต้องมี</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<p>chart มาพร้อม alert ของ Kubernetes พื้นฐานแล้ว แต่ <strong>ขาด 4 ข้อที่เฉพาะกับ cluster ชุดนี้</strong>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2>5 · 🔴 Alert ขั้นต่ำที่ต้องมี</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>chart มาพร้อม alert ของ Kubernetes พื้นฐานแล้ว แต่ <strong>ขาดอีก 10 ข้อที่เฉพาะกับ cluster ชุดนี้</strong>
 ซึ่งมาจากข้อจำกัดที่เราเลือกไว้เอง</p>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/monitoring/myhr-alerts.yaml
 kubectl -n monitoring get prometheusrule
@@ -327,6 +371,10 @@ kubectl -n monitoring get prometheusrule
 <td>ไม่มี GitOps มาบังคับมาตรฐาน · Deployment ที่ไม่มี PDB จะทำ drain ล่ม</td>
 </tr>
 <tr>
+<td><strong><code>DeploymentSingleReplica</code></strong></td>
+<td>PDB ช่วยไม่ได้ถ้ามี replica เดียว</td>
+</tr>
+<tr>
 <td><strong><code>ClusterCapacityNearNPlusOneLimit</code></strong></td>
 <td>requests รวมเกิน 90% ของ 32 vCPU / 96 GB → patch kernel ไม่ได้</td>
 </tr>
@@ -338,8 +386,32 @@ kubectl -n monitoring get prometheusrule
 <td><strong><code>KubeCertificateExpiringSoon</code></strong></td>
 <td>cert หมดอายุคือสาเหตุที่ cluster เดิมเดินต่อไม่ได้</td>
 </tr>
+<tr>
+<td><strong><code>CiliumAgentDown</code></strong></td>
+<td>Cilium ทำทั้ง CNI + kube-proxy + LB-IPAM และไม่มีตัวสำรอง</td>
+</tr>
+<tr>
+<td><strong><code>MonitoringDiskFillingUp</code></strong></td>
+<td><code>/var/lib/monitoring</code> อยู่บน root ของ worker03 · เต็ม = node ตายทั้งเครื่อง</td>
+</tr>
+<tr>
+<td>🔴 <strong><code>LokiDiscardingLogs</code></strong></td>
+<td>เพดาน ingestion ทำงานแล้ว log จะหาย<strong>เงียบ ๆ</strong> ถ้าไม่มีข้อนี้ไม่มีใครรู้</td>
+</tr>
+<tr>
+<td>🔴 <strong><code>LokiNotReceivingLogs</code></strong></td>
+<td>ระบบเก็บ log ตายจะดู &quot;เงียบสงบ&quot; เหมือนไม่มีอะไรผิด</td>
+</tr>
+<tr>
+<td>🔴 <strong><code>AlloyDaemonSetIncomplete</code></strong></td>
+<td>node ที่ไม่มี Alloy = log ของเครื่องนั้นหายโดย Loki ยังดูปกติ</td>
+</tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>3 ข้อล่างมาจากธรรมชาติของระบบ log:</strong> ความผิดพลาดของมันไม่ทำให้อะไรพัง
+มันแค่ทำให้ข้อมูล<strong>หายไปเฉย ๆ</strong> ซึ่งจะรู้ตัวก็ตอนที่ต้องใช้ — คือตอน incident พอดี</p>
+</blockquote>
 <p>พร้อมของมาตรฐานที่ต้องเปิดด้วย: <code>KubeNodeNotReady</code>, <code>KubePodCrashLooping</code>,
 <code>etcdInsufficientMembers</code>, <code>NodeFilesystemAlmostOutOfSpace</code>, <code>CiliumAgentDown</code></p>
 <p><strong>ตรวจว่า rule โหลดแล้ว:</strong></p>
@@ -349,7 +421,7 @@ curl -s 'http://localhost:9090/api/v1/rules' | jq -r '.data.groups[].name' | sor
 kill %1
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ตั้งปลายทางของ alert</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2>6 · ตั้งปลายทางของ alert</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>alert ที่ไม่มีใครเห็น = ไม่มี alert</strong> — ข้อนี้ห้ามข้าม</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring edit secret alertmanager-monitoring-kube-prometheus-alertmanager
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -366,7 +438,7 @@ kill %1
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ต้องเห็นข้อความจริงเข้ามาที่ปลายทาง</strong> ถ้าไม่เข้าให้แก้จนกว่าจะเข้า</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>7 · กันไม่ให้ monitoring กิน disk จนเต็ม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2>7 · กันไม่ให้ monitoring กิน disk จนเต็ม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><code>/var/lib/monitoring</code> อยู่บน <strong>root partition</strong> ร่วมกับ log และ OS
 ถ้า Prometheus โตจนเต็ม node จะกลายเป็น <code>NotReady</code> ทั้งเครื่อง</p>
 <p>ค่า retention ที่ตั้งไว้ใน values:</p>
@@ -398,19 +470,140 @@ kill %1
 <div class="cb"><pre><code class="language-bash">ssh root@192.168.50.106 'du -sh /var/lib/monitoring/* &amp;&amp; df -h /'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2>8 · log ของ application — ใช้ยังไง และต้องบอกทีม dev ว่าอะไร</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3>เส้นทางของ log</h3>
+<div class="cb"><pre><code class="language-text">  app เขียน stdout/stderr
+        ▼
+  containerd เขียนไฟล์ /var/log/pods/&lt;ns&gt;_&lt;pod&gt;_&lt;uid&gt;/&lt;container&gt;/0.log
+        │   ← อยู่บน root partition ไม่ใช่ partition /var/lib/containerd ที่แยกไว้
+        │   ← kubelet หมุนไฟล์ให้ 10Mi × 5 = 50Mi ต่อ container (ตั้งใน kubeadm-config.yaml)
+        ▼
+  Alloy (DaemonSet 6 ตัว · เก็บเฉพาะ pod บน node ตัวเอง)
+        ▼
+  Loki (worker03 · local PV 50Gi · เก็บ 14 วัน)
+        ▼
+  Grafana
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+</div><div class="sub" data-machine="all"><h3>ดู log ที่ไหน</h3>
+<table>
+<thead>
+<tr>
+<th>เครื่องมือ</th>
+<th>เหมาะกับ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Grafana → Explore</strong></td>
+<td>เทียบเท่า Discover ของ Kibana · มีอยู่แล้วไม่ต้องลงอะไร</td>
+</tr>
+<tr>
+<td><strong>Grafana → Drilldown → Logs</strong></td>
+<td>คลิกอย่างเดียวไม่ต้องพิมพ์ query — ใกล้ Kibana ที่สุด · ดูว่ามีในเมนูซ้ายหรือยัง</td>
+</tr>
+<tr>
+<td><strong><code>stern</code></strong></td>
+<td>ตาม log สด ๆ หลาย pod พร้อมกันบน terminal ตอน debug</td>
+</tr>
+</tbody>
+</table>
+</div><div class="sub" data-machine="all"><h3>ตรวจว่าตัวกรอง noise ไม่ได้ตัดของดีทิ้ง</h3>
+<p><code>alloy-values.yaml</code> มี <code>stage.drop</code> ที่ทิ้ง log ของ healthcheck ที่สำเร็จ — <strong>ของที่ทิ้งแล้ว
+หายถาวร ไม่มีทางกู้</strong> จึงต้องดูเป็นระยะว่ามันทิ้งเยอะผิดปกติหรือเปล่า</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward ds/alloy 12345:12345 &amp;
+sleep 3
+curl -s http://localhost:12345/metrics | grep loki_process_dropped_lines_total
+kill %1
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ตัวเลขของ <code>reason=&quot;healthcheck_noise&quot;</code> โตช้า ๆ สม่ำเสมอ ถ้าโตพุ่งกว่าปริมาณ
+healthcheck ที่ควรจะมี แปลว่า regex กว้างเกินไปและกำลังกิน log จริงอยู่</p>
+<blockquote>
+<p>regex ตัวนี้บังคับครบ 4 อย่าง: ต้องมี method · path ต้องมี <code>/</code> นำหน้า · status ต้องอยู่
+ติดหลัง request · และไม่รับคำว่า <code>OK</code> เป็นตัวชี้วัด ทั้งหมดนี้เพื่อกันไม่ให้บรรทัด error
+อย่าง <code>payment health degraded, retry in 200ms</code> โดนทิ้งไปโดยไม่มีใครรู้</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3>🔴 Loki ไม่ใช่ Elasticsearch — ข้อนี้ต้องเข้าใจก่อนใช้</h3>
+<p><strong>Loki index เฉพาะ label ไม่ได้ index เนื้อหา</strong> จึง<strong>ค้นคำมั่ว ๆ ทั้งระบบไม่ได้</strong>
+ต้องระบุ label ก่อนเสมอ แล้วมันจะไปไล่อ่านเนื้อหาให้ทีหลัง</p>
+<p>label ที่มีในระบบนี้: <code>namespace</code> <code>pod</code> <code>container</code> <code>app</code> <code>node</code></p>
+<table>
+<thead>
+<tr>
+<th>อยากทำแบบ Kibana</th>
+<th>พิมพ์แบบนี้</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ดู log ทั้ง namespace</td>
+<td><code>{namespace=&quot;myhr-prod&quot;}</code></td>
+</tr>
+<tr>
+<td>ค้นคำว่า error</td>
+<td><code>{namespace=&quot;myhr-prod&quot;} |= &quot;error&quot;</code></td>
+</tr>
+<tr>
+<td>ตัดคำที่ไม่อยากเห็น</td>
+<td><code>{namespace=&quot;myhr-prod&quot;} != &quot;healthz&quot;</code></td>
+</tr>
+<tr>
+<td>หลายคำ / regex</td>
+<td><code>{namespace=&quot;myhr-prod&quot;} |~ &quot;(?i)timeout|refused&quot;</code></td>
+</tr>
+<tr>
+<td><code>status:500</code> (ต้อง log เป็น JSON)</td>
+<td><code>{namespace=&quot;myhr-prod&quot;} | json | status=500</code></td>
+</tr>
+<tr>
+<td>กราฟจำนวน error ต่อ app</td>
+<td><code>sum by (app) (rate({namespace=&quot;myhr-prod&quot;} |= &quot;error&quot; [5m]))</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>ห้ามเพิ่ม label ที่มีค่าไม่ซ้ำ</strong> (<code>trace_id</code>, <code>request_id</code>, <code>user_id</code>) ลงใน
+<code>alloy-values.yaml</code> เด็ดขาด — นั่นคือวิธีฆ่า Loki ที่เร็วที่สุด ค่าพวกนั้นให้อยู่ใน
+<strong>เนื้อ log</strong> แล้วค้นด้วย <code>|=</code> หรือ <code>| json</code> เอา</p>
+</blockquote>
+<p><strong>ถ้าอยากให้ dev ไม่ต้องเรียน LogQL เลย</strong> — ทำ dashboard 1 หน้าที่มี dropdown เลือก
+<code>namespace</code> / <code>app</code> แล้วมี panel เดียวเป็น Logs ใช้เวลาราว 30 นาที และได้ผลกับทีม
+มากกว่าการสอน LogQL ทั้งทีม</p>
+</div><div class="sub" data-machine="all"><h3>🔴 กฎ 3 ข้อที่ต้องประกาศให้ทีม dev รู้ตั้งแต่วันแรก</h3>
+<p>เหมือนเรื่อง &quot;ไม่มี dynamic storage&quot; ในบทที่ 08 — ต้องเป็นบทสนทนาที่วางแผนไว้
+ไม่ใช่เซอร์ไพรส์ตอนใกล้ deadline</p>
+<p><strong>1 · log ต้องออก <code>stdout</code>/<code>stderr</code> เท่านั้น ห้ามเขียนลงไฟล์ในคอนเทนเนอร์</strong>
+ถ้าเขียนลงไฟล์ Alloy จะมองไม่เห็น (dev นึกว่ามี log แต่ไม่มี) แถม<strong>ไม่มีใครหมุนไฟล์ให้</strong>
+มันจะโตไปเรื่อย ๆ บน writable layer จนกิน <code>/var/lib/containerd</code> (partition 100 GB)
+แล้วทั้ง node ดึง image ไม่ได้</p>
+<p><strong>2 · log เป็น JSON บรรทัดเดียวต่อหนึ่ง event</strong>
+ไม่งั้น stack trace หลายบรรทัดจะกลายเป็นคนละ entry และใช้ <code>| json</code> ไม่ได้</p>
+<p><strong>3 · มีเพดาน 10 MB/s ทั้ง cluster และ 3 MB/s ต่อ stream</strong>
+app ที่ log ทุก request จะกินโควตาของทีมอื่นจนหมด แล้ว <strong>log ของทุกคนจะเริ่มหาย</strong>
+เพดานนี้อยู่ใน <code>loki-values.yaml</code> และเวลามันทำงานจะดังผ่าน <code>LokiDiscardingLogs</code></p>
+</div><div class="sub" data-machine="all"><h3>ทางเลือก: เปลี่ยนไปเก็บ log แบบอ่านไฟล์</h3>
+<p>ตอนนี้ใช้ <code>loki.source.kubernetes</code> ซึ่งดึง log <strong>ผ่าน Kubernetes API</strong> — ตั้งค่าง่ายและ
+พอสำหรับขนาดนี้ แต่ทุก stream วิ่งผ่าน apiserver</p>
+<p>ถ้าวันหนึ่ง pod เยอะขึ้นมากจน apiserver เริ่มหนัก ให้เปลี่ยนไปเป็น <code>local.file_match</code> +
+<code>loki.source.file</code> อ่านไฟล์ใน <code>/var/log/pods</code> ตรง ๆ (ซึ่ง mount ไว้ให้แล้วใน values)
+พร้อมใส่ <code>stage.cri</code> มาแกะ format — ไม่กวน apiserver เลย
+<strong>อย่าเปลี่ยนบน production โดยไม่ทดสอบก่อน</strong> เพราะถ้า path pattern ผิด log จะหายเงียบ ๆ</p>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[ ] <code>kubectl top nodes</code> ขึ้นตัวเลขครบ 6 เครื่อง</li>
 <li>[ ] PV <code>prometheus-data</code>, <code>grafana-data</code>, <code>loki-data</code> เป็น <strong><code>Bound</code></strong></li>
+<li>[ ] 🔴 <strong>ตรวจคอลัมน์ <code>VOL</code> แล้วว่า PVC แต่ละตัวผูก PV ถูกก้อน</strong> ไม่ใช่ดูแค่คำว่า <code>Bound</code></li>
+<li>[ ] Alertmanager 2 pod อยู่ <strong>คนละ node</strong> (<code>-o wide</code>)</li>
 <li>[ ] <code>node-exporter</code> ครบ 6 ตัว · Prometheus target ทุกตัว <code>up</code></li>
 <li>[ ] Alloy DaemonSet <code>6/6</code> และค้น log ใน Grafana เจอ</li>
+<li>[ ] 🔴 <strong>log ไม่ซ้ำ</strong> — บรรทัดเดียวกันโผล่ครั้งเดียว ไม่ใช่ 6 ครั้ง</li>
 <li>[ ] เข้า Grafana ผ่าน <code>https://grafana.myhr.co.th</code> ได้และ<strong>เปลี่ยนรหัส admin แล้ว</strong></li>
-<li>[ ] PrometheusRule ของ MyHR โหลดแล้วครบ 4 ข้อ</li>
+<li>[ ] PrometheusRule ของ MyHR โหลดแล้วครบ 10 ข้อ</li>
+<li>[ ] <strong>ประกาศกฎ log 3 ข้อให้ทีม dev รู้แล้ว</strong> (stdout เท่านั้น · JSON บรรทัดเดียว · มีเพดาน)</li>
 <li>[ ] 🔴 <strong>ยิง test alert แล้วมีข้อความเข้าปลายทางจริง</strong></li>
 <li>[ ] จด disk usage เริ่มต้นไว้เป็น baseline</li>
 </ul>
 <p><strong>➡️ ต่อที่ <a href="10-security.html">บทที่ 10 — Security Baseline</a></strong></p>
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="08-storage.html">← Storage</a><a class="pn" href="10-security.html">Security →</a></div>
   </main>
 </div>
@@ -551,6 +744,40 @@ kill %1
       });
     });
   });
+
+  /* ---------- กรองตามเครื่อง ---------- */
+  /* จำไว้ข้ามบทด้วย เพราะคนหนึ่งรอบมักนั่งอยู่หน้าเครื่องเดียว
+     ถ้าบทถัดไปไม่มีเครื่องนั้น จะเด้งกลับเป็น "ทั้งหมด" เองไม่ให้หน้าว่างเปล่า */
+  var MKEY='myhr-k8s-machine';
+  var tabs=document.getElementById('mtabs');
+  if(tabs){
+    var avail=[].map.call(tabs.querySelectorAll('.mtab'), function(b){ return b.dataset.m; });
+    var applyM=function(m){
+      if(avail.indexOf(m)<0) m='all';
+      document.body.dataset.mfilter=m;
+      tabs.querySelectorAll('.mtab').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); });
+      document.querySelectorAll('.step').forEach(function(sec){
+        var list=(sec.dataset.machines||'all').split(' ');
+        /* ขั้นที่ไม่ได้ระบุเครื่องเลย = ใช้ได้ทุกเครื่อง ต้องเห็นเสมอ
+           ขั้นที่ระบุแล้ว ต้องมีเครื่องที่เลือกอยู่ในรายการถึงจะโชว์ */
+        var show = (m==='all') || (list.length===1 && list[0]==='all') || list.indexOf(m)>=0;
+        sec.classList.toggle('hide-m', !show);
+      });
+      document.querySelectorAll('.sub').forEach(function(d){
+        var dm=d.dataset.machine||'all';
+        d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
+      });
+      try{ localStorage.setItem(MKEY,m); }catch(e){}
+      paintFab();
+    };
+    tabs.addEventListener('click', function(e){
+      var b=e.target.closest('.mtab');
+      if(b){ applyM(b.dataset.m); }
+    });
+    var savedM='all';
+    try{ savedM=localStorage.getItem(MKEY)||'all'; }catch(e){}
+    applyM(savedM);
+  }
 
   /* ---------- เมนูบนจอเล็ก ---------- */
   var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');

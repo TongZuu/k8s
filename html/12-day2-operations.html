@@ -170,13 +170,26 @@ img{max-width:100%}
   .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
   .wrap{margin-left:0}
 }
+
+/* ---------- แถบกรองตามเครื่อง ---------- */
+/* บทที่ join ทีละเครื่องมีขั้นของ master01 กับของเครื่องปลายทางสลับกัน
+   คนที่นั่งอยู่หน้าเครื่องไหนควรเห็นเฉพาะของเครื่องนั้นได้ ไม่ต้องเลื่อนข้าม */
+.mtabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 20px}
+.mtabs-l{color:var(--dim);font-size:13px;margin-right:2px}
+.mtab{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer;transition:all .15s}
+.mtab:hover{border-color:var(--accent);color:var(--accent)}
+.mtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.hide-m{display:none !important}
+.mnote{color:var(--dim);font-size:13px;margin:-10px 0 18px}
+
 </style>
 </head>
 <body data-chapter="12-day2-operations.md" data-total="11">
 
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
-  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="9"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item cur" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="16"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item cur" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="17"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
 </aside>
 
 <div class="wrap">
@@ -196,13 +209,14 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>🔴 ทำไมบทนี้คือเหตุผลของการรื้อทำใหม่ทั้งหมด</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+    
+    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2>🔴 ทำไมบทนี้คือเหตุผลของการรื้อทำใหม่ทั้งหมด</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>คู่มือชุดเดิมพา cluster ขึ้นมาได้ แต่<strong>ไม่มีบทไหนบอกวิธีทำให้มันอยู่ต่อ</strong> —
 ไม่มี backup, ไม่มีการต่ออายุ cert, ไม่มีวิธี upgrade</p>
 <p>พอ cert หมดอายุและเวอร์ชัน EOL ทางเดียวที่เหลือคือรื้อทำใหม่ ซึ่งคือสิ่งที่กำลังทำอยู่ตอนนี้</p>
 <p><strong>ถ้าเลือกได้แค่บทเดียวที่จะทำให้ดีที่สุด เลือกบทนี้</strong></p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>ตารางงานประจำ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2>ตารางงานประจำ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <table>
 <thead>
 <tr>
@@ -270,8 +284,7 @@ img{max-width:100%}
 </tbody>
 </table>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>1 · etcd backup</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<h3>ตั้งอัตโนมัติ</h3>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>1 · etcd backup</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3>ตั้งอัตโนมัติ</h3>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/day2/etcd-backup-cronjob.yaml
 kubectl -n kube-system get cronjob etcd-backup
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -279,7 +292,7 @@ kubectl -n kube-system get cronjob etcd-backup
 <div class="cb"><pre><code class="language-bash">kubectl -n kube-system create job --from=cronjob/etcd-backup etcd-backup-test
 kubectl -n kube-system logs job/etcd-backup-test
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>backup ด้วยมือ — ทำก่อนแตะอะไรก็ตาม</h3>
+</div><div class="sub" data-machine="all"><h3>backup ด้วยมือ — ทำก่อนแตะอะไรก็ตาม</h3>
 <div class="cb"><pre><code class="language-bash">TS=$(date +%Y%m%d-%H%M%S)
 kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl \
   --endpoints=https://127.0.0.1:2379 \
@@ -303,14 +316,14 @@ sha256sum "/backup/etcd/snap-${TS}.db" &gt; "/backup/etcd/snap-${TS}.db.sha256"
 ถ้า key หายจะถอดรหัสไม่ได้เลย — เก็บ key แยกจาก backup และเก็บสำเนาออฟไลน์</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>2 · กู้ etcd</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>2 · กู้ etcd</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <blockquote>
 <p><strong>ซ้อมใน lab เท่านั้น</strong> ห้ามซ้อมบน production
 จดเวลาที่ใช้จริงเป็น RTO baseline</p>
 </blockquote>
-<h3>กรณี A — เสีย master 1 ตัว (quorum ยังอยู่)</h3>
+</div><div class="sub" data-machine="all"><h3>กรณี A — เสีย master 1 ตัว (quorum ยังอยู่)</h3>
 <p><strong>ไม่ต้องกู้จาก backup</strong> ให้ถอด member เดิมออกแล้ว join ใหม่ (ดูหัวข้อ 7)</p>
-<h3>กรณี B — เสีย quorum (master ตาย 2 ใน 3)</h3>
+</div><div class="sub" data-machine="all"><h3>กรณี B — เสีย quorum (master ตาย 2 ใน 3)</h3>
 <div class="cb"><pre><code class="language-bash"># 1. หยุด control plane ทุกเครื่อง
 mv /etc/kubernetes/manifests /etc/kubernetes/manifests.off      # ทำทั้ง 3 master
 crictl ps | grep -E 'etcd|apiserver'                            # ต้องไม่เหลือ
@@ -337,7 +350,7 @@ kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl \
   endpoint status --cluster -w table
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>3 · ต่ออายุ certificate</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>3 · ต่ออายุ certificate</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>cert ของ kubeadm อายุ 1 ปี</strong> และต่ออายุอัตโนมัติ<strong>เฉพาะตอน upgrade เท่านั้น</strong>
 cluster ที่ตั้งไว้แล้วไม่เคย upgrade จะมี cert หมดอายุเงียบ ๆ</p>
 <div class="cb"><pre><code class="language-bash"># ตรวจทุกเดือน — ทำบนทุก master
@@ -369,13 +382,39 @@ kubeadm certs check-expiration
 <p><strong>CA มีอายุ 10 ปี</strong> ตราบใดที่ CA ยังไม่หมด cert อื่นต่ออายุได้เสมอ
 แม้จะหมดอายุไปแล้วก็ตาม — <strong>cert หมดไม่ใช่จุดจบ</strong> แต่ก็อย่าปล่อยให้ถึงจุดนั้น</p>
 </blockquote>
+</div><div class="sub" data-machine="all"><h3>3.1 cert ของ Gateway — <code>kubeadm certs check-expiration</code> มองไม่เห็น</h3>
+<p>cert ที่ Envoy Gateway เสิร์ฟให้ผู้ใช้เป็นคนละชุดกับ cert ของ control plane
+<code>kubeadm certs check-expiration</code> ไม่รายงานให้ ต้องตรวจแยก <strong>ทุกเดือนพร้อมกัน</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get secret myhr-wildcard-tls \
+  -o jsonpath='{.data.tls\.crt}' | base64 -d \
+  | openssl x509 -noout -issuer -enddate
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ถ้าบทที่ 07 ใช้ทาง B (internal CA)</strong> — cert-manager ต่ออายุให้เองเมื่อเหลือ 30 วัน
+ข้อนี้แค่ตรวจว่ามันทำงานจริง <code>enddate</code> ต้องขยับออกไปเรื่อย ๆ ถ้าค้างที่เดิมสองเดือนติดให้ดู:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system describe certificate myhr-wildcard-tls | tail -20
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ถ้าบทที่ 07 ใช้ทาง A (public cert)</strong> — 🔴 <strong>ไม่มีอะไรต่ออายุให้</strong> ต้องขอไฟล์ชุดใหม่จาก CA
+แล้วเอามาวางทับที่ <code>/root/certs/</code> จากนั้นรันคำสั่งเดิมของบทที่ 07 ซ้ำ:</p>
+<div class="cb"><pre><code class="language-bash">bash /root/k8s/config/gateway/import-public-cert.sh \
+     /root/certs/fullchain.pem /root/certs/privkey.pem
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>สคริปต์ตรวจ chain/คู่ key/ชื่อ/วันหมดอายุให้ก่อนเขียนทับ และ Envoy Gateway
+โหลด cert ใหม่ให้เองในไม่กี่วินาที <strong>ไม่ต้อง restart อะไร</strong></p>
+<p><strong>ตรวจว่าใบใหม่ลงจริง</strong> — รันคำสั่งเดียวกับตอนต้นหัวข้อนี้ซ้ำ <code>enddate</code> ต้องขยับไปปีหน้า:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get secret myhr-wildcard-tls \
+  -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -enddate
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>cert ของ Gateway หมดอายุ = <strong>ทุก service ล่มพร้อมกันจากมุมของผู้ใช้</strong> ทั้งที่ pod ยังเขียวหมด
+เป็นเคสที่หาสาเหตุนานที่สุดถ้าไม่ได้เตรียมไว้ก่อน เพราะทุก dashboard ยังปกติ</p>
+</blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>4 · Rolling reboot (patch kernel)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2>4 · Rolling reboot (patch kernel)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <blockquote>
 <p>🔴 <strong>งานประจำที่หนักที่สุดของ cluster ชุดนี้</strong>
 เราใช้ Oracle Linux แบบฟรีจึงไม่มี Ksplice — ปะ kernel ต้อง reboot ทุกครั้ง</p>
 </blockquote>
-<h3>ก่อนเริ่ม — ตรวจ 3 ข้อ</h3>
+</div><div class="sub" data-machine="all"><h3>ก่อนเริ่ม — ตรวจ 3 ข้อ</h3>
 <div class="cb"><pre><code class="language-bash"># 1. ทุก Deployment มี PDB และ replica &gt;= 2
 kubectl get deploy -A -o json | jq -r '.items[]
   | select(.spec.replicas &lt; 2)
@@ -389,7 +428,7 @@ kubectl describe nodes | grep -A5 'Allocated resources'
 # 3. ไม่มี pod ที่ผิดปกติค้างอยู่
 kubectl get pods -A | grep -v -E 'Running|Completed'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>ลำดับ — สำคัญ</h3>
+</div><div class="sub" data-machine="all"><h3>ลำดับ — สำคัญ</h3>
 <blockquote>
 <p><strong>เริ่มจาก <code>k8s-worker03</code> เสมอ</strong> เพราะเป็นเครื่องที่ถือ local PV ของ monitoring
 ทำเครื่องนี้ก่อนจะได้มี monitoring ครบตอนทำเครื่องที่เหลือ</p>
@@ -397,7 +436,7 @@ kubectl get pods -A | grep -v -E 'Running|Completed'
 <div class="cb"><pre><code class="language-text">worker03 → worker01 → worker02 → master02 → master03 → master01
 </code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>master01 ทำท้ายสุดเพราะถือ VIP อยู่ (priority สูงสุด)</p>
-<h3>ทำทีละเครื่อง</h3>
+</div><div class="sub" data-machine="all"><h3>ทำทีละเครื่อง</h3>
 <div class="cb"><pre><code class="language-bash">NODE=k8s-worker03
 
 # --- 1. ย้าย pod ออก -------------------------------------------------------
@@ -433,7 +472,7 @@ kubectl uncordon "$NODE"
 kubectl get nodes                           # ต้องกลับเป็น Ready
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>รอจน <code>Ready</code> และ pod กลับมาครบก่อนไปเครื่องถัดไป — ห้ามทำสองเครื่องพร้อมกัน</strong></p>
-<h3>หลังจบทุกเครื่อง</h3>
+</div><div class="sub" data-machine="all"><h3>หลังจบทุกเครื่อง</h3>
 <div class="cb"><pre><code class="language-bash"># kernel ต้องตรงกันทั้ง 6 เครื่อง
 for ip in 101 102 103 104 105 106; do
   echo -n "192.168.50.$ip: "; ssh "root@192.168.50.$ip" uname -r
@@ -445,8 +484,7 @@ done
 แต่ถ้ายังดังหลังจบงานแล้ว แปลว่ามีเครื่องที่ patch ไม่สำเร็จ</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>5 · Upgrade Kubernetes</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<h3>Patch upgrade (1.36.3 → 1.36.x) — ความเสี่ยงต่ำ</h3>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2>5 · Upgrade Kubernetes</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3>Patch upgrade (1.36.3 → 1.36.x) — ความเสี่ยงต่ำ</h3>
 <p>รวมกับ rolling reboot ในหัวข้อ 4 ได้เลย ประหยัดรอบ drain</p>
 <p><strong>บน master01:</strong></p>
 <div class="cb"><pre><code class="language-bash">NEW=1.36.5
@@ -465,7 +503,7 @@ systemctl daemon-reload &amp;&amp; systemctl restart kubelet
 kubectl uncordon "$NODE"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>อัปเดต <code>versions.env</code> แล้ว <code>dnf versionlock</code> ใหม่ทุกเครื่อง</strong></p>
-<h3>Minor upgrade (1.36 → 1.37) — ต้องวางแผน</h3>
+</div><div class="sub" data-machine="all"><h3>Minor upgrade (1.36 → 1.37) — ต้องวางแผน</h3>
 <blockquote>
 <p>🔴 <strong>อ่าน release note ของเวอร์ชันปลายทางก่อนเสมอ</strong> ไม่ใช่ทำตามแบบปิดตา
 แต่ละ release มี deprecation และ gotcha ของตัวเอง</p>
@@ -489,7 +527,7 @@ cilium status
 การ upgrade อย่างน้อยปีละครั้งจึงแก้ปัญหา cert หมดอายุไปในตัว</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>6 · Upgrade Cilium</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2>6 · Upgrade Cilium</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <blockquote>
 <p>🔴 <strong>เสี่ยงกว่า Kubernetes upgrade สำหรับ cluster ชุดนี้</strong>
 Cilium ทำทั้ง CNI + kube-proxy + LB-IPAM — พลาดทีเดียวดับหมดทั้ง 3 อย่าง
@@ -521,7 +559,7 @@ kubectl -n kube-system rollout status ds/cilium --timeout=10m
 cilium status --wait
 kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep KubeProxyReplacement
 kubectl get svc -A | grep LoadBalancer        # EXTERNAL-IP ต้องยังอยู่
-curl -I "http://${GW_IP}"                     # จากเครื่องนอก cluster
+curl -I "http://${GW_IP}"                     # จากเครื่องทดสอบในวง 192.168.50.0/24
 cilium connectivity test
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ถ้าพัง — rollback:</strong></p>
@@ -529,19 +567,62 @@ cilium connectivity test
 kubectl -n kube-system rollout status ds/cilium
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>7 · เพิ่ม หรือ ถอด node</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<h3>เพิ่ม worker</h3>
-<div class="cb"><pre><code class="language-bash"># บน master01 — token เดิมหมดอายุแล้วแน่นอน ต้องออกใหม่
-kubeadm token create --print-join-command
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2>7 · เพิ่ม หรือ ถอด node</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3>เพิ่ม worker</h3>
+<p><strong>ในrepo — แก้ 2 ไฟล์ ที่เหลืออ่านต่อจากสองไฟล์นี้เองหมด:</strong></p>
+<table>
+<thead>
+<tr>
+<th>ไฟล์</th>
+<th>เพิ่มอะไร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../docs/versions.env"><code>docs/versions.env</code></a></td>
+<td><code>WORKER04_IP=192.168.50.107</code> และ <code>WORKER04_NAME=k8s-worker04</code></td>
+</tr>
+<tr>
+<td><a href="../ansible/inventory.ini"><code>ansible/inventory.ini</code></a></td>
+<td><code>k8s-worker04 ansible_host=192.168.50.107</code> ใต้ <code>[workers]</code></td>
+</tr>
+</tbody>
+</table>
+<div class="cb"><pre><code class="language-bash">bash config/validate-repo.sh
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>บนเครื่องใหม่: ทำ<strong>บทที่ 01 และ 02 ให้ครบก่อน</strong> แล้วค่อย join</p>
-<h3>เพิ่ม control plane</h3>
+<p>ต้องผ่าน — ตัวตรวจอ่านรายชื่อเครื่องจาก <code>versions.env</code> เอง ถ้าลืมใส่ใน <code>inventory.ini</code>
+มันจะฟ้องชื่อเครื่องที่ขาดออกมาตรง ๆ</p>
+<p><strong>บนเครื่องใหม่ — ทำ <a href="01-prepare-os.html">บทที่ 01</a> และ <a href="02-container-runtime.html">02</a> ให้ครบก่อน</strong>
+(partition แยกของ worker คือ <code>/var/lib/containerd</code> · firewalld ต้องเปิดพอร์ตชุด worker)</p>
+<p><strong><code>/etc/hosts</code> ของ <em>ทุกเครื่อง</em> ต้องรู้จักเครื่องใหม่ ไม่ใช่แค่เครื่องใหม่รู้จักคนอื่น</strong> —
+วิธีที่ถูกคือรัน playbook ให้ทั้ง cluster (มันวางบล็อกเดียวกันทุกเครื่อง แบบ idempotent):</p>
+<div class="cb"><pre><code class="language-bash">ansible-playbook prepare-os.yml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>join เครื่องใหม่ด้วย playbook</strong> — ต้องมี master01 อยู่ในรอบด้วยเพราะ token ออกจากเครื่องนั้น:</p>
+<div class="cb"><pre><code class="language-bash">ansible-playbook create-cluster.yml --limit 'k8s-master01,k8s-worker04'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>หรือทำมือ: ออก token บน master01 แล้ว join บนเครื่องใหม่</p>
+<div class="cb"><pre><code class="language-bash">kubeadm token create --ttl 2h --print-join-command
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ตรวจหลัง join:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl get nodes -o wide
+kubectl -n kube-system get pods -o wide --field-selector spec.nodeName=k8s-worker04
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> node ใหม่เป็น <code>Ready</code> ภายในไม่กี่นาที (Cilium ลง agent ให้เองผ่าน DaemonSet
+ไม่ต้องทำอะไรเพิ่มในบทที่ 05) และมี pod ของ Cilium ขึ้นบนเครื่องนั้น</p>
+<blockquote>
+<p><strong>สิ่งที่ <em>ไม่</em> ต้องทำสำหรับ worker</strong> — ไม่ต้องแก้ <code>certSANs</code>, ไม่ต้องแตะ HAProxy/keepalived,
+ไม่ต้องมี <code>audit-policy.yaml</code> (ใช้กับ apiserver ซึ่งอยู่บน master เท่านั้น)
+· ถ้าเพิ่ม <strong>master</strong> ต่างออกไปมาก: <code>certSANs</code> ใน <code>kubeadm-config.yaml</code> ต้องมี IP/ชื่อเครื่องใหม่
+<strong>ตั้งแต่ก่อน <code>kubeadm init</code></strong> แก้ทีหลังต้องออก cert ใหม่ทั้งชุด · และต้องเพิ่ม backend
+ใน <code>haproxy.cfg</code> ของทุก master กับตั้ง <code>priority</code> ของ keepalived ให้ไม่ชนกัน</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3>เพิ่ม control plane</h3>
 <div class="cb"><pre><code class="language-bash"># บน master01 — ต้องได้ทั้ง certificate-key และ token ใหม่
 kubeadm init phase upload-certs --upload-certs      # certificate-key อายุ 2 ชม.
-kubeadm token create --print-join-command
+kubeadm token create --ttl 2h --print-join-command
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>แล้วต่อท้ายด้วย <code>--control-plane --certificate-key &lt;KEY&gt;</code></p>
-<h3>ถอด node</h3>
+</div><div class="sub" data-machine="all"><h3>ถอด node</h3>
 <div class="cb"><pre><code class="language-bash">kubectl drain "$NODE" --ignore-daemonsets --delete-emptydir-data
 kubectl delete node "$NODE"
 
@@ -564,7 +645,7 @@ kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl ... member remove &lt;M
 และแก้ <code>priority</code> ของ keepalived ให้ยังเรียงกันถูก</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10"><div class="step-head"><h2>8 · งานทบทวนรายไตรมาส</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2>8 · งานทบทวนรายไตรมาส</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash"># 1. capacity — เทียบ requests กับที่ใช้จริง
 kubectl top nodes
 kubectl describe nodes | grep -A5 'Allocated resources'
@@ -585,7 +666,7 @@ kubectl get pods -A -o json | jq -r '.items[].spec.containers[].image' \
 ssh root@${REGISTRY_IP} 'registry garbage-collect /etc/docker/registry/config.yml'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11" data-machines="all"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[ ] CronJob backup etcd ทำงานและ<strong>ทดสอบรันแล้ว</strong></li>
 <li>[ ] snapshot ออกไปอยู่นอก cluster พร้อม checksum</li>
@@ -599,7 +680,7 @@ ssh root@${REGISTRY_IP} 'registry garbage-collect /etc/docker/registry/config.ym
 <li>[ ] runbook ทุกหัวข้อมีคนที่ไม่ได้เขียนทำตามได้จริง</li>
 </ul>
 <p><strong>➡️ ต่อที่ <a href="13-troubleshooting.html">บทที่ 13 — Troubleshooting</a></strong></p>
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="11-deploy-app.html">← Deploy App</a><a class="pn" href="13-troubleshooting.html">Troubleshooting →</a></div>
   </main>
 </div>
@@ -740,6 +821,40 @@ ssh root@${REGISTRY_IP} 'registry garbage-collect /etc/docker/registry/config.ym
       });
     });
   });
+
+  /* ---------- กรองตามเครื่อง ---------- */
+  /* จำไว้ข้ามบทด้วย เพราะคนหนึ่งรอบมักนั่งอยู่หน้าเครื่องเดียว
+     ถ้าบทถัดไปไม่มีเครื่องนั้น จะเด้งกลับเป็น "ทั้งหมด" เองไม่ให้หน้าว่างเปล่า */
+  var MKEY='myhr-k8s-machine';
+  var tabs=document.getElementById('mtabs');
+  if(tabs){
+    var avail=[].map.call(tabs.querySelectorAll('.mtab'), function(b){ return b.dataset.m; });
+    var applyM=function(m){
+      if(avail.indexOf(m)<0) m='all';
+      document.body.dataset.mfilter=m;
+      tabs.querySelectorAll('.mtab').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); });
+      document.querySelectorAll('.step').forEach(function(sec){
+        var list=(sec.dataset.machines||'all').split(' ');
+        /* ขั้นที่ไม่ได้ระบุเครื่องเลย = ใช้ได้ทุกเครื่อง ต้องเห็นเสมอ
+           ขั้นที่ระบุแล้ว ต้องมีเครื่องที่เลือกอยู่ในรายการถึงจะโชว์ */
+        var show = (m==='all') || (list.length===1 && list[0]==='all') || list.indexOf(m)>=0;
+        sec.classList.toggle('hide-m', !show);
+      });
+      document.querySelectorAll('.sub').forEach(function(d){
+        var dm=d.dataset.machine||'all';
+        d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
+      });
+      try{ localStorage.setItem(MKEY,m); }catch(e){}
+      paintFab();
+    };
+    tabs.addEventListener('click', function(e){
+      var b=e.target.closest('.mtab');
+      if(b){ applyM(b.dataset.m); }
+    });
+    var savedM='all';
+    try{ savedM=localStorage.getItem(MKEY)||'all'; }catch(e){}
+    applyM(savedM);
+  }
 
   /* ---------- เมนูบนจอเล็ก ---------- */
   var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');

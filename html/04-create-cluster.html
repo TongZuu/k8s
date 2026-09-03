@@ -170,13 +170,26 @@ img{max-width:100%}
   .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
   .wrap{margin-left:0}
 }
+
+/* ---------- แถบกรองตามเครื่อง ---------- */
+/* บทที่ join ทีละเครื่องมีขั้นของ master01 กับของเครื่องปลายทางสลับกัน
+   คนที่นั่งอยู่หน้าเครื่องไหนควรเห็นเฉพาะของเครื่องนั้นได้ ไม่ต้องเลื่อนข้าม */
+.mtabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 20px}
+.mtabs-l{color:var(--dim);font-size:13px;margin-right:2px}
+.mtab{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer;transition:all .15s}
+.mtab:hover{border-color:var(--accent);color:var(--accent)}
+.mtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.hide-m{display:none !important}
+.mnote{color:var(--dim);font-size:13px;margin:-10px 0 18px}
+
 </style>
 </head>
 <body data-chapter="04-create-cluster.md" data-total="8">
 
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
-  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item cur" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="9"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="16"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item cur" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="17"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
 </aside>
 
 <div class="wrap">
@@ -196,7 +209,8 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>ตรวจก่อนเริ่ม — 4 ข้อ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+    <div class="mtabs" id="mtabs"><span class="mtabs-l">แสดงเฉพาะ:</span><button class="mtab on" type="button" data-m="all">ทั้งหมด</button><button class="mtab" type="button" data-m="m01">👑 master01</button><button class="mtab" type="button" data-m="masters">🎩 master ทุกตัว</button><button class="mtab" type="button" data-m="workers">⚙️ worker</button></div>
+    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2>ตรวจก่อนเริ่ม — 4 ข้อ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>รันบน <strong>master01</strong>:</p>
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 
@@ -211,7 +225,7 @@ crictl info | jq -r '.config.containerd.runtimes.runc.options.SystemdCgroup' | g
 แต่ทำตอนอยู่ที่ master01 จะไล่ log ง่ายกว่า</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>1 · 👑 ดึง image ล่วงหน้า</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="m01"><div class="step-head"><h2>1 · 👑 ดึง image ล่วงหน้า</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="m01">
 <div class="cb"><pre><code class="language-bash">kubeadm config images list --kubernetes-version "v${K8S_VERSION}"
 kubeadm config images pull --kubernetes-version "v${K8S_VERSION}"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -221,25 +235,118 @@ kubeadm config images pull --kubernetes-version "v${K8S_VERSION}"
 ถ้ารวมกันแล้วพัง จะไล่หาสาเหตุยากกว่า</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>2 · 👑 เตรียม config และ init</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<div class="cb"><pre><code class="language-bash">mkdir -p /var/log/kubernetes    # ปลายทางของ audit log ที่ระบุใน config
-
-# ตรวจ config ก่อนใช้จริง
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all m01"><div class="step-head"><h2>2 · 👑 เตรียม config และ init</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ถ้าเพิ่งแก้ไฟล์ในrepo ต้องส่งขึ้นเครื่องก่อน</strong> — รันจากrepoบนเครื่องตัวเอง ไม่ใช่บน master01
+(ไฟล์ใน <code>/root/k8s/</code> เป็นคนละก๊อปปี้กับrepo แก้ในrepoแล้วเครื่องไม่รู้เรื่องด้วย)</p>
+<div class="cb"><pre><code class="language-bash">scp config/kubeadm/kubeadm-config.yaml config/kubeadm/audit-policy.yaml root@192.168.50.101:/root/k8s/config/kubeadm/
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ต่อไปนี้รันบน <strong>master01</strong>:</p>
+<div class="cb"><pre><code class="language-bash"># 🔴 audit ต้องครบสองอย่างก่อน init ไม่งั้น apiserver ไม่ขึ้น
+mkdir -p /var/log/kubernetes                 # ปลายทางของ audit log
+install -D -m 0600 /root/k8s/config/kubeadm/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
+ls -l /etc/kubernetes/audit-policy.yaml /var/log/kubernetes
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p><strong>ทำไมต้องมีไฟล์นี้ก่อน</strong> — <code>kubeadm-config.yaml</code> ประกาศ <code>extraVolumes</code> แบบ <code>pathType: File</code>
+ชี้มาที่ <code>/etc/kubernetes/audit-policy.yaml</code> ถ้าไฟล์ไม่มี kubelet จะไม่ยอมสร้าง pod ของ apiserver
+แล้ว <code>kubeadm init</code> จะค้างจนหมดเวลา 4 นาทีโดยที่ error ไม่ได้พูดถึง audit เลยสักคำ</p>
+<p><strong>และต้องทำบน master ทุกตัวก่อน join ด้วย</strong> (ดูข้อ 4) เพราะ master02/03 ดึง
+ClusterConfiguration เดียวกันมาสร้าง manifest ของตัวเอง</p>
+</blockquote>
+<div class="cb"><pre><code class="language-bash"># ด่าน 1 — ตรวจเฉพาะไฟล์ config ไม่แตะเครื่อง (เจอค่าผิด/field ผิดตรงนี้)
+kubeadm config validate --config=/root/k8s/config/kubeadm/kubeadm-config.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>ok</code> (ไม่มี error) · exit status 0</p>
+<div class="cb"><pre><code class="language-bash"># ด่าน 2 — ตรวจว่าเครื่องพร้อมด้วย (port, swap, containerd, image)
 kubeadm init phase preflight --config=/root/k8s/config/kubeadm/kubeadm-config.yaml --dry-run 2&gt;&amp;1 | tail -20
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
-<p><strong>ไม่ต้องสร้าง token เอง</strong> — <a href="../config/kubeadm/kubeadm-config.yaml"><code>kubeadm-config.yaml</code></a> ตั้ง <code>token: &quot;&quot;</code> ไว้
-ซึ่งแปลว่าให้ kubeadm สร้างให้เองตอน <code>init</code> และมีอายุตาม <code>ttl: 2h</code> ที่ระบุไว้</p>
-<p>token ที่ได้จะโผล่ในคำสั่ง join ท้าย log · ถ้าหมดอายุแล้วออกใหม่ได้ตลอดด้วย
-<code>kubeadm token create --print-join-command</code> (ดูข้อ 4)</p>
+<p><strong>แยกสองด่านเพราะข้อความ error คนละแบบ</strong> — <code>config validate</code> อ่านแค่ไฟล์
+ถ้ามันผ่านแล้ว preflight ยังฟ้อง แปลว่าปัญหาอยู่ที่เครื่อง ไม่ใช่ที่ไฟล์</p>
 </blockquote>
-<h3>🔴 คำสั่ง init</h3>
+<blockquote>
+<p><strong><code>[ERROR DirAvailable--var-lib-etcd]: /var/lib/etcd is not empty</code></strong>
+ปกติคือ <code>lost+found</code> ที่ ext4 แถมมากับ partition ที่แยกไว้ในบทที่ 01 ไม่ใช่ข้อมูล etcd
+<strong>ดูก่อนลบเสมอ</strong> — <code>ls -la /var/lib/etcd</code></p>
+<table>
+<thead>
+<tr>
+<th>เห็นอะไร</th>
+<th>แปลว่า</th>
+<th>ทำอะไร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>มีแค่ <code>lost+found</code></td>
+<td>filesystem ใหม่ปกติ</td>
+<td><code>rm -rf /var/lib/etcd/lost+found</code> แล้ว preflight ใหม่</td>
+</tr>
+<tr>
+<td>มี <code>member/</code></td>
+<td>เคย <code>kubeadm init</code> มาก่อน</td>
+<td>ต้อง <code>kubeadm reset -f</code> ก่อน ห้ามลบมือเปล่า</td>
+</tr>
+<tr>
+<td>มีโฟลเดอร์อื่น เช่น <code>myhr</code></td>
+<td>ของเก่าที่ติดมาจาก <code>/home</code> ตอนย้าย partition</td>
+<td>ตรวจว่าไม่มีข้อมูลที่ต้องเก็บ แล้ว <code>rmdir</code> (ไม่ใช่ <code>rm -rf</code> — <code>rmdir</code> จะปฏิเสธถ้าข้างในไม่ว่าง)</td>
+</tr>
+</tbody>
+</table>
+<p>ห้ามแก้ด้วย <code>--ignore-preflight-errors=DirAvailable--var-lib-etcd</code> เพราะถ้าเป็นข้อมูลเก่าจริง
+etcd จะขึ้นมาพร้อม member เดิมที่ไม่มีใครรู้จัก แล้วไปพังตอน join</p>
+</blockquote>
+<blockquote>
+<p><strong><code>[WARNING Firewalld]</code></strong> ไม่ใช่ error — บทที่ 01 ข้อ 8 เปิดพอร์ตไว้ครบแล้ว
+ยืนยันได้ด้วย <code>firewall-cmd --list-all</code> (master ต้องมี <code>6443 8443 2379-2380 10250 10257 10259</code> และ <code>protocols: vrrp</code>)</p>
+</blockquote>
+<blockquote>
+<p><strong>ถ้า preflight ฟ้องแบบนี้:</strong></p>
+<div class="cb"><pre><code class="language-text">error: invalid configuration for GroupVersionKind /, Kind=:
+kind and apiVersion is mandatory information that must be specified
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>แปลว่ามี YAML document ที่ไม่มี <code>kind</code> อยู่ในไฟล์ config — ไม่ใช่ค่าใน config ผิด
+สาเหตุที่เจอบ่อยสุดคือมี <code>---</code> คั่นอยู่ระหว่างคอมเมนต์หัวไฟล์กับบรรทัด <code>apiVersion:</code> แรก
+เพราะ kubeadm หั่น document ด้วยการมองหาบรรทัด <code>---</code> ตรง ๆ ไม่ได้ parse YAML ก่อน
+คอมเมนต์ที่ถูกคั่นออกมาจึงกลายเป็น document หนึ่งอันที่ไม่มี kind</p>
+<p>ข้อความนี้ไม่บอกไฟล์และไม่บอกบรรทัด · ตรวจล่วงหน้าได้ด้วย
+<code>awk -f config/kubeadm-docsplit.awk config/kubeadm/kubeadm-config.yaml</code> (อยู่ใน <code>validate-repo.sh</code> ข้อ 3 แล้ว)
+· หมายเหตุ: <code>kubectl apply</code> ข้าม document ว่างให้เอง ไฟล์อื่นใน <code>config/</code> จึงเขียนแบบนั้นได้ไม่พัง</p>
+</blockquote>
+<blockquote>
+<p><strong>ถ้าฟ้องเรื่อง bootstrap token:</strong></p>
+<div class="cb"><pre><code class="language-text">error unmarshaling configuration schema.GroupVersionKind{... Kind:"InitConfiguration"}:
+the bootstrap token "" was not of the form "\\A([a-z0-9]{6})\\.([a-z0-9]{16})\\z"
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>คราวนี้ kubeadm อ่านไฟล์ออกแล้ว แต่ค่าข้างในผิด — <code>token: &quot;&quot;</code> ไม่ใช่ &quot;ปล่อยว่างให้สุ่มเอง&quot;
+v1beta4 แปลงค่าว่างเป็น token ไม่ได้ · <strong>วิธีให้ kubeadm สุ่มให้คือไม่ใส่ field <code>token</code> เลย</strong>
+(<a href="../config/kubeadm/kubeadm-config.yaml"><code>kubeadm-config.yaml</code></a> แก้แล้ว — ถ้ายังเจอแปลว่าไฟล์บนเครื่องเป็นตัวเก่า)</p>
+</blockquote>
+<blockquote>
+<p><strong>ไม่ต้องสร้าง token เอง</strong> — <code>bootstrapTokens</code> ใน <a href="../config/kubeadm/kubeadm-config.yaml"><code>kubeadm-config.yaml</code></a>
+ไม่มี field <code>token</code> จึงให้ kubeadm สุ่มให้เองตอน <code>init</code> และมีอายุตาม <code>ttl: 2h</code> ที่ระบุไว้</p>
+<p>token ที่ได้จะโผล่ในคำสั่ง join ท้าย log · ถ้าหมดอายุแล้วออกใหม่ได้ตลอดด้วย
+<code>kubeadm token create --ttl 2h --print-join-command</code> (ดูข้อ 4)</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3>🔴 คำสั่ง init</h3>
 <div class="cb"><pre><code class="language-bash">kubeadm init \
   --config=/root/k8s/config/kubeadm/kubeadm-config.yaml \
   --upload-certs \
   --skip-phases=addon/kube-proxy \
   | tee /root/k8s/kubeadm-init.log
+echo "exit=${PIPESTATUS[0]}"        # ต้องเป็น 0 เท่านั้น
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p><strong>ทำไมต้องมี <code>PIPESTATUS</code></strong> — exit status ของ pipeline คือของ <code>tee</code> ไม่ใช่ของ <code>kubeadm</code>
+ถ้า <code>init</code> ล้มแต่ <code>tee</code> เขียนไฟล์สำเร็จ shell จะถือว่าคำสั่งนี้สำเร็จ
+ใครเอาไปใส่ script แล้วเช็ค <code>$?</code> จะได้ 0 ทั้งที่ cluster ไม่เกิด
+(<code>create-cluster.yml</code> กันด้วย <code>set -euo pipefail</code> ที่หัว shell task)</p>
+</blockquote>
+<p><strong>ระหว่างรอ</strong> ขั้นที่นานที่สุดคือ <code>[wait-control-plane]</code> — ถ้าค้างเกิน 1 นาที เปิดอีก terminal แล้วดู:</p>
+<div class="cb"><pre><code class="language-bash">crictl ps -a --name kube-apiserver
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>restart รัว ๆ หรือไม่ขึ้นเลย = ดู <a href="13-troubleshooting.html">บทที่ 13 ข้อ 12.3</a> เกือบทั้งหมดคือ audit policy mount ไม่ได้</p>
 <blockquote>
 <p><strong><code>--skip-phases=addon/kube-proxy</code> ห้ามลืม</strong> — ถ้าลืม kube-proxy จะถูกติดตั้ง
 แล้วไปชนกับ Cilium kube-proxy replacement ในบทที่ 05
@@ -260,7 +367,7 @@ Then you can join any number of worker nodes ...
 ส่วน token หมดตาม <code>ttl</code> ที่ตั้งไว้</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>3 · 👑 ตั้ง kubeconfig</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all m01"><div class="step-head"><h2>3 · 👑 ตั้ง kubeconfig</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">mkdir -p "$HOME/.kube"
 \cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
 chown "$(id -u):$(id -g)" "$HOME/.kube/config"
@@ -273,7 +380,18 @@ kubectl cluster-info
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>k8s-master01   NotReady   control-plane   ...</code>
 <strong><code>NotReady</code> ถูกต้องแล้ว</strong> — เพราะยังไม่มี CNI (จะลงในบทที่ 05)</p>
-<h3>เรื่อง <code>admin.conf</code> กับ <code>super-admin.conf</code></h3>
+</div><div class="sub" data-machine="all"><h3>ตรวจว่า audit log บันทึกจริง</h3>
+<p>ตั้ง flag ไว้ไม่ได้แปลว่าได้ log — ต้องเห็นไฟล์โตขึ้นจริงถึงจะนับว่าผ่าน</p>
+<div class="cb"><pre><code class="language-bash">ls -l /var/log/kubernetes/audit.log
+tail -1 /var/log/kubernetes/audit.log | head -c 300; echo
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ไฟล์มีขนาด &gt; 0 และบรรทัดสุดท้ายเป็น JSON ที่มี <code>&quot;kind&quot;:&quot;Event&quot;</code></p>
+<p>ถ้าไฟล์ไม่มีหรือขนาดเป็น 0:</p>
+<div class="cb"><pre><code class="language-bash">crictl logs "$(crictl ps -a --name kube-apiserver -q | head -1)" 2&gt;&amp;1 | grep -i "audit policy"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>เจอ <code>No audit policy file provided, no events will be recorded</code> = apiserver ไม่เห็น policy
+(ดู <a href="13-troubleshooting.html">บทที่ 13 ข้อ 12.3</a>)</p>
+</div><div class="sub" data-machine="all"><h3>เรื่อง <code>admin.conf</code> กับ <code>super-admin.conf</code></h3>
 <p>ตั้งแต่ 1.29 kubeadm สร้างสองไฟล์:</p>
 <table>
 <thead>
@@ -301,12 +419,110 @@ kubectl cluster-info
 เก็บไว้เป็นทางออกสุดท้ายเวลาเผลอลบ ClusterRoleBinding ของตัวเอง</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>4 · 🎩 Join master02 และ master03</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<p>รันบน <strong>master02 ก่อน แล้วรอให้เสร็จ</strong> จึงทำ master03 — อย่าทำพร้อมกัน
-เพราะ etcd ต้องการให้ member เข้าทีละตัว</p>
-<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all m01 masters"><div class="step-head"><h2>4 · 🎩 Join master02 และ master03</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ลำดับเครื่อง — ทำตามนี้จะสลับเครื่องแค่ 4 ครั้ง ไม่ต้องเด้งไปมา:</strong></p>
+<table>
+<thead>
+<tr>
+<th>ขั้น</th>
+<th>เครื่อง</th>
+<th>ทำอะไร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4.1</td>
+<td>👑 master01</td>
+<td>เตรียมไฟล์ + ออกบัตรผ่าน — <strong>ทำครั้งเดียวใช้ได้ทั้งสองเครื่อง</strong></td>
+</tr>
+<tr>
+<td>4.2</td>
+<td>🎩 master02</td>
+<td>ทำครบทุกอย่างในเครื่องนี้รวดเดียว จนถึง join เสร็จ</td>
+</tr>
+<tr>
+<td>4.3</td>
+<td>👑 master01</td>
+<td>ตรวจว่า master02 เข้ามาจริง</td>
+</tr>
+<tr>
+<td>4.4</td>
+<td>🎩 master03</td>
+<td>ทำซ้ำ 4.2 แล้วกลับไปตรวจด้วย 4.3</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>ห้ามทำ master02 กับ master03 พร้อมกัน</strong> — etcd รับ member ทีละราย
+ต้องเห็น master02 ขึ้นครบใน 4.3 ก่อนถึงจะเริ่ม master03</p>
+</blockquote>
+</div><div class="sub" data-machine="m01"><h3>4.1 · 👑 บน master01 — เตรียมของให้ทั้งสองเครื่อง</h3>
+<p><strong>ส่ง audit policy ไปทั้ง master02 และ master03:</strong></p>
+<div class="cb"><pre><code class="language-bash">for ip in 102 103; do
+  ssh root@192.168.50.$ip 'mkdir -p /root/k8s/config/kubeadm'
+  scp /root/k8s/config/kubeadm/audit-policy.yaml root@192.168.50.$ip:/root/k8s/config/kubeadm/
+done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>ใช้คำสั่งจาก <code>kubeadm-init.log</code> — หน้าตาแบบนี้:</p>
+<p><strong>ออก certificate-key และคำสั่ง join ชุดใหม่:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubeadm init phase upload-certs --upload-certs | tail -1
+kubeadm token create --ttl 2h --print-join-command
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>เก็บผลลัพธ์สองบรรทัดนี้ไว้</strong> — บรรทัดแรกคือ <code>certificate-key</code> บรรทัดที่สองคือคำสั่ง join</p>
+<blockquote>
+<p><strong>🔴 คำสั่งที่ <code>--print-join-command</code> พิมพ์ออกมาเป็นของ worker เสมอ</strong> — ไม่มี <code>--control-plane</code>
+ให้ ถ้าเอาไปรันบน master ตรง ๆ จะได้ worker ที่ชื่อเหมือน master แต่ไม่มี control plane
+ต้องเติมสองบรรทัดนี้เองเสมอ แล้วจะได้หน้าตาแบบในขั้น 4.2:</p>
+<div class="cb"><pre><code class="language-text">  --control-plane \
+  --certificate-key &lt;ค่าจากบรรทัดแรก&gt;
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+</blockquote>
+<blockquote>
+<p><strong>🔴 ค่าที่ใช้ต้องมาจากการรันรอบเดียวกัน</strong> — <code>upload-certs</code> เข้ารหัส cert ใหม่ด้วย key ใหม่ทุกครั้ง
+ที่รัน ดังนั้น<strong>พอรันรอบใหม่ key รอบก่อนจะใช้ไม่ได้ทันที</strong> ไม่ต้องรอหมดอายุ
+หยิบ key เก่าจาก <code>kubeadm-init.log</code> มาใช้ = <code>cipher: message authentication failed</code>
+ตอน join (ดู <a href="13-troubleshooting.html">บทที่ 13 ข้อ 12.5</a>)</p>
+<p>ถ้าจะ join ทั้ง master02 และ master03 ให้ใช้ค่าชุดเดียวกันทั้งสองเครื่องได้เลย ภายใน 2 ชั่วโมง
+แต่ถ้าเผลอรัน <code>upload-certs</code> คั่นกลาง ต้องเอาค่าชุดใหม่ไปใช้กับเครื่องที่เหลือ</p>
+</blockquote>
+<blockquote>
+<p><strong><code>--ttl 2h</code> ห้ามลืม</strong> — <code>kubeadm token create</code> มี default เป็น <strong>24 ชั่วโมง</strong>
+ซึ่งสวนทางกับ <code>ttl: &quot;2h&quot;</code> ที่ตั้งใจตั้งไว้ใน <code>kubeadm-config.yaml</code> ตั้งแต่ <code>init</code>
+ลืมใส่ = แอบมีบัตรผ่านเข้า cluster อายุ 24 ชม. ลอยอยู่โดยไม่มีใครรู้</p>
+</blockquote>
+<blockquote>
+<p><strong>ออกใหม่ทุกครั้ง ไม่ต้องไปงมใน <code>kubeadm-init.log</code></strong> — <code>certificate-key</code> หมดอายุใน 2 ชั่วโมง
+และ token หมดตาม <code>ttl: 2h</code> ที่ตั้งไว้ · ออกใหม่ถูกกว่าการมานั่งเดาว่าของเก่ายังใช้ได้ไหม
+ทั้งสองคำสั่งรันซ้ำได้ไม่มีผลข้างเคียง</p>
+</blockquote>
+</div><div class="sub" data-machine="masters"><h3>4.2 · 🎩 บน master02 — ทำครบทุกอย่างในเครื่องนี้</h3>
+<p><strong>เตรียมเครื่อง</strong> — audit policy, ที่เก็บ log, และล้าง <code>/var/lib/etcd</code> ให้ว่าง:</p>
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+mkdir -p /var/log/kubernetes
+install -D -m 0600 /root/k8s/config/kubeadm/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
+ls -l /etc/kubernetes/audit-policy.yaml
+ls -la /var/lib/etcd
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ไฟล์ <code>audit-policy.yaml</code> ขนาดไม่เป็น 0 · และ <code>/var/lib/etcd</code> <strong>ต้องว่าง</strong></p>
+<p><code>/var/lib/etcd</code> ของ master02/03 ก็มี <code>lost+found</code> (และอาจมีโฟลเดอร์เก่าจาก <code>/home</code>) เหมือน master01
+ถ้าไม่ว่าง <code>kubeadm join</code> จะตายที่ preflight ด้วย <code>[ERROR DirAvailable--var-lib-etcd]</code>:</p>
+<div class="cb"><pre><code class="language-bash">rm -rf /var/lib/etcd/lost+found; rmdir /var/lib/etcd/* 2&gt;/dev/null; ls -A /var/lib/etcd
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ไม่มีอะไรพิมพ์ออกมาเลย · ถ้ายังเหลืออะไรอยู่ = มีข้อมูลจริงข้างใน
+ห้ามลบทับ ให้ไปดู <a href="13-troubleshooting.html">บทที่ 13 ข้อ 12.4</a> ก่อน
+(ใช้ <code>rmdir</code> เพราะมันปฏิเสธถ้าโฟลเดอร์ไม่ว่าง ต่างจาก <code>rm -rf</code> ที่ลบทิ้งเงียบ ๆ)</p>
+<blockquote>
+<p><strong>warning สองอันนี้ตอน join ปกติ ไม่ต้องแก้:</strong>
+· <code>No kubeproxy.config.k8s.io/v1alpha1 config is loaded ... configmaps &quot;kube-proxy&quot; is forbidden</code>
+— ถูกต้องแล้ว เพราะ cluster นี้ไม่มี kube-proxy configmap อยู่จริง (ตั้งใจ skip ไว้ตั้งแต่ <code>init</code>)
+· <code>[WARNING Firewalld]</code> — เปิดพอร์ตครบแล้วในบทที่ 01 ข้อ 8</p>
+</blockquote>
+<blockquote>
+<p><strong>🔴 ห้ามข้ามขั้นนี้</strong> — master ที่ join ดึง <code>ClusterConfiguration</code> จาก configmap <code>kubeadm-config</code>
+มาสร้าง manifest ของตัวเอง จึงมี <code>extraVolumes</code> ชุดเดียวกับ master01
+ไม่มีไฟล์ policy = apiserver ของเครื่องนี้ไม่ขึ้น อาการจะเป็น
+&quot;join สำเร็จแต่ node ไม่ Ready และ etcd ไม่ครบ&quot; ซึ่งไล่หายากมาก</p>
+</blockquote>
+<p><strong>join เข้า control plane</strong> — เอาค่าจาก 4.1 มาเติมสามช่อง:</p>
 <div class="cb"><pre><code class="language-bash">kubeadm join 192.168.50.100:8443 \
   --token &lt;BOOTSTRAP_TOKEN&gt; \
   --discovery-token-ca-cert-hash sha256:&lt;CA_CERT_HASH&gt; \
@@ -314,25 +530,70 @@ kubectl cluster-info
   --certificate-key &lt;CERTIFICATE_KEY&gt; \
   --cri-socket unix:///run/containerd/containerd.sock
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>ถ้าเกิน 2 ชั่วโมงไปแล้ว (certificate-key หมดอายุ)</h3>
-<p>รันบน <strong>master01</strong> เพื่อออกชุดใหม่:</p>
-<div class="cb"><pre><code class="language-bash">kubeadm init phase upload-certs --upload-certs        # ได้ certificate-key ใหม่
-kubeadm token create --print-join-command             # ได้ token + hash ใหม่
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>แล้วเอาสองอย่างมาต่อกันเป็นคำสั่ง join ข้างบน</p>
-<p><strong>ตรวจหลัง join แต่ละตัว (บน master01):</strong></p>
-<div class="cb"><pre><code class="language-bash">kubectl get nodes
-kubectl -n kube-system get pods -l component=etcd -o wide
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> node เพิ่มขึ้นทีละตัว และมี pod <code>etcd-k8s-masterXX</code> เพิ่มตาม</p>
-<p><strong>ตั้ง kubeconfig บน master02/03 ด้วย:</strong></p>
+<p><strong>ตั้ง kubeconfig ให้เครื่องนี้ด้วย</strong> (จะได้ใช้ <code>kubectl</code> จาก master02 ได้):</p>
 <div class="cb"><pre><code class="language-bash">mkdir -p "$HOME/.kube"
 \cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
 chown "$(id -u):$(id -g)" "$HOME/.kube/config"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+</div><div class="sub" data-machine="m01"><h3>4.3 · 👑 กลับมาที่ master01 — ตรวจว่าเข้าจริง</h3>
+<div class="cb"><pre><code class="language-bash">kubectl get nodes
+kubectl -n kube-system get pods -l component=etcd -o wide
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> node เพิ่มมาอีกหนึ่งตัว และมี pod <code>etcd-k8s-master02</code> เพิ่มตาม</p>
+<p><strong>🔴 <code>join</code> สำเร็จ ไม่ได้แปลว่า control plane เครื่องนั้นใช้งานได้</strong> — <code>kubeadm join --control-plane</code>
+รอแค่ etcd member เข้าครบแล้ว mark node ก็จบ <strong>ไม่ได้รอให้ apiserver ของเครื่องนั้นขึ้น</strong>
+ถ้าลืมวาง <code>audit-policy.yaml</code> ใน 4.2 คำสั่ง join จะผ่านสวย แต่ apiserver ของเครื่องนั้นไม่เกิด
+ต้องดูสองอย่างนี้ถึงจะรู้:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system get pods -l component=kube-apiserver -o wide
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>kube-apiserver-k8s-master02</code> สถานะ <code>Running</code> — ถ้าไม่มีแถวนี้เลยคือ kubelet
+ยังสร้าง pod ไม่ได้ · <strong>แก้ได้โดยไม่ต้อง reset หรือ join ใหม่</strong> แค่วางไฟล์ที่ขาดลงไป
+kubelet จะสร้าง static pod ให้เองภายในไม่กี่วินาที (รันบนเครื่องที่ขาด):</p>
+<div class="cb"><pre><code class="language-bash">install -D -m 0600 /root/k8s/config/kubeadm/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">curl -s "http://127.0.0.1:8404/stats;csv" | awk -F, '$1=="kube-apiserver-backend"{print $2, $18, "check="$37}'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>k8s-master02</code> เปลี่ยนจาก <code>DOWN check=L4CON</code> เป็น <code>UP check=L7OK</code> ภายในไม่กี่วินาที
+ถ้ายัง <code>DOWN</code> อยู่หลังผ่านไปหนึ่งนาที แปลว่า apiserver ของ master02 ไม่ขึ้น —
+เกือบทั้งหมดคือลืมขั้นเตรียม audit policy ใน 4.2 (ดู <a href="13-troubleshooting.html">บทที่ 13 ข้อ 12.3</a>)</p>
+</div><div class="sub" data-machine="masters"><h3>4.4 · 🎩 master03 — ทำซ้ำ</h3>
+<p><strong>ผ่าน 4.3 แล้วเท่านั้น</strong> จึงไปทำ 4.2 ทั้งชุดบน master03 แล้วกลับมาตรวจด้วย 4.3 อีกรอบ
+ค่า token กับ certificate-key จาก 4.1 ยังใช้ได้ ถ้ายังไม่เกิน 2 ชั่วโมง
+<strong>และยังไม่มีใครรัน <code>upload-certs</code> คั่นกลาง</strong> — ถ้ารันไปแล้วต้องออกชุดใหม่ตาม 4.1 อีกรอบ
+แล้วใช้ค่าใหม่ทั้งคู่</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>5 · ⚙️ Join worker ทั้ง 3 เครื่อง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<p>worker join พร้อมกันได้ ไม่ต้องรอทีละตัว</p>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all m01 workers"><div class="step-head"><h2>5 · ⚙️ Join worker ทั้ง 3 เครื่อง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<table>
+<thead>
+<tr>
+<th>ขั้น</th>
+<th>เครื่อง</th>
+<th>ทำอะไร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5.1</td>
+<td>👑 master01</td>
+<td>ออกคำสั่ง join สำหรับ worker</td>
+</tr>
+<tr>
+<td>5.2</td>
+<td>⚙️ worker ทั้ง 3</td>
+<td>join — <strong>ขนานกันได้ ไม่ต้องรอทีละตัว</strong></td>
+</tr>
+<tr>
+<td>5.3</td>
+<td>👑 master01</td>
+<td>ตรวจว่าเข้าครบ</td>
+</tr>
+</tbody>
+</table>
+</div><div class="sub" data-machine="m01"><h3>5.1 · 👑 บน master01</h3>
+<div class="cb"><pre><code class="language-bash">kubeadm token create --ttl 2h --print-join-command
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+</div><div class="sub" data-machine="workers"><h3>5.2 · ⚙️ บน worker แต่ละเครื่อง</h3>
+<p>เติมค่าจาก 5.1 แล้วรันได้พร้อมกันทั้ง 3 เครื่อง:</p>
 <div class="cb"><pre><code class="language-bash">kubeadm join 192.168.50.100:8443 \
   --token &lt;BOOTSTRAP_TOKEN&gt; \
   --discovery-token-ca-cert-hash sha256:&lt;CA_CERT_HASH&gt; \
@@ -340,11 +601,16 @@ chown "$(id -u):$(id -g)" "$HOME/.kube/config"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p><strong>ไม่มี <code>--control-plane</code> และไม่มี <code>--certificate-key</code></strong> — สองอย่างนี้ใช้เฉพาะ master</p>
+<p><strong>worker ไม่ต้องมี <code>audit-policy.yaml</code></strong> — ไฟล์นั้นใช้กับ kube-apiserver ซึ่งรันบน master เท่านั้น
+และ worker ก็ไม่ต้องตั้ง kubeconfig ด้วย (สั่งงาน cluster จาก master01)</p>
 </blockquote>
-<p>ถ้า token หมดอายุ รันบน master01: <code>kubeadm token create --print-join-command</code></p>
+</div><div class="sub" data-machine="m01"><h3>5.3 · 👑 กลับมาที่ master01</h3>
+<div class="cb"><pre><code class="language-bash">kubectl get nodes
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ครบ 6 เครื่อง — worker ขึ้นเป็น <code>ROLES &lt;none&gt;</code> ซึ่งถูกต้องแล้ว</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>6 · ตรวจสถานะรวม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<p>รันบน <strong>master01</strong>:</p>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all m01"><div class="step-head"><h2>6 · 👑 ตรวจสถานะรวม — บน master01 ทั้งหมด</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>ทุกคำสั่งในข้อนี้รันบน master01 เครื่องเดียว ไม่ต้องย้ายเครื่อง</p>
 <div class="cb"><pre><code class="language-bash">kubectl get nodes -o wide
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็นครบ 6 เครื่อง สถานะ <code>NotReady</code> ทั้งหมด:</strong></p>
@@ -373,11 +639,45 @@ kubectl -n kube-system delete cm kube-proxy
   endpoint status --cluster -w table
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> 3 แถว และมีเครื่องเดียวที่ <code>IS LEADER = true</code></p>
-<p><strong>ตรวจว่า HAProxy เห็น backend ขึ้นครบแล้ว</strong> (บน master ตัวใดก็ได้):</p>
-<div class="cb"><pre><code class="language-bash">curl -s http://127.0.0.1:8404/stats | grep -o 'k8s-master0[123]' | head
+<p><strong>ตรวจ HAProxy ของ master01 เอง:</strong></p>
+<div class="cb"><pre><code class="language-bash">curl -s "http://127.0.0.1:8404/stats;csv" | awk -F, '$1=="kube-apiserver-backend"{print $2, $18, "check="$37}'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ทั้ง 3 เครื่อง <code>UP</code> และ <code>check=L7OK</code> — ทุกช่องต้องครบ ไม่ใช่แค่มีชื่อโผล่มา</p>
+<p><strong>ตรวจ HAProxy ของอีกสองเครื่องด้วย — ยิงจาก master01 ไม่ต้องย้ายเครื่อง:</strong></p>
+<div class="cb"><pre><code class="language-bash">for ip in 102 103; do
+  echo "--- master$ip ---"
+  ssh root@192.168.50.$ip 'curl -s "http://127.0.0.1:8404/stats;csv"' | awk -F, '$1=="kube-apiserver-backend"{print $2, $18, "check="$37}'
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p><strong>ต้องตรวจทั้ง 3 เครื่อง</strong> เพราะ HAProxy ของแต่ละ master ตรวจ backend ของตัวเอง
+และ <code>check_apiserver.sh</code> ของ keepalived บนเครื่องนั้นก็อ่านผลจาก HAProxy ตัวเดียวกัน
+เครื่องที่ HAProxy เห็น backend DOWN หมดจะทำให้ VIP ไม่ยอมอยู่กับมัน</p>
+<p><code>check=L7OK</code> แปลว่า HAProxy ยิง <code>GET /healthz</code> แล้วได้ 200 จริง ·
+ถ้าเห็น <code>L4CON</code>/<code>L6RSP</code>/<code>L7STS</code> ให้ไปที่ <a href="13-troubleshooting.html">บทที่ 13 ข้อ 1.3</a>
+· เดิมข้อนี้ใช้ <code>grep -o 'k8s-master0[123]'</code> ซึ่ง<strong>ผ่านเสมอ</strong> เพราะชื่อ server อยู่ในหน้า stats
+ตั้งแต่ config ถูกโหลด ต่อให้ backend DOWN ครบทั้ง 3 ตัวก็ยัง grep เจอ</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3>🔒 เก็บกวาดบัตรผ่าน — ทำหลัง join ครบทุกเครื่องแล้ว</h3>
+<p><code>upload-certs</code> ฝาก <strong>CA key ของ control plane</strong> ไว้ใน Secret <code>kubeadm-certs</code> (เข้ารหัสด้วย
+certificate-key ที่พิมพ์ออกมา) ส่วน token ที่ออกไว้ก็ยังใช้ join ได้จนกว่าจะหมดอายุ
+ทั้งสองอย่างมีอายุสั้นและหายเองได้ แต่ไม่มีเหตุผลให้เก็บไว้เมื่อ join ครบแล้ว</p>
+<div class="cb"><pre><code class="language-bash">kubeadm token list
+kubectl -n kube-system get secret kubeadm-certs
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">kubeadm token list -o jsonpath='{range .items[*]}{.token_id}{"
+"}{end}' 2&gt;/dev/null | xargs -r kubeadm token delete
+kubectl -n kube-system delete secret kubeadm-certs --ignore-not-found
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>kubeadm token list</code> ว่าง และ Secret หายไป</p>
+<blockquote>
+<p>ต้องออก token ใหม่ทีหลังก็ทำได้ตลอดด้วย <code>kubeadm token create --ttl 2h --print-join-command</code>
+· ถ้าจะเพิ่ม master ทีหลังต้อง <code>kubeadm init phase upload-certs --upload-certs</code> ใหม่อีกรอบ</p>
+<p>การ join ที่ทำไปแล้วไม่ได้รับผลกระทบเลย — node ที่เข้ามาแล้วใช้ cert ของตัวเองใน
+<code>/etc/kubernetes/kubelet.conf</code> ไม่ได้พึ่ง token หรือ Secret นี้อีก</p>
+</blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[ ] <code>kubectl cluster-info</code> ชี้ไปที่ <strong><code>https://192.168.50.100:8443</code></strong></li>
 <li>[ ] <code>kubectl get nodes</code> เห็นครบ <strong>6 เครื่อง</strong> ทุกตัว version <code>v1.36.3</code></li>
@@ -385,6 +685,7 @@ kubectl -n kube-system delete cm kube-proxy
 <li>[ ] <strong>ไม่มี</strong> DaemonSet ชื่อ <code>kube-proxy</code></li>
 <li>[ ] <code>/etc/kubernetes/pki/</code> มี cert ครบบน master ทั้ง 3</li>
 <li>[ ] เก็บ <code>kubeadm-init.log</code> ไว้ที่ปลอดภัยแล้ว และ<strong>ไม่ได้อยู่ใน git</strong></li>
+<li>[ ] ลบ bootstrap token ที่เหลือ และ Secret <code>kubeadm-certs</code> ทิ้งแล้ว</li>
 </ul>
 <p><strong>ตรวจอายุ certificate ไว้เป็น baseline:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubeadm certs check-expiration
@@ -392,7 +693,7 @@ kubectl -n kube-system delete cm kube-proxy
 <p><strong>ควรเห็น:</strong> cert ทั่วไปเหลือ ~364 วัน · CA เหลือ ~3649 วัน
 <strong>จดวันหมดอายุลงปฏิทินทีมทันที</strong> — นี่คือสิ่งที่ cluster เดิมพลาดจนต้องรื้อทำใหม่</p>
 <p><strong>➡️ ต่อที่ <a href="05-cilium.html">บทที่ 05 — Cilium</a></strong></p>
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="03-ha-layer.html">← HA Layer</a><a class="pn" href="05-cilium.html">Cilium →</a></div>
   </main>
 </div>
@@ -533,6 +834,40 @@ kubectl -n kube-system delete cm kube-proxy
       });
     });
   });
+
+  /* ---------- กรองตามเครื่อง ---------- */
+  /* จำไว้ข้ามบทด้วย เพราะคนหนึ่งรอบมักนั่งอยู่หน้าเครื่องเดียว
+     ถ้าบทถัดไปไม่มีเครื่องนั้น จะเด้งกลับเป็น "ทั้งหมด" เองไม่ให้หน้าว่างเปล่า */
+  var MKEY='myhr-k8s-machine';
+  var tabs=document.getElementById('mtabs');
+  if(tabs){
+    var avail=[].map.call(tabs.querySelectorAll('.mtab'), function(b){ return b.dataset.m; });
+    var applyM=function(m){
+      if(avail.indexOf(m)<0) m='all';
+      document.body.dataset.mfilter=m;
+      tabs.querySelectorAll('.mtab').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); });
+      document.querySelectorAll('.step').forEach(function(sec){
+        var list=(sec.dataset.machines||'all').split(' ');
+        /* ขั้นที่ไม่ได้ระบุเครื่องเลย = ใช้ได้ทุกเครื่อง ต้องเห็นเสมอ
+           ขั้นที่ระบุแล้ว ต้องมีเครื่องที่เลือกอยู่ในรายการถึงจะโชว์ */
+        var show = (m==='all') || (list.length===1 && list[0]==='all') || list.indexOf(m)>=0;
+        sec.classList.toggle('hide-m', !show);
+      });
+      document.querySelectorAll('.sub').forEach(function(d){
+        var dm=d.dataset.machine||'all';
+        d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
+      });
+      try{ localStorage.setItem(MKEY,m); }catch(e){}
+      paintFab();
+    };
+    tabs.addEventListener('click', function(e){
+      var b=e.target.closest('.mtab');
+      if(b){ applyM(b.dataset.m); }
+    });
+    var savedM='all';
+    try{ savedM=localStorage.getItem(MKEY)||'all'; }catch(e){}
+    applyM(savedM);
+  }
 
   /* ---------- เมนูบนจอเล็ก ---------- */
   var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');

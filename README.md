@@ -6,8 +6,8 @@
 
 | ที่อยู่ | คืออะไร |
 |---|---|
+| `html/cilium-envoy-scenarios.html` | **Cilium + Envoy Gateway — สถานการณ์จริงและแบบแผนที่ควรทำ** — 28 อาการเรียงตามความถี่ที่เจอจริง + 25 แบบแผน (API service · React/Angular · แบ่ง namespace ตาม env · กัน namespace เรียกหากัน · zone public/private · auth ที่ทางเข้า · เข้ารหัส · เตรียม audit) · มีภาพประกอบ อภิธานศัพท์ ช่องค้นหาและตัวกรอง เปิดด้วยเบราว์เซอร์ได้เลย |
 | `k8s-architecture-blueprint.html` | **ข้อเสนอสถาปัตยกรรมฉบับปรับปรุง 2026** — สถาปัตยกรรม 13 ชั้น, ตารางตัดสินใจ D1–D10, โครงเอกสารที่เสนอ, version matrix และแผนดำเนินการ เปิดด้วยเบราว์เซอร์ได้เลย |
-| `k8s-training-old/` | คู่มือชุดเดิม (Kubernetes 1.30, ~2024) เก็บไว้อ้างอิงระหว่างเขียนชุดใหม่ |
 
 ## สถานะ
 
@@ -25,7 +25,7 @@ operations (backup / cert renewal / upgrade) ทั้งหมด จึงเ�
 | HA / VIP | keepalived + HAProxy เป็น **systemd service** |
 | CNI | **Cilium** — ทำ CNI + kube-proxy replacement + LB-IPAM ในตัวเดียว |
 | kube-proxy | **ไม่ติดตั้ง** (`skipPhases: [addon/kube-proxy]`) |
-| ทางเข้า | **Envoy Gateway** (Gateway API) + cert-manager |
+| ทางเข้า | **Envoy Gateway** (Gateway API) + public cert ขององค์กร (มี internal CA เป็นทางเลือก) |
 | Storage | **ไม่มี** โดยเจตนา — ฐานข้อมูลอยู่นอก cluster |
 | Deploy | `kubectl apply` จาก git + policy check ที่ CI |
 

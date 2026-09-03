@@ -170,13 +170,26 @@ img{max-width:100%}
   .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
   .wrap{margin-left:0}
 }
+
+/* ---------- แถบกรองตามเครื่อง ---------- */
+/* บทที่ join ทีละเครื่องมีขั้นของ master01 กับของเครื่องปลายทางสลับกัน
+   คนที่นั่งอยู่หน้าเครื่องไหนควรเห็นเฉพาะของเครื่องนั้นได้ ไม่ต้องเลื่อนข้าม */
+.mtabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 20px}
+.mtabs-l{color:var(--dim);font-size:13px;margin-right:2px}
+.mtab{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer;transition:all .15s}
+.mtab:hover{border-color:var(--accent);color:var(--accent)}
+.mtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.hide-m{display:none !important}
+.mnote{color:var(--dim);font-size:13px;margin:-10px 0 18px}
+
 </style>
 </head>
 <body data-chapter="ansible.md" data-total="9">
 
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
-  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="9"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="16"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item cur" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="17"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item cur" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
 </aside>
 
 <div class="wrap">
@@ -203,7 +216,8 @@ img{max-width:100%}
 </blockquote>
 <hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>สถานะ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+    
+    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2>สถานะ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <table>
 <thead>
 <tr>
@@ -262,12 +276,12 @@ img{max-width:100%}
 <tr>
 <td><code>ha-layer.yml</code></td>
 <td>03 ข้อ 1-3</td>
-<td>✅ รันจริงครบ 3 master (28 ส.ค. 2026) · VIP นิ่งที่ master01 · <strong>ยังไม่ผ่าน failover test</strong></td>
+<td>✅ รันจริงครบ 3 master (28 ส.ค. 2026) · <strong>failover test ผ่านแล้ว</strong> (28 ส.ค. 2026 · 5.1 หยุด keepalived, 5.2 หยุด HAProxy, 5.4 <code>kubectl</code> ผ่าน VIP ไม่ขาด) · ⬜ ยังไม่ได้จดเวลา failover เป็นตัวเลข · ⬜ ข้อ 5.3 (reboot) เลื่อนไปทำหลังบท 05</td>
 </tr>
 <tr>
 <td><code>create-cluster.yml</code></td>
 <td>04</td>
-<td>⬜ <strong>ยังไม่เคยรัน</strong></td>
+<td>⬜ <strong>ยังไม่เคยรัน</strong> — บท 04 ทำมือทั้งหมด (28 ส.ค. – 1 ก.ย. 2026): init + join master02/03 + join worker ครบ 6 node · <strong>เส้นทางของ playbook จึงยังไม่เคยถูกพิสูจน์เลยสักบรรทัด</strong> ถึงจะแก้ไปหลายรอบระหว่างทำมือก็ตาม</td>
 </tr>
 <tr>
 <td><code>cilium.yml</code></td>
@@ -288,10 +302,13 @@ img{max-width:100%}
 <blockquote>
 <p>ทั้งสามตัวที่ยังไม่เคยรัน ตรวจมาแล้วแค่ YAML syntax กับ scanner ไล่ pattern บั๊ก
 ที่เคยเจอ — <strong>ทำมือหนึ่งเครื่องก่อนเสมอ</strong> แล้วค่อย <code>--check</code> ใส่เครื่องนั้น</p>
+<p><strong><code>create-cluster.yml</code> ได้กับดักจากการทำมือรอบ 28 ส.ค. – 1 ก.ย. 2026 มาใส่ไว้แล้วทั้งหมด</strong>
+(audit policy ก่อน init/join · เคลียร์ <code>lost+found</code> · <code>kubeadm config validate</code> ·
+รอ apiserver ขึ้นจริงหลัง join · ไม่หมุน certificate-key เกินจำเป็น · <code>--ttl 2h</code>)
+แต่ <strong>&quot;ใส่ไว้แล้ว&quot; ไม่เท่ากับ &quot;ผ่านแล้ว&quot;</strong> — cluster ถัดไปต้องรันของจริงถึงจะรู้</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>ติดตั้งครั้งเดียว</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<h3>1 · WSL2 + Ansible</h3>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2>ติดตั้งครั้งเดียว</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3>1 · WSL2 + Ansible</h3>
 <p>Ansible เป็น control node บน Windows ไม่ได้ ต้องมี Linux:</p>
 <div class="cb"><pre><code class="language-powershell">wsl --install -d Ubuntu
 wsl --set-default Ubuntu
@@ -310,7 +327,7 @@ wsl --set-default Ubuntu
 <div class="cb"><pre><code class="language-bash">ansible-galaxy collection install ansible.posix community.general
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 </blockquote>
-<h3>2 · ⚠️ repo อยู่บนไดรฟ์ D: — ต้องแก้ permission ก่อน</h3>
+</div><div class="sub" data-machine="all"><h3>2 · ⚠️ repo อยู่บนไดรฟ์ D: — ต้องแก้ permission ก่อน</h3>
 <p>WSL mount ไดรฟ์ Windows แบบ world-writable (777) และ
 <strong>Ansible จะเมิน <code>ansible.cfg</code> ที่อยู่ในโฟลเดอร์ world-writable แบบเงียบ ๆ</strong>
 ผลคือมันไม่โหลด <code>inventory.ini</code> ให้ แล้วคุณจะเจอ &quot;ไม่พบ host&quot; ทั้งที่ไฟล์อยู่ตรงนั้น</p>
@@ -331,12 +348,12 @@ EOF
 <p>เลขสิทธิ์ที่ได้จะเป็น <code>755</code> สำหรับโฟลเดอร์ และ <code>744</code> สำหรับไฟล์ — <strong>ถูกต้องแล้ว</strong>
 สิ่งที่ Ansible ตรวจคือ <em>โฟลเดอร์</em> ที่คุณยืนอยู่ ไม่ใช่สิทธิ์ของตัวไฟล์</p>
 </blockquote>
-<h3>3 · VPN</h3>
+</div><div class="sub" data-machine="all"><h3>3 · VPN</h3>
 <p>เครื่อง cluster อยู่หลัง Fortinet SSL VPN — ทดสอบก่อนว่า WSL ทะลุไปได้ไหม</p>
 <div class="cb"><pre><code class="language-bash">ping -c2 192.168.50.101
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ผ่านแล้วจบ ไม่ต้องแก้อะไร · ถ้าไม่ผ่านดู <a href="#%E0%B9%81%E0%B8%81%E0%B9%89%E0%B8%9B%E0%B8%B1%E0%B8%8D%E0%B8%AB%E0%B8%B2%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%80%E0%B8%84%E0%B8%A2%E0%B9%80%E0%B8%88%E0%B8%AD%E0%B8%88%E0%B8%A3%E0%B8%B4%E0%B8%87">แก้ปัญหา</a></p>
-<h3>4 · SSH key</h3>
+</div><div class="sub" data-machine="all"><h3>4 · SSH key</h3>
 <div class="cb"><pre><code class="language-bash">ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ''
 for ip in 101 102 103 104 105 106; do
   ssh-copy-id -o StrictHostKeyChecking=accept-new root@192.168.50.$ip
@@ -349,7 +366,7 @@ done
 <p>ต้องได้ <code>SUCCESS</code> หกบรรทัด ไม่มีเครื่องไหนถามรหัสอีก
 ถ้าเครื่องไหนขึ้น <code>Permission denied (publickey,...)</code> แปลว่ายังไม่ได้แลก key กับเครื่องนั้น</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>ก่อนรันทุกเครื่อง — 3 ข้อที่ playbook ไม่ทำให้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>ก่อนรันทุกเครื่อง — 3 ข้อที่ playbook ไม่ทำให้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>playbook <strong>ตรวจ</strong> ทั้งสามข้อและหยุดถ้ายังไม่ได้ทำ แต่ <strong>ไม่ทำให้</strong> โดยเจตนา</p>
 <p>ดูสถานะรวดเดียว:</p>
 <div class="cb"><pre><code class="language-bash">for ip in 101 102 103 104 105 106; do
@@ -380,7 +397,7 @@ done
 </tr>
 </tbody>
 </table>
-<h3>ย้าย partition — 🔴 master กับ worker คนละปลายทาง</h3>
+</div><div class="sub" data-machine="all"><h3>ย้าย partition — 🔴 master กับ worker คนละปลายทาง</h3>
 <p><strong>master → <code>/var/lib/etcd</code></strong></p>
 <div class="cb"><pre><code class="language-bash">findmnt /home                     # ยืนยันว่าเป็น partition แยกจริงก่อน
 umount /home
@@ -400,7 +417,7 @@ findmnt /var/lib/containerd &amp;&amp; grep -v '^#' /etc/fstab | grep -E 'contai
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>🔴 <strong>บรรทัดสุดท้ายคือด่านสุดท้ายก่อน reboot</strong> — ต้องเห็น mount point ใหม่ และ
 <strong>ต้องไม่เหลือบรรทัด <code>/home</code></strong> ใน fstab · fstab ผิดแล้วเครื่องไม่กลับมา ต้องไปแก้ที่ console ของ VMware</p>
-<h3>ล้าง /etc/hosts ถ้าเคยรันคู่มือรุ่นเก่า</h3>
+</div><div class="sub" data-machine="all"><h3>ล้าง /etc/hosts ถ้าเคยรันคู่มือรุ่นเก่า</h3>
 <p>คู่มือรุ่นก่อน 27 ส.ค. 2026 ใช้ <code>cat &gt;&gt;</code> ซึ่งไม่มี marker — playbook มองไม่เห็นแล้วเพิ่มบล็อกที่สองทับ</p>
 <div class="cb"><pre><code class="language-bash">cp /etc/hosts /etc/hosts.bak
 sed -i -E '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/!{/^[0-9.]+[[:space:]]+(k8s-(vip|master0[1-3]|worker0[1-3])|registry\.myhr\.co\.th)[[:space:]]*$/d}' /etc/hosts
@@ -408,10 +425,9 @@ grep -c k8s-master01 /etc/hosts   # ต้องได้ 0 หรือ 1 ไ�
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ทำครั้งเดียวพอ — คู่มือปัจจุบันและ playbook ใช้ marker <code># BEGIN k8s cluster</code> ชุดเดียวกันแล้ว</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>ลำดับการรัน — ห้ามข้าม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<h3>ขั้น 1 · ทำมือหนึ่งเครื่องก่อน ✅</h3>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>ลำดับการรัน — ห้ามข้าม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3>ขั้น 1 · ทำมือหนึ่งเครื่องก่อน ✅</h3>
 <p>ต้องรู้ก่อนว่า &quot;ถูกต้อง&quot; หน้าตาเป็นยังไง ถึงจะบอกได้ว่า playbook ทำถูกหรือเปล่า</p>
-<h3>ขั้น 2 · 🔑 <code>--check</code> ใส่เครื่องที่ทำมือเสร็จแล้ว</h3>
+</div><div class="sub" data-machine="all"><h3>ขั้น 2 · 🔑 <code>--check</code> ใส่เครื่องที่ทำมือเสร็จแล้ว</h3>
 <p><strong>การทดสอบที่ดีที่สุดที่มี</strong> เพราะรู้คำตอบล่วงหน้า — เครื่องนั้นอยู่ในสถานะปลายทางที่ถูกต้องอยู่แล้ว</p>
 <div class="cb"><pre><code class="language-bash">ansible-playbook prepare-os.yml --check --diff --limit k8s-master01 --skip-tags reboot
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -454,13 +470,38 @@ grep -c k8s-master01 /etc/hosts   # ต้องได้ 0 หรือ 1 ไ�
 ถ้าแยก play ที่ <code>hosts: localhost</code> ไว้ต่างหาก พอสั่ง <code>--limit k8s-master01</code> มันจะตัด play นั้นทิ้ง
 แล้วตัวแปรจะไม่มีอยู่จริงตอน play ถัดไปทำงาน (เจอจริงตอนทดสอบครั้งแรก)</p>
 </blockquote>
-<h3>ขั้น 3 · รันจริงใส่เครื่องที่ยังไม่ได้ทำ หนึ่งเครื่อง</h3>
+</div><div class="sub" data-machine="all"><h3>ขั้น 3 · รันจริงใส่เครื่องที่ยังไม่ได้ทำ หนึ่งเครื่อง</h3>
 <div class="cb"><pre><code class="language-bash">ansible-playbook prepare-os.yml --check --diff --limit k8s-master02 --skip-tags reboot   # ดูก่อน
 ansible-playbook prepare-os.yml --limit k8s-master02                                     # แล้วยิงจริง
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ไม่ใส่ <code>--skip-tags reboot</code> ตอนรันจริง</strong> — บท 01 ข้อ 10 บอกว่าห้ามข้าม reboot
 ต้องพิสูจน์ว่าทุกอย่างยังอยู่หลังบูต · playbook รอเครื่องกลับมาเอง แล้ว assert ซ้ำให้</p>
-<h3>ขั้น 4 · เส้นทาง worker ต้องทดสอบแยก</h3>
+</div><div class="sub" data-machine="all"><h3>รัน <code>create-cluster.yml</code> เฉพาะบางเครื่อง (<code>--limit</code>)</h3>
+<p>cluster สร้างไปแล้วบางส่วนด้วยมือ แล้วอยากให้ playbook ทำเครื่องที่เหลือ — ใช้ <code>--limit</code> ได้
+แต่<strong>ต้องมี master01 อยู่ในรอบเสมอ</strong> เพราะ token กับคำสั่ง join ออกจากเครื่องนั้น</p>
+<div class="cb"><pre><code class="language-bash">ansible-playbook create-cluster.yml --limit 'k8s-master01,k8s-worker01'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>playbook ข้ามงานที่ทำไปแล้วเอง: <code>kubeadm init</code> ข้ามถ้ามี <code>/etc/kubernetes/admin.conf</code> ·
+join ข้ามถ้ามี <code>/etc/kubernetes/kubelet.conf</code> · master ตัวอื่นที่ไม่ได้อยู่ใน <code>--limit</code>
+จะไม่ถูกแตะเลย</p>
+<p>สองอย่างที่ทำไว้เพื่อให้ <code>--limit</code> ใช้ได้จริง:</p>
+<ul>
+<li><strong>ข้อตรวจท้าย playbook เทียบกับเครื่องที่อยู่ในรอบนี้ ไม่ใช่ทั้ง inventory</strong> — <code>--limit</code>
+ไม่ได้ทำให้ <code>groups['k8s_nodes']</code> เล็กลง ถ้าเทียบกับ group ตรง ๆ การรันทีละเครื่องจะ fail
+ทุกครั้งทั้งที่ทำงานถูก · ความครบของ cluster เทียบกับ inventory ยังรายงานให้ดู แต่ไม่ fail</li>
+<li><strong><code>upload-certs</code> รันเฉพาะรอบที่มี master ซึ่งยังไม่มี <code>/etc/kubernetes/kubelet.conf</code></strong> —
+คำสั่งนี้เข้ารหัส cert ใหม่ด้วย key ใหม่ทุกครั้ง ทำให้ <code>certificate-key</code> ที่ออกไปก่อนหน้า
+ใช้ไม่ได้ทันที · เงื่อนไขจึงดูที่ &quot;ยังมี master ที่ต้อง join จริงไหม&quot; ไม่ใช่แค่ &quot;มี master
+อยู่ใน <code>--limit</code> ไหม&quot; ไม่งั้นการรันเต็มบน cluster ที่ join ครบแล้วจะหมุน key ทิ้งฟรี ๆ
+แล้วไปทำให้ key ที่คนอื่นถืออยู่ระหว่าง join ใช้ไม่ได้
+(ดู <a href="13-troubleshooting.html">บท 13 ข้อ 12.5</a>)</li>
+</ul>
+<blockquote>
+<p><code>--check</code> กับ playbook นี้บอกอะไรได้ไม่มากในเครื่องที่ยังไม่ join เพราะ <code>kubeadm join</code>
+เป็น command task ที่ถูกข้ามใน check mode แล้วข้อตรวจท้ายก็จะไม่ผ่านตามไปด้วย
+ใช้ <code>--list-hosts</code> ดูว่าจะแตะเครื่องไหนบ้างจะตรงประเด็นกว่า</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3>ขั้น 4 · เส้นทาง worker ต้องทดสอบแยก</h3>
 <p>master กับ worker เดินคนละกิ่งใน playbook — <strong>ผ่าน master ไม่ได้แปลว่า worker ผ่าน</strong></p>
 <div class="cb"><pre><code class="language-bash">ansible-playbook prepare-os.yml --check --diff --limit k8s-worker01 --skip-tags reboot
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -496,7 +537,7 @@ ansible-playbook prepare-os.yml --limit k8s-master02                            
 <div class="cb"><pre><code class="language-bash">ansible-playbook prepare-os.yml --limit k8s-worker01
 ansible-playbook prepare-os.yml --limit 'k8s-worker02,k8s-worker03'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>ขั้น 5 · 🔑 พิสูจน์ว่า playbook เทียบเท่าการทำมือ</h3>
+</div><div class="sub" data-machine="all"><h3>ขั้น 5 · 🔑 พิสูจน์ว่า playbook เทียบเท่าการทำมือ</h3>
 <p><strong>นี่คือเกณฑ์ผ่านของทั้งเรื่อง</strong> — เทียบเครื่องที่ทำมือกับเครื่องที่ playbook ทำ</p>
 <div class="cb"><pre><code class="language-bash">for ip in 101 102; do ssh root@192.168.50.$ip 'bash -s' &lt; ../config/audit-node.sh &gt; /tmp/a$ip.txt; done
 diff &lt;(sed '1,3d;s/k8s-master0[0-9]/NODE/g' /tmp/a101.txt) \
@@ -509,7 +550,7 @@ diff /tmp/b102.txt /tmp/b104.txt
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ต่างเรื่องอื่น = ช่องโหว่ในเส้นทาง worker</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <table>
 <thead>
 <tr>
@@ -538,14 +579,14 @@ diff /tmp/b102.txt /tmp/b104.txt
 </table>
 <p>ทั้งสามข้อมี task <strong>ตรวจ</strong> ว่าทำมาแล้วหรือยัง ถ้ายังไม่ได้ทำ playbook จะหยุดพร้อมบอกเหตุผล
 ไม่ใช่ทำต่อไปเงียบ ๆ</p>
-<h3>เรื่อง kernel — บังคับแค่ major.minor</h3>
+</div><div class="sub" data-machine="all"><h3>เรื่อง kernel — บังคับแค่ major.minor</h3>
 <div class="cb"><pre><code class="language-text">บังคับ  : สาย 6.12 + ต้องเป็น uek   → หลุดไป RHCK 5.14 หรือ 6.13 = หยุดทันที
 เตือน   : หางเลข 203/204/205        → errata ของ Oracle ไม่กระทบ Cilium
 </code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>เครื่องที่หางเลขไม่ตรงกับ <code>KERNEL_UEK</code> จะขึ้นคำเตือนทุกครั้งที่รัน แต่ไม่หยุดงาน
 สถานะปัจจุบันและแผนจัดการอยู่ใน <a href="CHECKLIST.html">CHECKLIST หมวด C2</a></p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>แหล่งความจริงของเวอร์ชัน</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2>แหล่งความจริงของเวอร์ชัน</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>playbook <strong>ไม่มีเลขเวอร์ชันหรือ IP เขียนไว้ตรง ๆ เลย</strong> — <code>pre_tasks</code> แรกจะ <code>source versions.env</code>
 ด้วย bash แล้วแปลงเป็นตัวแปรของ Ansible ใช้ semantics เดียวกับที่คู่มือทำเป๊ะ</p>
 <p>แปลว่าแก้ <a href="../docs/versions.env"><code>../docs/versions.env</code></a> ที่เดียวยังใช้ได้เหมือนเดิม
@@ -572,8 +613,7 @@ diff /tmp/b102.txt /tmp/b104.txt
 <div class="cb"><pre><code class="language-bash">curl -sI https://registry.myhr.co.th/v2/ || curl -sI http://registry.myhr.co.th/v2/
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>แก้ปัญหาที่เคยเจอจริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<h3><code>container-runtime.yml</code> ค้างนานตอนดาวน์โหลด</h3>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2>แก้ปัญหาที่เคยเจอจริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3><code>container-runtime.yml</code> ค้างนานตอนดาวน์โหลด</h3>
 <p>release asset ของ GitHub <strong>redirect ไป <code>release-assets.githubusercontent.com</code></strong>
 ซึ่งเป็นคนละ host กับ <code>github.com</code> และช้ากว่ามาก (วัดจาก node จริง: github.com 1.3 วิ
 vs asset host 11.4 วิ แค่ HEAD) ดาวน์โหลด 35-55 MB จึงกินเวลาเป็นนาที</p>
@@ -587,7 +627,7 @@ for ip in 102 103 104 105 106; do
 done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>playbook เห็นไฟล์ที่ checksum ตรงแล้วจะไม่โหลดซ้ำ</p>
-<h3><code>--check</code> ล้มบนเครื่องเปล่า — <code>dest '...' must be an existing dir</code></h3>
+</div><div class="sub" data-machine="all"><h3><code>--check</code> ล้มบนเครื่องเปล่า — <code>dest '...' must be an existing dir</code></h3>
 <p><strong>ไม่ใช่บั๊ก</strong> — ใน check mode Ansible ไม่ได้สร้างของจริง task ที่พึ่งผลของ
 task ก่อนหน้าจึงล้ม เช่น <code>unarchive</code> ลง <code>/opt/cni/bin</code> ที่ <code>file</code> module
 เพิ่งรายงานว่า <em>จะ</em> สร้าง แต่ยังไม่ได้สร้าง</p>
@@ -610,7 +650,7 @@ task ก่อนหน้าจึงล้ม เช่น <code>unarchive</co
 </tbody>
 </table>
 <p><code>--check</code> มีค่าตอนใช้ตรวจ drift ไม่ใช่ตอนติดตั้งครั้งแรก</p>
-<h3><code>scp: Permission denied</code> ตอนกระจายไฟล์จาก master01</h3>
+</div><div class="sub" data-machine="all"><h3><code>scp: Permission denied</code> ตอนกระจายไฟล์จาก master01</h3>
 <p>คีย์ที่แจกคือของ <strong>WSL → root@nodes</strong> ส่วน root บน master01 ไม่มีคีย์ไปเครื่องอื่น
 ส่ง agent ไปด้วยเพื่อให้ไฟล์วิ่งใน LAN ไม่ผ่าน VPN:</p>
 <div class="cb"><pre><code class="language-bash">eval "$(ssh-agent -s)" &amp;&amp; ssh-add ~/.ssh/id_ed25519
@@ -622,23 +662,44 @@ ssh -A root@192.168.50.101
   scp /root/k8s/dl/* root@192.168.50.$ip:/root/k8s/dl/
 done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3><code>Permission denied (publickey,gssapi-keyex,...)</code></h3>
+</div><div class="sub" data-machine="all"><h3><code>Permission denied (publickey,gssapi-keyex,...)</code></h3>
 <p>ยังไม่ได้แลก SSH key กับเครื่องนั้น:</p>
 <div class="cb"><pre><code class="language-bash">ssh-copy-id -o StrictHostKeyChecking=accept-new root@192.168.50.&lt;ip&gt;
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3><code>UNREACHABLE</code> / <code>Connection closed by ... port 22</code> ทั้งที่ ssh ธรรมดาผ่าน</h3>
+</div><div class="sub" data-machine="all"><h3><code>UNREACHABLE</code> / <code>Connection closed by ... port 22</code> ทั้งที่ ssh ธรรมดาผ่าน</h3>
 <p>Ansible เปิด SSH socket ค้างไว้ 60 วินาที (<code>ControlPersist</code>) เพื่อใช้ซ้ำ
 ถ้าเครื่องปลายทาง reboot หรือ sshd รีสตาร์ทระหว่างนั้น socket เดิมตายแต่ Ansible ยังหยิบมาใช้</p>
 <div class="cb"><pre><code class="language-bash">rm -f ~/.ansible/cp/*
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>หรือรอ 60 วินาทีให้หมดอายุเอง · <strong>ไม่ต้องปิด multiplexing</strong> — มันช่วยเรื่องความเร็วมาก</p>
-<h3><code>object of type 'HostVarsVars' has no attribute 'v'</code></h3>
+</div><div class="sub" data-machine="all"><h3><code>object of type 'HostVarsVars' has no attribute 'v'</code></h3>
 <p><code>--limit</code> ตัด play ที่โหลด <code>versions.env</code> ทิ้ง — แก้แล้วตั้งแต่ 27 ส.ค. 2026
 (ย้ายไปเป็น <code>pre_tasks</code> ใน play เดียวกับ node) ถ้ายังเจอแปลว่าใช้ playbook เวอร์ชันเก่า</p>
-<h3><code>The 'community.general.yaml' callback plugin has been removed</code></h3>
+</div><div class="sub" data-machine="all"><h3><code>The 'community.general.yaml' callback plugin has been removed</code></h3>
 <p><code>ansible.cfg</code> ชี้ callback ที่ถูกถอดใน community.general 12.0.0 — แก้แล้ว
 ใช้ <code>stdout_callback = default</code> + <code>result_format = yaml</code> แทน</p>
-<h3>WSL ทะลุ VPN ไม่ได้</h3>
+</div><div class="sub" data-machine="all"><h3><code>create-cluster.yml</code> ตายที่ task &quot;ทุก document ใน kubeadm-config.yaml ต้องมี apiVersion และ kind&quot;</h3>
+<p>task นี้รันบน control node ก่อนส่งไฟล์ขึ้นเครื่อง มันจำลองวิธีที่ kubeadm หั่น <code>--config</code>
+คือหั่นที่บรรทัดขึ้นต้นด้วย <code>---</code> ตรง ๆ ไม่ได้ parse YAML ก่อน ชิ้นที่มีตัวอักษรอยู่
+แต่ไม่มี <code>apiVersion</code>+<code>kind</code> (เช่นคอมเมนต์หัวไฟล์ที่ถูก <code>---</code> คั่นออกมา) ทำให้ <code>kubeadm init</code>
+ตายด้วย <code>GroupVersionKind /, Kind=</code> โดยไม่บอกว่าไฟล์ไหนบรรทัดไหน</p>
+<p>ข้อความ fail ของ task บอกช่วงบรรทัดมาให้แล้ว — แก้ที่
+<a href="../config/kubeadm/kubeadm-config.yaml"><code>config/kubeadm/kubeadm-config.yaml</code></a> บน control node
+แล้วรันซ้ำ ตรวจเองก่อนได้ด้วย:</p>
+<div class="cb"><pre><code class="language-bash">awk -f config/kubeadm-docsplit.awk config/kubeadm/kubeadm-config.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>ต้องมี task นี้เพราะ <code>--syntax-check</code>, yamllint และ PyYAML ข้ามคอมเมนต์ก่อน <code>---</code> ให้หมด
+ไฟล์จึงผ่านทุกด่านฝั่ง Ansible แล้วไปตายที่ kubeadm ตัวเดียว — ดู
+<a href="13-troubleshooting.html">บท 13 ข้อ 12</a></p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3><code>create-cluster.yml</code> ตายที่ task &quot;kubeadm ต้องอ่าน config แล้วผ่าน validate&quot;</h3>
+<p>task นี้คือ <code>kubeadm config validate</code> ซึ่งอ่านแค่ไฟล์ ไม่แตะเครื่อง — ตายตรงนี้แปลว่า
+<strong>ค่าใน config ผิด</strong> ไม่ใช่เครื่องไม่พร้อม อ่านค่าที่มันบอกมาแล้วแก้ที่
+<a href="../config/kubeadm/kubeadm-config.yaml"><code>config/kubeadm/kubeadm-config.yaml</code></a> บน control node</p>
+<p>ตัวที่เคยเจอ: <code>token: &quot;&quot;</code> ใน <code>bootstrapTokens</code> — ไม่ได้แปลว่า &quot;ปล่อยว่างให้สุ่มเอง&quot;
+ต้องไม่มี field <code>token</code> เลย kubeadm ถึงจะสุ่มให้ (ดู <a href="13-troubleshooting.html">บท 13 ข้อ 12.2</a>)</p>
+</div><div class="sub" data-machine="all"><h3>WSL ทะลุ VPN ไม่ได้</h3>
 <p>ถ้า <code>ping 192.168.50.101</code> จาก WSL ไม่ผ่านทั้งที่ Windows ผ่าน — โหมด NAT ของ WSL
 ไม่ได้รับ route ของ VPN มาด้วย เปิด mirrored networking:</p>
 <div class="cb"><pre><code class="language-powershell">@"
@@ -654,7 +715,7 @@ wsl --shutdown
 ย้อนกลับด้วย <code>Remove-Item &quot;$env:USERPROFILE\.wslconfig&quot;; wsl --shutdown</code></p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>คำสั่งที่ใช้บ่อย</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2>คำสั่งที่ใช้บ่อย</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <table>
 <thead>
 <tr>
@@ -701,7 +762,7 @@ wsl --shutdown
 เอามาใช้เป็นเครื่องมือ <strong>ตรวจ config drift</strong> ได้ตลอดอายุ cluster ไม่ใช่แค่ตอนติดตั้ง
 ซึ่งตอบความเสี่ยงข้อ &quot;node บูตคนละ kernel โดยไม่รู้ตัว&quot; ใน blueprint โดยตรง</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>เมื่อไหร่ควรใช้จริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2>เมื่อไหร่ควรใช้จริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <table>
 <thead>
 <tr>
@@ -725,7 +786,7 @@ wsl --shutdown
 </tbody>
 </table>
 <p><strong>อย่าใช้ playbook นี้กับ production ก่อนที่มันจะผ่าน Phase 3</strong></p>
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="CHECKLIST.html">← เช็กลิสต์งานค้าง</a><span class="pn dim">— บทสุดท้าย —</span></div>
   </main>
 </div>
@@ -866,6 +927,40 @@ wsl --shutdown
       });
     });
   });
+
+  /* ---------- กรองตามเครื่อง ---------- */
+  /* จำไว้ข้ามบทด้วย เพราะคนหนึ่งรอบมักนั่งอยู่หน้าเครื่องเดียว
+     ถ้าบทถัดไปไม่มีเครื่องนั้น จะเด้งกลับเป็น "ทั้งหมด" เองไม่ให้หน้าว่างเปล่า */
+  var MKEY='myhr-k8s-machine';
+  var tabs=document.getElementById('mtabs');
+  if(tabs){
+    var avail=[].map.call(tabs.querySelectorAll('.mtab'), function(b){ return b.dataset.m; });
+    var applyM=function(m){
+      if(avail.indexOf(m)<0) m='all';
+      document.body.dataset.mfilter=m;
+      tabs.querySelectorAll('.mtab').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); });
+      document.querySelectorAll('.step').forEach(function(sec){
+        var list=(sec.dataset.machines||'all').split(' ');
+        /* ขั้นที่ไม่ได้ระบุเครื่องเลย = ใช้ได้ทุกเครื่อง ต้องเห็นเสมอ
+           ขั้นที่ระบุแล้ว ต้องมีเครื่องที่เลือกอยู่ในรายการถึงจะโชว์ */
+        var show = (m==='all') || (list.length===1 && list[0]==='all') || list.indexOf(m)>=0;
+        sec.classList.toggle('hide-m', !show);
+      });
+      document.querySelectorAll('.sub').forEach(function(d){
+        var dm=d.dataset.machine||'all';
+        d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
+      });
+      try{ localStorage.setItem(MKEY,m); }catch(e){}
+      paintFab();
+    };
+    tabs.addEventListener('click', function(e){
+      var b=e.target.closest('.mtab');
+      if(b){ applyM(b.dataset.m); }
+    });
+    var savedM='all';
+    try{ savedM=localStorage.getItem(MKEY)||'all'; }catch(e){}
+    applyM(savedM);
+  }
 
   /* ---------- เมนูบนจอเล็ก ---------- */
   var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');

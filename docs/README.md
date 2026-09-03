@@ -14,6 +14,11 @@
 คู่มือชุดเดียวกันนี้มีเวอร์ชัน HTML ที่มีปุ่มคัดลอกทุก code block,
 ปุ่มทำเครื่องหมาย "ทำแล้ว" รายขั้น และปุ่มลอยกระโดดกลับไปขั้นที่ค้างอยู่
 
+บทที่มีขั้นตอนของหลายเครื่องปนกัน (01 และ 04) มี **แถบ "แสดงเฉพาะ:"** ให้เลือกเครื่อง
+กดแล้วจะเหลือเฉพาะขั้นของเครื่องนั้น — คนที่นั่งอยู่หน้า master02 จะไม่ต้องเลื่อนข้าม
+ขั้นของ master01 ไปมา · ตัวเลือกจำข้ามบทให้ และถ้าบทถัดไปไม่มีเครื่องนั้นจะกลับเป็น "ทั้งหมด" เอง
+อีโมจิที่ใช้เป็นชุดเดียวกับ[บทที่ 00](00-overview.md): 👑 master01 · 🎩 master ทุกตัว · ⚙️ worker
+
 ```bash
 python tools/build-html.py     # แล้วเปิด html/index.html
 ```
@@ -36,7 +41,7 @@ python tools/build-html.py     # แล้วเปิด html/index.html
 | [04](04-create-cluster.md) | `kubeadm init` + join ทุก node | master01 → ที่เหลือ |
 | [05](05-cilium.md) | Cilium — CNI + kube-proxy + LB-IPAM | master01 |
 | [06](06-verify.md) | ตรวจรับระบบ + ซ้อม failover | master01 |
-| [07](07-gateway-tls.md) | Envoy Gateway + cert-manager + internal CA | master01 |
+| [07](07-gateway-tls.md) | Envoy Gateway + TLS — **public cert** หรือ internal CA | master01 |
 | [08](08-storage.md) | Storage — ไม่มี CSI + static local PV | master01 + worker03 |
 | | **ใช้งานและดูแล** | |
 | [09](09-observability.md) | metrics-server · Prometheus · Loki · **alert** | master01 |
@@ -44,6 +49,17 @@ python tools/build-html.py     # แล้วเปิด html/index.html
 | [11](11-deploy-app.md) | แม่แบบ manifest + CI policy check | dev + ops |
 | [12](12-day2-operations.md) | **backup · cert renewal · rolling reboot · upgrade** | ops |
 | [13](13-troubleshooting.md) | ไล่ปัญหาตามอาการที่เห็น | ทุกคน |
+
+**เอกสารเสริม (HTML อย่างเดียว — ไม่มีขั้นตอนให้ทำตาม):**
+[`../html/cilium-envoy-scenarios.html`](../html/cilium-envoy-scenarios.html) — สองฝั่งในหน้าเดียว มีช่องค้นหาและตัวกรอง
+
+| ฝั่ง | มีอะไร | ใช้ตอนไหน |
+|---|---|---|
+| 🔧 ปัญหาที่เจอ (28) | อาการ → สาเหตุเรียงตามที่เจอจริง → คำสั่งวินิจฉัย → วิธีแก้ | ของพังแล้ว · ใช้คู่กับบทที่ 13 |
+| 📐 แบบแผนที่ควรทำ (25) | API service · SPA (React/Angular) · แบ่ง namespace ตาม env · กัน namespace เรียกหากัน · แบ่ง zone public/private · **auth ที่ทางเข้า (API key · JWT/OIDC · mTLS)** · เข้ารหัส pod network · เตรียม network ให้ audit ได้ | ก่อนสร้าง service ใหม่ · ใช้คู่กับบทที่ 07, 10, 11 |
+
+เขียนให้คนที่ยังไม่เคยใช้ Cilium/Gateway API มาก่อนอ่านแล้วทำตามได้ — มีภาพประกอบ 12 ภาพ
+อภิธานศัพท์ และทุกขั้นบอกว่า "ควรเห็นอะไร" ถึงจะถือว่าทำถูก
 
 **⚠️ ห้ามข้ามบทที่ 03** — `controlPlaneEndpoint` ฝังลงใน certificate
 แก้ทีหลังหมายถึงรื้อ cluster ทำใหม่
@@ -65,11 +81,13 @@ config/
 │   ├── values.yaml                        Helm values
 │   ├── lb-ippool.yaml                     cilium.io/v2
 │   └── l2-announcement-policy.yaml        cilium.io/v2alpha1  ← คนละ apiVersion
-├── cert-manager/                          บท 07
+├── cert-manager/                          บท 07 · เฉพาะ "ทาง B" (internal CA)
 │   ├── internal-ca.yaml                   root CA อายุ 10 ปี + ClusterIssuer
+│   ├── wildcard-cert.yaml                 cert ของ listener HTTPS
 │   └── pdb.yaml
 ├── gateway/                               บท 07
 │   ├── gateway.yaml                       Gateway หลัก — กิน LB IP ตัวเดียว
+│   ├── import-public-cert.sh              "ทาง A" — ตรวจ+ใส่ public cert ที่มีอยู่แล้ว
 │   ├── httproute-example.yaml             แม่แบบต่อ service
 │   └── https-redirect.yaml
 ├── storage/                               บท 08
@@ -102,11 +120,17 @@ config/
 
 ## เตรียมก่อนเริ่ม
 
-คัดลอกไปวางที่ `/root/k8s/` บนทุกเครื่อง:
+คัดลอกไปวางที่ `/root/k8s/` **บนทุกเครื่อง** — รันจากrepoบนเครื่องตัวเอง:
 
 ```bash
-scp -r docs/versions.env config/ root@192.168.50.101:/root/k8s/
+for ip in 101 102 103 104 105 106; do
+  ssh root@192.168.50.$ip 'mkdir -p /root/k8s'
+  scp -r docs/versions.env config/ root@192.168.50.$ip:/root/k8s/
+done
 ```
+
+> เดิมบรรทัดนี้มีแค่ `.101` ทั้งที่ข้อความบอกว่า "ทุกเครื่อง" — กดปุ่ม copy แล้วได้แค่เครื่องเดียว
+> แล้วไปเจอปัญหาเอาตอนบทที่ 04 ว่าเครื่องอื่นไม่มีไฟล์ที่ต้อง mount
 
 แล้วรันบรรทัดนี้ก่อนเริ่มทุก session:
 

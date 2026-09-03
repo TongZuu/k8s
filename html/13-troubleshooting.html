@@ -170,13 +170,26 @@ img{max-width:100%}
   .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
   .wrap{margin-left:0}
 }
+
+/* ---------- แถบกรองตามเครื่อง ---------- */
+/* บทที่ join ทีละเครื่องมีขั้นของ master01 กับของเครื่องปลายทางสลับกัน
+   คนที่นั่งอยู่หน้าเครื่องไหนควรเห็นเฉพาะของเครื่องนั้นได้ ไม่ต้องเลื่อนข้าม */
+.mtabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 20px}
+.mtabs-l{color:var(--dim);font-size:13px;margin-right:2px}
+.mtab{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer;transition:all .15s}
+.mtab:hover{border-color:var(--accent);color:var(--accent)}
+.mtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.hide-m{display:none !important}
+.mnote{color:var(--dim);font-size:13px;margin:-10px 0 18px}
+
 </style>
 </head>
-<body data-chapter="13-troubleshooting.md" data-total="16">
+<body data-chapter="13-troubleshooting.md" data-total="17">
 
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
-  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="9"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item cur" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="16"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item cur" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="17"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
 </aside>
 
 <div class="wrap">
@@ -187,7 +200,7 @@ img{max-width:100%}
       <p class="sub">ผู้อ่าน: ทุกคน · เปิดตอนมีปัญหา · เรียงตามอาการที่เห็น ไม่ใช่ตามชื่อ component · เพราะตอนตีสามคุณไม่รู้ว่าปัญหาอยู่ชั้นไหน</p>
     </div>
     <div class="top-p">
-      <span id="pcount">0/16</span>
+      <span id="pcount">0/17</span>
       <div class="bar"><i id="pbar"></i></div>
       <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
     </div>
@@ -196,7 +209,8 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>เริ่มที่นี่เสมอ — 60 วินาทีแรก</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+    
+    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2>เริ่มที่นี่เสมอ — 60 วินาทีแรก</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">kubectl get nodes                                    # node ตายไหม
 kubectl get pods -A | grep -v -E 'Running|Completed' # อะไรผิดปกติ
 kubectl get events -A --sort-by=.lastTimestamp | tail -20
@@ -204,7 +218,7 @@ cilium status                                        # network ยังดี�
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ถ้า <code>kubectl</code> เองใช้ไม่ได้</strong> ข้ามไป <a href="#1-kubectl-%E0%B9%83%E0%B8%8A%E0%B9%89%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A5%E0%B8%A2">อาการที่ 1</a></p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>ตั้งตัวแปรก่อนเริ่มไล่</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2>ตั้งตัวแปรก่อนเริ่มไล่</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>คำสั่งในบทนี้ใช้ <code>$NS</code> / <code>$POD</code> / <code>$APP</code> / <code>$SVC</code> / <code>$NODE</code> ซ้ำ ๆ <strong>ตั้งค่าให้ตรงกับของที่กำลังมีปัญหาก่อน</strong>
 ไม่งั้น copy ไปวางแล้วจะได้ error เรื่อง namespace ว่าง ซึ่งชวนหลงทางตอนตีสาม</p>
 <div class="cb"><pre><code class="language-bash">NS=myhr-prod                                   # namespace ที่มีปัญหา
@@ -218,7 +232,7 @@ echo "NS=$NS POD=$POD NODE=$NODE"
 <p><code>$POD_A</code> / <code>$POD_B</code> / <code>$POD_B_IP</code> ใช้เฉพาะหัวข้อ <strong>5 · pod คุยข้าม node ไม่ได้</strong> — ตั้งค่าที่หัวข้อนั้น</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>สารบัญอาการ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>สารบัญอาการ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <table>
 <thead>
 <tr>
@@ -283,13 +297,25 @@ echo "NS=$NS POD=$POD NODE=$NODE"
 <td>pod <code>Running</code> แต่เรียกไม่ได้</td>
 <td>NetworkPolicy</td>
 </tr>
+<tr>
+<td><a href="#12-kubeadm-init-%E0%B8%95%E0%B8%B2%E0%B8%A2%E0%B8%95%E0%B8%B1%E0%B9%89%E0%B8%87%E0%B9%81%E0%B8%95%E0%B9%88%E0%B8%A2%E0%B8%B1%E0%B8%87%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B9%80%E0%B8%A3%E0%B8%B4%E0%B9%88%E0%B8%A1">12</a></td>
+<td><code>kubeadm init</code> ตายตั้งแต่ยังไม่เริ่ม</td>
+<td>ไฟล์ <code>--config</code> — โครงไฟล์ / ค่าข้างใน</td>
+</tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>อาการที่เฉพาะเจาะจงกับ Cilium + Envoy Gateway</strong> (404/503 จาก Gateway, HTTPRoute ไม่ผูก,
+cert ของ listener, ARP/L2, NetworkPolicy ตัด Envoy) อยู่ในหน้าแยกที่ค้นด้วยข้อความ error ได้:
+<a href="../html/cilium-envoy-scenarios.html"><code>../html/cilium-envoy-scenarios.html</code></a> —
+<strong>28 อาการ</strong> เรียงตามความถี่ที่เจอจริง + <strong>25 แบบแผน</strong> ว่าควรออกแบบยังไงตั้งแต่แรก
+บทนี้ยังเป็นจุดตั้งต้นเสมอ</p>
+</blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>1. kubectl ใช้ไม่ได้เลย</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>1. kubectl ใช้ไม่ได้เลย</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-text">The connection to the server 192.168.50.100:8443 was refused
 </code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>ไล่ตามลำดับ</h3>
+</div><div class="sub" data-machine="all"><h3>ไล่ตามลำดับ</h3>
 <div class="cb"><pre><code class="language-bash"># 1. VIP ยังมีอยู่ไหม และอยู่เครื่องเดียวหรือเปล่า
 for ip in 101 102 103; do
   echo -n "master$ip: "
@@ -301,13 +327,13 @@ done
 <li>ได้ <code>1</code> มากกว่าหนึ่งเครื่อง → <strong>split brain</strong> ไปข้อ 1.2</li>
 <li>ได้ <code>1</code> เครื่องเดียว → ไปข้อ 1.3</li>
 </ul>
-<h3>1.1 ไม่มีใครถือ VIP</h3>
+</div><div class="sub" data-machine="all"><h3>1.1 ไม่มีใครถือ VIP</h3>
 <div class="cb"><pre><code class="language-bash">systemctl status keepalived
 journalctl -u keepalived -n 50 --no-pager
 /etc/keepalived/check_apiserver.sh; echo "exit=$?"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ถ้า script คืน exit 1 แปลว่า HAProxy ตาย → <code>systemctl restart haproxy</code></p>
-<h3>1.2 Split brain (VIP ขึ้นหลายเครื่อง)</h3>
+</div><div class="sub" data-machine="all"><h3>1.2 Split brain (VIP ขึ้นหลายเครื่อง)</h3>
 <p><strong>แยกให้ออกก่อนว่าเป็น split brain จริง หรือ VIP กระพริบ</strong> — อาการคล้ายกันแต่คนละสาเหตุ
 รันคำสั่งข้อ 1 ซ้ำอีกรอบห่างกัน 10 วินาที:</p>
 <ul>
@@ -325,7 +351,7 @@ journalctl -u keepalived -n 50 --no-pager
 grep virtual_router_id /etc/keepalived/keepalived.conf   # ต้องเป็น 60 ทั้ง 3 เครื่อง
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ข้อสุดท้าย: switch บล็อก multicast <code>224.0.0.18</code> → ต้องคุยกับทีม network</p>
-<h3>1.2b VIP กระพริบ</h3>
+</div><div class="sub" data-machine="all"><h3>1.2b VIP กระพริบ</h3>
 <p>VRRP ทำงานปกติ (ไม่ใช่ split brain) แต่ VIP ย้ายเครื่องไปมาไม่หยุด ยืนยันด้วย:</p>
 <div class="cb"><pre><code class="language-bash">journalctl -u keepalived -n 40 --no-pager | grep -iE 'Entering|transition'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -342,12 +368,99 @@ grep virtual_router_id /etc/keepalived/keepalived.conf   # ต้องเป็
 เครื่องที่ถือ VIP จึงยิง <code>/healthz</code> ไม่ผ่านเสมอ ด่าน 2 จึงข้ามการตรวจนั้นไปจนกว่าจะมี
 <code>kube-apiserver</code> ฟังที่ <code>:6443</code> จริง</p>
 </blockquote>
-<h3>1.3 VIP ปกติ แต่ยังต่อไม่ได้</h3>
+</div><div class="sub" data-machine="all"><h3>1.3 VIP ปกติ แต่ยังต่อไม่ได้</h3>
+<p><strong>แยกให้ออกก่อนว่าเจอ <code>refused</code> หรือ <code>EOF</code></strong> — คนละสาเหตุกัน:</p>
+<table>
+<thead>
+<tr>
+<th>ข้อความ</th>
+<th>แปลว่า</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>connection refused</code></td>
+<td>ไม่มีใครฟังที่ <code>:8443</code> — HAProxy ตายหรือไม่ได้ start</td>
+</tr>
+<tr>
+<td><code>EOF</code> / <code>broken pipe</code></td>
+<td>HAProxy รับ connection แล้วปิดทันที = <strong>ไม่มี backend ตัวไหน UP</strong></td>
+</tr>
+</tbody>
+</table>
 <div class="cb"><pre><code class="language-bash">ss -lnt | grep 8443                          # HAProxy ฟังอยู่ไหม
-curl -s http://127.0.0.1:8404/stats | head   # backend ขึ้นกี่ตัว
-crictl ps | grep kube-apiserver              # apiserver รันอยู่ไหม
+curl -s "http://127.0.0.1:8404/stats;csv" | awk -F, '$1=="kube-apiserver-backend"{print $2, $18, "check="$37, "code="$38}'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ช่อง <code>check</code> บอกว่า health check ล้มที่ชั้นไหน ซึ่งชี้สาเหตุได้ตรงกว่าคำว่า <code>DOWN</code>:</p>
+<table>
+<thead>
+<tr>
+<th>check</th>
+<th>ชั้นที่ล้ม</th>
+<th>มักเป็นเพราะ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>L4CON</code></td>
+<td>ต่อ TCP ไม่ติด</td>
+<td>apiserver ไม่ได้รัน · firewalld ปิด <code>6443</code> ระหว่าง master</td>
+</tr>
+<tr>
+<td><code>L6RSP</code></td>
+<td>TLS handshake</td>
+<td>ค่า check ใน <code>haproxy.cfg</code> ชนกัน (<code>httpchk</code> + <code>ssl-hello-chk</code> ใช้ร่วมกันไม่ได้) — ดู 1.3b</td>
+</tr>
+<tr>
+<td><code>L7STS</code></td>
+<td>HTTP ตอบมาแต่ status ไม่ใช่ 200</td>
+<td><code>/healthz</code> ยังไม่พร้อม หรือ apiserver กำลัง start</td>
+</tr>
+<tr>
+<td><code>L7OK</code></td>
+<td>ผ่าน</td>
+<td>ปัญหาไม่ได้อยู่ที่ backend นี้</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>DOWN ครบทั้ง 3 ตัวรวม master01 ตอนเพิ่ง <code>kubeadm init</code> เสร็จ</strong> มักไม่ใช่ปัญหาของ HAProxy
+แต่คือ apiserver ยังไม่ขึ้นจริง · <strong><code>/etc/kubernetes/admin.conf</code> มีอยู่ไม่ได้แปลว่า init สำเร็จ</strong>
+kubeadm เขียนไฟล์นี้ตั้งแต่ก่อนขั้น <code>wait-control-plane</code> ดังนั้น init ที่ล้มทีหลังก็ทิ้งไฟล์นี้ไว้ได้
+ย้อนไปดูว่า <code>kubeadm init</code> จบด้วย <code>exit=0</code> และมีบรรทัด
+<code>Your Kubernetes control-plane has initialized successfully!</code> หรือเปล่า</p>
+</blockquote>
+<div class="cb"><pre><code class="language-bash">crictl ps -a --name kube-apiserver           # ขึ้นไหม restart ไปกี่รอบ
 crictl logs $(crictl ps -a --name kube-apiserver -q | head -1) 2&gt;&amp;1 | tail -30
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<h4>1.3b ทุก backend <code>DOWN check=L6RSP</code> — config ของ HAProxy ชนกันเอง</h4>
+<p>เกิดกับเครื่องที่ยังถือ <code>haproxy.cfg</code> รุ่นที่มีทั้ง <code>option httpchk</code> และ <code>option ssl-hello-chk</code>
+สองอันนี้ใช้ร่วมกันไม่ได้ · check เลยกลายเป็น &quot;ทัก TLS แล้วรอ HTTP 200&quot; ซึ่งไม่มีวันผ่าน</p>
+<p><strong>ตรวจให้ครบทุก master — เครื่องที่แก้ไปแล้วเครื่องเดียวไม่พอ:</strong></p>
+<div class="cb"><pre><code class="language-bash">for ip in 101 102 103; do
+  echo "--- master$ip ---"
+  ssh root@192.168.50.$ip "grep -c '^[[:space:]]*option[[:space:]]\+ssl-hello-chk' /etc/haproxy/haproxy.cfg"
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>0</code> ทั้งสามเครื่อง — ได้ <code>1</code> ที่ไหนคือเครื่องนั้นยังพัง</p>
+<p><strong>แก้:</strong></p>
+<div class="cb"><pre><code class="language-bash">for ip in 101 102 103; do
+  ssh root@192.168.50.$ip "sed -i '/^[[:space:]]*option[[:space:]]\+ssl-hello-chk/d' /etc/haproxy/haproxy.cfg &amp;&amp; haproxy -c -f /etc/haproxy/haproxy.cfg &amp;&amp; systemctl restart haproxy"
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p><strong>ทำไมต้องแก้ทุกเครื่อง ไม่ใช่แค่เครื่องที่ถือ VIP</strong> — HAProxy ของแต่ละ master ตรวจ backend
+ของตัวเอง และ <code>check_apiserver.sh</code> ของ keepalived บนเครื่องนั้นก็อ่านผลจากตัวเดียวกัน
+เครื่องที่ HAProxy เห็น backend DOWN หมดจะ<strong>ไม่ยอมรับ VIP ตอน failover</strong> —
+cluster จะดูปกติทุกอย่างจนกว่าจะถึงวันที่ master01 ล่มจริง แล้วถึงรู้ว่าไม่มีใครรับ VIP ต่อ</p>
+<p>อย่าลืม sync <code>/root/k8s/config/haproxy/haproxy.cfg</code> บนเครื่องให้ตรงกับrepoด้วย
+ไม่งั้นครั้งหน้าที่ใครก๊อปไฟล์นั้นไปวางทับ <code>/etc/haproxy/</code> ก็กลับไปพังเหมือนเดิม</p>
+</blockquote>
+<blockquote>
+<p><strong>SELinux ไม่ใช่สาเหตุใน cluster นี้</strong> — บทที่ 01 ข้อ 7 ตั้งเป็น <code>Permissive</code> ไว้แล้ว
+(ถ้าเครื่องไหน <code>getenforce</code> ได้ <code>Enforcing</code> แปลว่าหลุดจากมาตรฐาน ให้แก้ที่บท 01 ก่อน
+ไม่ใช่มาไล่เปิด boolean ทีละตัวอย่าง <code>haproxy_connect_any</code>)</p>
+</blockquote>
 <p><strong>ทางลัดฉุกเฉิน — ข้าม VIP ต่อตรงที่ master:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl --server=https://192.168.50.101:6443 \
         --certificate-authority=/etc/kubernetes/pki/ca.crt \
@@ -356,10 +469,10 @@ crictl logs $(crictl ps -a --name kube-apiserver -q | head -1) 2&gt;&amp;1 | tai
         get nodes
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>2. node NotReady</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>2. node NotReady</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">kubectl describe node "$NODE" | grep -A10 Conditions
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>บนเครื่องนั้น</h3>
+</div><div class="sub" data-machine="all"><h3>บนเครื่องนั้น</h3>
 <div class="cb"><pre><code class="language-bash">systemctl status kubelet containerd
 journalctl -u kubelet -n 80 --no-pager | grep -iE 'error|fail'
 df -h /                       # disk เต็มไหม — สาเหตุที่พบบ่อยมาก
@@ -396,18 +509,18 @@ uname -r                      # kernel ตรงกับเครื่อง�
 </tr>
 </tbody>
 </table>
-<h3>2.1 disk เต็ม</h3>
+</div><div class="sub" data-machine="all"><h3>2.1 disk เต็ม</h3>
 <div class="cb"><pre><code class="language-bash">du -sh /var/log/* /var/lib/containerd 2&gt;/dev/null | sort -h | tail
 crictl rmi --prune                          # ลบ image ที่ไม่มีใครใช้
 journalctl --vacuum-size=500M
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ถ้าเป็น <code>k8s-worker03</code></strong> อาจเป็น <code>/var/lib/monitoring</code> โต — ลด retention (บทที่ 09)</p>
-<h3>2.2 Cilium ไม่ขึ้นบน node นี้</h3>
+</div><div class="sub" data-machine="all"><h3>2.2 Cilium ไม่ขึ้นบน node นี้</h3>
 <div class="cb"><pre><code class="language-bash">kubectl -n kube-system get pods -l k8s-app=cilium -o wide | grep "$NODE"
 kubectl -n kube-system logs -l k8s-app=cilium --field-selector spec.nodeName="$NODE" --tail=50
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>3. pod ค้าง Pending</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2>3. pod ค้าง Pending</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">kubectl -n "$NS" describe pod "$POD" | tail -25
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <table>
@@ -445,7 +558,7 @@ kubectl -n kube-system logs -l k8s-app=cilium --field-selector spec.nodeName="$N
 ผลรวม requests ต้องไม่เกิน 32 vCPU / 96 GB</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>4. pod CrashLoopBackOff</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2>4. pod CrashLoopBackOff</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">kubectl -n "$NS" logs "$POD" --previous | tail -50    # --previous สำคัญ
 kubectl -n "$NS" describe pod "$POD" | grep -A5 'Last State'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -475,16 +588,16 @@ kubectl -n "$NS" describe pod "$POD" | grep -A5 'Last State'
 </tr>
 </tbody>
 </table>
-<h3>สาเหตุอันดับ 1 สำหรับ Spring Boot: <code>livenessProbe</code> ฆ่าก่อนเริ่มเสร็จ</h3>
+</div><div class="sub" data-machine="all"><h3>สาเหตุอันดับ 1 สำหรับ Spring Boot: <code>livenessProbe</code> ฆ่าก่อนเริ่มเสร็จ</h3>
 <div class="cb"><pre><code class="language-bash">kubectl -n "$NS" get deploy "$APP" -o yaml | grep -A8 startupProbe
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ถ้าไม่มี <code>startupProbe</code> = นี่คือสาเหตุ</strong> — <code>livenessProbe</code> เริ่มนับตั้งแต่ pod เกิด
 Spring Boot ที่ใช้เวลาเริ่ม 60 วินาทีจะถูกฆ่าตั้งแต่ยังไม่ทันขึ้น แล้ววนแบบนี้ตลอดไป
 แก้โดยเพิ่ม <code>startupProbe</code> ตามแม่แบบในบทที่ 11</p>
-<h3><code>violates PodSecurity &quot;restricted&quot;</code></h3>
+</div><div class="sub" data-machine="all"><h3><code>violates PodSecurity &quot;restricted&quot;</code></h3>
 <p>manifest ยังใช้ <code>runAsUser: 0</code> — เทียบกับแม่แบบ (บทที่ 11)</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>5. pod ข้าม node ไม่ได้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2>5. pod ข้าม node ไม่ได้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>อาการคลาสสิก:</strong> pod บน node เดียวกันคุยกันได้ ข้าม node ไม่ได้</p>
 <div class="cb"><pre><code class="language-bash"># หา pod สองตัวคนละ node แล้ว ping กัน
 kubectl get pods -o wide -n "$NS"
@@ -495,7 +608,7 @@ POD_B=&lt;ชื่อ pod ตัวที่ 2 คนละ node&gt;
 POD_B_IP=$(kubectl -n "$NS" get pod "$POD_B" -o jsonpath='{.status.podIP}')
 kubectl -n "$NS" exec "$POD_A" -- ping -c3 "$POD_B_IP"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>5.1 firewalld — สาเหตุอันดับ 1</h3>
+</div><div class="sub" data-machine="all"><h3>5.1 firewalld — สาเหตุอันดับ 1</h3>
 <div class="cb"><pre><code class="language-bash">firewall-cmd --list-ports | grep 8472        # VXLAN ของ Cilium
 firewall-cmd --list-all
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -511,7 +624,7 @@ firewall-cmd --permanent --zone=trusted --add-interface=cilium_net
 firewall-cmd --permanent --zone=trusted --add-interface=cilium_vxlan
 firewall-cmd --reload
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>5.2 MTU — &quot;ping ผ่าน แต่ HTTP ค้าง&quot;</h3>
+</div><div class="sub" data-machine="all"><h3>5.2 MTU — &quot;ping ผ่าน แต่ HTTP ค้าง&quot;</h3>
 <div class="cb"><pre><code class="language-bash">kubectl -n "$NS" exec "$POD_A" -- ping -c3 -M do -s 1372 "$POD_B_IP"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ถ้า <code>ping</code> ธรรมดาผ่านแต่อันนี้ล้ม → <strong>MTU ผิด</strong>
@@ -520,25 +633,25 @@ firewall-cmd --reload
 <p>อาการที่จะเจอตอนใช้จริง: HTTP request ใหญ่ ๆ ค้าง หรือ TLS handshake ล้มเป็นบางครั้ง
 ซึ่งหลอกให้ไปไล่หาปัญหาที่ application</p>
 </blockquote>
-<h3>5.3 kernel module หายหลัง reboot</h3>
+</div><div class="sub" data-machine="all"><h3>5.3 kernel module หายหลัง reboot</h3>
 <div class="cb"><pre><code class="language-bash">lsmod | grep -E '^overlay|^br_netfilter'
 cat /etc/modules-load.d/k8s.conf
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ถ้าไฟล์ไม่มี = ปัญหาเดียวกับ cluster เดิม → กลับไปทำบทที่ 01 ขั้นที่ 6</p>
-<h3>5.4 ดูของจริงด้วย Hubble</h3>
+</div><div class="sub" data-machine="all"><h3>5.4 ดูของจริงด้วย Hubble</h3>
 <div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec -it ds/cilium -- \
   hubble observe --namespace "$NS" --verdict DROPPED --last 100
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>6. DNS ไม่ตอบ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2>6. DNS ไม่ตอบ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">kubectl run dnstest --rm -it --restart=Never --image=busybox:1.36 -- \
   nslookup kubernetes.default.svc.cluster.local
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>6.1 CoreDNS ตาย</h3>
+</div><div class="sub" data-machine="all"><h3>6.1 CoreDNS ตาย</h3>
 <div class="cb"><pre><code class="language-bash">kubectl -n kube-system get pods -l k8s-app=kube-dns
 kubectl -n kube-system logs -l k8s-app=kube-dns --tail=50
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>6.2 NetworkPolicy บล็อก — พบบ่อยที่สุดหลังทำบทที่ 10</h3>
+</div><div class="sub" data-machine="all"><h3>6.2 NetworkPolicy บล็อก — พบบ่อยที่สุดหลังทำบทที่ 10</h3>
 <div class="cb"><pre><code class="language-bash">kubectl -n "$NS" get networkpolicy
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ถ้ามี <code>default-deny-all</code> แต่ไม่มี <code>allow-dns-egress</code> = นี่คือสาเหตุ</strong></p>
@@ -548,17 +661,37 @@ kubectl -n kube-system logs -l k8s-app=kube-dns --tail=50
 <p>อาการหลอก: application ขึ้น <code>Running</code> ปกติ แต่ log เต็มไปด้วย
 <code>UnknownHostException</code> หรือ <code>could not resolve host</code></p>
 </blockquote>
-<h3>6.3 DNS ช้าเป็นระยะ</h3>
+</div><div class="sub" data-machine="all"><h3>6.3 DNS ช้าเป็นระยะ</h3>
 <p>ปกติสำหรับ cluster ที่มี microservices เรียกกันเยอะ — พิจารณา NodeLocal DNSCache
 และเพิ่ม CoreDNS replica</p>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10"><div class="step-head"><h2>7. LoadBalancer IP ขึ้นแต่เข้าไม่ได้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2>7. LoadBalancer IP ขึ้นแต่เข้าไม่ได้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <blockquote>
 <p>🔴 <strong>อาการหลอกที่สุดในคู่มือทั้งชุด</strong> — ทุกอย่างใน Kubernetes ดูปกติหมด</p>
 </blockquote>
 <div class="cb"><pre><code class="language-bash">kubectl get svc -A | grep LoadBalancer     # EXTERNAL-IP ขึ้นปกติ
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>จากเครื่องนอก cluster</h3>
+</div><div class="sub" data-machine="all"><h3>7.0 เช็คก่อนอย่างอื่น — เครื่องที่ใช้ทดสอบอยู่วงไหน</h3>
+<div class="cb"><pre><code class="language-bash">ip -br addr        # Linux
+ipconfig           # Windows
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>🔴 <strong>ถ้า IP ไม่ได้ขึ้นต้นด้วย <code>192.168.50.</code> ให้หยุดตรงนี้ — ผลทดสอบใช้ไม่ได้</strong></p>
+<p>ARP ข้าม subnet ไม่ได้ เครื่องที่อยู่วงอื่นจะ<strong>ไม่มีวัน</strong>มี ARP entry ของ <code>192.168.50.200</code>
+<code>arp -a</code> ที่ขึ้น <code>No ARP Entries Found</code> ในกรณีนี้ <strong>ไม่ได้แปลว่าอะไรผิด</strong> — มันปกติ
+ที่เห็นเป็น &quot;ติดครั้งแรกแล้วตายยาว&quot; คืออายุ ARP cache ของ <strong>router</strong> ไม่ใช่อาการของ cluster</p>
+<p>หาเครื่องในวง <code>192.168.50.0/24</code> ที่ไม่ใช่ node มาทดสอบ
+หรือใช้ <code>arping</code> จาก node ที่ไม่ได้ถือ lease แทน (วิธีอยู่ในบทที่ 05 หัวข้อ 7)</p>
+</blockquote>
+<blockquote>
+<p>🔴 <strong><code>curl http://192.168.50.200</code> บน node เองผ่านเสมอ — ห้ามใช้เป็นเกณฑ์ผ่าน</strong>
+บน node มี eBPF ของ Cilium ดัก LoadBalancer IP ตั้งแต่ชั้น socket
+แพ็กเก็ตไม่เคยถูกแปลงเป็น ARP request ด้วยซ้ำ
+<strong>ต่อให้ L2 announcement พังสนิท curl บน node ก็ยังได้ <code>200 OK</code></strong>
+มันยืนยันได้แค่ว่า Service + endpoint + pod ทำงาน ซึ่งคนละเรื่องกับ ARP
+ใช้ <code>arping</code> เท่านั้นในการตัดสิน</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3>7.1 จากเครื่องทดสอบที่อยู่ในวง <code>192.168.50.0/24</code></h3>
 <div class="cb"><pre><code class="language-bash">ping -c2 192.168.50.200
 arp -n 192.168.50.200
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -568,23 +701,30 @@ arp -n 192.168.50.200
 หรือ <strong>port security</strong> ไว้ จะบล็อกทิ้ง</p>
 <p><strong>วิธีแก้:</strong> ต้องให้ทีม network ยกเว้นช่วง <code>192.168.50.200-209</code> ให้
 ถ้าทำไม่ได้ → เปลี่ยนไปใช้ BGP mode หรือถอยไป NodePort (ดูบทที่ 05)</p>
-<h3>ตรวจฝั่ง Cilium</h3>
+</div><div class="sub" data-machine="all"><h3>ตรวจฝั่ง Cilium</h3>
 <div class="cb"><pre><code class="language-bash">kubectl get ciliumloadbalancerippool
 kubectl get ciliuml2announcementpolicy
 kubectl -n kube-system get lease | grep l2announce      # ใครกำลังตอบ ARP
 kubectl -n kube-system logs -l name=cilium-operator --tail=50 | grep -i l2
+
+# agent ของ node ที่ถือ lease program entry ลงไปจริงหรือยัง (แทน worker03 ด้วยตัวที่ถือ)
+NODE=k8s-worker03      # เปลี่ยนเป็นตัวที่ถือ lease จริง
+P=$(kubectl -n kube-system get pod -l k8s-app=cilium --field-selector spec.nodeName=$NODE -o name)
+kubectl -n kube-system exec $P -c cilium-agent -- cilium-dbg shell -- db/show l2-announce
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ตาราง <code>l2-announce</code> ต้องมีแถว <code>192.168.50.200</code> คู่กับชื่อ NIC จริงของ node นั้น</strong>
+ถ้าว่าง = ชื่อ NIC ไม่เข้า regex ใน <code>interfaces:</code> ของ policy
+ถ้ามีครบแต่ยิงจากในวงเดียวกันก็ไม่ตอบ = switch บล็อก ไม่ใช่เรื่อง Cilium</p>
 <p><strong>ถ้า <code>EXTERNAL-IP</code> เป็น <code>&lt;pending&gt;</code>:</strong> pool หมดหรือยังไม่ได้สร้าง</p>
 <div class="cb"><pre><code class="language-bash">kubectl describe ciliumloadbalancerippool default-pool
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11"><div class="step-head"><h2>8. x509 error</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
-<h3>8.1 cert ของ cluster หมดอายุ</h3>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11" data-machines="all"><div class="step-head"><h2>8. x509 error</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3>8.1 cert ของ cluster หมดอายุ</h3>
 <div class="cb"><pre><code class="language-bash">kubeadm certs check-expiration
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ถ้าหมดแล้ว → ยังกู้ได้</strong> ตราบใดที่ CA ยังไม่หมด (CA อายุ 10 ปี)
 ทำตามบทที่ 12 หัวข้อ 3</p>
-<h3>8.2 <code>certificate is valid for ... not 192.168.50.100</code></h3>
+</div><div class="sub" data-machine="all"><h3>8.2 <code>certificate is valid for ... not 192.168.50.100</code></h3>
 <p><code>certSANs</code> ขาด — ต้องออก cert ใหม่:</p>
 <div class="cb"><pre><code class="language-bash">grep -A15 certSANs /root/k8s/config/kubeadm/kubeadm-config.yaml
 # เพิ่มชื่อ/IP ที่ขาด แล้ว:
@@ -592,10 +732,24 @@ mv /etc/kubernetes/pki/apiserver.{crt,key} /tmp/
 kubeadm init phase certs apiserver --config=/root/k8s/config/kubeadm/kubeadm-config.yaml
 # แล้ว restart apiserver
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<h3>8.3 client ฝั่งนอกฟ้อง unknown authority</h3>
-<p>ยังไม่ได้ลง root CA ที่เครื่อง client — ดูบทที่ 07 ขั้นที่ 3</p>
+</div><div class="sub" data-machine="all"><h3>8.3 client ฝั่งนอกฟ้อง unknown authority</h3>
+<p>ดูก่อนว่าบทที่ 07 เลือกทางไหน:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get secret myhr-wildcard-tls \
+  -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -issuer -subject -dates
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<ul>
+<li><strong>ทาง B (internal CA)</strong> — <code>issuer</code> เป็น <code>CN=MyHR Internal CA</code>
+แปลว่ายังไม่ได้ลง root CA ที่เครื่อง client นั้น ดูบทที่ 07 ขั้นที่ 3 ทาง B</li>
+<li><strong>ทาง A (public cert)</strong> — <code>issuer</code> เป็น CA ภายนอก แต่ client ยังฟ้อง
+แปลว่า <strong>chain ขาด intermediate</strong> ไม่ใช่เรื่องของเครื่อง client
+(เบราว์เซอร์ที่เคย cache intermediate ไว้จะยังผ่าน จึงดูเหมือนพังเป็นบางเครื่อง)
+ตรวจและแก้ด้วย:</li>
+</ul>
+<div class="cb"><pre><code class="language-bash">bash /root/k8s/config/gateway/import-public-cert.sh --dry-run \
+     /root/certs/fullchain.pem /root/certs/privkey.pem
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-12" data-step="12"><div class="step-head"><h2>9. image pull ไม่ผ่าน</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-12" data-step="12" data-machines="all"><div class="step-head"><h2>9. image pull ไม่ผ่าน</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">kubectl -n "$NS" describe pod "$POD" | grep -A5 Failed
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <table>
@@ -632,7 +786,7 @@ cat /etc/containerd/certs.d/registry.myhr.co.th/hosts.toml
 kubectl get secret regcred -n "$NS"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="12"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-13" data-step="13"><div class="step-head"><h2>10. drain ค้าง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="12"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-13" data-step="13" data-machines="all"><div class="step-head"><h2>10. drain ค้าง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">kubectl drain "$NODE" --ignore-daemonsets --delete-emptydir-data --timeout=300s
 # ค้างที่: "evicting pod ... Cannot evict pod as it would violate PDB"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -669,7 +823,7 @@ kubectl get secret regcred -n "$NS"
 และต้องรู้ว่า service จะดับ</p>
 </blockquote>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="13"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-14" data-step="14"><div class="step-head"><h2>11. pod Running แต่เรียกไม่ได้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="13"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-14" data-step="14" data-machines="all"><div class="step-head"><h2>11. pod Running แต่เรียกไม่ได้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">kubectl -n "$NS" get endpoints "$SVC"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ถ้า <code>ENDPOINTS</code> ว่าง</strong> → selector ของ Service ไม่ตรงกับ label ของ pod
@@ -688,7 +842,188 @@ kubectl -n "$NS" get svc "$SVC" -o jsonpath='{.spec.selector}'; echo
   curl -sv "http://${SVC}"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="14"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-15" data-step="15"><div class="step-head"><h2>รวมคำสั่งที่ใช้บ่อย</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="14"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-15" data-step="15" data-machines="all"><div class="step-head"><h2>12. kubeadm init ตายตั้งแต่ยังไม่เริ่ม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>อาการ</strong> — <code>kubeadm init</code> หรือ <code>kubeadm init phase preflight --dry-run</code> จบทันที
+ยังไม่ทันแตะเครื่องหรือดึง image</p>
+<p><strong>เช็คให้ไวที่สุด</strong> — แยกก่อนว่าปัญหาอยู่ที่ &quot;ไฟล์&quot; หรือ &quot;เครื่อง&quot;:</p>
+<div class="cb"><pre><code class="language-bash">kubeadm config validate --config=/root/k8s/config/kubeadm/kubeadm-config.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>อ่านแค่ไฟล์ ไม่แตะเครื่องเลย · ผ่านแล้วจะพิมพ์ <code>ok</code> และ exit 0
+ถ้า <code>ok</code> แต่ preflight ยังฟ้อง แปลว่าปัญหาอยู่ที่เครื่อง ไม่ใช่ที่ไฟล์</p>
+</div><div class="sub" data-machine="all"><h3>12.1 <code>GroupVersionKind /, Kind=</code> — kubeadm อ่านไฟล์ไม่ออก</h3>
+<div class="cb"><pre><code class="language-text">error: invalid configuration for GroupVersionKind /, Kind=:
+kind and apiVersion is mandatory information that must be specified
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ไม่ใช่ค่าใน config ผิด</strong> — แปลว่ามี YAML document ในไฟล์ <code>--config</code> ที่ไม่มี <code>kind</code>
+<code>/, Kind=</code> ที่ว่างเปล่าคือ GroupVersionKind ที่อ่านไม่ได้ ไม่ใช่ชื่อ kind ที่ผิด</p>
+<p><strong>สาเหตุ</strong> — kubeadm หั่น document ด้วยการมองหาบรรทัดที่ขึ้นต้นด้วย <code>---</code> ตรง ๆ
+ไม่ได้ parse YAML ก่อน ชิ้นที่มีตัวอักษรอยู่แต่ไม่มี <code>apiVersion</code>+<code>kind</code> จะถูกปฏิเสธทันที
+ที่เจอบ่อยสุดคือ <code>---</code> ที่คั่นระหว่างคอมเมนต์หัวไฟล์กับ <code>apiVersion:</code> บรรทัดแรก —
+คอมเมนต์ที่ถูกคั่นออกมากลายเป็น document หนึ่งอันที่ไม่มี kind</p>
+<p><code>---</code> ท้ายไฟล์ล้วน ๆ ไม่พัง แต่ <code>---</code> ที่ตามด้วยคอมเมนต์หรือบรรทัดว่างพังเหมือนกัน</p>
+<p><strong>หาให้เจอว่าบรรทัดไหน</strong> — ข้อความของ kubeadm ไม่บอกทั้งไฟล์และบรรทัด:</p>
+<div class="cb"><pre><code class="language-bash">cd /root/k8s &amp;&amp; awk -f config/kubeadm-docsplit.awk config/kubeadm/kubeadm-config.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ไม่พิมพ์อะไร = ผ่าน · พิมพ์ออกมา = บอกช่วงบรรทัดของ document ที่ไม่มี kind
+(<code>bash config/validate-repo.sh</code> ข้อ 3 เรียกตัวนี้ให้แล้ว)</p>
+<p><strong>แก้</strong> — ลบบรรทัด <code>---</code> ที่ทำให้คอมเมนต์กลายเป็น document แยก แล้วรัน preflight ซ้ำ</p>
+<blockquote>
+<p><strong>ทำไม lint ถึงไม่จับ</strong> — PyYAML และ <code>kubectl apply</code> ข้าม document ว่างให้เอง
+ไฟล์จึง &quot;parse ผ่าน&quot; ทุกเครื่องมือ แต่ตายที่ kubeadm ตัวเดียว
+ไฟล์อื่นใน <code>config/</code> ที่เขียนแบบเดียวกันจึงไม่พัง เพราะไปทาง <code>kubectl</code></p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3>12.2 <code>the bootstrap token &quot;&quot;</code> — อ่านไฟล์ออกแล้วแต่ค่าข้างในผิด</h3>
+<div class="cb"><pre><code class="language-text">error unmarshaling configuration schema.GroupVersionKind{Group:"kubeadm.k8s.io",
+Version:"v1beta4", Kind:"InitConfiguration"}:
+the bootstrap token "" was not of the form "\\A([a-z0-9]{6})\\.([a-z0-9]{16})\\z"
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ต่างจาก 12.1 ตรงที่ครั้งนี้ kubeadm บอก kind มาครบ = หั่น document ได้แล้ว
+ติดที่ <strong>ค่า</strong> ไม่ใช่ที่โครงไฟล์</p>
+<p><code>token: &quot;&quot;</code> <strong>ไม่ได้แปลว่า &quot;ปล่อยว่างให้สุ่มเอง&quot;</strong> — v1beta4 แปลงค่าว่างเป็น
+<code>BootstrapTokenString</code> ไม่ได้เลยตายตั้งแต่ตอน unmarshal
+วิธีให้ kubeadm สุ่ม token ให้คือ <strong>ไม่ใส่ field <code>token</code></strong> ใน <code>bootstrapTokens</code> เลย
+(จะกำหนดเองก็ได้ แต่ต้องเป็นรูป <code>abcdef.0123456789abcdef</code> เท่านั้น)</p>
+<div class="cb"><pre><code class="language-yaml">bootstrapTokens:
+  - ttl: "2h"                           # ไม่มีบรรทัด token: อยู่เหนือ ttl
+    usages: ["signing", "authentication"]
+    groups: ["system:bootstrappers:kubeadm:default-node-token"]
+</code></pre><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>อาการตระกูลนี้ (<code>error unmarshaling configuration ...</code>) คือ <strong>ค่าใน config ผิด</strong>
+ทุกครั้ง ไล่จากชื่อ field และรูปแบบค่าที่ kubeadm บอกมาในบรรทัดเดียวกัน</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3>12.3 apiserver ไม่ขึ้น หรือขึ้นแล้วแต่ <code>audit.log</code> ว่าง</h3>
+<p>audit ของ cluster นี้ประกอบด้วย 3 ชิ้นที่ต้องมาพร้อมกัน ขาดชิ้นไหนอาการต่างกัน</p>
+<table>
+<thead>
+<tr>
+<th>ขาดอะไร</th>
+<th>อาการ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ไฟล์ <code>/etc/kubernetes/audit-policy.yaml</code> บนเครื่อง</td>
+<td><strong>apiserver ไม่ขึ้นเลย</strong> — <code>extraVolumes</code> เป็น <code>pathType: File</code> kubelet จึงไม่ยอมสร้าง pod · <code>kubeadm init</code> ค้างจนหมดเวลา หรือ node ที่เพิ่ง join ไม่ยอม Ready</td>
+</tr>
+<tr>
+<td>flag <code>audit-policy-file</code></td>
+<td>apiserver ขึ้นปกติ <strong>แต่ไม่บันทึกอะไรเลย</strong> — มีแค่ warning <code>No audit policy file provided, no events will be recorded for log backend</code></td>
+</tr>
+<tr>
+<td><code>extraVolumes</code> ของ <code>/var/log/kubernetes</code></td>
+<td>apiserver ขึ้นปกติ เขียน log ได้ <strong>แต่เขียนลงในคอนเทนเนอร์</strong> — โฟลเดอร์บนโฮสต์ว่าง และ log หายทุกครั้งที่ pod restart</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ไล่ตามลำดับนี้:</strong></p>
+<div class="cb"><pre><code class="language-bash">ls -l /etc/kubernetes/audit-policy.yaml          # ต้องมีบน master ทุกตัว
+crictl ps -a --name kube-apiserver               # pod ขึ้นไหม restart รัวไหม
+journalctl -u kubelet --since "-10min" | grep -i "audit-policy\|failed to mount"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">grep -A20 'name: audit' /etc/kubernetes/manifests/kube-apiserver.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ทั้ง <code>--audit-policy-file</code>, <code>--audit-log-path</code> ในส่วน <code>command:</code>
+และ volume ทั้ง <code>audit-policy</code> กับ <code>audit-log</code> ในส่วน <code>volumes:</code></p>
+<blockquote>
+<p><strong>บน master ที่เพิ่ง join</strong> อาการจะหลอกเป็นพิเศษ เพราะ <code>kubeadm join --control-plane</code>
+รอแค่ etcd member เข้าครบ ไม่ได้รอ apiserver ของเครื่องนั้น · <strong>join จึงผ่านสวยทั้งที่ apiserver ไม่เกิด</strong>
+ตรวจด้วย <code>kubectl -n kube-system get pods -l component=kube-apiserver -o wide</code> ว่ามีครบทุก master
+· แก้ได้โดยไม่ต้อง reset หรือ join ใหม่ แค่วางไฟล์ที่ขาด</p>
+</blockquote>
+<p><strong>แก้</strong> — วางไฟล์ policy แล้วให้ kubelet สร้าง pod ใหม่:</p>
+<div class="cb"><pre><code class="language-bash">mkdir -p /var/log/kubernetes
+install -D -m 0600 /root/k8s/config/kubeadm/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>kubelet เห็นไฟล์ครบแล้วจะสร้าง pod ให้เองภายในไม่กี่วินาที (static pod ไม่ต้องสั่งอะไร)</p>
+<blockquote>
+<p><strong>แก้ค่า audit หลังสร้าง cluster ไปแล้ว</strong> ต้องแก้ <code>/etc/kubernetes/manifests/kube-apiserver.yaml</code>
+<strong>ด้วยมือทีละ master</strong> เพราะ kubeadm ไม่ได้ generate manifest ใหม่ให้จาก configmap
+(แก้ configmap <code>kubeadm-config</code> อย่างเดียวไม่มีผลกับเครื่องที่ตั้งไปแล้ว)
+จึงเป็นเหตุผลว่าทำไมต้องตั้งให้ถูกตั้งแต่บทที่ 04 ก่อน <code>init</code></p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3>12.4 preflight ฟ้อง <code>/var/lib/etcd is not empty</code></h3>
+<div class="cb"><pre><code class="language-text">[ERROR DirAvailable--var-lib-etcd]: /var/lib/etcd is not empty
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>kubeadm ขอ <code>dataDir</code> ที่ว่างเปล่าจริง ๆ — ไม่สนว่าของข้างในเป็นของ filesystem เอง
+บน cluster นี้ <code>/var/lib/etcd</code> เป็น partition แยกที่ย้ายมาจาก <code>/home</code> ในบทที่ 01
+ext4 จึงแถม <code>lost+found</code> มาให้ทุกเครื่องตั้งแต่แรก และถ้าเครื่องนั้นเคยมีคนใช้ <code>/home</code>
+โฟลเดอร์ของเดิมจะติดมาด้วย (เครื่องที่ VM template แบ่ง partition มาให้เลยจะมีแค่ <code>lost+found</code>)</p>
+<p><strong>ดูก่อนลบเสมอ:</strong></p>
+<div class="cb"><pre><code class="language-bash">ls -la /var/lib/etcd
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<table>
+<thead>
+<tr>
+<th>เห็นอะไร</th>
+<th>แปลว่า</th>
+<th>ทำอะไร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>มีแค่ <code>lost+found</code></td>
+<td>filesystem ใหม่ปกติ ไม่ใช่ข้อมูล</td>
+<td><code>rm -rf /var/lib/etcd/lost+found</code></td>
+</tr>
+<tr>
+<td>มี <code>member/</code></td>
+<td>เคย init มาก่อน</td>
+<td><code>kubeadm reset -f --cri-socket unix:///run/containerd/containerd.sock</code> แล้วค่อยล้าง</td>
+</tr>
+<tr>
+<td>มีโฟลเดอร์อื่น (เช่น <code>myhr</code>)</td>
+<td>ของที่ติดมาจาก <code>/home</code> ตอนย้าย partition ในบท 01</td>
+<td>ตรวจว่าว่างจริงแล้ว <code>rmdir</code> — มันจะปฏิเสธถ้าข้างในมีของ ต่างจาก <code>rm -rf</code> ที่ลบทิ้งเงียบ ๆ</td>
+</tr>
+</tbody>
+</table>
+<p><strong>อย่าใช้ <code>--ignore-preflight-errors=DirAvailable--var-lib-etcd</code> เพื่อข้ามไป</strong> —
+ถ้าเป็นข้อมูล etcd เก่าจริง cluster จะขึ้นมาพร้อม member เดิมที่ไม่มีอยู่แล้ว
+แล้วไปพังตอน join master ตัวที่สอง ซึ่งไล่หายากกว่ามาก</p>
+<blockquote>
+<p>ป้องกันที่ต้นทางแล้วในบทที่ 01 ข้อ 5 (ลบ <code>lost+found</code> ตอนย้าย partition)
+และ <code>create-cluster.yml</code> ลบให้อัตโนมัติเฉพาะกรณีที่ในโฟลเดอร์มี <code>lost+found</code> อย่างเดียว</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3>12.5 join master ล้มที่ <code>download-certs</code> — <code>cipher: message authentication failed</code></h3>
+<div class="cb"><pre><code class="language-text">[download-certs] Downloading the certificates in Secret "kubeadm-certs" in the "kube-system" Namespace
+error execution phase control-plane-prepare/download-certs: error downloading certs:
+error decoding secret data with provided key: cipher: message authentication failed
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ไม่ใช่ token ผิด และไม่ใช่ของหมดอายุ</strong> — token ผ่านมาแล้ว (ถ้า token ผิดจะตายตั้งแต่ preflight)
+ที่ผิดคือ <code>--certificate-key</code> ถอดรหัส Secret <code>kubeadm-certs</code> ไม่ออก</p>
+<p><strong>สาเหตุ</strong> — <code>kubeadm init phase upload-certs --upload-certs</code> <strong>เข้ารหัส cert ใหม่ด้วย key ใหม่ทุกครั้ง</strong>
+key ของรอบก่อนจึงใช้ไม่ได้ทันทีที่รันรอบใหม่ ไม่ต้องรอหมดอายุ
+เจอบ่อยตอน join master ตัวที่สองแล้วหยิบ key เดิมจาก <code>kubeadm-init.log</code> หรือจากรอบก่อนหน้ามาใช้</p>
+<p><strong>แก้ — ออกคู่ใหม่แล้วใช้ทันที (บน master01):</strong></p>
+<div class="cb"><pre><code class="language-bash">kubeadm init phase upload-certs --upload-certs | tail -1
+kubeadm token create --ttl 2h --print-join-command
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ต้องเอาค่าจากการรันรอบเดียวกันเท่านั้น</strong> · ทั้งสองอย่างมีอายุ 2 ชั่วโมง</p>
+<table>
+<thead>
+<tr>
+<th>ข้อความที่เจอ</th>
+<th>แปลว่า</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cipher: message authentication failed</code></td>
+<td>key ไม่ตรงกับ Secret ปัจจุบัน — มีการ upload-certs ใหม่ไปแล้ว</td>
+</tr>
+<tr>
+<td><code>secrets &quot;kubeadm-certs&quot; not found</code></td>
+<td>Secret หมดอายุหรือถูกลบไปแล้ว — ต้อง <code>upload-certs</code> ใหม่</td>
+</tr>
+<tr>
+<td><code>couldn't validate the identity of the API Server</code></td>
+<td><code>--discovery-token-ca-cert-hash</code> ผิด ไม่ใช่เรื่อง key</td>
+</tr>
+</tbody>
+</table>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="15"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-16" data-step="16" data-machines="all"><div class="step-head"><h2>รวมคำสั่งที่ใช้บ่อย</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash"># ภาพรวม 60 วินาที
 kubectl get nodes &amp;&amp; kubectl get pods -A | grep -v Running &amp;&amp; cilium status
 
@@ -711,10 +1046,36 @@ for ip in 101 102 103; do echo -n "$ip: "; ssh root@192.168.50.$ip 'ip -4 a s | 
 for ip in 101 102 103 104 105 106; do echo -n "$ip: "; ssh root@192.168.50.$ip uname -r; done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="15"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-16" data-step="16"><div class="step-head"><h2>📝 บทนี้ต้องโตขึ้นเรื่อย ๆ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="16"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-17" data-step="17" data-machines="all"><div class="step-head"><h2>📝 บทนี้ต้องโตขึ้นเรื่อย ๆ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>ทุกครั้งที่แก้ปัญหาได้ ให้เพิ่มลงบทนี้</strong> — อาการที่เห็น, สาเหตุจริง, วิธีแก้</p>
 <p>นี่คือส่วนที่ทำให้คู่มือชุดนี้ต่างจากชุดเดิม
 คู่มือเดิมไม่มีบทนี้เลย ความรู้จึงอยู่ในหัวคนไม่กี่คน และหายไปพร้อมคนนั้น</p>
+</div><div class="sub" data-machine="all"><h3>บันทึกจากการติดตั้งจริง</h3>
+<p><strong>28 ส.ค. 2026 · <code>kubectl</code> ได้ <code>EOF</code> จาก VIP ทั้งที่ <code>kubeadm init</code> สำเร็จ</strong></p>
+<ul>
+<li><strong>อาการ</strong> — <code>kubeadm init</code> จบสวย พิมพ์คำสั่ง join ครบ · <code>crictl ps</code> เห็น <code>kube-apiserver</code> <code>Running</code> ไม่ restart เลย
+แต่ <code>kubectl cluster-info</code> ได้ <code>Get &quot;https://192.168.50.100:8443/api?timeout=32s&quot;: EOF</code> ซ้ำ ๆ</li>
+<li><strong>ที่ไล่ผิดทางตอนแรก</strong> — เดาว่าเป็น SELinux (<code>haproxy_connect_any</code>) ทั้งที่บทที่ 01 ตั้ง <code>Permissive</code> ไว้แล้ว
+· ตัวที่ชี้ถูกคือช่อง <code>check</code> ในหน้า stats ของ HAProxy ไม่ใช่คำว่า <code>DOWN</code> เฉย ๆ</li>
+<li><strong>สาเหตุจริง</strong> — <code>haproxy.cfg</code> มีทั้ง <code>option httpchk</code> + <code>http-check expect status 200</code> และ <code>option ssl-hello-chk</code>
+สองอันนี้ใช้ร่วมกันไม่ได้ · check เลยกลายเป็น &quot;ทัก TLS แล้วรอ HTTP 200&quot; ซึ่งไม่มีวันผ่าน
+backend จึง <code>DOWN</code> ครบทั้ง 3 ตัว แล้ว HAProxy ปิด connection ทันที = <code>EOF</code> ฝั่ง client</li>
+<li><strong>แก้</strong> — ถอด <code>option ssl-hello-chk</code> ออก (แก้ในrepoแล้ว) · หลัง restart ได้ <code>UP check=L7OK</code> ทันที</li>
+<li><strong>กันไม่ให้เกิดซ้ำ</strong> — <code>validate-repo.sh</code> ดักไม่ให้มี check สองแบบพร้อมกัน ·
+ขั้นตรวจในบทที่ 04 เปลี่ยนจาก <code>grep</code> หาชื่อ server (ผ่านเสมอ) เป็นอ่านช่อง <code>status</code> กับ <code>check</code></li>
+</ul>
+<p><strong>28 ส.ค. 2026 · failover test ผ่าน — แต่ลำดับในคู่มือเดิมผิด</strong></p>
+<ul>
+<li>ข้อ 5.1 (หยุด keepalived) และ 5.2 (หยุด HAProxy) ผ่าน · ข้อ 5.4 (<code>kubectl</code> ผ่าน VIP
+ระหว่างย้าย) ผ่าน ไม่มีปัญหา · ข้อ 5.3 (reboot) เลื่อนไปทำหลังบท 05</li>
+<li><strong>สิ่งที่เรียนรู้:</strong> คู่มือเดิมเขียนว่า &quot;failover test ต้องผ่านก่อน <code>kubeadm init</code>&quot;
+ซึ่งทำได้แค่ครึ่งเดียว — ก่อนมี cluster ไม่มี apiserver ฟังที่ <code>:6443</code>
+ด่าน 2 ของ <a href="../config/keepalived/check_apiserver.sh"><code>check_apiserver.sh</code></a> จึง <code>exit 0</code>
+ออกไปก่อน <strong>ด่าน 3 (ยิง <code>/healthz</code> ผ่าน VIP) ไม่เคยถูกรันเลย</strong>
+· การทดสอบก่อน init จึงพิสูจน์ได้แค่ว่า &quot;IP ย้ายเป็น&quot; ไม่ใช่ &quot;ย้ายแล้วใช้งานต่อได้&quot;</li>
+<li>แก้แล้วในบท 03 (เพิ่มข้อ 5.4) และใน <code>CHECKLIST.md</code></li>
+<li>⬜ <strong>ยังค้าง: ยังไม่ได้จดเวลา failover เป็นตัวเลข</strong> — ต้องวัดรอบหน้า ไม่ใช่เดา</li>
+</ul>
 <p><strong>สิ่งที่ต้องจดจาก Phase 1 (lab) โดยเฉพาะ:</strong></p>
 <ul>
 <li>[ ] <code>firewall-cmd --reload</code> ตอน Cilium รันอยู่ — pod ยังคุยกันได้ไหม</li>
@@ -724,7 +1085,7 @@ for ip in 101 102 103 104 105 106; do echo -n "$ip: "; ssh root@192.168.50.$ip u
 <li>[ ] เวลา failover ของ keepalived จริงกี่วินาที</li>
 <li>[ ] เวลา drain + reboot + กลับมา Ready ต่อเครื่องกี่นาที</li>
 </ul>
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="16"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="17"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="12-day2-operations.html">← Day-2 Operations</a><a class="pn" href="CHECKLIST.html">เช็กลิสต์งานค้าง →</a></div>
   </main>
 </div>
@@ -865,6 +1226,40 @@ for ip in 101 102 103 104 105 106; do echo -n "$ip: "; ssh root@192.168.50.$ip u
       });
     });
   });
+
+  /* ---------- กรองตามเครื่อง ---------- */
+  /* จำไว้ข้ามบทด้วย เพราะคนหนึ่งรอบมักนั่งอยู่หน้าเครื่องเดียว
+     ถ้าบทถัดไปไม่มีเครื่องนั้น จะเด้งกลับเป็น "ทั้งหมด" เองไม่ให้หน้าว่างเปล่า */
+  var MKEY='myhr-k8s-machine';
+  var tabs=document.getElementById('mtabs');
+  if(tabs){
+    var avail=[].map.call(tabs.querySelectorAll('.mtab'), function(b){ return b.dataset.m; });
+    var applyM=function(m){
+      if(avail.indexOf(m)<0) m='all';
+      document.body.dataset.mfilter=m;
+      tabs.querySelectorAll('.mtab').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); });
+      document.querySelectorAll('.step').forEach(function(sec){
+        var list=(sec.dataset.machines||'all').split(' ');
+        /* ขั้นที่ไม่ได้ระบุเครื่องเลย = ใช้ได้ทุกเครื่อง ต้องเห็นเสมอ
+           ขั้นที่ระบุแล้ว ต้องมีเครื่องที่เลือกอยู่ในรายการถึงจะโชว์ */
+        var show = (m==='all') || (list.length===1 && list[0]==='all') || list.indexOf(m)>=0;
+        sec.classList.toggle('hide-m', !show);
+      });
+      document.querySelectorAll('.sub').forEach(function(d){
+        var dm=d.dataset.machine||'all';
+        d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
+      });
+      try{ localStorage.setItem(MKEY,m); }catch(e){}
+      paintFab();
+    };
+    tabs.addEventListener('click', function(e){
+      var b=e.target.closest('.mtab');
+      if(b){ applyM(b.dataset.m); }
+    });
+    var savedM='all';
+    try{ savedM=localStorage.getItem(MKEY)||'all'; }catch(e){}
+    applyM(savedM);
+  }
 
   /* ---------- เมนูบนจอเล็ก ---------- */
   var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');

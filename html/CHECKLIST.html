@@ -170,13 +170,26 @@ img{max-width:100%}
   .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
   .wrap{margin-left:0}
 }
+
+/* ---------- แถบกรองตามเครื่อง ---------- */
+/* บทที่ join ทีละเครื่องมีขั้นของ master01 กับของเครื่องปลายทางสลับกัน
+   คนที่นั่งอยู่หน้าเครื่องไหนควรเห็นเฉพาะของเครื่องนั้นได้ ไม่ต้องเลื่อนข้าม */
+.mtabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 20px}
+.mtabs-l{color:var(--dim);font-size:13px;margin-right:2px}
+.mtab{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer;transition:all .15s}
+.mtab:hover{border-color:var(--accent);color:var(--accent)}
+.mtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.hide-m{display:none !important}
+.mnote{color:var(--dim);font-size:13px;margin:-10px 0 18px}
+
 </style>
 </head>
 <body data-chapter="CHECKLIST.md" data-total="11">
 
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
-  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="9"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="16"></span></a><a href="CHECKLIST.html" class="nav-item cur" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="17"></span></a><a href="CHECKLIST.html" class="nav-item cur" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
 </aside>
 
 <div class="wrap">
@@ -196,7 +209,8 @@ img{max-width:100%}
   <main>
     <div class="intro"><hr />
 </div>
-    <section class="step" id="step-1" data-step="1"><div class="step-head"><h2>A · งานในตัว repo — ทำก่อน scp ขึ้นเครื่อง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+    
+    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2>A · งานในตัว repo — ทำก่อน scp ขึ้นเครื่อง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[x] 🔴 <strong>ลบรหัสผ่าน VRRP ที่หลุดใน <code>keepalived-master02/03</code></strong> — แก้เป็น <code>&lt;VRRP_AUTH_PASS&gt;</code>
 ให้ตรงกับ <a href="../config/keepalived/keepalived-master01.conf:45"><code>keepalived-master01.conf:45</code></a> แล้ว
@@ -212,6 +226,7 @@ img{max-width:100%}
 อ่านอย่างเดียว ใช้ก่อนรันขั้นตอนซ้ำบนเครื่องที่ทำค้างไว้</li>
 <li>[x] <strong>สร้างคู่มือเวอร์ชัน HTML</strong> (27 ส.ค. 2026) — <code>python tools/build-html.py</code> → <code>html/index.html</code>
 ปุ่มคัดลอกทุก code block · ทำเครื่องหมาย &quot;ทำแล้ว&quot; รายขั้น (เปลี่ยนสีพื้นหลัง) ·
+แถบกรองตามเครื่อง 👑🎩⚙️ ในบทที่มีหลายเครื่องปนกัน (28 ส.ค. 2026) ·
 ปุ่มลอยกระโดดไปขั้นที่ค้าง · ทดสอบด้วยเบราว์เซอร์จริงแล้ว</li>
 <li>[ ] <strong>แก้ <code>.md</code> แล้วอย่าลืมรัน <code>python tools/build-html.py</code> ใหม่</strong> — <code>html/</code> ไม่ได้ sync เอง</li>
 <li>[x] <strong>เพิ่ม <code>.gitattributes</code> บังคับ LF</strong> — กัน CRLF ตอน clone บน Windows แล้ว scp ไป Linux</li>
@@ -238,7 +253,7 @@ img{max-width:100%}
 <li>[ ] เติม <code>LOKI_CHART</code> / <code>ALLOY_CHART</code> ที่ยังเป็น <code>&lt;PIN_AT_INSTALL&gt;</code> ตอนติดตั้งจริง แล้วเขียนกลับลงไฟล์</li>
 </ul>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2"><div class="step-head"><h2>A2 · 🔴 ด่วน — มีวันหมดอายุ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2>A2 · 🔴 ด่วน — มีวันหมดอายุ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[ ] 🔴 <strong>cert ของ <code>registry.myhr.co.th</code> หมดอายุ 6 ก.ย. 2026</strong> (เหลือ 10 วันนับจาก 27 ส.ค.)
 wildcard <code>*.myhr.co.th</code> จาก GlobalSign AlphaSSL · ออก 5 ส.ค. 2025
@@ -247,7 +262,7 @@ wildcard <code>*.myhr.co.th</code> จาก GlobalSign AlphaSSL · ออก 5 
 · ตรวจซ้ำ: <code>openssl s_client -connect registry.myhr.co.th:443 -servername registry.myhr.co.th &lt;/dev/null 2&gt;/dev/null | openssl x509 -noout -dates</code></li>
 </ul>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3"><div class="step-head"><h2>B · Secret ที่ต้องสร้างและเก็บก่อนลงมือ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>B · Secret ที่ต้องสร้างและเก็บก่อนลงมือ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>ค่าจริงทั้งหมดอยู่ใน <strong><code>secrets.env</code></strong> ที่ root ของ repo (<code>.gitignore</code> กันไว้ · <code>chmod 600</code>)
 สร้างแล้วเมื่อ 26 ส.ค. 2026 — ตรวจว่า git มองไม่เห็นด้วย <code>git check-ignore -v secrets.env</code></p>
 <p><strong>สุ่มมาแล้ว อยู่ใน <code>secrets.env</code>:</strong></p>
@@ -267,6 +282,14 @@ group มาจากช่อง <code>O</code> ของ cert · <a href="../c
 ทำพร้อมรอบทบทวนรายชื่อ <code>cluster-admin</code> รายไตรมาส</li>
 <li>[ ] ทบทวนเมื่อคนถือ kubeconfig เกิน ~10 คน → ถึงเวลาย้ายไป OIDC (บท 10 หัวข้อ 4.2)</li>
 <li>[ ] <code>PULL_ONLY_USER</code> / <code>PULL_ONLY_PASSWORD</code> ของ registry (บท 10) — บัญชี pull อย่างเดียว</li>
+<li>[ ] 🔴 <strong>public cert ของ <code>myhr.co.th</code> — ขอไฟล์จากคนที่ถืออยู่</strong> (บท 07 ทาง A)
+ต้องได้ <code>fullchain.pem</code> (leaf + intermediate) และ private key แบบ <strong>ไม่มี passphrase</strong>
+ถ้าได้มาเป็น <code>.pfx</code> ให้แปลงตามบท 07 · ตรวจก่อนใช้ด้วย
+<code>bash config/gateway/import-public-cert.sh --dry-run &lt;fullchain&gt; &lt;key&gt;</code>
+· <strong>ต้องรู้ก่อนด้วยว่าเป็น wildcard หรือ cert รายชื่อ</strong> — ถ้าเป็นรายชื่อ ต้องรวบรวม
+ชื่อ service ทั้งหมดที่จะเปิดให้ครบก่อนไปขอต่ออายุ ไม่งั้นต้องขอเพิ่มทีละใบ</li>
+<li>[ ] <strong>จดวันหมดอายุของ public cert ลงปฏิทินทีม</strong> พร้อมเตือนล่วงหน้า 30 วัน
+ทาง A ไม่ต่ออายุให้เอง — ลืมแล้วทุก service ล่มพร้อมกัน</li>
 </ul>
 <p><strong>สำคัญกว่าทุกข้อข้างบน:</strong></p>
 <ul>
@@ -277,10 +300,12 @@ group มาจากช่อง <code>O</code> ของ cert · <a href="../c
 cluster-admin token, client key (ดู README หัวข้อสุดท้าย)</li>
 </ul>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4"><div class="step-head"><h2>C · Phase 0 — สำรวจและเตรียมของ (~1 สัปดาห์)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>C · Phase 0 — สำรวจและเตรียมของ (~1 สัปดาห์)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[ ] <strong>ขอจอง VIP <code>192.168.50.100</code></strong> จากทีม network — ยังไม่ได้จอง · ยืนยันด้วย <code>ping -c2</code> ต้องไม่มีคนตอบ</li>
 <li>[ ] ขอกัน LB-IPAM pool <code>192.168.50.200-209</code> และยืนยันว่า switch <strong>ไม่ได้เปิด Dynamic ARP Inspection</strong></li>
+<li>[ ] <strong>เตรียมเครื่องทดสอบในวง <code>192.168.50.0/24</code> ที่ไม่ใช่ node</strong> — ใช้ยืนยัน L2 announcement ในบท 05
+(ARP ข้าม subnet ไม่ได้ · ยิงจากเครื่องคนละวงตีความผลไม่ได้)</li>
 <li>[ ] ยืนยันว่าไม่มี route <code>10.246.0.0/16</code> และ <code>10.247.0.0/16</code> ในองค์กร</li>
 <li>[ ] ยืนยัน <code>virtual_router_id 60</code> ไม่ชนกับ cluster เดิม/lab ที่อยู่ L2 เดียวกัน (ของเดิมใช้ 51)</li>
 <li>[ ] ตรวจ cert ของ cluster เดิม — <code>kubeadm certs check-expiration</code>
@@ -292,7 +317,7 @@ cluster-admin token, client key (ดู README หัวข้อสุดท้
 <li>[ ] ยืนยันอีกครั้งว่า <strong>ไม่มีนโยบายลง EDR / backup agent</strong> บน node (ถ้ามี ต้องกลับไปทบทวน D2a ก่อนลง kernel)</li>
 </ul>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5"><div class="step-head"><h2>C2 · หนี้ค้างที่ตัดสินใจเลื่อนไว้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>C2 · หนี้ค้างที่ตัดสินใจเลื่อนไว้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[ ] <strong>ทำ kernel ทุกเครื่องให้เป็นเลขเดียวกัน</strong> (ตัดสินใจเลื่อน 27 ส.ค. 2026)
 สถานะจริง (ตรวจครบทั้ง 6 เครื่องแล้ว 27 ส.ค. 2026):
@@ -310,18 +335,21 @@ cluster-admin token, client key (ดู README หัวข้อสุดท้
 ไม่งั้นเครื่องที่สร้างเพิ่มในอนาคตจะได้เลขใหม่เรื่อย ๆ ตามวันที่สร้าง</li>
 </ul>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6"><div class="step-head"><h2>D · Phase 1 — Lab (~2 สัปดาห์)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2>D · Phase 1 — Lab (~2 สัปดาห์)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[ ] สร้าง lab 2 master + 2 worker บน OL 9.8 + UEK 8U2 (ใช้เครื่องฝึกอบรม <code>192.168.50.180-183</code> ได้)
 · ⚠️ <strong>ต้องใช้ VIP, <code>virtual_router_id</code> และ LB pool คนละชุดกับ production</strong></li>
-<li>[ ] เดินตามบท 01 → 06 ทีละชั้น ห้ามข้าม — โดยเฉพาะ <strong>failover test ที่บท 03 ต้องผ่านก่อน <code>kubeadm init</code></strong></li>
+<li>[ ] เดินตามบท 01 → 06 ทีละชั้น ห้ามข้าม — <strong>failover test ของบท 03 แบ่งเป็นสองรอบ</strong>
+· ข้อ 5.1-5.3 ทำก่อน <code>kubeadm init</code> (พิสูจน์ว่า keepalived ย้าย IP เป็น)
+· <strong>ข้อ 5.4 ทำได้หลังบท 04 เท่านั้น</strong> (พิสูจน์ว่าย้ายแล้ว <code>kubectl</code> ยังใช้ได้)
+เพราะก่อนมี cluster ยังไม่มี apiserver ให้ <code>check_apiserver.sh</code> ตรวจ ด่าน 3 จึงไม่เคยทำงาน</li>
 <li>[ ] <strong>พิสูจน์ว่าทีม debug Cilium ได้จริง</strong> ไม่ใช่แค่ติดตั้งผ่าน (ลองทำให้พังแล้วไล่หา)</li>
 <li>[ ] จดทุกอย่างที่ติดขัดระหว่างทำ → เอาไปเติมบท <a href="13-troubleshooting.html">13</a></li>
 <li>[ ] ตัดสินใจขั้นสุดท้ายเรื่อง Cilium vs แผนสำรอง (Calico + kube-proxy nftables + MetalLB)
 <strong>ต้องเคาะก่อนจบ Phase 3</strong> เปลี่ยนหลังจากนั้นคือรื้อ L05–L06 ทั้งชั้น</li>
 </ul>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7"><div class="step-head"><h2>E · Phase 2 — คู่มือ (ร่างเสร็จแล้ว เหลือปรับจากของจริง)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2>E · Phase 2 — คู่มือ (ร่างเสร็จแล้ว เหลือปรับจากของจริง)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[x] เขียนบท 00–13 และไฟล์ <code>config/</code> ครบ</li>
 <li>[x] ทำ <code>versions.env</code> เป็นแหล่งความจริงเดียว</li>
@@ -329,26 +357,28 @@ cluster-admin token, client key (ดู README หัวข้อสุดท้
 <li>[ ] ทำ Ansible playbook ตามข้อ A ถ้าตัดสินใจว่าทำ</li>
 </ul>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8"><div class="step-head"><h2>F · Phase 3 — ทดสอบคู่มือ (~1 สัปดาห์) 🔴 ขั้นตอนสำคัญที่สุด</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2>F · Phase 3 — ทดสอบคู่มือ (~1 สัปดาห์) 🔴 ขั้นตอนสำคัญที่สุด</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[ ] <strong>รื้อ lab ทิ้งแล้วสร้างใหม่ตามคู่มือ โดยให้คนที่ไม่ได้เขียนเป็นคนทำ</strong></li>
 <li>[ ] ทุกจุดที่คนทำต้องหันไปถามคนเขียน = ช่องโหว่ในคู่มือ → จดและแก้</li>
 <li>[ ] เกณฑ์ผ่าน: ทำจนจบได้โดยไม่ต้องถามเลย</li>
 </ul>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9"><div class="step-head"><h2>G · Phase 4 — Production (~2 สัปดาห์)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2>G · Phase 4 — Production (~2 สัปดาห์)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[ ] สร้าง cluster จริง 3 master + 3 worker ตามคู่มือที่ผ่าน Phase 3</li>
 <li>[ ] ทำบท 09 observability — metrics-server · Prometheus · Loki · Alloy</li>
 <li>[ ] ทำบท 10 security — etcd encryption · PSA · NetworkPolicy (<code>default-deny</code> + <code>allow-dns</code> คู่กันเสมอ) · RBAC · audit</li>
 <li>[ ] ทำบท 12 day-2 — <strong>etcd backup CronJob ต้องทำงานจริง + ทดสอบ restore หนึ่งรอบ</strong></li>
-<li>[ ] alert 6 ข้อใน <code>myhr-alerts.yaml</code> ยิงถึงปลายทางจริง (ทดสอบด้วยของปลอมหนึ่งครั้ง)</li>
-<li>[ ] เพิ่ม alert เทียบ <code>node_uname_info</code> ข้าม node — กัน node บูตคนละ kernel โดยไม่รู้ตัว</li>
+<li>[ ] alert 10 ข้อใน <code>myhr-alerts.yaml</code> ยิงถึงปลายทางจริง (ทดสอบด้วยของปลอมหนึ่งครั้ง)</li>
+<li>[ ] ตรวจว่า PVC ของ monitoring <strong>ผูก PV ถูกก้อน</strong> (ดูคอลัมน์ <code>VOL</code> ไม่ใช่แค่คำว่า <code>Bound</code>)</li>
+<li>[ ] ตรวจว่า <strong>Alloy ไม่เก็บ log ซ้ำ</strong> — บรรทัดเดียวกันต้องโผล่ครั้งเดียว ไม่ใช่ 6 ครั้ง</li>
+<li>[ ] ประกาศ <strong>กฎ log 3 ข้อ</strong> ให้ทีม dev (stdout เท่านั้น · JSON บรรทัดเดียว · มีเพดาน 10 MB/s)</li>
 <li>[ ] <strong>ซ้อม rolling reboot ปะ kernel หนึ่งรอบตั้งแต่ยังไม่มี workload</strong> (ไม่มี Ksplice ให้ใช้)</li>
 <li>[ ] 🔴 <strong>ห้ามย้าย workload เข้ามาก่อน backup + alert ทำงานจริง</strong> — บทเรียนตรงจาก cluster เดิม</li>
 </ul>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10"><div class="step-head"><h2>H · Phase 5 — ย้าย workload และส่งมอบ (~2–3 สัปดาห์)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2>H · Phase 5 — ย้าย workload และส่งมอบ (~2–3 สัปดาห์)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[ ] ย้าย microservices ทีละตัวตาม <a href="../config/app/deployment-template.yaml"><code>deployment-template.yaml</code></a>
 — แก้ <code>runAsUser</code>, ใส่ probes / resources / <strong>PDB + replica ≥ 2</strong> (บังคับ ไม่ใช่ข้อแนะนำ)</li>
@@ -359,7 +389,7 @@ cluster-admin token, client key (ดู README หัวข้อสุดท้
 <li>[ ] ปลด cluster เดิม + เก็บ credential เก่าที่หมุนแล้วให้เรียบร้อย</li>
 </ul>
 <hr />
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11"><div class="step-head"><h2>ถ้าเวลาไม่พอ — ตัดตามนี้ ห้ามตัดตามลำดับเลข</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11" data-machines="all"><div class="step-head"><h2>ถ้าเวลาไม่พอ — ตัดตามนี้ ห้ามตัดตามลำดับเลข</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <table>
 <thead>
 <tr>
@@ -382,7 +412,7 @@ cluster-admin token, client key (ดู README หัวข้อสุดท้
 </tr>
 </tbody>
 </table>
-</div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="13-troubleshooting.html">← Troubleshooting</a><a class="pn" href="ansible.html">Ansible runbook →</a></div>
   </main>
 </div>
@@ -523,6 +553,40 @@ cluster-admin token, client key (ดู README หัวข้อสุดท้
       });
     });
   });
+
+  /* ---------- กรองตามเครื่อง ---------- */
+  /* จำไว้ข้ามบทด้วย เพราะคนหนึ่งรอบมักนั่งอยู่หน้าเครื่องเดียว
+     ถ้าบทถัดไปไม่มีเครื่องนั้น จะเด้งกลับเป็น "ทั้งหมด" เองไม่ให้หน้าว่างเปล่า */
+  var MKEY='myhr-k8s-machine';
+  var tabs=document.getElementById('mtabs');
+  if(tabs){
+    var avail=[].map.call(tabs.querySelectorAll('.mtab'), function(b){ return b.dataset.m; });
+    var applyM=function(m){
+      if(avail.indexOf(m)<0) m='all';
+      document.body.dataset.mfilter=m;
+      tabs.querySelectorAll('.mtab').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); });
+      document.querySelectorAll('.step').forEach(function(sec){
+        var list=(sec.dataset.machines||'all').split(' ');
+        /* ขั้นที่ไม่ได้ระบุเครื่องเลย = ใช้ได้ทุกเครื่อง ต้องเห็นเสมอ
+           ขั้นที่ระบุแล้ว ต้องมีเครื่องที่เลือกอยู่ในรายการถึงจะโชว์ */
+        var show = (m==='all') || (list.length===1 && list[0]==='all') || list.indexOf(m)>=0;
+        sec.classList.toggle('hide-m', !show);
+      });
+      document.querySelectorAll('.sub').forEach(function(d){
+        var dm=d.dataset.machine||'all';
+        d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
+      });
+      try{ localStorage.setItem(MKEY,m); }catch(e){}
+      paintFab();
+    };
+    tabs.addEventListener('click', function(e){
+      var b=e.target.closest('.mtab');
+      if(b){ applyM(b.dataset.m); }
+    });
+    var savedM='all';
+    try{ savedM=localStorage.getItem(MKEY)||'all'; }catch(e){}
+    applyM(savedM);
+  }
 
   /* ---------- เมนูบนจอเล็ก ---------- */
   var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');

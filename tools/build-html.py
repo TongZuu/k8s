@@ -31,6 +31,12 @@ try:
 except ImportError:
     sys.exit("ต้องมี markdown-it-py ก่อน:  pip install markdown-it-py")
 
+# console ของ Windows เป็น cp1252 — บรรทัดสรุปที่เป็นภาษาไทยจะทำให้ทั้งสคริปต์ตาย
+# ตอนนั้นไฟล์ html/ ถูกเขียนไปแล้วบางส่วน จึงเหลือ html/ ที่อัปเดตครึ่งเดียว
+# โดยที่คนรันเห็นแค่ traceback แล้วนึกว่าไม่มีอะไรถูกเขียนเลย
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
 OUT = ROOT / "html"
@@ -124,11 +130,57 @@ def split_steps(html: str):
     return intro, steps
 
 
+MACHINES = [
+    ("m01",     "👑", "master01"),
+    ("masters", "🎩", "master ทุกตัว"),
+    ("workers", "⚙️", "worker"),
+]
+
+
+def machine_of(text):
+    """อ่านอีโมจิหน้าหัวข้อว่าขั้นนี้ทำบนเครื่องไหน — ไม่มีอีโมจิ = ใช้ได้ทุกเครื่อง
+
+    ใช้ตัวเดียวกับที่บทที่ 00 ประกาศไว้ คนอ่านจึงไม่ต้องจำสัญลักษณ์ชุดใหม่
+    """
+    for key, emoji, _label in MACHINES:
+        if emoji in text:
+            return key
+    return "all"
+
+
+def wrap_subs(body, step_machine):
+    """ห่อแต่ละหัวข้อย่อย (h3) ด้วย div ที่ติดป้ายเครื่อง เพื่อให้แถบกรองซ่อนได้ทีละอัน
+
+    ข้อความก่อน h3 แรกถือเป็น "all" เสมอ — มันคือย่อหน้านำที่บอกภาพรวมของขั้นนั้น
+    ซ่อนไปแล้วคนจะอ่านไม่รู้เรื่องว่ากำลังอยู่ตรงไหน
+    """
+    parts = body.split("<h3")
+    if len(parts) == 1:
+        return f'<div class="sub" data-machine="{step_machine}">{body}</div>', {step_machine}
+    out, machines = [], set()
+    if parts[0].strip():
+        out.append(f'<div class="sub" data-machine="all">{parts[0]}</div>')
+        machines.add("all")
+    for chunk in parts[1:]:
+        html = "<h3" + chunk
+        head = html.split(">", 1)[1].split("</h3>", 1)[0] if ">" in html else ""
+        m = machine_of(head)
+        machines.add(m)
+        out.append(f'<div class="sub" data-machine="{m}">{html}</div>')
+    return "".join(out), machines
+
+
 def page(chapter_file, title, subtitle, intro, steps, prev_ch, next_ch, nav, totals):
     step_html = []
+    present = set()
     for s in steps:
+        own = machine_of(s["title"])
+        body, subs = wrap_subs(s["body"], own)
+        tags = sorted(subs | {own})
+        present |= {t for t in tags if t != "all"}
+        s = dict(s, body=body, tags=" ".join(tags))
         step_html.append(
-            f'<section class="step" id="step-{s["n"]}" data-step="{s["n"]}">'
+            f'<section class="step" id="step-{s["n"]}" data-step="{s["n"]}" data-machines="{s["tags"]}">'
             '<div class="step-head">'
             f'<h2>{s["title"]}</h2>'
             f'<span class="head-tick" title="ทำแล้ว">✓</span>'
@@ -151,6 +203,18 @@ def page(chapter_file, title, subtitle, intro, steps, prev_ch, next_ch, nav, tot
         for f, t in nav
     )
 
+    # แถบกรองตามเครื่อง — โผล่เฉพาะบทที่มีมากกว่าหนึ่งเครื่อง บทที่ทำบน master01 อย่างเดียว
+    # ไม่ต้องมีปุ่มให้กดเล่น
+    if len(present) > 1:
+        btns = ['<button class="mtab on" type="button" data-m="all">ทั้งหมด</button>']
+        btns += [
+            f'<button class="mtab" type="button" data-m="{k}">{e} {lb}</button>'
+            for k, e, lb in MACHINES if k in present
+        ]
+        tabs_html = '<div class="mtabs" id="mtabs"><span class="mtabs-l">แสดงเฉพาะ:</span>' + "".join(btns) + "</div>"
+    else:
+        tabs_html = ""
+
     prev_html = (f'<a class="pn" href="{prev_ch[0][:-3]}.html">← {prev_ch[1]}</a>'
                  if prev_ch else '<span class="pn dim">— เริ่มที่นี่ —</span>')
     next_html = (f'<a class="pn" href="{next_ch[0][:-3]}.html">{next_ch[1]} →</a>'
@@ -168,6 +232,7 @@ def page(chapter_file, title, subtitle, intro, steps, prev_ch, next_ch, nav, tot
         ("{steps}", "".join(step_html)),
         ("{prev}", prev_html),
         ("{next}", next_html),
+        ("{tabs}", tabs_html),
     ):
         out = out.replace(k, val)
     return out
@@ -204,6 +269,7 @@ TEMPLATE = """<!doctype html>
 
   <main>
     <div class="intro">{intro}</div>
+    {tabs}
     {steps}
     <div class="pn-row">{prev}{next}</div>
   </main>
@@ -386,6 +452,19 @@ img{max-width:100%}
   .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
   .wrap{margin-left:0}
 }
+
+/* ---------- แถบกรองตามเครื่อง ---------- */
+/* บทที่ join ทีละเครื่องมีขั้นของ master01 กับของเครื่องปลายทางสลับกัน
+   คนที่นั่งอยู่หน้าเครื่องไหนควรเห็นเฉพาะของเครื่องนั้นได้ ไม่ต้องเลื่อนข้าม */
+.mtabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 20px}
+.mtabs-l{color:var(--dim);font-size:13px;margin-right:2px}
+.mtab{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer;transition:all .15s}
+.mtab:hover{border-color:var(--accent);color:var(--accent)}
+.mtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.hide-m{display:none !important}
+.mnote{color:var(--dim);font-size:13px;margin:-10px 0 18px}
+
 """
 
 JS = r"""
@@ -519,6 +598,40 @@ JS = r"""
     });
   });
 
+  /* ---------- กรองตามเครื่อง ---------- */
+  /* จำไว้ข้ามบทด้วย เพราะคนหนึ่งรอบมักนั่งอยู่หน้าเครื่องเดียว
+     ถ้าบทถัดไปไม่มีเครื่องนั้น จะเด้งกลับเป็น "ทั้งหมด" เองไม่ให้หน้าว่างเปล่า */
+  var MKEY='myhr-k8s-machine';
+  var tabs=document.getElementById('mtabs');
+  if(tabs){
+    var avail=[].map.call(tabs.querySelectorAll('.mtab'), function(b){ return b.dataset.m; });
+    var applyM=function(m){
+      if(avail.indexOf(m)<0) m='all';
+      document.body.dataset.mfilter=m;
+      tabs.querySelectorAll('.mtab').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); });
+      document.querySelectorAll('.step').forEach(function(sec){
+        var list=(sec.dataset.machines||'all').split(' ');
+        /* ขั้นที่ไม่ได้ระบุเครื่องเลย = ใช้ได้ทุกเครื่อง ต้องเห็นเสมอ
+           ขั้นที่ระบุแล้ว ต้องมีเครื่องที่เลือกอยู่ในรายการถึงจะโชว์ */
+        var show = (m==='all') || (list.length===1 && list[0]==='all') || list.indexOf(m)>=0;
+        sec.classList.toggle('hide-m', !show);
+      });
+      document.querySelectorAll('.sub').forEach(function(d){
+        var dm=d.dataset.machine||'all';
+        d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
+      });
+      try{ localStorage.setItem(MKEY,m); }catch(e){}
+      paintFab();
+    };
+    tabs.addEventListener('click', function(e){
+      var b=e.target.closest('.mtab');
+      if(b){ applyM(b.dataset.m); }
+    });
+    var savedM='all';
+    try{ savedM=localStorage.getItem(MKEY)||'all'; }catch(e){}
+    applyM(savedM);
+  }
+
   /* ---------- เมนูบนจอเล็ก ---------- */
   var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');
   if(burger) burger.addEventListener('click', function(){ sb.classList.toggle('open'); });
@@ -562,6 +675,7 @@ INDEX_TEMPLATE = """<!doctype html>
 </div>
 <div class="cards">{cards}</div>
 <div class="tools">
+  <a href="cilium-envoy-scenarios.html">สถานการณ์ Cilium + Envoy Gateway (ค้นหาได้)</a>
   <a href="../README.md">README ของ repo</a>
   <a href="../k8s-architecture-blueprint.html">Blueprint (เหตุผลเบื้องหลัง)</a>
   <a href="../docs/versions.env">versions.env</a>
