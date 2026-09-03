@@ -37,19 +37,24 @@ hostnamectl set-hostname k8s-worker03    # บน 192.168.50.106
 # ลบบล็อกเดิมก่อน — ทำให้รันซ้ำได้โดยไม่มีบรรทัดซ้ำ
 sed -i '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/d' /etc/hosts
 
-cat >> /etc/hosts <<EOF
-# BEGIN k8s cluster
-${VIP}  ${VIP_HOSTNAME}
-${MASTER01_IP}  ${MASTER01_NAME}
-${MASTER02_IP}  ${MASTER02_NAME}
-${MASTER03_IP}  ${MASTER03_NAME}
-${WORKER01_IP}  ${WORKER01_NAME}
-${WORKER02_IP}  ${WORKER02_NAME}
-${WORKER03_IP}  ${WORKER03_NAME}
-${REGISTRY_IP}  ${REGISTRY_HOST}
-# END k8s cluster
-EOF
+# ไล่รายชื่อเครื่องจาก versions.env ไม่พิมพ์เอง — เพิ่มเครื่องใหม่แล้วบล็อกนี้ตามให้เอง
+{
+  echo "# BEGIN k8s cluster"
+  echo "${VIP}  ${VIP_HOSTNAME}"
+  for r in $(grep -oE '^(MASTER|WORKER)[0-9]+_IP=' /root/k8s/versions.env | sed 's/_IP=//' | sort -u); do
+      ip="${r}_IP"; nm="${r}_NAME"
+      echo "${!ip}  ${!nm}"
+  done
+  echo "${REGISTRY_IP}  ${REGISTRY_HOST}"
+  echo "# END k8s cluster"
+} >> /etc/hosts
 ```
+
+**ตรวจ:**
+```bash
+sed -n '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/p' /etc/hosts
+```
+**ควรเห็น:** ครบทุกเครื่องใน `versions.env` + VIP + registry และไม่มีบรรทัดไหนที่ IP ว่าง
 
 > **บล็อกนี้รันซ้ำได้** — `sed` ลบของเดิมก่อนทุกครั้ง และ Ansible ก็ใช้ marker
 > `# BEGIN k8s cluster` ชุดเดียวกัน ทำมือแล้วรัน playbook ทับได้เลย ไม่ซ้ำ
@@ -58,9 +63,14 @@ EOF
 > ล้างทีเดียวด้วย (ทำครั้งเดียวพอ):
 > ```bash
 > \cp -f /etc/hosts /etc/hosts.bak
-> sed -i -E '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/!{/^[0-9.]+[[:space:]]+(k8s-(vip|master0[1-3]|worker0[1-3])|registry\.myhr\.co\.th)[[:space:]]*$/d}' /etc/hosts
+> sed -i -E '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/!{/^[0-9.]+[[:space:]]+(k8s-(vip|master[0-9]+|worker[0-9]+)|registry\.myhr\.co\.th)[[:space:]]*$/d}' /etc/hosts
 > grep -c k8s-master01 /etc/hosts    # ต้องได้ 1
 > ```
+
+> **เพิ่มเครื่องใหม่เข้า cluster** ให้แก้ [`versions.env`](versions.env) กับ
+> [`inventory.ini`](../ansible/inventory.ini) แล้วรันบล็อกนี้ใหม่บน**ทุกเครื่อง**
+> (หรือ `ansible-playbook prepare-os.yml` ซึ่งวางบล็อกเดียวกันให้ทั้ง cluster)
+> — ขั้นตอนเต็มอยู่ที่ [บทที่ 12 · เพิ่ม worker](12-day2-operations.md)
 
 > `/etc/hosts` ใช้ได้แต่เปราะ — เพิ่ม node ทีต้องไปแก้ทุกเครื่อง
 > ถ้าทีม network ทำ DNS record ให้ได้ ให้ย้ายไป DNS แล้วลบบล็อกนี้ทิ้ง
@@ -191,7 +201,18 @@ mkdir -p /var/lib/etcd
 sed -i 's|[[:space:]]/home[[:space:]]|  /var/lib/etcd  |' /etc/fstab
 mount -a
 chmod 700 /var/lib/etcd
+rm -rf /var/lib/etcd/lost+found       # ext4 แถมมาให้ทุก filesystem — kubeadm จะนับว่าไม่ว่าง
+ls -A /var/lib/etcd                   # ต้องไม่พิมพ์อะไรเลย
 ```
+
+> **`lost+found` ต้องลบ** — บทที่ 04 จะตายที่ preflight ด้วย
+> `[ERROR DirAvailable--var-lib-etcd]: /var/lib/etcd is not empty`
+> เพราะ kubeadm ขอ dataDir ที่ว่างเปล่าจริง ๆ ไม่สนว่าข้างในเป็นของ filesystem เอง
+> ลบได้ปลอดภัย · `e2fsck` สร้างคืนให้เองเมื่อจำเป็น (หรือสั่ง `mklost+found` เอง)
+>
+> **ถ้า `ls -A` ยังมีอย่างอื่นโผล่มา** แปลว่าเป็นของเดิมที่เคยอยู่ใน `/home` (เช่นโฟลเดอร์ของผู้ใช้)
+> ตรวจให้แน่ว่าไม่มีอะไรต้องเก็บ แล้วเอาออกด้วย `rmdir` ทีละอัน — มันจะปฏิเสธถ้าข้างในไม่ว่าง
+> ต่างจาก `rm -rf` ที่ลบข้อมูลทิ้งโดยไม่เตือน
 
 ### ⚙️ บน worker ทั้ง 3 เครื่อง — ย้ายไปเป็น `/var/lib/containerd`
 

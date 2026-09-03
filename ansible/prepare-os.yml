@@ -110,7 +110,7 @@
         cmd: |
           set -uo pipefail
           before=$(md5sum /etc/hosts | cut -d' ' -f1)
-          sed -i -E '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/!{/^[0-9.]+[[:space:]]+(k8s-(vip|master0[1-3]|worker0[1-3])|\S+\.myhr\.co\.th)[[:space:]]*$/d}' /etc/hosts
+          sed -i -E '/^# BEGIN k8s cluster$/,/^# END k8s cluster$/!{/^[0-9.]+[[:space:]]+(k8s-(vip|master[0-9]+|worker[0-9]+)|\S+\.myhr\.co\.th)[[:space:]]*$/d}' /etc/hosts
           after=$(md5sum /etc/hosts | cut -d' ' -f1)
           # ห้ามใช้คำที่เป็น substring ของกันและกัน — "unchanged" มี "changed" อยู่ข้างใน
           if [ "$before" = "$after" ]; then echo NOOP; else echo REMOVED; fi
@@ -122,14 +122,13 @@
         path: /etc/hosts
         # marker ต้องตรงกับที่บท 01 เขียนเป๊ะ — ทำมือแล้วรัน playbook ทับจะได้ changed=0
         marker: "# {mark} k8s cluster"
+        # ไล่จากคีย์ใน versions.env ไม่ไล่พิมพ์ชื่อเครื่องเอง
+        # เพิ่มเครื่องใหม่ = แก้ versions.env ที่เดียว ทุกเครื่องได้ /etc/hosts ใหม่ตอนรันรอบถัดไป
         block: |
           {{ v.VIP }}  {{ v.VIP_HOSTNAME }}
-          {{ v.MASTER01_IP }}  {{ v.MASTER01_NAME }}
-          {{ v.MASTER02_IP }}  {{ v.MASTER02_NAME }}
-          {{ v.MASTER03_IP }}  {{ v.MASTER03_NAME }}
-          {{ v.WORKER01_IP }}  {{ v.WORKER01_NAME }}
-          {{ v.WORKER02_IP }}  {{ v.WORKER02_NAME }}
-          {{ v.WORKER03_IP }}  {{ v.WORKER03_NAME }}
+          {% for k in v.keys() | select('match', '^(MASTER|WORKER)[0-9]+_IP$') | sort %}
+          {{ v[k] }}  {{ v[k | replace('_IP', '_NAME')] }}
+          {% endfor %}
           {{ v.REGISTRY_IP }}  {{ v.REGISTRY_HOST }}
 
     # -------------------------------------------------------------------------
