@@ -225,7 +225,7 @@ kubectl -n kube-system get pdb
 - [ ] `cilium connectivity test` ผ่านทั้งชุด
 - [ ] DNS ตอบถูกต้อง
 - [ ] MTU test ผ่าน (`ping -M do -s 1372`)
-- [ ] curl เข้า LoadBalancer IP จากเครื่องนอก cluster ได้
+- [ ] curl เข้า LoadBalancer IP จากเครื่องในวง `192.168.50.0/24` ที่ไม่ใช่ node ได้
 - [ ] `firewall-cmd --reload` แล้ว pod ยังคุยกันได้
 
 ### ความทนทาน

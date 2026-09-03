@@ -20,6 +20,11 @@
 > และ LoadBalancer ดับพร้อมกัน และ **ไม่มี kube-proxy ให้ถอยกลับไปใช้**
 > นี่คือราคาของการตัดชิ้นส่วนออก จึงต้องพิสูจน์ให้ได้ว่าทีม debug มันเป็นก่อนขึ้น production
 
+> 🔎 **ตอนของจริงพัง** ให้เปิด [`../html/cilium-envoy-scenarios.html`](../html/cilium-envoy-scenarios.html)
+> — 28 อาการของ Cilium + Envoy Gateway เรียงตามความถี่ที่เจอจริง ค้นด้วยข้อความ error ได้เลย
+> และมีอีก 25 แบบแผนว่าควรออกแบบยังไงตั้งแต่แรก พร้อมภาพประกอบและขั้นตอนแบบทำตามได้
+> (แบ่ง namespace/zone · กัน namespace เรียกหากัน · auth ที่ทางเข้า · เข้ารหัส pod network · เตรียม audit)
+
 ---
 
 ## 1 · ติดตั้ง Helm 4 และ Cilium CLI
@@ -163,12 +168,36 @@ kubectl get pods -A | grep -c kube-proxy
 
 Cilium มีชุดทดสอบในตัว ซึ่งครอบคลุมกว่าการ ping เอง — **รันให้ผ่านก่อนไปต่อ**
 
+**🔴 ต้องรันใน `tmux` เสมอ ห้ามรันตรง ๆ ผ่าน ssh**
+
 ```bash
-cilium connectivity test
+dnf install -y tmux 2>/dev/null; tmux new -s cil "cilium connectivity test 2>&1 | tee /root/k8s/cilium-conn-test.log"
 ```
 
+หลุดแล้วกลับเข้าไปดูต่อ: `tmux attach -t cil` · ดู log ย้อนหลัง: `less /root/k8s/cilium-conn-test.log`
+
+> **ทำไมต้อง `tmux`** — เทสต์ใช้เวลา 10-20 นาที และระหว่างทางมันจะ **apply NetworkPolicy
+> ชุด deny-all ลงใน namespace ทดสอบเป็นระยะ** (`all-ingress-deny`, `all-egress-deny`, …)
+> ถ้า ssh หลุดกลางคัน process โดน SIGHUP ตาย **แต่ policy ที่ apply ไปแล้วยังค้างอยู่**
+> ไม่มีใครเก็บกวาดให้ · แล้วถ้ารันซ้ำทับเลยจะเจอ pod ค้างกับ policy เก่าปนกันจนอ่านผลไม่ออก
+>
+> เจอจริงในการติดตั้งรอบแรก — ssh หลุดตอน test 12/137 (`all-egress-deny-knp`)
+>
+> ไม่อยากลง `tmux` ใช้ `nohup cilium connectivity test > /root/k8s/cilium-conn-test.log 2>&1 &`
+> แล้ว `tail -f` ก็ได้ — `tail` หลุดไม่กระทบตัวเทสต์
+
 **ควรเห็นท้ายสุด:** `✅ All ... tests successful`
-**ใช้เวลา ~10-15 นาที** และจะสร้าง namespace `cilium-test-1` ชั่วคราว
+**ใช้เวลา ~10-20 นาที** และจะสร้าง namespace `cilium-test-1` ชั่วคราว
+
+**ถ้ารอบก่อนหลุดกลางคัน ต้องล้างก่อนรันใหม่เสมอ:**
+
+```bash
+cilium connectivity test --test-namespace cilium-test-1 --cleanup 2>/dev/null; kubectl delete ns cilium-test-1 --ignore-not-found
+kubectl get ns | grep cilium-test    # ต้องว่าง
+```
+
+> **"ค้าง" กับ "พัง" แยกกันที่ log ยังเดินอยู่ไหม** ไม่ใช่ที่หน้าจอนิ่ง —
+> บางเทสต์เงียบเป็นนาทีได้ปกติ นี่คือเหตุผลที่ต้องมี `tee` ไว้ดูย้อนหลัง
 
 ถ้าไม่ผ่าน ให้ดูก่อนว่าเป็นเรื่อง firewalld หรือเปล่า:
 ```bash
@@ -216,13 +245,15 @@ kubectl get ciliuml2announcementpolicy
 
 ## 7 · 🔴 ทดสอบ LoadBalancer จริง
 
-นี่คือขั้นที่พิสูจน์ว่า L2 announcement ผ่าน switch ได้จริง
-**ถ้าองค์กรเปิด ARP inspection ไว้ ข้อนี้จะพังตรงนี้**
+ขั้นนี้พิสูจน์ว่า Cilium ประกาศ LoadBalancer IP ออกมาบน LAN ได้จริง
+เป็นข้อที่พังบ่อยที่สุดในบทนี้ และพังด้วยสาเหตุที่มองไม่เห็นจาก `kubectl`
+
+### 7.1 สร้างของทดสอบ
 
 ```bash
 kubectl create deployment lbtest --image=nginx:alpine --replicas=2
 kubectl expose deployment lbtest --type=LoadBalancer --port=80
-kubectl get svc lbtest -w
+kubectl get svc lbtest
 ```
 
 **ควรเห็นภายในไม่กี่วินาที:**
@@ -231,38 +262,107 @@ NAME     TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)
 lbtest   LoadBalancer   10.247.x.x      192.168.50.200   80:3xxxx/TCP
 ```
 
-### ทดสอบจากเครื่อง **นอก cluster** — สำคัญมาก
+ถ้า `EXTERNAL-IP` ยังเป็น `<pending>` แปลว่า pool มีปัญหา — ย้อนไปหัวข้อ 6 ก่อน
 
-```bash
-curl -I http://192.168.50.200
-```
-**ควรเห็น:** `HTTP/1.1 200 OK` และหน้า nginx
+### 7.2 เลือกเครื่องที่จะใช้ยิง — อ่านตารางนี้ก่อนลงมือ
 
-> ⚠️ **ถ้า `EXTERNAL-IP` ขึ้นแต่ curl ไม่ติด = ARP ถูกบล็อก**
-> ตรวจจากเครื่องนอก cluster: `arp -n 192.168.50.200` ต้องเห็น MAC ของ worker ตัวใดตัวหนึ่ง
-> ถ้าไม่เห็น ให้กลับไปคุยกับทีม network เรื่อง Dynamic ARP Inspection / port security
+L2 announcement ทำงานด้วยการ **ตอบ ARP** ซึ่งวิ่งได้เฉพาะใน broadcast domain เดียวกัน
+**เครื่องที่ใช้ยิงจึงเปลี่ยนความหมายของผลลัพธ์ทั้งหมด**
+
+| ยิงจาก | ผลบอกอะไร | ใช้ตัดสินข้อนี้ได้ไหม |
+|---|---|---|
+| เครื่องในวง `192.168.50.0/24` ที่ **ไม่ใช่ node** | ทั้ง ARP และเส้นทาง HTTP | ✅ **ใช่ — ทางหลัก** |
+| node ของ cluster ด้วย `arping` | ARP อย่างเดียว | ✅ ใช้แทนได้ |
+| node ของ cluster ด้วย `curl` | แค่ Service/pod ทำงาน **ไม่ผ่าน ARP เลย** | ❌ **ห้ามใช้** |
+| เครื่องวงอื่น เช่น `10.212.x.x` | ความสามารถ ARP ของ **router** | ❌ ไม่เกี่ยวกับข้อนี้ |
+
+> 🔴 **สองแถวล่างคือกับดัก ทำให้ไล่ปัญหาผิดทางได้ง่ายมาก**
 >
-> ทางออกถ้าแก้ไม่ได้: เปลี่ยนไปใช้ BGP mode (ต้องให้ SE ตั้ง peer + เปิด `179/tcp`)
-> หรือถอยไปใช้ NodePort แล้วให้ hardware LB ยิงเข้ามา
+> `curl` บน node โดน eBPF ของ Cilium ดักตั้งแต่ชั้น socket ไม่เคยกลายเป็น ARP request
+> **ต่อให้ L2 announcement พังสนิทก็ยังได้ `200 OK`**
+>
+> เครื่องวงอื่นยิงผ่าน router — จะติดครั้งแรกแล้วค้างยาวตามอายุ ARP cache ของ router
+> `arp -a` บนเครื่องนั้นขึ้น `No ARP Entries Found` เป็นเรื่องปกติ **ไม่ใช่หลักฐานว่าอะไรพัง**
+>
+> ยืนยัน IP ของเครื่องที่จะใช้ก่อนเสมอ: `ip -br addr` (Linux) · `ipconfig` (Windows)
 
-**ดูว่า node ไหนกำลังตอบ ARP:**
+### 7.3 ยิงทดสอบ
+
+**ทางหลัก** — จากเครื่องในวง `192.168.50.0/24` ที่ไม่ใช่ node:
+
 ```bash
-kubectl -n kube-system get lease | grep l2announce
-```
-
-### ทดสอบ failover ของ LB IP
-
-```bash
-# หา node ที่ถือ IP อยู่ แล้ว drain มัน
-kubectl drain k8s-worker01 --ignore-daemonsets --delete-emptydir-data
-# จากเครื่องนอก cluster — curl ต้องกลับมาได้ภายในไม่กี่วินาที
 curl -I http://192.168.50.200
-kubectl uncordon k8s-worker01
+```
+**ควรเห็น:** `HTTP/1.1 200 OK` และ header ของ nginx
+
+**ทางสำรอง** — ถ้ายังไม่มีเครื่องนั้น ให้ยิง `arping` จาก node ที่ **ไม่ได้ถือ lease**
+(`arping` คุยที่ชั้น L2 ตรง ๆ จึงไม่โดน eBPF ดัก)
+
+```bash
+kubectl -n kube-system get lease -o custom-columns=NAME:.metadata.name,HOLDER:.spec.holderIdentity | grep l2announce
 ```
 
-**เก็บกวาด:**
+ได้ชื่อ node ที่ถือแล้ว ssh เข้า **เครื่องอื่น** แล้วยิง:
+
 ```bash
-kubectl delete svc lbtest && kubectl delete deployment lbtest
+IF=$(ip -br addr | awk '/192\.168\.50\./{print $1; exit}')
+arping -c3 -I "$IF" 192.168.50.200
+```
+
+**ควรเห็น:** `Unicast reply from 192.168.50.200 [MAC]` ครบทั้ง 3 ครั้ง
+เทียบ MAC ให้ตรงกับ node ที่ถือ lease: `ssh <node ที่ถือ> "ip -br link show ens192"`
+
+> ถ้าไม่มีคำสั่ง `arping`: `dnf install -y iputils`
+>
+> ทางสำรองนี้ยืนยัน ARP ได้ แต่ยืนยันเส้นทางจากผู้ใช้จริงไม่ได้
+> ต้องหาเครื่องในวงนั้นมาทดสอบซ้ำก่อนขึ้น production
+
+### 7.4 ถ้าไม่ผ่าน — ไล่ทีละชั้น
+
+ดูว่า agent ของ node ที่ถือ lease program ARP responder ลงไปจริงหรือยัง:
+
+```bash
+NODE=k8s-worker03      # เปลี่ยนเป็นตัวที่ถือ lease จริง
+P=$(kubectl -n kube-system get pod -l k8s-app=cilium --field-selector spec.nodeName=$NODE -o name)
+kubectl -n kube-system exec $P -c cilium-agent -- cilium-dbg shell -- db/show l2-announce
+```
+
+**ควรเห็น:** แถว `192.168.50.200` คู่กับชื่อ NIC จริงของ node นั้น
+
+| ผลที่ได้ | แปลว่า | ไปที่ |
+|---|---|---|
+| ตารางว่าง | ชื่อ NIC ไม่เข้า regex ใน `interfaces:` ของ policy | หัวข้อ 2 |
+| มีแถวครบ แต่ `arping` จากในวงเดียวกันไม่ตอบ | switch บล็อก ARP | ทีม network |
+| มีแถวครบ · `arping` ผ่าน · แต่ curl จากวงอื่นไม่ติด | router ระหว่างวง | ทีม network |
+
+สองกรณีล่างเป็นเรื่องนอก cluster — **อย่ารื้อ Cilium** สิ่งที่ต้องขอทีม network คือ
+ยกเว้น **Dynamic ARP Inspection · port security · IP source guard** ให้ช่วง `192.168.50.200-209`
+เพราะ node ตอบ ARP แทน IP ที่ไม่ใช่ของตัวเอง ซึ่งหน้าตาเหมือน ARP spoofing เป๊ะ
+
+ถ้าองค์กรยกเว้นให้ไม่ได้: เปลี่ยนไปใช้ BGP mode (ให้ SE ตั้ง peer + เปิด `179/tcp`)
+หรือถอยไปใช้ NodePort แล้วให้ hardware LB ยิงเข้ามา
+
+### 7.5 ทดสอบ failover ของ LB IP
+
+```bash
+kubectl -n kube-system get lease -o custom-columns=NAME:.metadata.name,HOLDER:.spec.holderIdentity | grep l2announce
+kubectl drain k8s-worker03 --ignore-daemonsets --delete-emptydir-data    # ตัวที่ถือ
+sleep 10
+curl -I http://192.168.50.200          # จากเครื่องทดสอบในวง — ต้องกลับมาได้
+kubectl uncordon k8s-worker03
+```
+
+ถ้าใช้ `arping` แทน ให้ดูที่ **MAC ที่ตอบ** — ต้องเปลี่ยนเป็นของ node อีกตัวหลัง drain
+ถ้า MAC เดิมยังตอบอยู่แปลว่า failover ไม่เกิดขึ้นจริง
+
+> **อย่าลืม `uncordon`** — ลืมแล้วบทถัด ๆ ไปจะ schedule pod ไม่ลง
+> และจะไปโผล่เป็นอาการอื่นที่ดูไม่เกี่ยวกันเลย
+
+### 7.6 เก็บกวาด
+
+```bash
+kubectl delete deploy,svc lbtest
+kubectl get nodes                      # ต้องไม่มี SchedulingDisabled ค้าง
 ```
 
 ---
@@ -276,7 +376,8 @@ kubectl delete svc lbtest && kubectl delete deployment lbtest
 - [ ] `cilium connectivity test` — **ผ่านทุกข้อ**
 - [ ] `firewall-cmd --reload` แล้ว pod ยังคุยกันได้ (จดผลลงบทที่ 13)
 - [ ] LB pool `AVAILABLE = 10`
-- [ ] **curl เข้า LoadBalancer IP จากเครื่องนอก cluster ได้**
+- [ ] **curl เข้า LoadBalancer IP จากเครื่องในวง `192.168.50.0/24` ที่ไม่ใช่ node ได้**
+      (ถ้าไม่มีเครื่องนั้น: `arping` จาก worker ตัวที่ไม่ได้ถือ lease ต้องได้ reply)
 - [ ] drain node ที่ถือ IP แล้ว IP ย้ายเองและ curl กลับมาได้
 - [ ] ลบ resource ทดสอบทิ้งหมดแล้ว
 
