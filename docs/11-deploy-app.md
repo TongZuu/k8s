@@ -4,6 +4,11 @@
 > **ผู้อ่าน: dev + ops**
 > **ต้องผ่านบทที่ 10** — PSA `restricted` และ NetworkPolicy ต้องทำงานแล้ว
 
+> 📐 **แบบแผนการเปิดทางเข้าให้ service ใหม่** อยู่ที่
+> [`../html/cilium-envoy-scenarios.html`](../html/cilium-envoy-scenarios.html) —
+> P01 API service · P02 web app React/Angular (deep link, CORS, cache) ·
+> P03 หลาย service ใต้ host เดียว · P22 ปล่อยของใหม่ทีละนิดด้วย weight
+
 ---
 
 ## 🔴 อ่านตรงนี้ก่อน — เราไม่มี GitOps
@@ -84,14 +89,27 @@ kubectl -n myhr-prod rollout status deploy/zeeme-ads --timeout=5m
 kubectl -n myhr-prod get deploy,svc,pdb,httproute -l app.kubernetes.io/name=zeeme-ads
 kubectl -n myhr-prod get pods -l app.kubernetes.io/name=zeeme-ads -o wide
 ```
-**ควรเห็น:** pod **กระจายคนละ node** · PDB มี `ALLOWED DISRUPTIONS = 1` · HTTPRoute `ACCEPTED=True`
+**ควรเห็น:** pod **กระจายคนละ node** · PDB มี `ALLOWED DISRUPTIONS = 1`
 
-**ทดสอบจากนอก cluster:**
+**สถานะของ HTTPRoute ต้องดูแยก** — `kubectl get httproute` ไม่มีคอลัมน์สถานะ
+มีแค่ `HOSTNAMES` กับ `AGE` route ที่ผูกไม่ติดหรือชี้ Service ผิดชื่อจะหน้าตาเหมือนกันเป๊ะ:
+```bash
+kubectl -n myhr-prod get httproute -l app.kubernetes.io/name=zeeme-ads \
+  -o jsonpath='{range .items[*]}{.metadata.name}{":"}{range .status.parents[0].conditions[*]}{" "}{.type}={.status}{end}{"\n"}{end}'
+```
+**ควรเห็น:** `Accepted=True ResolvedRefs=True` — `ResolvedRefs=False` คือ backend พิมพ์ผิดชื่อ
+
+**ทดสอบจากเครื่องในวง `192.168.50.0/24` ที่ไม่ใช่ node:**
 ```bash
 GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
-curl -I --cacert /root/k8s/myhr-root-ca.crt \
-     --resolve "zeeme-ads.myhr.co.th:443:${GW_IP}" https://zeeme-ads.myhr.co.th
+curl -I --resolve "zeeme-ads.myhr.co.th:443:${GW_IP}" https://zeeme-ads.myhr.co.th
 ```
+
+> ถ้าบทที่ 07 เลือก **ทาง B (internal CA)** ให้เพิ่ม `--cacert /root/k8s/myhr-root-ca.crt`
+> ในคำสั่ง curl ข้างบน — ทาง A (public cert) ไม่ต้อง
+>
+> ถ้า public cert เป็น **cert รายชื่อ** ไม่ใช่ wildcard ต้องเพิ่มชื่อ `zeeme-ads.myhr.co.th`
+> เข้าไปใน cert ก่อน แล้วรัน `import-public-cert.sh` ซ้ำ ไม่งั้นจะตายที่ TLS ตั้งแต่ยังไม่ถึง app
 
 ---
 

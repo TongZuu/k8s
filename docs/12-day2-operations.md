@@ -154,6 +154,41 @@ kubeadm certs check-expiration
 > **CA มีอายุ 10 ปี** ตราบใดที่ CA ยังไม่หมด cert อื่นต่ออายุได้เสมอ
 > แม้จะหมดอายุไปแล้วก็ตาม — **cert หมดไม่ใช่จุดจบ** แต่ก็อย่าปล่อยให้ถึงจุดนั้น
 
+### 3.1 cert ของ Gateway — `kubeadm certs check-expiration` มองไม่เห็น
+
+cert ที่ Envoy Gateway เสิร์ฟให้ผู้ใช้เป็นคนละชุดกับ cert ของ control plane
+`kubeadm certs check-expiration` ไม่รายงานให้ ต้องตรวจแยก **ทุกเดือนพร้อมกัน**
+
+```bash
+kubectl -n envoy-gateway-system get secret myhr-wildcard-tls \
+  -o jsonpath='{.data.tls\.crt}' | base64 -d \
+  | openssl x509 -noout -issuer -enddate
+```
+
+**ถ้าบทที่ 07 ใช้ทาง B (internal CA)** — cert-manager ต่ออายุให้เองเมื่อเหลือ 30 วัน
+ข้อนี้แค่ตรวจว่ามันทำงานจริง `enddate` ต้องขยับออกไปเรื่อย ๆ ถ้าค้างที่เดิมสองเดือนติดให้ดู:
+```bash
+kubectl -n envoy-gateway-system describe certificate myhr-wildcard-tls | tail -20
+```
+
+**ถ้าบทที่ 07 ใช้ทาง A (public cert)** — 🔴 **ไม่มีอะไรต่ออายุให้** ต้องขอไฟล์ชุดใหม่จาก CA
+แล้วเอามาวางทับที่ `/root/certs/` จากนั้นรันคำสั่งเดิมของบทที่ 07 ซ้ำ:
+```bash
+bash /root/k8s/config/gateway/import-public-cert.sh \
+     /root/certs/fullchain.pem /root/certs/privkey.pem
+```
+สคริปต์ตรวจ chain/คู่ key/ชื่อ/วันหมดอายุให้ก่อนเขียนทับ และ Envoy Gateway
+โหลด cert ใหม่ให้เองในไม่กี่วินาที **ไม่ต้อง restart อะไร**
+
+**ตรวจว่าใบใหม่ลงจริง** — รันคำสั่งเดียวกับตอนต้นหัวข้อนี้ซ้ำ `enddate` ต้องขยับไปปีหน้า:
+```bash
+kubectl -n envoy-gateway-system get secret myhr-wildcard-tls \
+  -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -enddate
+```
+
+> cert ของ Gateway หมดอายุ = **ทุก service ล่มพร้อมกันจากมุมของผู้ใช้** ทั้งที่ pod ยังเขียวหมด
+> เป็นเคสที่หาสาเหตุนานที่สุดถ้าไม่ได้เตรียมไว้ก่อน เพราะทุก dashboard ยังปกติ
+
 ---
 
 ## 4 · Rolling reboot (patch kernel)
@@ -344,7 +379,7 @@ GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.
 cilium status --wait
 kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep KubeProxyReplacement
 kubectl get svc -A | grep LoadBalancer        # EXTERNAL-IP ต้องยังอยู่
-curl -I "http://${GW_IP}"                     # จากเครื่องนอก cluster
+curl -I "http://${GW_IP}"                     # จากเครื่องทดสอบในวง 192.168.50.0/24
 cilium connectivity test
 ```
 
@@ -360,18 +395,64 @@ kubectl -n kube-system rollout status ds/cilium
 
 ### เพิ่ม worker
 
+**ในrepo — แก้ 2 ไฟล์ ที่เหลืออ่านต่อจากสองไฟล์นี้เองหมด:**
+
+| ไฟล์ | เพิ่มอะไร |
+|---|---|
+| [`docs/versions.env`](versions.env) | `WORKER04_IP=192.168.50.107` และ `WORKER04_NAME=k8s-worker04` |
+| [`ansible/inventory.ini`](../ansible/inventory.ini) | `k8s-worker04 ansible_host=192.168.50.107` ใต้ `[workers]` |
+
 ```bash
-# บน master01 — token เดิมหมดอายุแล้วแน่นอน ต้องออกใหม่
-kubeadm token create --print-join-command
+bash config/validate-repo.sh
 ```
-บนเครื่องใหม่: ทำ**บทที่ 01 และ 02 ให้ครบก่อน** แล้วค่อย join
+
+ต้องผ่าน — ตัวตรวจอ่านรายชื่อเครื่องจาก `versions.env` เอง ถ้าลืมใส่ใน `inventory.ini`
+มันจะฟ้องชื่อเครื่องที่ขาดออกมาตรง ๆ
+
+**บนเครื่องใหม่ — ทำ [บทที่ 01](01-prepare-os.md) และ [02](02-container-runtime.md) ให้ครบก่อน**
+(partition แยกของ worker คือ `/var/lib/containerd` · firewalld ต้องเปิดพอร์ตชุด worker)
+
+**`/etc/hosts` ของ *ทุกเครื่อง* ต้องรู้จักเครื่องใหม่ ไม่ใช่แค่เครื่องใหม่รู้จักคนอื่น** —
+วิธีที่ถูกคือรัน playbook ให้ทั้ง cluster (มันวางบล็อกเดียวกันทุกเครื่อง แบบ idempotent):
+
+```bash
+ansible-playbook prepare-os.yml
+```
+
+**join เครื่องใหม่ด้วย playbook** — ต้องมี master01 อยู่ในรอบด้วยเพราะ token ออกจากเครื่องนั้น:
+
+```bash
+ansible-playbook create-cluster.yml --limit 'k8s-master01,k8s-worker04'
+```
+
+หรือทำมือ: ออก token บน master01 แล้ว join บนเครื่องใหม่
+
+```bash
+kubeadm token create --ttl 2h --print-join-command
+```
+
+**ตรวจหลัง join:**
+
+```bash
+kubectl get nodes -o wide
+kubectl -n kube-system get pods -o wide --field-selector spec.nodeName=k8s-worker04
+```
+
+**ควรเห็น:** node ใหม่เป็น `Ready` ภายในไม่กี่นาที (Cilium ลง agent ให้เองผ่าน DaemonSet
+ไม่ต้องทำอะไรเพิ่มในบทที่ 05) และมี pod ของ Cilium ขึ้นบนเครื่องนั้น
+
+> **สิ่งที่ *ไม่* ต้องทำสำหรับ worker** — ไม่ต้องแก้ `certSANs`, ไม่ต้องแตะ HAProxy/keepalived,
+> ไม่ต้องมี `audit-policy.yaml` (ใช้กับ apiserver ซึ่งอยู่บน master เท่านั้น)
+> · ถ้าเพิ่ม **master** ต่างออกไปมาก: `certSANs` ใน `kubeadm-config.yaml` ต้องมี IP/ชื่อเครื่องใหม่
+> **ตั้งแต่ก่อน `kubeadm init`** แก้ทีหลังต้องออก cert ใหม่ทั้งชุด · และต้องเพิ่ม backend
+> ใน `haproxy.cfg` ของทุก master กับตั้ง `priority` ของ keepalived ให้ไม่ชนกัน
 
 ### เพิ่ม control plane
 
 ```bash
 # บน master01 — ต้องได้ทั้ง certificate-key และ token ใหม่
 kubeadm init phase upload-certs --upload-certs      # certificate-key อายุ 2 ชม.
-kubeadm token create --print-join-command
+kubeadm token create --ttl 2h --print-join-command
 ```
 แล้วต่อท้ายด้วย `--control-plane --certificate-key <KEY>`
 

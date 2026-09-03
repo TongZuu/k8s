@@ -6,6 +6,11 @@
 #
 #  microservice ทุกตัวอยู่หลังตัวนี้เป็น ClusterIP ธรรมดา ไม่กิน IP ของ LAN
 #  แยกกันด้วย hostname ผ่าน HTTPRoute
+#
+#  ⚠️ ต้องมี Secret `myhr-wildcard-tls` อยู่ก่อน แล้วค่อย apply ไฟล์นี้
+#     ไม่งั้น listener https จะค้างที่ Programmed=False
+#     ทาง A (public cert)  : bash config/gateway/import-public-cert.sh ...
+#     ทาง B (internal CA)  : kubectl apply -f config/cert-manager/wildcard-cert.yaml
 # =============================================================================
 
 ---
@@ -14,9 +19,6 @@ kind: Gateway
 metadata:
   name: myhr-gateway
   namespace: envoy-gateway-system
-  annotations:
-    # ให้ cert-manager ออก cert ให้ listener HTTPS อัตโนมัติ
-    cert-manager.io/cluster-issuer: myhr-internal-ca-issuer
 spec:
   gatewayClassName: eg
 
@@ -39,11 +41,32 @@ spec:
         mode: Terminate
         certificateRefs:
           - kind: Secret
-            name: myhr-wildcard-tls     # cert-manager สร้างให้จาก annotation ด้านบน
+            name: myhr-wildcard-tls
       allowedRoutes:
         namespaces:
           from: All
 
+# =============================================================================
+#  ถ้า public cert ที่มีไม่ใช่ wildcard
+# -----------------------------------------------------------------------------
+#  hostname ของ listener ไม่จำเป็นต้องเท่ากับชื่อใน cert — listener hostname
+#  คุมว่า "HTTPRoute ไหนผูกเข้ามาได้" ส่วน cert คุมว่า "ชื่อไหนเปิดแล้วไม่เตือน"
+#
+#  ถ้ามี cert รายชื่อหลายใบ ใส่ได้หลายใบใน listener เดียว Envoy จะเลือกตาม SNI:
+#
+#      certificateRefs:
+#        - kind: Secret
+#          name: hr-myhr-tls          # cert ของ hr.myhr.co.th
+#        - kind: Secret
+#          name: api-myhr-tls         # cert ของ api.myhr.co.th
+#        - kind: Secret
+#          name: myhr-wildcard-tls    # ใบสำรอง สำหรับชื่อที่เหลือ
+#
+#  ทุกใบต้องอยู่ namespace เดียวกับ Gateway (envoy-gateway-system)
+#  ถ้าอยู่ namespace อื่นต้องทำ ReferenceGrant ให้ก่อน ไม่งั้นขึ้น InvalidCertificateRef
+#
+#  หมายเหตุ: "*.myhr.co.th" ครอบ subdomain ชั้นเดียว ไม่ครอบ apex "myhr.co.th"
+#  และไม่ครอบ "a.b.myhr.co.th" — ถ้าต้องใช้ ต้องมีชื่อนั้นใน cert ด้วย
 # =============================================================================
 #  หมายเหตุเรื่อง allowedRoutes.from: All
 # -----------------------------------------------------------------------------

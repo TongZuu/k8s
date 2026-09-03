@@ -1,0 +1,48 @@
+# =============================================================================
+#  Certificate สำหรับ listener HTTPS ของ Gateway  —  ใช้เฉพาะ "ทาง B" (internal CA)
+# =============================================================================
+#  ถ้าใช้ public cert ที่องค์กรมีอยู่แล้ว (ทาง A) ไม่ต้อง apply ไฟล์นี้
+#  ให้ไปสร้าง Secret ด้วย config/gateway/import-public-cert.sh แทน
+#
+#  ทำไมเขียนเป็น Certificate ตรง ๆ แทนที่จะติด annotation ไว้ที่ Gateway:
+#  -----------------------------------------------------------------------------
+#  cert-manager อ่าน annotation `cert-manager.io/cluster-issuer` บน Gateway ได้
+#  ก็ต่อเมื่อติดตั้งด้วย `--set config.enableGatewayAPI=true` เท่านั้น
+#  ถ้าลืมเปิด: apply Gateway ผ่าน · ไม่มี error · ไม่มี event · ไม่มี Certificate
+#  แล้ว listener HTTPS ค้างที่ Programmed=False โดยไม่มีอะไรชี้ว่าสาเหตุอยู่ตรงไหน
+#
+#  เขียนเป็น Certificate แยกแทน แลกมาด้วยไฟล์เพิ่มหนึ่งไฟล์ แต่ได้:
+#    · ตรวจได้ก่อนสร้าง Gateway — `kubectl -n envoy-gateway-system get certificate`
+#    · ไม่ต้องพึ่ง flag ตอน helm install ที่ลืมแล้วไม่มีใครเตือน
+#    · ลำดับชัด: cert พร้อม → ค่อย apply Gateway → PROGRAMMED ขึ้นครั้งเดียวจบ
+# =============================================================================
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: myhr-wildcard-tls
+  namespace: envoy-gateway-system   # ต้อง namespace เดียวกับ Gateway
+spec:
+  # ชื่อนี้ต้องตรงกับ certificateRefs ใน config/gateway/gateway.yaml
+  secretName: myhr-wildcard-tls
+
+  # wildcard ครอบ subdomain ชั้นเดียว — "*.myhr.co.th" ไม่ครอบ "myhr.co.th"
+  # จึงต้องใส่ apex แยกอีกบรรทัด ไม่งั้นเรียก https://myhr.co.th จะเจอ cert mismatch
+  commonName: "*.myhr.co.th"
+  dnsNames:
+    - "*.myhr.co.th"
+    - "myhr.co.th"
+
+  duration: 2160h                  # 90 วัน
+  renewBefore: 720h                # ต่ออายุเองเมื่อเหลือ 30 วัน
+
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always         # ออก cert ใหม่ = key ใหม่ ไม่ใช้ key เดิมซ้ำ
+
+  issuerRef:
+    name: myhr-internal-ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
