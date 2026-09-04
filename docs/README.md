@@ -41,7 +41,7 @@ python tools/build-html.py     # แล้วเปิด html/index.html
 | [04](04-create-cluster.md) | `kubeadm init` + join ทุก node | master01 → ที่เหลือ |
 | [05](05-cilium.md) | Cilium — CNI + kube-proxy + LB-IPAM | master01 |
 | [06](06-verify.md) | ตรวจรับระบบ + ซ้อม failover | master01 |
-| [07](07-gateway-tls.md) | Envoy Gateway + TLS — **public cert** หรือ internal CA | master01 |
+| [07](07-gateway-tls.md) | Envoy Gateway + TLS ด้วย **public cert wildcard** | master01 |
 | [08](08-storage.md) | Storage — ไม่มี CSI + static local PV | master01 + worker03 |
 | | **ใช้งานและดูแล** | |
 | [09](09-observability.md) | metrics-server · Prometheus · Loki · **alert** | master01 |
@@ -81,13 +81,15 @@ config/
 │   ├── values.yaml                        Helm values
 │   ├── lb-ippool.yaml                     cilium.io/v2
 │   └── l2-announcement-policy.yaml        cilium.io/v2alpha1  ← คนละ apiVersion
-├── cert-manager/                          บท 07 · เฉพาะ "ทาง B" (internal CA)
+├── cert-manager/                          บท 07 ภาคผนวก ข · ไม่ได้ใช้ในเส้นทางหลัก
 │   ├── internal-ca.yaml                   root CA อายุ 10 ปี + ClusterIssuer
-│   ├── wildcard-cert.yaml                 cert ของ listener HTTPS
+│   ├── internal-cert.yaml                 cert ของ listener HTTPS
 │   └── pdb.yaml
 ├── gateway/                               บท 07
+│   ├── gatewayclass.yaml                  chart ไม่สร้างให้ ต้อง apply เอง
 │   ├── gateway.yaml                       Gateway หลัก — กิน LB IP ตัวเดียว
-│   ├── import-public-cert.sh              "ทาง A" — ตรวจ+ใส่ public cert ที่มีอยู่แล้ว
+│   ├── import-public-cert.sh              ตรวจ+ใส่ public cert ที่มีอยู่แล้ว
+│   ├── check-cert-overlap.sh              บท 07 ภาคผนวก ข · กันชื่อทับกันตอนใช้ cert สองใบ
 │   ├── httproute-example.yaml             แม่แบบต่อ service
 │   └── https-redirect.yaml
 ├── storage/                               บท 08

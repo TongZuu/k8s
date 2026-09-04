@@ -84,14 +84,16 @@
       ทำพร้อมรอบทบทวนรายชื่อ `cluster-admin` รายไตรมาส
 - [ ] ทบทวนเมื่อคนถือ kubeconfig เกิน ~10 คน → ถึงเวลาย้ายไป OIDC (บท 10 หัวข้อ 4.2)
 - [ ] `PULL_ONLY_USER` / `PULL_ONLY_PASSWORD` ของ registry (บท 10) — บัญชี pull อย่างเดียว
-- [ ] 🔴 **public cert ของ `myhr.co.th` — ขอไฟล์จากคนที่ถืออยู่** (บท 07 ทาง A)
-      ต้องได้ `fullchain.pem` (leaf + intermediate) และ private key แบบ **ไม่มี passphrase**
-      ถ้าได้มาเป็น `.pfx` ให้แปลงตามบท 07 · ตรวจก่อนใช้ด้วย
-      `bash config/gateway/import-public-cert.sh --dry-run <fullchain> <key>`
-      · **ต้องรู้ก่อนด้วยว่าเป็น wildcard หรือ cert รายชื่อ** — ถ้าเป็นรายชื่อ ต้องรวบรวม
-      ชื่อ service ทั้งหมดที่จะเปิดให้ครบก่อนไปขอต่ออายุ ไม่งั้นต้องขอเพิ่มทีละใบ
-- [ ] **จดวันหมดอายุของ public cert ลงปฏิทินทีม** พร้อมเตือนล่วงหน้า 30 วัน
-      ทาง A ไม่ต่ออายุให้เอง — ลืมแล้วทุก service ล่มพร้อมกัน
+- [x] **ได้ public cert มาแล้ว — ตรวจผ่านครบ (4 ก.ย. 2026)**
+      · **wildcard `*.myhr.co.th`** + apex `myhr.co.th` → ครอบทุกชื่อที่จะเปิด
+        **ไม่ต้องลง cert-manager ไม่ต้องไล่ root CA ลงเครื่อง client** — ทางเลือกที่ใช้
+        internal CA ถูกย้ายไปภาคผนวก ข ของบท 07 แล้ว ไม่อยู่ในเส้นทางหลัก
+      · ผู้ออก: GlobalSign GCC R46 AlphaSSL CA 2025 · chain ครบ 3 ใบเรียงถูก
+      · key เป็น PKCS#8 ไม่มี passphrase และเป็นคู่กับ cert
+      · ตรวจด้วย `bash config/gateway/import-public-cert.sh --dry-run <chain> <key>` → ผ่านทุกข้อ
+- [ ] 🔴 **จดวันหมดอายุลงปฏิทินทีม — `11 มี.ค. 2027`** ตั้งเตือน **9 ก.พ. 2027** (ล่วงหน้า 30 วัน)
+      public cert ไม่ต่ออายุให้เอง — ลืมแล้วทุก service ล่มพร้อมกันโดยที่ pod ยังเขียวหมด
+      วิธีต่ออายุอยู่ที่ [บท 12 หัวข้อ 3.1](12-day2-operations.md)
 
 **สำคัญกว่าทุกข้อข้างบน:**
 
@@ -134,6 +136,17 @@
       · ทางที่แนะนำ: **ยกทั้ง 6 เครื่องไป `6.12.0-205.92.4.2`** (ใหม่สุด ยังมีในrepo)
         เพราะ `204.92.4.3.1` อาจหาไม่ได้แล้ว และการยก 2 เครื่องลง 203 คือ downgrade
       · ต้องเคาะ **ก่อนจบ Phase 4** — หลังรับ workload แล้วราคาขึ้นทันที
+- [ ] **เคาะนโยบาย: ยอมให้มี Gateway API CRD ช่อง `experimental` บน production ไหม**
+      chart ของ Envoy Gateway ลงช่องนี้มาเป็นค่าเริ่มต้น (ยืนยันบน cluster จริง 4 ก.ย. 2026)
+      · **ไม่กระทบการใช้งาน** — `Gateway`/`HTTPRoute`/`GRPCRoute`/`GatewayClass`/`ReferenceGrant`
+        ที่เราใช้ทั้งหมดอยู่ในช่อง `standard` อยู่แล้ว `experimental` เป็น superset
+      · ส่วนที่เกินมา (`TCPRoute`, `UDPRoute`, `TLSRoute`, field ทดลอง) เราไม่ได้ใช้
+      · ความเสี่ยงจะเกิดก็ต่อเมื่อ **มีคนเขียน manifest ไปใช้ของในช่องนั้น** แล้วมันเปลี่ยน
+        ตอน upgrade — กันได้ด้วย policy check ที่ CI (บท 11)
+      · ถ้าเคาะว่าห้าม: ต้องลง CRD แยกด้วย chart `gateway-crds-helm` พร้อม
+        `--set crds.gatewayAPI.channel=standard` แล้ว main chart ใส่ `--set crds.enabled=false`
+        (เพิ่มหนึ่งขั้นตอนในบท 07 · วิธีอยู่ในเอกสารทางการหัวข้อ Install CRDs separately)
+      · **ต้องเคาะก่อนขึ้น production** — เปลี่ยนทีหลังต้องรื้อ CRD ซึ่งลบ object ใต้มันทั้งหมด
 - [ ] 🔴 **แก้ต้นเหตุ: ขั้นตอนสร้าง VM ต้องไม่ใช่ `dnf update` ลอย ๆ**
       ต้องเป็น "ลง kernel เวอร์ชันที่ระบุใน `versions.env` แล้ว `versionlock` ทันที"
       ไม่งั้นเครื่องที่สร้างเพิ่มในอนาคตจะได้เลขใหม่เรื่อย ๆ ตามวันที่สร้าง

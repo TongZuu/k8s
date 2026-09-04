@@ -26,6 +26,44 @@ worker 3 เครื่อง โดยมี Cilium ทำหน้าที�
               worker01 .104       worker02 .105       worker03 .106
 ```
 
+**แผนผังข้างบนเป็นเส้นทางของ control plane เท่านั้น** — ทราฟฟิกของผู้ใช้จริงเดินอีกเส้น
+ที่ไม่แตะ VIP เลย สร้างขึ้นในบทที่ 05 (Cilium) และบทที่ 07 (Gateway)
+
+```
+   kubectl / kubelet                      ผู้ใช้เปิด hr.myhr.co.th
+         │                                          │
+         ▼                                          ▼
+   VIP .100:8443                            LB IP .200:443
+   keepalived (VRRP) + HAProxy              Cilium LB-IPAM + L2 announcement
+   ลอยบน master ตัวใดตัวหนึ่ง                  ประกาศ ARP จาก node ตัวใดตัวหนึ่ง
+         │                                          │
+         ▼                                          ▼
+   apiserver:6443 × 3                       Envoy proxy pod
+                                                    │
+                                         HTTPRoute → Service → pod
+```
+
+| | **VIP `.100`** | **LB IP `.200`** |
+|---|---|---|
+| ทราฟฟิกอะไร | control plane — `kubectl`, kubelet | ของผู้ใช้จริง |
+| ใครถือ IP | keepalived (VRRP) | Cilium L2 announcement |
+| กระจายโหลด | HAProxy → apiserver 3 ตัว | eBPF ของ Cilium → Envoy proxy pod |
+| เครื่องที่ถืออยู่ตาย | VRRP ย้าย VIP ไป master อื่น | Cilium ย้ายสิทธิ์ตอบ ARP ไป node อื่น |
+| ทำที่บทไหน | [03](03-ha-layer.md) | [05](05-cilium.md) + [07](07-gateway-tls.md) |
+
+> 🔴 **HAProxy กับ keepalived ไม่แตะทราฟฟิกของแอปแม้แต่นิดเดียว** — คนที่เปิดเว็บ
+> ไม่เคยวิ่งผ่าน `.100` เลย เข้าใจผิดข้อนี้แล้วจะไล่ปัญหาผิดทางทั้งกระบวน
+>
+> **failure domain แยกกันสนิท:**
+> · VIP ล่ม → `kubectl` ใช้ไม่ได้ deploy ไม่ได้ แต่ **pod ที่รันอยู่และผู้ใช้ยังปกติ**
+> · L2 announcement ล่ม → ผู้ใช้เข้าไม่ได้ แต่ cluster ข้างในปกติ ยัง `kubectl` ได้
+>
+> "เข้าเว็บไม่ได้" กับ "kubectl ไม่ได้" แทบไม่เคยมีสาเหตุเดียวกัน
+
+> **เอา Gateway ไปอยู่หลัง VIP เลยไม่ได้เหรอ** — ได้ทางเทคนิค แต่จะบีบทราฟฟิกแอปทั้งหมด
+> ผ่าน HAProxy ตัวเดียวบน master เครื่องเดียว ทำให้ master เป็นคอขวดของทั้งระบบ
+> และทำลายเหตุผลที่เลือก Cilium LB-IPAM ตั้งแต่แรก
+
 ---
 
 ## บทบาทของเครื่อง — มีแค่ 3 แบบ
@@ -71,6 +109,18 @@ worker 3 เครื่อง โดยมี Cilium ทำหน้าที�
 - [ ] ยืนยันแล้วว่าไม่มี route `10.246.0.0/16` และ `10.247.0.0/16` ในองค์กร
 - [ ] เข้า `registry.myhr.co.th` ได้จากทุก node และรู้ว่าเป็น HTTP หรือ HTTPS (ถ้า HTTPS ต้องมีไฟล์ CA)
 - [ ] คัดลอก `versions.env` และโฟลเดอร์ `config/` ไปไว้ที่ `/root/k8s/` บนทุกเครื่องแล้ว
+      **รันจากเครื่องที่มีrepo (ไม่ใช่บน node)** โดยยืนอยู่ในโฟลเดอร์rootของrepo:
+
+```bash
+for ip in 101 102 103 104 105 106; do
+  ssh root@192.168.50.$ip 'mkdir -p /root/k8s'
+  scp -r docs/versions.env config/ root@192.168.50.$ip:/root/k8s/
+done
+```
+
+> **ต้องรันซ้ำทุกครั้งที่แก้ไฟล์ในrepo** ไม่ใช่ครั้งเดียวตอนเริ่ม — ไม่งั้นบทที่กำลังทำ
+> จะอ้างไฟล์ที่ยังไม่มีบนเครื่อง แล้วเจอ `does not exist` กลางคัน
+> ทุกบทมีคำสั่งตรวจไฟล์ของตัวเองอยู่ที่ขั้นที่ 0
 
 ---
 

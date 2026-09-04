@@ -173,8 +173,9 @@ GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.
 curl -I --resolve "grafana.myhr.co.th:443:${GW_IP}" https://grafana.myhr.co.th
 ```
 
-> ถ้าบทที่ 07 เลือก **ทาง B (internal CA)** ให้เพิ่ม `--cacert /root/k8s/myhr-root-ca.crt`
-> ในคำสั่ง curl ข้างบน — ทาง A (public cert) ไม่ต้อง เพราะเครื่องเชื่อ CA นั้นอยู่แล้ว
+> ถ้าชื่อนี้ใช้ cert จาก **internal CA** (บทที่ 07 ภาคผนวก ข) ให้เพิ่ม
+> `--cacert /root/k8s/myhr-root-ca.crt` ในคำสั่ง curl ข้างบน
+> ถ้าใช้ **public cert** ไม่ต้อง เพราะเครื่องเชื่อ CA นั้นอยู่แล้ว
 
 **เปลี่ยนรหัส admin ทันทีหลังเข้าครั้งแรก** และเก็บลงที่เก็บ secret ไม่ใช่ในไฟล์นี้
 

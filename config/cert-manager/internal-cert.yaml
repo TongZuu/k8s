@@ -1,0 +1,76 @@
+# =============================================================================
+#  cert จาก internal CA สำหรับ listener HTTPS  —  บทที่ 07 ภาคผนวก ข
+# =============================================================================
+#  🔸 เส้นทางหลักของโครงการไม่ได้ใช้ไฟล์นี้ — public cert wildcard ครอบทุกชื่ออยู่แล้ว
+#     ไฟล์นี้มีไว้เผื่อวันที่ต้องเปิด service ด้วยชื่อที่ public cert ไม่ครอบ
+#
+#  ใช้คู่กับ internal-ca.yaml (ต้อง apply ตัวนั้นก่อน)
+#  ผลลัพธ์คือ Secret `myhr-internal-tls` ใน envoy-gateway-system
+#
+#  ⚠️ ชื่อใน dnsNames ข้างล่าง "ห้ามทับ" กับชื่อใน public cert (myhr-public-tls)
+#     ถ้าชื่อเดียวกันอยู่ในทั้งสองใบ Envoy จะเลือกใบไหนก็ได้ตอน SNI ตรงกันทั้งคู่
+#     ผลคือบางครั้งผู้ใช้ได้ใบ public บางครั้งได้ใบ internal แล้วเจอ cert warning
+#     เป็นครั้งคราวโดยไม่มีรูปแบบ ซึ่งเป็นอาการที่หาสาเหตุยากที่สุดแบบหนึ่ง
+#
+#     ตรวจว่าไม่ทับกันด้วย:  bash config/gateway/check-cert-overlap.sh
+#
+#  ทำไมเขียนเป็นไฟล์ Certificate แทนที่จะติด annotation ไว้ที่ Gateway:
+#  -----------------------------------------------------------------------------
+#  cert-manager อ่าน annotation `cert-manager.io/cluster-issuer` บน Gateway ได้
+#  ก็ต่อเมื่อติดตั้งด้วย `--set config.enableGatewayAPI=true` เท่านั้น
+#  ถ้าลืมเปิด: apply Gateway ผ่าน · ไม่มี error · ไม่มี event · ไม่มี Certificate
+#  แล้ว listener HTTPS ค้างที่ Programmed=False โดยไม่มีอะไรชี้ว่าสาเหตุอยู่ตรงไหน
+#
+#  เขียนเป็น Certificate แยกแทน แลกมาด้วยไฟล์เพิ่มหนึ่งไฟล์ แต่ได้:
+#    · ตรวจได้ก่อนแตะ Gateway — `kubectl -n envoy-gateway-system get certificate`
+#    · ไม่ต้องพึ่ง flag ตอน helm install ที่ลืมแล้วไม่มีใครเตือน
+#    · ใช้ร่วมกับ public cert ได้ เพราะคุมชื่อ Secret ได้เอง จึงไม่ไปทับกัน
+# =============================================================================
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: myhr-internal-tls
+  namespace: envoy-gateway-system   # ต้อง namespace เดียวกับ Gateway
+spec:
+  # ชื่อนี้ต้องตรงกับ certificateRefs ใน config/gateway/gateway.yaml
+  secretName: myhr-internal-tls
+
+  # ---------------------------------------------------------------------------
+  #  แก้ตรงนี้ให้ตรงกับงานจริง
+  # ---------------------------------------------------------------------------
+  #  ถ้าเลิกใช้ public cert ไปเลย — ครอบทั้งโดเมนได้:
+  #      commonName: "*.myhr.co.th"
+  #      dnsNames: ["*.myhr.co.th", "myhr.co.th"]
+  #
+  #  ถ้าใช้คู่กับ public cert (กรณีปกติ) — ต้องเป็นชื่อที่ public cert ไม่ครอบ
+  #      · ถ้า public cert เป็น wildcard *.myhr.co.th
+  #        → ใบนี้ต้องไปอยู่ใต้ชื่อคนละชั้น เช่น *.ops.myhr.co.th
+  #      · ถ้า public cert เป็นรายชื่อ (hr / api / ads)
+  #        → ใบนี้ใส่รายชื่อฝั่งภายในตรง ๆ อย่างที่ตั้งไว้ข้างล่างนี้
+  #
+  #  ค่าเริ่มต้นข้างล่างตั้งเป็น *.ops.myhr.co.th เพราะเป็นค่าที่ "ทับไม่ได้"
+  #  ไม่ว่า public cert จะเป็น wildcard หรือรายชื่อ — เริ่มจากตรงนี้แล้วปลอดภัยเสมอ
+  #  (wildcard ครอบชั้นเดียว *.myhr.co.th จึงไม่ครอบ grafana.ops.myhr.co.th)
+  #
+  #  ⚠️ ถ้าเปลี่ยนไปใช้ชื่อใต้ .ops. จริง ต้องแก้ hostname ใน HTTPRoute ของ
+  #     service นั้นให้ตรงกันด้วย เช่น config/monitoring/grafana-route.yaml
+  #     ไม่งั้น cert ออกให้ชื่อหนึ่ง แต่ route รับอีกชื่อหนึ่ง แล้วไม่มีใครใช้ใบนี้เลย
+  # ---------------------------------------------------------------------------
+  commonName: "*.ops.myhr.co.th"
+  dnsNames:
+    - "*.ops.myhr.co.th"
+
+  duration: 2160h                  # 90 วัน
+  renewBefore: 720h                # ต่ออายุเองเมื่อเหลือ 30 วัน
+
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always         # ออก cert ใหม่ = key ใหม่ ไม่ใช้ key เดิมซ้ำ
+
+  issuerRef:
+    name: myhr-internal-ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io

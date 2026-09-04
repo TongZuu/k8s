@@ -7,10 +7,14 @@
 #  microservice ทุกตัวอยู่หลังตัวนี้เป็น ClusterIP ธรรมดา ไม่กิน IP ของ LAN
 #  แยกกันด้วย hostname ผ่าน HTTPRoute
 #
-#  ⚠️ ต้องมี Secret `myhr-wildcard-tls` อยู่ก่อน แล้วค่อย apply ไฟล์นี้
+#  ⚠️ ต้องมี Secret ของ cert อยู่ก่อน แล้วค่อย apply ไฟล์นี้
 #     ไม่งั้น listener https จะค้างที่ Programmed=False
-#     ทาง A (public cert)  : bash config/gateway/import-public-cert.sh ...
-#     ทาง B (internal CA)  : kubectl apply -f config/cert-manager/wildcard-cert.yaml
+#         bash config/gateway/import-public-cert.sh ...   (บทที่ 07 ขั้นที่ 3)
+#
+#  ไฟล์นี้ตั้งค่ามาสำหรับเส้นทางหลัก: public cert wildcard ใบเดียว
+#  ถ้าวันหนึ่งต้องเพิ่ม cert จาก internal CA เข้ามาด้วย ให้ใช้ไฟล์นี้ตัวเดิม
+#  แล้วเปลี่ยนแค่ certificateRefs ด้วยคำสั่ง patch ในบทที่ 07 ภาคผนวก ข
+#  — ไม่ต้องแก้ไฟล์นี้ด้วยมือ
 # =============================================================================
 
 ---
@@ -22,8 +26,11 @@ metadata:
 spec:
   gatewayClassName: eg
 
+  # ⚠️ ลำดับของ listener สำคัญ — คำสั่ง patch ในบทที่ 07 อ้างถึง listeners[1]
+  #    (แต่ patch นั้นมี JSON Patch "test" op คุมไว้ ถ้าสลับลำดับ patch จะไม่ทำงาน
+  #     ทั้งก้อนแทนที่จะไปแก้ listener ผิดตัว)
   listeners:
-    # --- HTTP: มีไว้เพื่อ redirect ไป HTTPS อย่างเดียว --------------------
+    # --- [0] HTTP: มีไว้เพื่อ redirect ไป HTTPS อย่างเดียว ------------------
     - name: http
       protocol: HTTP
       port: 80
@@ -32,7 +39,7 @@ spec:
         namespaces:
           from: All          # ให้ทุก namespace ผูก route เข้ามาได้
 
-    # --- HTTPS: ทางเข้าจริง -----------------------------------------------
+    # --- [1] HTTPS: ทางเข้าจริง ---------------------------------------------
     - name: https
       protocol: HTTPS
       port: 443
@@ -41,29 +48,32 @@ spec:
         mode: Terminate
         certificateRefs:
           - kind: Secret
-            name: myhr-wildcard-tls
+            name: myhr-public-tls
       allowedRoutes:
         namespaces:
           from: All
 
 # =============================================================================
-#  ถ้า public cert ที่มีไม่ใช่ wildcard
+#  cert หลายใบใน listener เดียว (บทที่ 07 ภาคผนวก ข)
 # -----------------------------------------------------------------------------
-#  hostname ของ listener ไม่จำเป็นต้องเท่ากับชื่อใน cert — listener hostname
-#  คุมว่า "HTTPRoute ไหนผูกเข้ามาได้" ส่วน cert คุมว่า "ชื่อไหนเปิดแล้วไม่เตือน"
-#
-#  ถ้ามี cert รายชื่อหลายใบ ใส่ได้หลายใบใน listener เดียว Envoy จะเลือกตาม SNI:
+#  หลัง patch ตามบทที่ 07 ภาคผนวก ข.2 listener https จะเป็นแบบนี้:
 #
 #      certificateRefs:
 #        - kind: Secret
-#          name: hr-myhr-tls          # cert ของ hr.myhr.co.th
+#          name: myhr-public-tls      # public CA — ชื่อที่ผู้ใช้จริงเปิด
 #        - kind: Secret
-#          name: api-myhr-tls         # cert ของ api.myhr.co.th
-#        - kind: Secret
-#          name: myhr-wildcard-tls    # ใบสำรอง สำหรับชื่อที่เหลือ
+#          name: myhr-internal-tls    # internal CA — ชื่อฝั่ง ops
+#
+#  Envoy เลือกใบที่จะเสิร์ฟจาก SNI ของ request ดังนั้น **ชื่อในสองใบต้องไม่ทับกัน**
+#  ถ้าทับ Envoy จะเลือกใบไหนก็ได้ ผลคือผู้ใช้เจอ cert warning เป็นครั้งคราว
+#  โดยไม่มีรูปแบบ ตรวจด้วย:  bash config/gateway/check-cert-overlap.sh
+#
+#  hostname ของ listener ไม่จำเป็นต้องเท่ากับชื่อใน cert
+#  listener hostname คุมว่า "HTTPRoute ไหนผูกเข้ามาได้"
+#  ส่วน cert คุมว่า "ชื่อไหนเปิดแล้วไม่เตือน" — เป็นคนละหน้าที่กัน
 #
 #  ทุกใบต้องอยู่ namespace เดียวกับ Gateway (envoy-gateway-system)
-#  ถ้าอยู่ namespace อื่นต้องทำ ReferenceGrant ให้ก่อน ไม่งั้นขึ้น InvalidCertificateRef
+#  ถ้าอยู่ namespace อื่นต้องทำ ReferenceGrant ก่อน ไม่งั้นขึ้น InvalidCertificateRef
 #
 #  หมายเหตุ: "*.myhr.co.th" ครอบ subdomain ชั้นเดียว ไม่ครอบ apex "myhr.co.th"
 #  และไม่ครอบ "a.b.myhr.co.th" — ถ้าต้องใช้ ต้องมีชื่อนั้นใน cert ด้วย

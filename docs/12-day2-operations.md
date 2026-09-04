@@ -160,30 +160,83 @@ cert ที่ Envoy Gateway เสิร์ฟให้ผู้ใช้เป
 `kubeadm certs check-expiration` ไม่รายงานให้ ต้องตรวจแยก **ทุกเดือนพร้อมกัน**
 
 ```bash
-kubectl -n envoy-gateway-system get secret myhr-wildcard-tls \
-  -o jsonpath='{.data.tls\.crt}' | base64 -d \
-  | openssl x509 -noout -issuer -enddate
+for s in myhr-public-tls myhr-internal-tls; do
+  kubectl -n envoy-gateway-system get secret "$s" >/dev/null 2>&1 || continue
+  echo "== $s"
+  kubectl -n envoy-gateway-system get secret "$s" \
+    -o jsonpath='{.data.tls\.crt}' | base64 -d \
+    | openssl x509 -noout -issuer -enddate
+done
 ```
 
-**ถ้าบทที่ 07 ใช้ทาง B (internal CA)** — cert-manager ต่ออายุให้เองเมื่อเหลือ 30 วัน
+**`myhr-internal-tls` (จาก internal CA — มีเฉพาะถ้าทำภาคผนวก ข ของบท 07)**
+cert-manager ต่ออายุให้เองเมื่อเหลือ 30 วัน
 ข้อนี้แค่ตรวจว่ามันทำงานจริง `enddate` ต้องขยับออกไปเรื่อย ๆ ถ้าค้างที่เดิมสองเดือนติดให้ดู:
 ```bash
-kubectl -n envoy-gateway-system describe certificate myhr-wildcard-tls | tail -20
+kubectl -n envoy-gateway-system describe certificate myhr-internal-tls | tail -20
 ```
 
-**ถ้าบทที่ 07 ใช้ทาง A (public cert)** — 🔴 **ไม่มีอะไรต่ออายุให้** ต้องขอไฟล์ชุดใหม่จาก CA
-แล้วเอามาวางทับที่ `/root/certs/` จากนั้นรันคำสั่งเดิมของบทที่ 07 ซ้ำ:
+### เปลี่ยน `myhr-public-tls` เป็นใบใหม่
+
+🔴 **ไม่มีอะไรต่ออายุให้** ต้องขอไฟล์ชุดใหม่จาก CA แล้วเปลี่ยนเอง
+**ทำตอนใบเก่ายังไม่หมดอายุ** จะได้ไม่มี downtime
+
+**1 · ตรวจไฟล์ใหม่ก่อน ยังไม่แตะเครื่อง** — รันที่ไหนก็ได้ที่มี `openssl` (เครื่อง admin ก็ได้):
+```bash
+bash config/gateway/import-public-cert.sh --dry-run <fullchain ใหม่> <key ใหม่>
+```
+ต้องได้ `ok` ครบ 5 ข้อ — ไม่ผ่านให้กลับไปคุยกับ CA ก่อน อย่าเอาขึ้นเครื่อง
+
+**2 · สำรองของเดิมก่อนทับ** (บน master01):
+```bash
+cp -a /root/certs/fullchain.pem /root/certs/fullchain.pem.$(date +%Y%m%d)
+cp -a /root/certs/privkey.pem   /root/certs/privkey.pem.$(date +%Y%m%d)
+```
+
+**3 · วางไฟล์ใหม่ทับ แล้วรันสคริปต์เดิม** — ใช้ `apply` จึงเขียนทับ Secret ได้ ไม่ต้อง delete ก่อน:
 ```bash
 bash /root/k8s/config/gateway/import-public-cert.sh \
      /root/certs/fullchain.pem /root/certs/privkey.pem
 ```
-สคริปต์ตรวจ chain/คู่ key/ชื่อ/วันหมดอายุให้ก่อนเขียนทับ และ Envoy Gateway
-โหลด cert ใหม่ให้เองในไม่กี่วินาที **ไม่ต้อง restart อะไร**
 
-**ตรวจว่าใบใหม่ลงจริง** — รันคำสั่งเดียวกับตอนต้นหัวข้อนี้ซ้ำ `enddate` ต้องขยับไปปีหน้า:
+**4 · ตรวจ "บนสายจริง" — ไม่ใช่ดูแค่ Secret**
 ```bash
-kubectl -n envoy-gateway-system get secret myhr-wildcard-tls \
-  -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -enddate
+GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
+echo | openssl s_client -connect "${GW_IP}:443" -servername hr.myhr.co.th 2>/dev/null \
+  | openssl x509 -noout -issuer -dates
+```
+**`notAfter` ต้องเป็นวันใหม่**
+
+> 🔴 **Secret เปลี่ยนแล้ว ไม่ได้แปลว่า Envoy เสิร์ฟใบใหม่แล้ว** — เป็นคนละคำถามกัน
+> `kubectl get secret` ตอบว่า "เก็บอะไรไว้" ส่วน `openssl s_client` ตอบว่า
+> "ส่งอะไรออกไปให้ผู้ใช้จริง" ซึ่งเป็นคำถามที่เราสนใจ
+>
+> TLS handshake เกิดก่อน routing คำสั่งนี้จึงใช้ได้แม้ไม่มี HTTPRoute ของชื่อนั้น
+> · `-servername` คือ SNI **ต้องใส่** ไม่งั้นได้ใบ default มาแทน
+
+**ถ้า `notAfter` ยังเป็นวันเก่าหลังผ่านไป 1-2 นาที** — Envoy ยังไม่รับใบใหม่ ให้ restart proxy:
+```bash
+kubectl -n envoy-gateway-system get deploy
+```
+หาแถวที่ชื่อขึ้นต้นด้วย `envoy-` แต่**ไม่ใช่** `envoy-gateway` (ตัวนั้นคือ controller) แล้ว:
+```bash
+kubectl -n envoy-gateway-system rollout restart deploy/<ชื่อที่ได้>
+```
+แล้วตรวจข้อ 4 ซ้ำ
+
+**ถ้าใบใหม่มีปัญหา — ย้อนกลับด้วยไฟล์ที่สำรองไว้ข้อ 2:**
+```bash
+cp -a /root/certs/fullchain.pem.YYYYMMDD /root/certs/fullchain.pem
+cp -a /root/certs/privkey.pem.YYYYMMDD   /root/certs/privkey.pem
+bash /root/k8s/config/gateway/import-public-cert.sh \
+     /root/certs/fullchain.pem /root/certs/privkey.pem
+```
+
+**ถ้ามี internal cert อยู่ด้วย (ภาคผนวก ข ของบท 07) ต้องรันตัวตรวจชื่อทับซ้ำ** —
+cert ใบใหม่ที่ CA ใส่ SAN เพิ่มมาให้โดยไม่ได้ขอ จะไปทับกับ internal cert ได้
+ตั้งแต่วันที่ต่ออายุ โดยไม่มีอะไรเตือน:
+```bash
+bash /root/k8s/config/gateway/check-cert-overlap.sh
 ```
 
 > cert ของ Gateway หมดอายุ = **ทุก service ล่มพร้อมกันจากมุมของผู้ใช้** ทั้งที่ pod ยังเขียวหมด

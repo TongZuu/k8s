@@ -482,16 +482,22 @@ kubeadm init phase certs apiserver --config=/root/k8s/config/kubeadm/kubeadm-con
 
 ### 8.3 client ฝั่งนอกฟ้อง unknown authority
 
-ดูก่อนว่าบทที่ 07 เลือกทางไหน:
+ดูก่อนว่า cert ที่ Gateway เสิร์ฟอยู่มาจากไหน:
 
 ```bash
-kubectl -n envoy-gateway-system get secret myhr-wildcard-tls \
-  -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -issuer -subject -dates
+for s in myhr-public-tls myhr-internal-tls; do
+  kubectl -n envoy-gateway-system get secret "$s" >/dev/null 2>&1 || continue
+  echo "== $s"
+  kubectl -n envoy-gateway-system get secret "$s" \
+    -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -issuer -subject -dates
+done
 ```
 
-- **ทาง B (internal CA)** — `issuer` เป็น `CN=MyHR Internal CA`
-  แปลว่ายังไม่ได้ลง root CA ที่เครื่อง client นั้น ดูบทที่ 07 ขั้นที่ 3 ทาง B
-- **ทาง A (public cert)** — `issuer` เป็น CA ภายนอก แต่ client ยังฟ้อง
+ดูว่าชื่อที่ client เรียกอยู่ในใบไหน แล้วแยกตามนั้น:
+
+- **ใบจาก internal CA** — `issuer` เป็น `CN=MyHR Internal CA`
+  แปลว่ายังไม่ได้ลง root CA ที่เครื่อง client นั้น ดูบทที่ 07 ภาคผนวก ข
+- **ใบจาก public CA** — `issuer` เป็น CA ภายนอก แต่ client ยังฟ้อง
   แปลว่า **chain ขาด intermediate** ไม่ใช่เรื่องของเครื่อง client
   (เบราว์เซอร์ที่เคย cache intermediate ไว้จะยังผ่าน จึงดูเหมือนพังเป็นบางเครื่อง)
   ตรวจและแก้ด้วย:

@@ -185,11 +185,11 @@ img{max-width:100%}
 
 </style>
 </head>
-<body data-chapter="01-prepare-os.md" data-total="12">
+<body data-chapter="01-prepare-os.md" data-total="14">
 
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
-  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item cur" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="12"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="9"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="17"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item cur" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="14"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="12"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="17"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
 </aside>
 
 <div class="wrap">
@@ -200,7 +200,7 @@ img{max-width:100%}
       <p class="sub">รันที่: 🖥️ ทุกเครื่อง (ทั้ง 6 เครื่อง) · เวลาที่ใช้: ~20 นาที/เครื่อง · reboot 1 ครั้ง · บทนี้เหมือนกันหมดทุกเครื่อง ยกเว้น ขั้นที่ 1 (hostname) และ ขั้นที่ 5 (partition)</p>
     </div>
     <div class="top-p">
-      <span id="pcount">0/12</span>
+      <span id="pcount">0/14</span>
       <div class="bar"><i id="pbar"></i></div>
       <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
     </div>
@@ -274,7 +274,168 @@ hostname &amp;&amp; ping -c1 ${MASTER01_NAME} &amp;&amp; ping -c1 ${REGISTRY_HOS
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ชื่อเครื่องถูกต้อง และ ping ทั้งสองปลายทางได้</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>2 · ยืนยัน kernel และตรึงไว้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>1.1 · ตั้ง resolver option — ทำให้ทุกอย่างที่เหลือเร็วขึ้น 6 เท่า</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ค่าตั้งต้นของ glibc ทำให้ทุกการแปลงชื่อใหม่ช้าลง 5 วินาที บนเครือข่ายชุดนี้</strong></p>
+<p>resolver ยิงคำถาม <code>A</code> (IPv4) กับ <code>AAAA</code> (IPv6) ออกไปพร้อมกันบน socket เดียว
+firewall/NAT ระหว่างทางทิ้งคำตอบตัวที่สองบางครั้ง resolver จึงรอจนครบ timeout 5 วินาที
+แล้วค่อยถามใหม่ — <strong>ทุกครั้งที่เป็นชื่อที่ยังไม่เคยถาม</strong></p>
+<p>วัดผลจริงบน master01: <code>helm show chart</code> ของ Envoy Gateway (ไฟล์ไม่กี่ร้อย KB)</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>เวลา</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ก่อนแก้</td>
+<td><strong>26.9 วินาที</strong></td>
+</tr>
+<tr>
+<td>หลังแก้</td>
+<td><strong>4.1 วินาที</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>อาการนี้มองไม่ออกจากอะไรเลยนอกจากจับเวลา ไม่มี error ไม่มี log
+ทุกคำสั่งทำงานสำเร็จหมด แค่ &quot;รู้สึกว่าเน็ตช้า&quot; ซึ่งเป็นข้อสรุปที่ผิด —
+เลข <code>user</code>/<code>sys</code> ของ <code>time</code> ต่ำมาก แปลว่าเครื่องนั่งรออยู่เฉย ๆ ไม่ได้ทำงาน</p>
+</blockquote>
+<p><strong>ขอบเขตของปัญหานี้ — กระทบอะไรบ้าง:</strong></p>
+<table>
+<thead>
+<tr>
+<th>อะไร</th>
+<th>แปลชื่อด้วย</th>
+<th>กระทบ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pod → service ภายใน (<code>xxx.svc.cluster.local</code>)</td>
+<td>CoreDNS ใน cluster</td>
+<td>ไม่</td>
+</tr>
+<tr>
+<td>pod → pod ด้วย IP · etcd · apiserver ผ่าน VIP</td>
+<td>ไม่ใช้ DNS / <code>/etc/hosts</code></td>
+<td>ไม่</td>
+</tr>
+<tr>
+<td><strong>containerd ดึง image</strong></td>
+<td>resolv.conf ของ node</td>
+<td><strong>ใช่</strong></td>
+</tr>
+<tr>
+<td><strong>pod → ชื่อภายนอก</strong></td>
+<td>CoreDNS forward ต่อไปที่ resolv.conf ของ node</td>
+<td><strong>ทางอ้อม</strong></td>
+</tr>
+<tr>
+<td>pod ที่ตั้ง <code>dnsPolicy: Default</code> (CoreDNS เองก็ใช้)</td>
+<td>resolv.conf ของ node ตรง ๆ</td>
+<td><strong>ใช่</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>&quot;ดึง image ช้า&quot; ไม่ได้จบที่ตอนติดตั้ง</strong> — containerd ดึง image ใหม่ทุกครั้งที่ pod
+ไปเกิดบน node ที่ยังไม่มี image นั้น คือตอน scale out · ตอน reschedule ·
+และ<strong>ทุกครั้งที่ drain node ซึ่งเราทำทุก 1-2 เดือน</strong> (<a href="12-day2-operations.html">บท 12</a>)
+สิ่งที่เห็นหน้างานคือ pod ค้าง <code>ContainerCreating</code> นานผิดปกติ
+ซึ่งไม่มีอะไรชี้กลับมาที่ DNS เลยสักอย่าง</p>
+</blockquote>
+<blockquote>
+<p><strong>pod รับ <code>options</code> ชุดนี้ไปด้วย</strong> — kubelet เอา options จาก resolv.conf ของ node
+ไปผสมให้ pod ไม่ได้เขียนใหม่ทั้งหมด ซึ่งไม่เป็นปัญหา: <code>single-request-reopen</code>
+เพิ่มรอบเดินทางไป CoreDNS หนึ่งรอบซึ่งอยู่ในหลักไมโครวินาที และ <code>timeout:2</code>
+ยังสั้นกว่า default 5 วินาทีด้วยซ้ำ ตรวจของจริงได้ที่:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec deploy/coredns -- cat /etc/resolv.conf
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+</blockquote>
+<p><strong>หาชื่อ connection ของ NetworkManager ก่อน:</strong></p>
+<div class="cb"><pre><code class="language-bash">CONN=$(nmcli -g GENERAL.CONNECTION device show "${NODE_IFACE}" | head -1)
+echo "connection = [$CONN]"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ชื่อในวงเล็บไม่ว่าง — ถ้าว่างแปลว่า <code>NODE_IFACE</code> ใน <code>versions.env</code> ไม่ตรงกับ
+interface จริง ตรวจด้วย <code>ip -br a</code> แล้วแก้ไฟล์ก่อน</p>
+<p><strong>ตั้งค่า:</strong></p>
+<div class="cb"><pre><code class="language-bash">nmcli connection modify "$CONN" ipv4.dns-options "single-request-reopen,timeout:2,attempts:2"
+nmcli connection up "$CONN"
+grep ^options /etc/resolv.conf
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>options single-request-reopen timeout:2 attempts:2</code></p>
+<blockquote>
+<p>🔴 <strong>ห้ามแก้ <code>/etc/resolv.conf</code> ตรง ๆ</strong> — บรรทัดแรกของไฟล์เขียนว่า
+<code># Generated by NetworkManager</code> แก้แล้วมันเขียนทับคืนตอน reboot หรือ restart network
+ซึ่งเป็นกับดักที่แย่เป็นพิเศษ เพราะของหายไปเงียบ ๆ หลังจากที่ทดสอบผ่านไปแล้ว
+<strong>และเครื่องที่ติดตั้งใหม่จะได้ค่าเดิมกลับมาทุกครั้ง</strong> จึงต้องอยู่ใน playbook ไม่ใช่ทำมือ</p>
+</blockquote>
+<p><strong>พิสูจน์ว่าได้ผลจริง — ต้องจับเวลา ดูเฉย ๆ ไม่รู้เรื่อง:</strong></p>
+<div class="cb"><pre><code class="language-bash">time getent ahosts auth.docker.io &gt; /dev/null
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>real</code> ต่ำกว่า 1 วินาที (ถ้ายังเห็น ~5 วินาที แปลว่ายังไม่ติด)</p>
+<blockquote>
+<p>ถ้ายังรู้สึกช้าอยู่ ลองเปลี่ยนเป็น <code>single-request</code> (ไม่มี <code>-reopen</code>) ซึ่งบังคับให้ถาม
+<code>A</code> เสร็จก่อนแล้วค่อยถาม <code>AAAA</code> แทนที่จะยิงพร้อมกัน แลกด้วย round trip เพิ่มหนึ่งครั้ง
+แต่ตัดปัญหาคำตอบหายทิ้งไปเลย — เอาอันที่วัดแล้วเร็วกว่า</p>
+</blockquote>
+<blockquote>
+<p>📋 <strong>ยังค้าง: nameserver ควรเป็นของภายใน ไม่ใช่ <code>8.8.8.8</code></strong>
+public DNS แปลชื่อ <code>registry.myhr.co.th</code> ไม่ได้ เราจึงต้องพึ่ง <code>/etc/hosts</code> ในข้อ 1
+และ <a href="07-gateway-tls.html">บทที่ 07</a> จบด้วยการต้องมี record ของ <code>*.myhr.co.th</code>
+ชี้มาที่ Gateway IP ซึ่งก็ต้องใช้ DNS ภายในเหมือนกัน
+ถ้าองค์กรมี DNS server ภายใน ให้ตั้งเป็นตัวแรกแล้วให้ public DNS เป็นตัวสำรอง:</p>
+<div class="cb"><pre><code class="language-text">nmcli connection modify "$CONN" ipv4.dns "&lt;DNS ภายใน&gt; 8.8.8.8" ipv4.ignore-auto-dns yes
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>จะแก้ทั้งเรื่องช้าและตัดความจำเป็นของ <code>/etc/hosts</code> ไปพร้อมกัน</p>
+</blockquote>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>1.2 · ปิด IPv6 ที่ interface</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>เครื่องได้ IPv6 address มาแต่ไม่มี route ออกไปข้างนอก</strong> ซึ่งแย่กว่าไม่มี IPv6 เลย
+เพราะโปรแกรมเห็นว่าตัวเองมี IPv6 ใช้ได้ ก็เลือกใช้ แล้วไปตายกลางทาง</p>
+<p>อาการจริงที่เจอตอนลง Envoy Gateway:</p>
+<div class="cb"><pre><code class="language-text">Error: INSTALLATION FAILED: failed to perform "Fetch" on source:
+Get "https://production.cloudfront.docker.com/...":
+dial tcp [2600:1f18:21e1:b400:9:4855:aac0:93a1]:443: connect: network is unreachable
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p><strong>สิ่งที่ยืนยันแล้วบนเครื่องจริง:</strong> <code>curl</code> ต่อ IPv6 ไม่ได้ (<code>curl: (7)</code>) แต่ <code>curl -4</code> ได้ <code>401</code>
+ปกติ · <code>ip -6 addr</code> มีแค่ <code>fe80::</code> (link-local) และ <strong>ไม่มี default route ของ IPv6</strong>
+· <code>helm install</code> รอบหนึ่งล้มด้วย error ข้างบน อีกรอบผ่าน — <strong>เกิดเป็นครั้งคราว
+ไม่ใช่ทุกครั้ง</strong> ขึ้นกับว่ารอบนั้นหยิบ address ตัวไหนมาใช้</p>
+<p>ที่ยังไม่ได้พิสูจน์คือ <em>ทำไม</em>บางรอบถึงไม่ถอยไป IPv4 — แต่ไม่ต้องรู้ก็ตัดสินใจได้
+เพราะสิ่งที่แน่นอนคือ <strong>เครื่องมี IPv6 address ที่ใช้งานออกข้างนอกไม่ได้เลย</strong>
+การเก็บมันไว้ไม่มีประโยชน์ มีแต่โอกาสให้โปรแกรมหยิบไปใช้แล้วล้ม</p>
+<p>อาการแบบ &quot;ลองใหม่แล้วผ่าน&quot; อันตรายกว่าล้มทุกครั้ง เพราะจะไปโผล่อีกทีตอน worker
+ดึง image ในบทหลัง ในรูป <code>ImagePullBackOff</code> ที่ทำซ้ำไม่ได้</p>
+</blockquote>
+<p><strong>ตรวจก่อน:</strong></p>
+<div class="cb"><pre><code class="language-bash">ip -6 addr show "${NODE_IFACE}" | grep inet6
+ip -6 route show default || echo "ไม่มี default route ของ IPv6"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ถ้ามี address แต่ไม่มี default route</strong> = ต้องปิด</p>
+<p><strong>ปิด:</strong></p>
+<div class="cb"><pre><code class="language-bash">CONN=$(nmcli -g GENERAL.CONNECTION device show "${NODE_IFACE}" | head -1)
+nmcli connection modify "$CONN" ipv6.method disabled
+nmcli connection up "$CONN"
+
+ip -6 addr show "${NODE_IFACE}" | grep -c inet6
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>0</code></p>
+<blockquote>
+<p><strong>ปิดที่ interface ไม่ใช่ <code>sysctl disable_ipv6</code> ทั้งเครื่อง</strong> — แคบกว่า และ NetworkManager
+จำค่าไว้ข้าม reboot ให้เอง เหมือนกับ <code>dns-options</code> ในข้อ 1.1</p>
+<p><strong>ปลอดภัยกับ Cilium</strong> — cluster นี้เป็น IPv4 ล้วน (<code>POD_CIDR</code> และ <code>SVC_CIDR</code> เป็น IPv4)
+และ <a href="../config/cilium/values.yaml"><code>cilium/values.yaml</code></a> ไม่ได้เปิด <code>ipv6</code> ไว้
+ถ้าวันหนึ่งจะใช้ IPv6 จริง ต้องกลับมาแก้ทั้งสองที่พร้อมกัน</p>
+<p><strong>ต้องทำครบทั้ง 6 เครื่อง</strong> — เครื่องที่ตกหล่นจะดึง image ไม่ได้เป็นครั้งคราวแบบสุ่ม
+ขึ้นกับว่า DNS ตอบ IPv6 มาก่อนหรือเปล่าในครั้งนั้น ซึ่งเป็นอาการที่ทำซ้ำไม่ได้</p>
+</blockquote>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>2 · ยืนยัน kernel และตรึงไว้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>Oracle Linux ให้ kernel มาสองตัว เราใช้ <strong>UEK 8U2</strong> ตามค่า default
 <strong>ห้ามผสม UEK กับ RHCK ใน cluster เดียวกัน</strong> เด็ดขาด</p>
 <div class="cb"><pre><code class="language-bash">uname -r
@@ -305,7 +466,7 @@ dnf versionlock list
 แล้ว <strong>ล็อกกลับทันทีหลัง reboot</strong> ไม่งั้น node จะค่อย ๆ ไหลไปคนละเวอร์ชันโดยไม่มีใครรู้</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>3 · จัดการ repo</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2>3 · จัดการ repo</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>ปิด repo ที่จะไปทับของที่เราติดตั้งเอง:</p>
 <div class="cb"><pre><code class="language-bash"># ol9_addons มี containerd ของ Oracle ซึ่งจะไปทับตัวที่เราลงจาก tarball ในบทที่ 02
 dnf config-manager --disable ol9_addons 2&gt;/dev/null || true
@@ -321,7 +482,7 @@ dnf repolist enabled
 <div class="cb"><pre><code class="language-bash">systemctl disable --now ksplice-uptrack.service 2&gt;/dev/null || true
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>4 · ลง package พื้นฐาน</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2>4 · ลง package พื้นฐาน</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">dnf install -y \
   chrony open-vm-tools tar curl wget \
   iproute-tc socat conntrack-tools ethtool \
@@ -335,7 +496,7 @@ systemctl enable --now chronyd
 <p><strong>ควรเห็น:</strong> <code>Leap status : Normal</code> และ <code>System time</code> ต่างไม่เกินหลัก <strong>มิลลิวินาที</strong>
 ถ้าเห็น <code>Not synchronised</code> ให้หยุดแล้วแก้ NTP ก่อน</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all masters workers"><div class="step-head"><h2>5 · ย้าย partition /home</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all masters workers"><div class="step-head"><h2>5 · ย้าย partition /home</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>Kubernetes ไม่ใช้ <code>/home</code> เลย ขณะที่ของที่โตเร็วทั้งหมดไปกองใต้ <code>/var</code>
 ย้าย partition 100 GB นี้ไปรับงานที่มีประโยชน์แทน</p>
 <blockquote>
@@ -387,7 +548,7 @@ grep -v '^#' /etc/fstab | grep -E 'etcd|containerd'
 ให้วัด fsync ในขั้นที่ 9 แล้วตัดสินว่าต้องขอ VMDK แยกให้ etcd ไหม</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2>6 · kernel module และ sysctl</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2>6 · kernel module และ sysctl</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">cat &gt; /etc/modules-load.d/k8s.conf &lt;&lt;'EOF'
 overlay
 br_netfilter
@@ -415,7 +576,7 @@ sysctl net.ipv4.ip_forward net.bridge.bridge-nf-call-iptables
 — คู่มือชุดเดิมไม่มีไฟล์นี้ พอ reboot แล้ว pod จึงคุยข้าม node ไม่ได้</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2>7 · ปิด swap และตั้ง SELinux</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2>7 · ปิด swap และตั้ง SELinux</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">swapoff -a
 sed -i '/[[:space:]]swap[[:space:]]/s/^/#/' /etc/fstab
 
@@ -434,7 +595,7 @@ grep -i '^SELINUX=' /etc/selinux/config
 ถ้าองค์กรมีข้อกำหนดว่าต้อง <code>enforcing</code> ต้องทำ policy module เพิ่มและทดสอบใน lab ก่อน</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all masters workers"><div class="step-head"><h2>8 · firewalld</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11" data-machines="all masters workers"><div class="step-head"><h2>8 · firewalld</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>firewalld <strong>เปิดอยู่</strong> ตามที่ทีมยืนยัน จึงต้องเปิดพอร์ตให้ครบ
 ถ้าขาดข้อใดข้อหนึ่ง อาการจะไปโผล่ตอน <code>kubeadm init</code> หรือตอน pod คุยข้าม node</p>
 </div><div class="sub" data-machine="masters"><h3>🎩 บน master ทั้ง 3 เครื่อง</h3>
@@ -480,7 +641,7 @@ firewall-cmd --reload
 เพราะ firewalld เขียนกฎ nftables ใหม่ทั้งชุดตอน reload · <strong>จดผลลง บทที่ 13 ไม่ว่าจะผ่านหรือไม่</strong></p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2>9 · วัด disk latency ของ etcd</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-12" data-step="12" data-machines="all"><div class="step-head"><h2>9 · วัด disk latency ของ etcd</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <blockquote>
 <p><strong>🎩 รันเฉพาะ master ทั้ง 3 เครื่อง</strong></p>
 </blockquote>
@@ -499,7 +660,7 @@ fio --rw=write --ioengine=sync --fdatasync=1 --directory=/var/lib/etcd \
 ถ้าไม่ผ่าน 10 ms ให้ขอ VMDK แยกสำหรับ etcd หรือย้ายไป datastore ที่ไม่แชร์กับ VM อื่นเยอะ</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11" data-machines="all"><div class="step-head"><h2>10 · Reboot แล้วตรวจซ้ำ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="12"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-13" data-step="13" data-machines="all"><div class="step-head"><h2>10 · Reboot แล้วตรวจซ้ำ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>ข้อนี้ห้ามข้าม</strong> — จุดประสงค์คือพิสูจน์ว่าทุกอย่างยังอยู่หลัง reboot
 ซึ่งเป็นสิ่งที่คู่มือชุดเดิมพลาด</p>
 <div class="cb"><pre><code class="language-bash">reboot
@@ -515,7 +676,7 @@ firewall-cmd --list-ports                         # ต้องครบ
 chronyc tracking | grep 'Leap status'             # ต้อง Normal
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-12" data-step="12" data-machines="all"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="13"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-14" data-step="14" data-machines="all"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>รันบน <strong>ทุกเครื่อง</strong> แล้วเทียบกัน — ทั้ง 6 เครื่องต้องได้ผลเหมือนกันทุกข้อ</p>
 <div class="cb"><pre><code class="language-bash">echo "=== $(hostname) ==="
 echo "kernel : $(uname -r)"
@@ -524,14 +685,23 @@ echo "selinux: $(getenforce)"
 echo "modules: $(lsmod | grep -cE '^overlay|^br_netfilter')/2"
 echo "fwd    : $(sysctl -n net.ipv4.ip_forward)"
 echo "time   : $(chronyc tracking | awk -F': ' '/Leap status/{print $2}')"
+echo "dns    : $(grep -c '^options.*single-request' /etc/resolv.conf)/1"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ต้องได้:</strong> kernel เลขเดียวกันทั้ง 6 เครื่อง · swap <code>0B</code> · selinux <code>Permissive</code> · modules <code>2/2</code> · fwd <code>1</code> · time <code>Normal</code></p>
+<p><strong>ต้องได้:</strong> kernel เลขเดียวกันทั้ง 6 เครื่อง · swap <code>0B</code> · selinux <code>Permissive</code> · modules <code>2/2</code> · fwd <code>1</code> · time <code>Normal</code> · dns <code>1/1</code></p>
+<p><strong>และจับเวลาการแปลงชื่อด้วย — ข้อนี้ดูจากตัวเลขอย่างเดียวไม่พอ:</strong></p>
+<div class="cb"><pre><code class="language-bash">time getent ahosts auth.docker.io &gt; /dev/null
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ต้องได้:</strong> <code>real</code> ต่ำกว่า 1 วินาที · ถ้าเห็น ~5 วินาที แปลว่าข้อ 1.1 ยังไม่ติดบนเครื่องนี้</p>
+<blockquote>
+<p>เครื่องที่ตกข้อ dns จะยังใช้งานได้ทุกอย่าง แค่ช้าลง 5 วินาทีต่อชื่อใหม่หนึ่งชื่อ
+ซึ่งไปโผล่เป็น &quot;บทที่ 09 ลงนานเป็นชั่วโมง&quot; โดยไม่มีอะไรชี้กลับมาที่ต้นเหตุ</p>
+</blockquote>
 <blockquote>
 <p>ถ้า kernel ไม่ตรงกันแม้แต่เครื่องเดียว <strong>ให้หยุดแล้วแก้ก่อน</strong> อย่าไปบทที่ 02
 node ที่ kernel ต่างกันจะให้อาการ network ต่างกันเป็นราย node ซึ่งเป็นบั๊กที่หาสาเหตุยากที่สุดแบบหนึ่ง</p>
 </blockquote>
 <p><strong>➡️ ต่อที่ <a href="02-container-runtime.html">บทที่ 02 — Container Runtime</a></strong></p>
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="12"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="14"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="00-overview.html">← ภาพรวมและลำดับงาน</a><a class="pn" href="02-container-runtime.html">Container Runtime →</a></div>
   </main>
 </div>

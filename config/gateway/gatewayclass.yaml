@@ -1,0 +1,32 @@
+# =============================================================================
+#  GatewayClass — ตัวเชื่อมระหว่าง Gateway API กับ Envoy Gateway
+# =============================================================================
+#  ทำหน้าที่บอกว่า "Gateway ที่อ้าง class ชื่อ eg ให้ controller ตัวไหนดูแล"
+#  ถ้าไม่มีตัวนี้ Gateway ที่ apply ไปจะไม่มีใครรับไปทำ — ค้างแบบไม่มี error
+#
+# -----------------------------------------------------------------------------
+#  ทำไมต้องมีไฟล์นี้ ทั้งที่ helm install envoy-gateway ไปแล้ว
+# -----------------------------------------------------------------------------
+#  chart `gateway-helm` ลงแต่ตัว controller + CRD ของ Envoy Gateway เอง
+#  มัน "ไม่สร้าง" GatewayClass ให้ — ของนั้นอยู่ใน quickstart.yaml ของโปรเจกต์
+#  ซึ่งเป็นไฟล์ตัวอย่างที่มี Gateway/HTTPRoute ของ demo ติดมาด้วย เราจึงไม่ใช้ทั้งไฟล์
+#
+#  อาการตอนลืมข้อนี้คือ:
+#      kubectl get gatewayclass   ->  No resources found
+#  ซึ่ง "ไม่ใช่ error" จึงอ่านผ่านได้ง่ายมากถ้าไม่ได้ตั้งใจดู
+#  (ถ้า CRD ไม่ได้ลง ข้อความจะเป็น `the server doesn't have a resource type` แทน
+#   — สองข้อความนี้แยกสาเหตุคนละเรื่องกัน อย่าอ่านรวมกัน)
+#
+#  แล้วพอ apply gateway.yaml ต่อไป Gateway จะค้างที่ ADDRESS ว่าง
+#  โดยที่ทุกอย่างดู "สำเร็จ" หมด ทั้ง helm ทั้ง kubectl apply
+# =============================================================================
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: eg          # ชื่อนี้ต้องตรงกับ gatewayClassName ใน gateway.yaml
+spec:
+  # ค่านี้เป็นของตายของ Envoy Gateway ห้ามเดา — ถ้า ACCEPTED ไม่ขึ้นให้ตรวจกับของจริง:
+  #     helm get values envoy-gateway -n envoy-gateway-system -a | grep -i controllerName
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller

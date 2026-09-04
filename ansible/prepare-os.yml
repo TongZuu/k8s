@@ -132,6 +132,86 @@
           {{ v.REGISTRY_IP }}  {{ v.REGISTRY_HOST }}
 
     # -------------------------------------------------------------------------
+    #  2 · resolver option
+    # -------------------------------------------------------------------------
+    #  glibc ยิง A กับ AAAA พร้อมกันบน socket เดียว firewall ระหว่างทางทิ้งคำตอบ
+    #  ตัวที่สองบางครั้ง resolver จึงรอครบ timeout 5 วินาทีทุกครั้งที่เจอชื่อใหม่
+    #
+    #  วัดจริงบน master01: helm show chart ของ Envoy Gateway
+    #      ก่อนแก้ 26.9s  ->  หลังแก้ 4.1s
+    #
+    #  ต้องอยู่ใน playbook ไม่ใช่ทำมือ เพราะ NetworkManager เขียน /etc/resolv.conf
+    #  ทับคืนทุกครั้งที่ restart network และเครื่องที่ติดตั้งใหม่ก็ได้ค่าเดิมกลับมา
+    #
+    #  ตั้งเฉพาะ dns-options ไม่แตะ ipv4.dns — nameserver เป็นเรื่องที่ต้องเคาะกับ
+    #  ทีม network ก่อน (ดูหมายเหตุท้ายบท 01 ข้อ 1.1) ถ้าไปตั้งเองจะทับของที่เขาวางไว้
+    - name: ตั้ง resolver option ผ่าน NetworkManager — ไม่งั้นทุกการแปลงชื่อใหม่ช้า 5 วินาที
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -uo pipefail
+          want='single-request-reopen,timeout:2,attempts:2'
+          conn=$(nmcli -g GENERAL.CONNECTION device show '{{ v.NODE_IFACE }}' 2>/dev/null | head -1)
+          if [ -z "$conn" ]; then
+            echo "NOCONN ไม่พบ connection ของ {{ v.NODE_IFACE }} — ตรวจ NODE_IFACE ใน versions.env" >&2
+            exit 1
+          fi
+          # nmcli คืนค่าเป็น a,b,c ส่วนที่เก็บอาจเรียงต่างกัน จึงเทียบแบบ sort แล้วค่อยตัดสิน
+          got=$(nmcli -g ipv4.dns-options connection show "$conn" 2>/dev/null | tr ',' '\n' | sed '/^$/d' | sort | paste -sd, -)
+          exp=$(echo "$want" | tr ',' '\n' | sort | paste -sd, -)
+          if [ "$got" = "$exp" ]; then echo NOOP; exit 0; fi
+          nmcli connection modify "$conn" ipv4.dns-options "$want" || exit 1
+          nmcli connection up "$conn" >/dev/null || exit 1
+          echo APPLIED
+      register: _dns_opts
+      changed_when: "'APPLIED' in _dns_opts.stdout"
+
+    # ตรวจผลจากไฟล์จริง ไม่ใช่เชื่อว่า nmcli ทำสำเร็จ — NM อาจเขียนไม่ทันถ้า
+    # connection up คืนค่าก่อนที่ resolv.conf จะถูกเขียนใหม่
+    - name: resolv.conf ต้องมีบรรทัด options จริง
+      ansible.builtin.command: grep -q '^options.*single-request' /etc/resolv.conf
+      changed_when: false
+
+    #  เครื่องได้ IPv6 address มาแต่ไม่มี route ออกข้างนอก ซึ่งแย่กว่าไม่มี IPv6 เลย
+    #  โปรแกรมเห็นว่าตัวเองใช้ IPv6 ได้ก็เลือกใช้ แล้วตายกลางทาง:
+    #      dial tcp [2600:1f18:...]:443: connect: network is unreachable
+    #
+    #  curl ปิดบังปัญหานี้เพราะมี fallback ในตัว แต่เครื่องมือที่เขียนด้วย Go
+    #  (helm, containerd) ไม่ได้ถอยให้ทุกกรณี ผลคือ curl บอกว่าเน็ตปกติ
+    #  แต่ helm install ตาย — เจอจริงตอนลง Envoy Gateway ที่บท 07
+    #
+    #  ปลอดภัยกับ Cilium: cluster นี้เป็น IPv4 ล้วนและ cilium/values.yaml ไม่ได้เปิด ipv6
+    - name: ปิด IPv6 ที่ interface — มี address แต่ไม่มี route ทำให้ helm/containerd ตาย
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -uo pipefail
+          conn=$(nmcli -g GENERAL.CONNECTION device show '{{ v.NODE_IFACE }}' 2>/dev/null | head -1)
+          if [ -z "$conn" ]; then
+            echo "NOCONN ไม่พบ connection ของ {{ v.NODE_IFACE }} — ตรวจ NODE_IFACE ใน versions.env" >&2
+            exit 1
+          fi
+          if [ "$(nmcli -g ipv6.method connection show "$conn" 2>/dev/null)" = "disabled" ]; then
+            echo NOOP; exit 0
+          fi
+          nmcli connection modify "$conn" ipv6.method disabled || exit 1
+          nmcli connection up "$conn" >/dev/null || exit 1
+          echo APPLIED
+      register: _ipv6_off
+      changed_when: "'APPLIED' in _ipv6_off.stdout"
+
+    # ยืนยันจาก interface จริง ไม่ใช่จาก config ของ NetworkManager
+    - name: ต้องไม่เหลือ IPv6 address บน interface
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -uo pipefail
+          n=$(ip -6 addr show '{{ v.NODE_IFACE }}' 2>/dev/null | grep -c inet6)
+          echo "$n"
+          [ "$n" -eq 0 ]
+      changed_when: false
+
+    # -------------------------------------------------------------------------
     #  3 · repo
     # -------------------------------------------------------------------------
     # ใช้ module แทน command เพราะ command รายงาน changed ทุกครั้ง

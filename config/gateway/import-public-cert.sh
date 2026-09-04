@@ -3,14 +3,17 @@
 #  import-public-cert.sh — เอา public cert ที่องค์กรมีอยู่แล้วเข้า Gateway
 # =============================================================================
 #  ใช้:
-#      bash config/gateway/import-public-cert.sh <fullchain.pem> <privkey.pem> [ชื่อโฮสต์ ...]
-#      bash config/gateway/import-public-cert.sh --dry-run <fullchain.pem> <privkey.pem>
+#      bash config/gateway/import-public-cert.sh [ตัวเลือก] <fullchain.pem> <privkey.pem> [ชื่อโฮสต์ ...]
+#
+#  ตัวเลือก:
+#      --dry-run          ตรวจอย่างเดียว ไม่แตะ cluster (ใช้ตรวจ cert ที่เพิ่งได้มาจาก CA)
+#      --secret <ชื่อ>     ชื่อ Secret ปลายทาง (ค่าเริ่มต้น myhr-public-tls)
+#                         ใช้ตอนมี public cert หลายใบแยกตามชื่อ service
 #
 #  ตัวอย่าง:
 #      bash config/gateway/import-public-cert.sh /root/certs/fullchain.pem /root/certs/privkey.pem
 #      bash config/gateway/import-public-cert.sh fullchain.pem key.pem hr.myhr.co.th api.myhr.co.th
-#
-#  --dry-run = ตรวจอย่างเดียว ไม่แตะ cluster (ใช้ตรวจ cert ที่เพิ่งได้มาจาก CA)
+#      bash config/gateway/import-public-cert.sh --secret hr-myhr-tls hr-chain.pem hr.key hr.myhr.co.th
 #
 # -----------------------------------------------------------------------------
 #  ทำไมต้องมีสคริปต์นี้ แทนที่จะพิมพ์ kubectl create secret tls ตรง ๆ
@@ -36,7 +39,7 @@ set -uo pipefail
 
 # ---- แก้ตรงนี้ถ้า Gateway อยู่คนละที่ ----------------------------------------
 ns=envoy-gateway-system
-secret=myhr-wildcard-tls
+secret=myhr-public-tls
 # -----------------------------------------------------------------------------
 
 warn_days=30          # เตือนถ้า cert เหลืออายุน้อยกว่านี้
@@ -48,14 +51,19 @@ fail() { echo "  FAIL  $*"; failed=1; }
 warn() { echo "  เตือน  $*"; }
 
 usage() {
-    sed -n '5,12p' "$0" | sed 's/^#[[:space:]]\{0,2\}//'
+    sed -n '5,20p' "$0" | sed 's/^#[[:space:]]\{0,2\}//'
     exit 2
 }
 
-if [ "${1:-}" = "--dry-run" ]; then
-    dry_run=1
-    shift
-fi
+while [ $# -gt 0 ]; do
+    case "${1:-}" in
+        --dry-run) dry_run=1; shift ;;
+        --secret)  secret=${2:-}; [ -n "$secret" ] || usage; shift 2 ;;
+        --help|-h) usage ;;
+        --*)       echo "ไม่รู้จักตัวเลือก $1"; usage ;;
+        *)         break ;;
+    esac
+done
 
 chain=${1:-}
 key=${2:-}
@@ -139,7 +147,7 @@ else
     else
         fail "chain ตรวจไม่ผ่าน: $(tr '\n' ' ' < "$tmp/verify.out")"
         echo "        ถ้า CA เป็นของภายในองค์กร (ไม่ใช่ public CA) ทางนี้ไม่ใช่ทางของคุณ"
-        echo "        ให้ใช้ทาง B (internal CA) ในบทที่ 07 แทน"
+        echo "        ให้ใช้ internal CA ตามบทที่ 07 ภาคผนวก ข แทน"
     fi
 fi
 

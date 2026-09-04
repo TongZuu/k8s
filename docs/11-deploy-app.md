@@ -66,10 +66,21 @@ sed -i 's/APPNAME/zeeme-ads/g' ./zeeme-ads.yaml
 | `resources` | **ไม่มี** | มีครบ requests + limits.memory | ไม่มี = scheduler มั่ว + quota บล็อกทั้ง namespace |
 | `probes` | **ไม่มี** | ครบ 3 ตัว | Spring Boot เริ่มช้า ต้องมี `startupProbe` |
 | **`PodDisruptionBudget`** | **ไม่มี** | `minAvailable: 1` | **drain node แล้วดับถ้าไม่มี** |
-| `replicas` | 1 | **≥ 2** | PDB ช่วยไม่ได้ถ้ามีตัวเดียว |
-| anti-affinity | **ไม่มี** | `topologySpreadConstraints` | replica 2 ตัวบน node เดียว = ไร้ความหมาย |
-| image tag | `:0.0.5` | `:1.0.0@sha256:...` | tag เขียนทับได้ digest ไม่ได้ |
+| `replicas` | 8 | **≥ 2** | ดูข้อถัดไป — 8 ตัวไม่ได้แปลว่าปลอดภัย |
+| anti-affinity | **ไม่มี** | `topologySpreadConstraints` | replica กองบน node เดียว = ไร้ความหมาย |
+| image tag | `:0.0.9` | `:1.0.0@sha256:...` | tag เขียนทับได้ digest ไม่ได้ |
 | Service type | NodePort | **ClusterIP** | เข้าผ่าน Gateway ตัวเดียว |
+| ทางเข้า | **ไม่มี** — ยิง NodePort ตรง | HTTPRoute | ของเดิมไม่มีไฟล์นี้ ต้องเขียนเพิ่ม |
+
+> 🔴 **`replicas: 8` ที่ไม่มี PDB อันตรายพอ ๆ กับ `replicas: 1`**
+> `kubectl drain` ไล่ pod ออกตามจำนวนที่ PDB ยอม — **ไม่มี PDB = ไม่มีเพดาน**
+> ทั้ง 8 ตัวถูกไล่ออกพร้อมกันได้ถ้าบังเอิญอยู่ node เดียวกัน และเราต้อง drain ทุก 1-2 เดือน
+> จำนวน replica เยอะช่วยเรื่อง throughput ไม่ได้ช่วยเรื่อง availability ตอน drain
+>
+> **และ `replicas: 8` ที่ไม่มี `resources.requests` ทำให้ capacity planning ตาบอด** —
+> alert `ClusterCapacityNearNPlusOneLimit` ในบทที่ 09 นับจาก requests ของทุก pod
+> pod ที่ไม่ประกาศ requests นับเป็น 0 ทั้งที่กิน RAM จริง ตัวเลขบน Grafana
+> จึงบอกว่ายังว่างอยู่จนถึงวินาทีที่ node เริ่ม OOM
 
 > ⚠️ **`limits.cpu` ตั้งใจไม่ใส่** — CPU throttling ทำให้ latency แย่ลงโดยไม่ช่วยอะไร
 > ถ้าคุม `requests` ดีแล้ว ส่วน `limits.memory` **ต้องมี** เพราะ memory ไม่มี throttling
@@ -105,8 +116,8 @@ GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.
 curl -I --resolve "zeeme-ads.myhr.co.th:443:${GW_IP}" https://zeeme-ads.myhr.co.th
 ```
 
-> ถ้าบทที่ 07 เลือก **ทาง B (internal CA)** ให้เพิ่ม `--cacert /root/k8s/myhr-root-ca.crt`
-> ในคำสั่ง curl ข้างบน — ทาง A (public cert) ไม่ต้อง
+> ถ้าชื่อนี้ใช้ cert จาก **internal CA** (บทที่ 07 ภาคผนวก ข) ให้เพิ่ม
+> `--cacert /root/k8s/myhr-root-ca.crt` ในคำสั่ง curl ข้างบน · **public cert** ไม่ต้อง
 >
 > ถ้า public cert เป็น **cert รายชื่อ** ไม่ใช่ wildcard ต้องเพิ่มชื่อ `zeeme-ads.myhr.co.th`
 > เข้าไปใน cert ก่อน แล้วรัน `import-public-cert.sh` ซ้ำ ไม่งั้นจะตายที่ TLS ตั้งแต่ยังไม่ถึง app
