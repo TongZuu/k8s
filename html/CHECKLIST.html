@@ -321,7 +321,8 @@ cluster-admin token, client key (ดู README หัวข้อสุดท้
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>C2 · หนี้ค้างที่ตัดสินใจเลื่อนไว้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
-<li>[ ] <strong>ทำ kernel ทุกเครื่องให้เป็นเลขเดียวกัน</strong> (ตัดสินใจเลื่อน 27 ส.ค. 2026)
+<li>
+<p>[ ] <strong>ทำ kernel ทุกเครื่องให้เป็นเลขเดียวกัน</strong> (ตัดสินใจเลื่อน 27 ส.ค. 2026)
 สถานะจริง (ตรวจครบทั้ง 6 เครื่องแล้ว 27 ส.ค. 2026):
 · <code>6.12.0-204.92.4.3.1</code> → master01, master02  (2 เครื่อง)
 · <code>6.12.0-203.76.7.3</code>   → master03, worker01-03  (4 เครื่อง)
@@ -331,8 +332,10 @@ cluster-admin token, client key (ดู README หัวข้อสุดท้
 · ต้นทุนแก้ตอนนี้ ~15 นาที/เครื่อง · ตอนมี workload แล้วคือครึ่งวัน + ต้อง drain
 · ทางที่แนะนำ: <strong>ยกทั้ง 6 เครื่องไป <code>6.12.0-205.92.4.2</code></strong> (ใหม่สุด ยังมีในrepo)
 เพราะ <code>204.92.4.3.1</code> อาจหาไม่ได้แล้ว และการยก 2 เครื่องลง 203 คือ downgrade
-· ต้องเคาะ <strong>ก่อนจบ Phase 4</strong> — หลังรับ workload แล้วราคาขึ้นทันที</li>
-<li>[ ] <strong>เคาะนโยบาย: ยอมให้มี Gateway API CRD ช่อง <code>experimental</code> บน production ไหม</strong>
+· ต้องเคาะ <strong>ก่อนจบ Phase 4</strong> — หลังรับ workload แล้วราคาขึ้นทันที</p>
+</li>
+<li>
+<p>[ ] <strong>เคาะนโยบาย: ยอมให้มี Gateway API CRD ช่อง <code>experimental</code> บน production ไหม</strong>
 chart ของ Envoy Gateway ลงช่องนี้มาเป็นค่าเริ่มต้น (ยืนยันบน cluster จริง 4 ก.ย. 2026)
 · <strong>ไม่กระทบการใช้งาน</strong> — <code>Gateway</code>/<code>HTTPRoute</code>/<code>GRPCRoute</code>/<code>GatewayClass</code>/<code>ReferenceGrant</code>
 ที่เราใช้ทั้งหมดอยู่ในช่อง <code>standard</code> อยู่แล้ว <code>experimental</code> เป็น superset
@@ -342,10 +345,25 @@ chart ของ Envoy Gateway ลงช่องนี้มาเป็นค�
 · ถ้าเคาะว่าห้าม: ต้องลง CRD แยกด้วย chart <code>gateway-crds-helm</code> พร้อม
 <code>--set crds.gatewayAPI.channel=standard</code> แล้ว main chart ใส่ <code>--set crds.enabled=false</code>
 (เพิ่มหนึ่งขั้นตอนในบท 07 · วิธีอยู่ในเอกสารทางการหัวข้อ Install CRDs separately)
-· <strong>ต้องเคาะก่อนขึ้น production</strong> — เปลี่ยนทีหลังต้องรื้อ CRD ซึ่งลบ object ใต้มันทั้งหมด</li>
-<li>[ ] 🔴 <strong>แก้ต้นเหตุ: ขั้นตอนสร้าง VM ต้องไม่ใช่ <code>dnf update</code> ลอย ๆ</strong>
+· <strong>ต้องเคาะก่อนขึ้น production</strong> — เปลี่ยนทีหลังต้องรื้อ CRD ซึ่งลบ object ใต้มันทั้งหมด</p>
+</li>
+<li>
+<p>[ ] 🔴 <strong>แก้ต้นเหตุ: ขั้นตอนสร้าง VM ต้องไม่ใช่ <code>dnf update</code> ลอย ๆ</strong>
 ต้องเป็น &quot;ลง kernel เวอร์ชันที่ระบุใน <code>versions.env</code> แล้ว <code>versionlock</code> ทันที&quot;
-ไม่งั้นเครื่องที่สร้างเพิ่มในอนาคตจะได้เลขใหม่เรื่อย ๆ ตามวันที่สร้าง</li>
+ไม่งั้นเครื่องที่สร้างเพิ่มในอนาคตจะได้เลขใหม่เรื่อย ๆ ตามวันที่สร้าง</p>
+</li>
+<li>
+<p>[ ] <strong>ปลดหนี้ <code>--kubelet-insecure-tls</code> ของ metrics-server</strong> (ตัดสินใจเลื่อน 4 ก.ย. 2026)
+metrics-server ไม่ตรวจ cert ของ kubelet เลย เพราะใบที่ kubelet เซ็นเองไม่มี IP SAN
+· <strong>ความเสี่ยง:</strong> คนที่ยืนกลางทางบนวง 192.168.50.0/24 ป้อน metric ปลอมได้
+กระทบแค่ <code>kubectl top</code> กับ HPA — ไม่ได้เปิดทางเข้าถึง cluster เพิ่ม
+· <strong>ทางปลด C</strong> ออก cert เองจาก cluster CA แล้วชี้ <code>tlsCertFile</code> ใน <code>KubeletConfiguration</code>
+→ ไม่มีของเพิ่มให้ดูแล แต่ node ใหม่ต้องออก cert ก่อน join ทุกครั้ง ไม่งั้น kubelet ไม่ start
+· <strong>ทางปลด B+</strong> <code>serverTLSBootstrap: true</code> + ลง <code>kubelet-csr-approver</code>
+→ node ใหม่ทำงานเอง cert ต่ออายุเอง แต่เพิ่ม controller ที่ต้องดูแล 1 ตัว
+· <strong>ไม่ต้องเคาะก่อนขึ้น production</strong> — เปลี่ยนทีหลังแค่ถอด flag ออก ไม่ต้องรื้ออะไร
+แต่ทั้งสองทางต้อง restart kubelet ทั้ง 6 เครื่อง จึงห้ามทำตอนเร่ง</p>
+</li>
 </ul>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2>D · Phase 1 — Lab (~2 สัปดาห์)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">

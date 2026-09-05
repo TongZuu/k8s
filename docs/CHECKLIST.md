@@ -151,6 +151,17 @@
       ต้องเป็น "ลง kernel เวอร์ชันที่ระบุใน `versions.env` แล้ว `versionlock` ทันที"
       ไม่งั้นเครื่องที่สร้างเพิ่มในอนาคตจะได้เลขใหม่เรื่อย ๆ ตามวันที่สร้าง
 
+- [ ] **ปลดหนี้ `--kubelet-insecure-tls` ของ metrics-server** (ตัดสินใจเลื่อน 4 ก.ย. 2026)
+      metrics-server ไม่ตรวจ cert ของ kubelet เลย เพราะใบที่ kubelet เซ็นเองไม่มี IP SAN
+      · **ความเสี่ยง:** คนที่ยืนกลางทางบนวง 192.168.50.0/24 ป้อน metric ปลอมได้
+        กระทบแค่ `kubectl top` กับ HPA — ไม่ได้เปิดทางเข้าถึง cluster เพิ่ม
+      · **ทางปลด C** ออก cert เองจาก cluster CA แล้วชี้ `tlsCertFile` ใน `KubeletConfiguration`
+        → ไม่มีของเพิ่มให้ดูแล แต่ node ใหม่ต้องออก cert ก่อน join ทุกครั้ง ไม่งั้น kubelet ไม่ start
+      · **ทางปลด B+** `serverTLSBootstrap: true` + ลง `kubelet-csr-approver`
+        → node ใหม่ทำงานเอง cert ต่ออายุเอง แต่เพิ่ม controller ที่ต้องดูแล 1 ตัว
+      · **ไม่ต้องเคาะก่อนขึ้น production** — เปลี่ยนทีหลังแค่ถอด flag ออก ไม่ต้องรื้ออะไร
+        แต่ทั้งสองทางต้อง restart kubelet ทั้ง 6 เครื่อง จึงห้ามทำตอนเร่ง
+
 ---
 
 ## D · Phase 1 — Lab (~2 สัปดาห์)

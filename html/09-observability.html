@@ -229,7 +229,7 @@ helm install metrics-server metrics-server/metrics-server \
   --namespace kube-system \
   --version "${METRICS_SERVER_CHART}" \
   --set replicas=2 \
-  --set 'args={--kubelet-preferred-address-types=InternalIP}'
+  --set 'args={--kubelet-preferred-address-types=InternalIP,--kubelet-insecure-tls}'
 
 kubectl -n kube-system rollout status deploy/metrics-server --timeout=3m
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -239,10 +239,14 @@ kubectl top pods -A | head
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ตัวเลข CPU/MEM ของทั้ง 6 node ไม่มี <code>&lt;unknown&gt;</code></p>
 <blockquote>
-<p>ถ้าเจอ <code>error: Metrics API not available</code> ให้รออีก 1 นาที ถ้ายังไม่ได้ให้ดู
-<code>kubectl -n kube-system logs deploy/metrics-server</code> — สาเหตุที่พบบ่อยคือ
-certificate ของ kubelet ไม่ผ่านการตรวจ ซึ่งแก้ด้วยการเติม <code>--kubelet-insecure-tls</code>
-<strong>แต่ให้ดูสาเหตุจริงก่อน อย่าเติม flag นี้แบบไม่คิด</strong></p>
+<p>🔴 <strong><code>--kubelet-insecure-tls</code> ห้ามตัดออก</strong> — ยืนยันบน cluster จริง 4 ก.ย. 2026
+ลงโดยไม่มี flag นี้แล้วได้ <code>metrics-server 0/1 Running</code> ค้างถาวร และ <code>kubectl top</code>
+ตอบ <code>error: Metrics API not available</code> โดย log ขึ้นเหมือนกันครบทั้ง 6 เครื่อง:
+<code>x509: cannot validate certificate for 192.168.50.105 because it doesn't contain any IP SANs</code></p>
+<p>สาเหตุคือ kubelet ที่ไม่ได้ถูกบอกว่าให้ใช้ cert ใบไหน จะเซ็นใบให้ตัวเองโดยใส่แค่ชื่อ node
+ไม่ใส่ IP — <strong>เป็นพฤติกรรมเริ่มต้นของ kubeadm ไม่ใช่ความผิดของค่าใน repo นี้</strong></p>
+<p>ราคาที่จ่าย: metrics-server ไม่ตรวจ cert ของ kubelet เลย กระทบแค่ <code>kubectl top</code> กับ HPA
+เป็นหนี้ที่ตั้งใจก่อ บันทึกพร้อมทางปลดไว้ที่ <a href="CHECKLIST.html">CHECKLIST หัวข้อ C2</a> แล้ว</p>
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>2 · kube-prometheus-stack</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">

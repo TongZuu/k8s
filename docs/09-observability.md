@@ -32,7 +32,7 @@ helm install metrics-server metrics-server/metrics-server \
   --namespace kube-system \
   --version "${METRICS_SERVER_CHART}" \
   --set replicas=2 \
-  --set 'args={--kubelet-preferred-address-types=InternalIP}'
+  --set 'args={--kubelet-preferred-address-types=InternalIP,--kubelet-insecure-tls}'
 
 kubectl -n kube-system rollout status deploy/metrics-server --timeout=3m
 ```
@@ -44,10 +44,16 @@ kubectl top pods -A | head
 ```
 **ควรเห็น:** ตัวเลข CPU/MEM ของทั้ง 6 node ไม่มี `<unknown>`
 
-> ถ้าเจอ `error: Metrics API not available` ให้รออีก 1 นาที ถ้ายังไม่ได้ให้ดู
-> `kubectl -n kube-system logs deploy/metrics-server` — สาเหตุที่พบบ่อยคือ
-> certificate ของ kubelet ไม่ผ่านการตรวจ ซึ่งแก้ด้วยการเติม `--kubelet-insecure-tls`
-> **แต่ให้ดูสาเหตุจริงก่อน อย่าเติม flag นี้แบบไม่คิด**
+> 🔴 **`--kubelet-insecure-tls` ห้ามตัดออก** — ยืนยันบน cluster จริง 4 ก.ย. 2026
+> ลงโดยไม่มี flag นี้แล้วได้ `metrics-server 0/1 Running` ค้างถาวร และ `kubectl top`
+> ตอบ `error: Metrics API not available` โดย log ขึ้นเหมือนกันครบทั้ง 6 เครื่อง:
+> `x509: cannot validate certificate for 192.168.50.105 because it doesn't contain any IP SANs`
+>
+> สาเหตุคือ kubelet ที่ไม่ได้ถูกบอกว่าให้ใช้ cert ใบไหน จะเซ็นใบให้ตัวเองโดยใส่แค่ชื่อ node
+> ไม่ใส่ IP — **เป็นพฤติกรรมเริ่มต้นของ kubeadm ไม่ใช่ความผิดของค่าใน repo นี้**
+>
+> ราคาที่จ่าย: metrics-server ไม่ตรวจ cert ของ kubelet เลย กระทบแค่ `kubectl top` กับ HPA
+> เป็นหนี้ที่ตั้งใจก่อ บันทึกพร้อมทางปลดไว้ที่ [CHECKLIST หัวข้อ C2](CHECKLIST.md) แล้ว
 
 ---
 
