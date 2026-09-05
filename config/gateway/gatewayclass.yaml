@@ -30,3 +30,11 @@ spec:
   # ค่านี้เป็นของตายของ Envoy Gateway ห้ามเดา — ถ้า ACCEPTED ไม่ขึ้นให้ตรวจกับของจริง:
   #     helm get values envoy-gateway -n envoy-gateway-system -a | grep -i controllerName
   controllerName: gateway.envoyproxy.io/gatewayclass-controller
+
+  # ชี้ไปที่ envoyproxy.yaml — ถ้าไม่มีบล็อกนี้ ไฟล์นั้นจะถูกลงไว้เฉย ๆ โดยไม่มีผล
+  # และไม่มี error ให้เห็นที่ไหนเลย (อ่านเหตุผลเต็มในหัวไฟล์ envoyproxy.yaml)
+  parametersRef:
+    group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    name: myhr-proxy
+    namespace: envoy-gateway-system

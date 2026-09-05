@@ -478,6 +478,50 @@ firewall-cmd --list-all
 ```
 **ควรเห็น:** พอร์ตครบตามรายการของบทบาทนั้น และ master ต้องมี `protocols: vrrp`
 
+### 🔴 เปิดให้ forward เข้าวง pod ได้ — ทำทุกเครื่อง ห้ามข้าม
+
+เปิดพอร์ตอย่างเดียว**ไม่พอ** พอร์ตข้างบนคุมแค่ traffic ที่ปลายทางเป็นตัวเครื่องเอง (`INPUT`)
+แต่ traffic ที่วิ่งไปหา pod ต้องผ่าน `FORWARD` ซึ่ง firewalld ปิดอยู่
+
+zone `public` มีแค่ `ens192` และ `forward: yes` อนุญาตเฉพาะ `ens192` → `ens192`
+ส่วน packet ที่ไปหา pod ต้องออกทาง `lxc...` ที่ Cilium สร้างขึ้นแบบไดนามิก
+ซึ่ง**ไม่ได้อยู่ใน zone ไหนเลย** — firewalld จึงทิ้งเงียบ ๆ
+
+**⚙️ รันทุกเครื่องทั้ง 6:**
+```bash
+set -a && source /root/k8s/versions.env && set +a
+
+firewall-cmd --permanent --new-policy=kube-pods
+firewall-cmd --permanent --policy=kube-pods --add-ingress-zone=ANY
+firewall-cmd --permanent --policy=kube-pods --add-egress-zone=ANY
+firewall-cmd --permanent --policy=kube-pods --set-target=CONTINUE
+firewall-cmd --permanent --policy=kube-pods --add-rich-rule="rule family=ipv4 destination address=${POD_CIDR} accept"
+firewall-cmd --permanent --policy=kube-pods --add-rich-rule="rule family=ipv4 source address=${POD_CIDR} accept"
+firewall-cmd --reload
+```
+
+**ตรวจ:**
+```bash
+firewall-cmd --info-policy=kube-pods
+```
+**ควรเห็น:** `target: CONTINUE` · `ingress-zones: ANY` · `egress-zones: ANY` · rich rule 2 บรรทัด
+
+> 🔴 **อาการถ้าลืมข้อนี้ — หาสาเหตุยากที่สุดในชุด (เจอจริง 6 ก.ย. 2026)**
+> SSH เข้า node ได้ปกติ (`INPUT`) แต่ **NodePort และ LoadBalancer IP เข้าไม่ได้เลย**
+> จากเครื่องนอกคลัสเตอร์ ขณะที่ node ยิงหากันเองได้หมด
+>
+> ทุกอย่างจะดูถูกต้องไปหมด — Gateway ได้ `ADDRESS` · HTTPRoute `Accepted=True` ·
+> Cilium ตอบ ARP ให้ LB IP · BPF map มี backend ครบ · conntrack สร้าง entry ให้ ·
+> `cilium monitor` ไม่มี drop สักบรรทัด · `curl` จาก node ได้ `302`
+>
+> ตัวชี้ขาดคือ `tcpdump` บน node: **เห็น SYN เข้ามาแล้วไม่มี SYN-ACK ตอบกลับ**
+>
+> `target: CONTINUE` + rich rule 2 ข้อ = เปิดเฉพาะ traffic ที่เกี่ยวกับวง pod
+> ไม่ได้เปิด forward ทั้งเครื่อง
+
+---
+
+
 > **ไม่ต้องเปิด `10256/tcp`** (kube-proxy health) เพราะเราไม่ติดตั้ง kube-proxy
 > **ไม่ต้องเปิด `179/tcp`** (BGP) เพราะใช้ L2 announcement ไม่ใช่ BGP mode
 

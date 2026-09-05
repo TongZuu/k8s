@@ -250,7 +250,9 @@ img{max-width:100%}
 <li>[ ] ยืนยันว่า registry เป็น HTTP หรือ HTTPS แล้วตั้ง <code>registry_scheme</code> ใน
 <a href="../ansible/group_vars/all.yml"><code>ansible/group_vars/all.yml</code></a> ก่อนรัน <code>container-runtime.yml</code></li>
 <li>[ ] ทวนเลขเวอร์ชันใน <a href="../docs/versions.env"><code>versions.env</code></a> อีกรอบก่อนเริ่ม Phase 1 แล้ว <strong>ตรึง</strong> ตลอดโครงการ</li>
-<li>[ ] เติม <code>LOKI_CHART</code> / <code>ALLOY_CHART</code> ที่ยังเป็น <code>&lt;PIN_AT_INSTALL&gt;</code> ตอนติดตั้งจริง แล้วเขียนกลับลงไฟล์</li>
+<li>[x] เติม <code>LOKI_CHART</code> / <code>ALLOY_CHART</code> ที่ยังเป็น <code>&lt;PIN_AT_INSTALL&gt;</code> แล้ว (5 ก.ย. 2026)
+<code>LOKI_CHART=7.3.0</code> (app 3.6.12) · <code>ALLOY_CHART=1.12.0</code> (app 1.19.0)
+<code>LOKI_VERSION</code> เดิมเขียนไว้ <code>3.7.6</code> ซึ่ง<strong>ไม่มีอยู่จริงในchart ไหนเลย</strong> แก้เป็น <code>3.6.12</code> แล้ว</li>
 </ul>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2>A2 · 🔴 ด่วน — มีวันหมดอายุ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">

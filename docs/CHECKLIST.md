@@ -48,7 +48,9 @@
 - [ ] ยืนยันว่า registry เป็น HTTP หรือ HTTPS แล้วตั้ง `registry_scheme` ใน
       [`ansible/group_vars/all.yml`](../ansible/group_vars/all.yml) ก่อนรัน `container-runtime.yml`
 - [ ] ทวนเลขเวอร์ชันใน [`versions.env`](versions.env) อีกรอบก่อนเริ่ม Phase 1 แล้ว **ตรึง** ตลอดโครงการ
-- [ ] เติม `LOKI_CHART` / `ALLOY_CHART` ที่ยังเป็น `<PIN_AT_INSTALL>` ตอนติดตั้งจริง แล้วเขียนกลับลงไฟล์
+- [x] เติม `LOKI_CHART` / `ALLOY_CHART` ที่ยังเป็น `<PIN_AT_INSTALL>` แล้ว (5 ก.ย. 2026)
+      `LOKI_CHART=7.3.0` (app 3.6.12) · `ALLOY_CHART=1.12.0` (app 1.19.0)
+      `LOKI_VERSION` เดิมเขียนไว้ `3.7.6` ซึ่ง**ไม่มีอยู่จริงในchart ไหนเลย** แก้เป็น `3.6.12` แล้ว
 
 ---
 

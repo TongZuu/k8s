@@ -1,0 +1,61 @@
+# =============================================================================
+#  EnvoyProxy — ตั้งค่าตัว data plane ที่ Envoy Gateway สร้างขึ้นมาให้
+# =============================================================================
+#  ค่าเริ่มต้นของ Envoy Gateway คือ Deployment 1 replica + Service แบบ
+#  externalTrafficPolicy: Local ซึ่งสองอย่างนี้รวมกันแล้วพังบน cluster นี้
+#
+# -----------------------------------------------------------------------------
+#  🔴 อาการที่เจอจริง (5 ก.ย. 2026) — ใช้เวลาไล่นาน จดไว้ให้ครบ
+# -----------------------------------------------------------------------------
+#  Gateway ขึ้น ADDRESS 192.168.50.200 ครบ · HTTPRoute ผูกติด · cert ถูกต้อง
+#  curl จาก master01 ได้ HTTP/2 302 ทุกอย่างดู "เสร็จแล้ว"
+#  แต่เครื่องนอก cluster เข้าไม่ได้เลย — TcpTestSucceeded: False
+#
+#  สาเหตุคือสามอย่างนี้มาเจอกันพอดี:
+#    1. Envoy pod มีตัวเดียว ตอนนั้นอยู่บน worker02
+#    2. Service เป็น externalTrafficPolicy: Local
+#       = node ที่รับ traffic ต้องมี pod ปลายทางอยู่บนเครื่องตัวเอง ห้ามส่งข้ามเครื่อง
+#    3. Cilium L2 announcement มอบสิทธิ์ตอบ ARP ให้ worker03
+#       ซึ่ง "ไม่มี" Envoy pod อยู่
+#
+#  worker03 จึงตอบ ARP ว่า IP นี้อยู่ที่ตัวเอง แล้วพอ packet มาถึงก็ทิ้ง
+#  เพราะ Local ห้ามส่งข้ามเครื่อง → หลุมดำที่ไม่มี error ให้เห็นที่ไหนเลย
+#
+#  ⚠️ Cilium เลือก node ที่จะประกาศ IP จาก nodeSelector ใน CiliumL2AnnouncementPolicy
+#     เท่านั้น มันไม่ได้ดูว่า node นั้นมี backend อยู่จริงหรือเปล่า
+#     ตราบใดที่ยังใช้ Local ปัญหานี้จะกลับมาทุกครั้งที่ Envoy ไปนอนคนละเครื่องกับ lease
+#
+# -----------------------------------------------------------------------------
+#  ทางแก้: ให้ Envoy รันทุก worker ด้วย DaemonSet
+# -----------------------------------------------------------------------------
+#  node ไหนได้สิทธิ์ตอบ ARP ก็มี Envoy อยู่กับตัวเสมอ ปัญหาหายทั้งคลาส
+#  ไม่ใช่แค่เคสนี้ และไม่ต้องคอยลุ้นว่า scheduler จะวาง pod ไว้ตรงไหน
+#
+#  ทางเลือกอีกทางคือเปลี่ยนเป็น externalTrafficPolicy: Cluster ซึ่งแก้บรรทัดเดียว
+#  แต่ Envoy จะเห็น source IP เป็น IP ของ node ที่รับ ไม่ใช่ IP ของผู้ใช้จริง
+#  → log การเข้าใช้งานระบบ HR ระบุตัวคนไม่ได้ และ NetworkPolicy ที่กรองตาม source
+#    ในบทที่ 10 จะใช้ไม่ได้ตามที่ตั้งใจ  จึงเลือกทาง DaemonSet แทน
+#
+#  ไฟล์นี้จะมีผลก็ต่อเมื่อ gatewayclass.yaml อ้างถึงมันด้วย parametersRef
+#  ลง EnvoyProxy อย่างเดียวไม่พอ — ไม่มี error ให้เห็น มันแค่ไม่ถูกใช้
+# =============================================================================
+
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: myhr-proxy
+  namespace: envoy-gateway-system
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      # DaemonSet = 1 ตัวต่อ 1 node ที่ schedule ลงได้
+      # ไม่ใส่ tolerations ให้ taint ของ control-plane → ลงเฉพาะ worker เท่านั้น
+      # ซึ่งตรงกับ nodeSelector ใน config/cilium/l2-announcement-policy.yaml
+      # ที่ให้เฉพาะ worker เป็นคนตอบ ARP — สองไฟล์นี้ต้องสอดคล้องกันเสมอ
+      envoyDaemonSet: {}
+
+      envoyService:
+        # เขียนไว้ให้ชัดแม้จะตรงกับ default
+        # เพราะเป็นค่าที่ต้องอ่านคู่กับ DaemonSet ข้างบนถึงจะเข้าใจว่าทำไมปลอดภัย
+        externalTrafficPolicy: Local

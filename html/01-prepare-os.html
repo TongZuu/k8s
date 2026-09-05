@@ -626,6 +626,39 @@ firewall-cmd --reload
 <div class="cb"><pre><code class="language-bash">firewall-cmd --list-all
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> พอร์ตครบตามรายการของบทบาทนั้น และ master ต้องมี <code>protocols: vrrp</code></p>
+</div><div class="sub" data-machine="all"><h3>🔴 เปิดให้ forward เข้าวง pod ได้ — ทำทุกเครื่อง ห้ามข้าม</h3>
+<p>เปิดพอร์ตอย่างเดียว<strong>ไม่พอ</strong> พอร์ตข้างบนคุมแค่ traffic ที่ปลายทางเป็นตัวเครื่องเอง (<code>INPUT</code>)
+แต่ traffic ที่วิ่งไปหา pod ต้องผ่าน <code>FORWARD</code> ซึ่ง firewalld ปิดอยู่</p>
+<p>zone <code>public</code> มีแค่ <code>ens192</code> และ <code>forward: yes</code> อนุญาตเฉพาะ <code>ens192</code> → <code>ens192</code>
+ส่วน packet ที่ไปหา pod ต้องออกทาง <code>lxc...</code> ที่ Cilium สร้างขึ้นแบบไดนามิก
+ซึ่ง<strong>ไม่ได้อยู่ใน zone ไหนเลย</strong> — firewalld จึงทิ้งเงียบ ๆ</p>
+<p><strong>⚙️ รันทุกเครื่องทั้ง 6:</strong></p>
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+
+firewall-cmd --permanent --new-policy=kube-pods
+firewall-cmd --permanent --policy=kube-pods --add-ingress-zone=ANY
+firewall-cmd --permanent --policy=kube-pods --add-egress-zone=ANY
+firewall-cmd --permanent --policy=kube-pods --set-target=CONTINUE
+firewall-cmd --permanent --policy=kube-pods --add-rich-rule="rule family=ipv4 destination address=${POD_CIDR} accept"
+firewall-cmd --permanent --policy=kube-pods --add-rich-rule="rule family=ipv4 source address=${POD_CIDR} accept"
+firewall-cmd --reload
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ตรวจ:</strong></p>
+<div class="cb"><pre><code class="language-bash">firewall-cmd --info-policy=kube-pods
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>target: CONTINUE</code> · <code>ingress-zones: ANY</code> · <code>egress-zones: ANY</code> · rich rule 2 บรรทัด</p>
+<blockquote>
+<p>🔴 <strong>อาการถ้าลืมข้อนี้ — หาสาเหตุยากที่สุดในชุด (เจอจริง 6 ก.ย. 2026)</strong>
+SSH เข้า node ได้ปกติ (<code>INPUT</code>) แต่ <strong>NodePort และ LoadBalancer IP เข้าไม่ได้เลย</strong>
+จากเครื่องนอกคลัสเตอร์ ขณะที่ node ยิงหากันเองได้หมด</p>
+<p>ทุกอย่างจะดูถูกต้องไปหมด — Gateway ได้ <code>ADDRESS</code> · HTTPRoute <code>Accepted=True</code> ·
+Cilium ตอบ ARP ให้ LB IP · BPF map มี backend ครบ · conntrack สร้าง entry ให้ ·
+<code>cilium monitor</code> ไม่มี drop สักบรรทัด · <code>curl</code> จาก node ได้ <code>302</code></p>
+<p>ตัวชี้ขาดคือ <code>tcpdump</code> บน node: <strong>เห็น SYN เข้ามาแล้วไม่มี SYN-ACK ตอบกลับ</strong></p>
+<p><code>target: CONTINUE</code> + rich rule 2 ข้อ = เปิดเฉพาะ traffic ที่เกี่ยวกับวง pod
+ไม่ได้เปิด forward ทั้งเครื่อง</p>
+</blockquote>
+<hr />
 <blockquote>
 <p><strong>ไม่ต้องเปิด <code>10256/tcp</code></strong> (kube-proxy health) เพราะเราไม่ติดตั้ง kube-proxy
 <strong>ไม่ต้องเปิด <code>179/tcp</code></strong> (BGP) เพราะใช้ L2 announcement ไม่ใช่ BGP mode</p>

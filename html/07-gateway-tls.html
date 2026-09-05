@@ -438,10 +438,30 @@ echo -n "bundle-version   : "; kubectl get crd gateways.gateway.networking.k8s.i
 </blockquote>
 <p><strong>เอา <code>bundle-version</code> ที่ได้ไปแก้ <code>GATEWAY_API_VERSION</code> ใน <code>docs/versions.env</code></strong> ให้ตรงกับของจริง</p>
 <hr />
+</div><div class="sub" data-machine="all"><h3>🔴 ให้ Envoy รันทุก worker ก่อน — ไม่ใช่ pod เดียว</h3>
+<p>ค่าเริ่มต้นของ Envoy Gateway คือ <strong>Envoy 1 pod</strong> คู่กับ Service แบบ
+<strong><code>externalTrafficPolicy: Local</code></strong> ซึ่งแปลว่า <em>node ที่รับ traffic ต้องมี pod ปลายทาง
+อยู่บนเครื่องตัวเอง ห้ามส่งข้ามเครื่อง</em></p>
+<p>แต่ Cilium เลือก node ที่จะตอบ ARP ให้ LB IP จาก <code>nodeSelector</code> ใน
+<a href="../config/cilium/l2-announcement-policy.yaml">l2-announcement-policy.yaml</a> <strong>เท่านั้น</strong>
+มันไม่ได้ดูว่า node นั้นมี Envoy อยู่หรือเปล่า — พอสองอย่างนี้ไม่ตรงกัน
+node ที่ตอบ ARP จะรับ packet มาแล้วทิ้งทุกใบ</p>
+<p><strong>ยืนยันบน cluster จริง 5 ก.ย. 2026:</strong> Envoy อยู่ <code>worker02</code> · lease ตอบ ARP อยู่ <code>worker03</code>
+ผลคือ <code>ADDRESS</code> ขึ้นครบ · HTTPRoute <code>Accepted=True</code> · <code>curl</code> จาก master01 ได้ <code>302</code>
+<strong>แต่เครื่องนอก cluster เข้าไม่ได้เลย</strong> และไม่มี error โผล่ที่ไหนสักที่</p>
+<p><code>envoyproxy.yaml</code> สั่งให้ Envoy เป็น <strong>DaemonSet</strong> — node ไหนได้สิทธิ์ตอบ ARP
+ก็มี Envoy อยู่กับตัวเสมอ ปัญหาหายทั้งคลาส ไม่ใช่แค่รอบนี้</p>
+<blockquote>
+<p>ทางเลือกอีกทางคือเปลี่ยนเป็น <code>externalTrafficPolicy: Cluster</code> ซึ่งแก้บรรทัดเดียว
+แต่ Envoy จะเห็น source IP เป็น IP ของ node ที่รับ ไม่ใช่ของผู้ใช้จริง
+→ log ระบุตัวคนไม่ได้ และ NetworkPolicy ที่กรองตาม source ในบทที่ 10 ใช้ไม่ได้ตามที่ตั้งใจ</p>
+</blockquote>
+<hr />
 </div><div class="sub" data-machine="all"><h3>สร้าง GatewayClass</h3>
 <p>chart <strong>ไม่สร้าง GatewayClass ให้</strong> — ในเอกสารทางการมันอยู่ใน <code>quickstart.yaml</code>
 ซึ่งเรารับมาทั้งไฟล์ไม่ได้เพราะมี Gateway กับ HTTPRoute ของ demo ติดมาด้วย</p>
-<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/gateway/gatewayclass.yaml   &amp;&amp; kubectl get gatewayclass
+<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/gateway/envoyproxy.yaml
+kubectl apply -f /root/k8s/config/gateway/gatewayclass.yaml   &amp;&amp; kubectl get gatewayclass
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p>ต่อด้วย <code>&amp;&amp;</code> เพื่อไม่ให้ <code>kubectl get</code> รันตอน <code>apply</code> ล้ม</p>
@@ -727,6 +747,17 @@ kubectl get ciliumloadbalancerippool default-pool -o yaml | grep -A5 status
 </tr>
 </tbody>
 </table>
+<p><strong>ตรวจว่า Envoy กระจายครบทุก worker</strong> — ตรงนี้ Envoy ถึงจะถูกสร้างจริง:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get ds,pod -o wide -l app.kubernetes.io/name=envoy
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> DaemonSet <code>DESIRED=3 READY=3</code> และ pod อยู่คนละ worker กันทั้งสามตัว</p>
+<p><strong>ถ้าได้ Deployment แทน DaemonSet</strong> แปลว่า <code>parametersRef</code> ใน <code>gatewayclass.yaml</code>
+ไม่ได้ชี้มาที่ <code>EnvoyProxy</code> — ตรวจด้วย:</p>
+<div class="cb"><pre><code class="language-bash">kubectl get gatewayclass eg -o jsonpath='{.spec.parametersRef}{"\n"}'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> JSON ที่มี <code>&quot;name&quot;:&quot;myhr-proxy&quot;</code> — ถ้าว่าง แปลว่า <code>EnvoyProxy</code> ถูกลงไว้เฉย ๆ
+โดยไม่มีใครใช้ ซึ่ง<strong>ไม่มี error ให้เห็น</strong></p>
+<hr />
 <p><strong>จด IP ที่ได้ไว้</strong> — ขั้นถัดไปต้องใช้บนเครื่องทดสอบซึ่งไม่มี kubectl:</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get gateway myhr-gateway \
   -o jsonpath='{.status.addresses[0].value}{"\n"}'

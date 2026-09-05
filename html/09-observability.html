@@ -252,6 +252,17 @@ kubectl top pods -A | head
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>2 · kube-prometheus-stack</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>ชุดนี้รวม Prometheus + Alertmanager + Grafana + node-exporter + kube-state-metrics
 มาให้ในครั้งเดียว</p>
+<p><strong>🔴 แทนค่า <code>&lt;GRAFANA_ADMIN_PASSWORD&gt;</code> ก่อน ไม่งั้นรหัส admin จะเป็นข้อความนั้นตรงตัว</strong>
+(รหัสจริง 24 ตัวอยู่ในที่เก็บ secret ตาม <a href="CHECKLIST.html">CHECKLIST ข้อ B</a>)</p>
+<div class="cb"><pre><code class="language-bash">read -rsp 'Grafana admin password: ' GFPW; echo
+sed -i "s|&lt;GRAFANA_ADMIN_PASSWORD&gt;|${GFPW}|" /root/k8s/config/monitoring/kube-prometheus-values.yaml
+grep -c 'GRAFANA_ADMIN_PASSWORD' /root/k8s/config/monitoring/kube-prometheus-values.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>0</code> — ถ้าได้ <code>1</code> แปลว่ายังไม่ถูกแทน (รหัสมีอักขระ <code>|</code> ให้แก้ด้วย editor แทน)</p>
+<blockquote>
+<p>เปลี่ยนผ่านหน้าเว็บ Grafana ทีหลังไม่พอ — chart ส่งค่านี้เป็น <code>GF_SECURITY_ADMIN_PASSWORD</code>
+ซึ่ง<strong>เขียนทับรหัสใน DB ทุกครั้งที่ pod start</strong> ต้องแก้ที่ values เท่านั้นถึงจะอยู่ถาวร</p>
+</blockquote>
 <div class="cb"><pre><code class="language-bash">helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 
@@ -313,9 +324,6 @@ kill %1
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>3 · Loki + Alloy (รวม log)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>pod ตายแล้ว log หายไปด้วยถ้าไม่มีที่รวม</p>
 <div class="cb"><pre><code class="language-bash">helm repo add grafana https://grafana.github.io/helm-charts &amp;&amp; helm repo update
-
-# ⚠️ pin chart version ก่อน แล้วเขียนกลับลง versions.env
-helm search repo grafana/loki --versions | head -3
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <div class="cb"><pre><code class="language-bash">helm install loki grafana/loki \
   --namespace monitoring \
@@ -342,10 +350,20 @@ kubectl -n monitoring get ds -l app.kubernetes.io/name=alloy
 <p><strong>ควรเห็น:</strong> JSON ที่มี <code>fieldPath: spec.nodeName</code> — ถ้าได้ค่าว่าง แปลว่า <code>extraEnv</code> ไม่ได้ถูก
 apply แล้ว <code>selectors</code> จะกลายเป็น <code>spec.nodeName=</code> ซึ่งไม่ match อะไรเลย → <strong>ไม่มี log เข้า Loki
 แม้แต่บรรทัดเดียว</strong> (จะดังผ่าน alert <code>LokiNotReceivingLogs</code> ในหัวข้อถัดไป)</p>
-<p><strong>แล้วยืนยันด้วยตาที่ Grafana</strong> — เลือก pod ที่ log น้อย ๆ แล้วดูว่าบรรทัดเดียวกัน
-โผล่ซ้ำหรือไม่ ต้องเห็นครั้งเดียวต่อหนึ่ง event:</p>
-<div class="cb"><pre><code class="language-text">{namespace="kube-system", container="cilium-agent"}
-</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>แล้วยืนยันจากข้อมูลที่เข้า Loki จริง</strong> — ขั้นเข้า Grafana อยู่ข้อ 4 ซึ่งยังมาไม่ถึง
+จึงถาม Loki ตรง ๆ ว่ามีบรรทัดไหนซ้ำไหม (<code>auth_enabled: false</code> จึงไม่ต้องใส่ header):</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/loki 3100:3100 &amp;
+sleep 3
+curl -s -G 'http://localhost:3100/loki/api/v1/query_range' \
+  --data-urlencode 'query={namespace="kube-system", container="cilium-agent"}' \
+  --data-urlencode 'limit=200' \
+  | jq -r '.data.result[].values[] | @tsv' | sort | uniq -c | awk '$1 &gt; 1'
+kill %1
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น: ไม่มีอะไรออกมาเลย</strong> — แต่ละบรรทัดเข้า Loki ครั้งเดียว</p>
+<p>ถ้ามีบรรทัดโผล่มาโดยมีเลข <strong><code>6</code></strong> นำหน้า แปลว่า Alloy ทั้ง 6 ตัวเก็บ log ชุดเดียวกัน
+ให้กลับไปดู <code>NODE_NAME</code> ข้างบน · ถ้าไม่มีอะไรออกมา<strong>เลยแม้แต่ผลว่าง</strong> แปลว่ายังไม่มี log
+เข้า Loki สักบรรทัด ซึ่งเป็นคนละปัญหา — ดู <code>kubectl -n monitoring logs ds/alloy</code></p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>4 · เข้า Grafana</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring get secret monitoring-grafana \

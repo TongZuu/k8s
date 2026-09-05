@@ -220,12 +220,36 @@ echo -n "bundle-version   : "; kubectl get crd gateways.gateway.networking.k8s.i
 
 ---
 
+### 🔴 ให้ Envoy รันทุก worker ก่อน — ไม่ใช่ pod เดียว
+
+ค่าเริ่มต้นของ Envoy Gateway คือ **Envoy 1 pod** คู่กับ Service แบบ
+**`externalTrafficPolicy: Local`** ซึ่งแปลว่า *node ที่รับ traffic ต้องมี pod ปลายทาง
+อยู่บนเครื่องตัวเอง ห้ามส่งข้ามเครื่อง*
+
+แต่ Cilium เลือก node ที่จะตอบ ARP ให้ LB IP จาก `nodeSelector` ใน
+[l2-announcement-policy.yaml](../config/cilium/l2-announcement-policy.yaml) **เท่านั้น**
+มันไม่ได้ดูว่า node นั้นมี Envoy อยู่หรือเปล่า — พอสองอย่างนี้ไม่ตรงกัน
+node ที่ตอบ ARP จะรับ packet มาแล้วทิ้งทุกใบ
+
+**ยืนยันบน cluster จริง 5 ก.ย. 2026:** Envoy อยู่ `worker02` · lease ตอบ ARP อยู่ `worker03`
+ผลคือ `ADDRESS` ขึ้นครบ · HTTPRoute `Accepted=True` · `curl` จาก master01 ได้ `302`
+**แต่เครื่องนอก cluster เข้าไม่ได้เลย** และไม่มี error โผล่ที่ไหนสักที่
+
+`envoyproxy.yaml` สั่งให้ Envoy เป็น **DaemonSet** — node ไหนได้สิทธิ์ตอบ ARP
+ก็มี Envoy อยู่กับตัวเสมอ ปัญหาหายทั้งคลาส ไม่ใช่แค่รอบนี้
+
+> ทางเลือกอีกทางคือเปลี่ยนเป็น `externalTrafficPolicy: Cluster` ซึ่งแก้บรรทัดเดียว
+> แต่ Envoy จะเห็น source IP เป็น IP ของ node ที่รับ ไม่ใช่ของผู้ใช้จริง
+> → log ระบุตัวคนไม่ได้ และ NetworkPolicy ที่กรองตาม source ในบทที่ 10 ใช้ไม่ได้ตามที่ตั้งใจ
+
+---
 ### สร้าง GatewayClass
 
 chart **ไม่สร้าง GatewayClass ให้** — ในเอกสารทางการมันอยู่ใน `quickstart.yaml`
 ซึ่งเรารับมาทั้งไฟล์ไม่ได้เพราะมี Gateway กับ HTTPRoute ของ demo ติดมาด้วย
 
 ```bash
+kubectl apply -f /root/k8s/config/gateway/envoyproxy.yaml
 kubectl apply -f /root/k8s/config/gateway/gatewayclass.yaml   && kubectl get gatewayclass
 ```
 
@@ -466,6 +490,22 @@ kubectl get ciliumloadbalancerippool default-pool -o yaml | grep -A5 status
 | ไม่มี GatewayClass `eg` | **ไม่มี controller ตัวไหนรับ Gateway ตัวนี้ไปทำ** — Gateway จะ apply ผ่านโดยไม่มี error แต่ `ADDRESS` ว่างตลอดไป ย้อนไปทำท้ายขั้นที่ 2 |
 | มี GatewayClass แต่ไม่มี Service `type: LoadBalancer` | Envoy Gateway ยังไม่ได้ reconcile — ดู log ของ `deploy/envoy-gateway` |
 | มี Service แต่ `EXTERNAL-IP` ค้าง `<pending>` | pool หมดหรือ LB-IPAM มีปัญหา — กลับไปดูบทที่ 05 |
+
+**ตรวจว่า Envoy กระจายครบทุก worker** — ตรงนี้ Envoy ถึงจะถูกสร้างจริง:
+```bash
+kubectl -n envoy-gateway-system get ds,pod -o wide -l app.kubernetes.io/name=envoy
+```
+**ควรเห็น:** DaemonSet `DESIRED=3 READY=3` และ pod อยู่คนละ worker กันทั้งสามตัว
+
+**ถ้าได้ Deployment แทน DaemonSet** แปลว่า `parametersRef` ใน `gatewayclass.yaml`
+ไม่ได้ชี้มาที่ `EnvoyProxy` — ตรวจด้วย:
+```bash
+kubectl get gatewayclass eg -o jsonpath='{.spec.parametersRef}{"\n"}'
+```
+**ควรเห็น:** JSON ที่มี `"name":"myhr-proxy"` — ถ้าว่าง แปลว่า `EnvoyProxy` ถูกลงไว้เฉย ๆ
+โดยไม่มีใครใช้ ซึ่ง**ไม่มี error ให้เห็น**
+
+---
 
 **จด IP ที่ได้ไว้** — ขั้นถัดไปต้องใช้บนเครื่องทดสอบซึ่งไม่มี kubectl:
 ```bash

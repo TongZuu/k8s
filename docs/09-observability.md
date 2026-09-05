@@ -62,6 +62,19 @@ kubectl top pods -A | head
 ชุดนี้รวม Prometheus + Alertmanager + Grafana + node-exporter + kube-state-metrics
 มาให้ในครั้งเดียว
 
+**🔴 แทนค่า `<GRAFANA_ADMIN_PASSWORD>` ก่อน ไม่งั้นรหัส admin จะเป็นข้อความนั้นตรงตัว**
+(รหัสจริง 24 ตัวอยู่ในที่เก็บ secret ตาม [CHECKLIST ข้อ B](CHECKLIST.md))
+
+```bash
+read -rsp 'Grafana admin password: ' GFPW; echo
+sed -i "s|<GRAFANA_ADMIN_PASSWORD>|${GFPW}|" /root/k8s/config/monitoring/kube-prometheus-values.yaml
+grep -c 'GRAFANA_ADMIN_PASSWORD' /root/k8s/config/monitoring/kube-prometheus-values.yaml
+```
+**ควรเห็น:** `0` — ถ้าได้ `1` แปลว่ายังไม่ถูกแทน (รหัสมีอักขระ `|` ให้แก้ด้วย editor แทน)
+
+> เปลี่ยนผ่านหน้าเว็บ Grafana ทีหลังไม่พอ — chart ส่งค่านี้เป็น `GF_SECURITY_ADMIN_PASSWORD`
+> ซึ่ง**เขียนทับรหัสใน DB ทุกครั้งที่ pod start** ต้องแก้ที่ values เท่านั้นถึงจะอยู่ถาวร
+
 ```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
@@ -138,9 +151,6 @@ pod ตายแล้ว log หายไปด้วยถ้าไม่ม�
 
 ```bash
 helm repo add grafana https://grafana.github.io/helm-charts && helm repo update
-
-# ⚠️ pin chart version ก่อน แล้วเขียนกลับลง versions.env
-helm search repo grafana/loki --versions | head -3
 ```
 
 ```bash
@@ -175,11 +185,23 @@ kubectl -n monitoring get ds alloy -o jsonpath='{.spec.template.spec.containers[
 apply แล้ว `selectors` จะกลายเป็น `spec.nodeName=` ซึ่งไม่ match อะไรเลย → **ไม่มี log เข้า Loki
 แม้แต่บรรทัดเดียว** (จะดังผ่าน alert `LokiNotReceivingLogs` ในหัวข้อถัดไป)
 
-**แล้วยืนยันด้วยตาที่ Grafana** — เลือก pod ที่ log น้อย ๆ แล้วดูว่าบรรทัดเดียวกัน
-โผล่ซ้ำหรือไม่ ต้องเห็นครั้งเดียวต่อหนึ่ง event:
+**แล้วยืนยันจากข้อมูลที่เข้า Loki จริง** — ขั้นเข้า Grafana อยู่ข้อ 4 ซึ่งยังมาไม่ถึง
+จึงถาม Loki ตรง ๆ ว่ามีบรรทัดไหนซ้ำไหม (`auth_enabled: false` จึงไม่ต้องใส่ header):
+
+```bash
+kubectl -n monitoring port-forward svc/loki 3100:3100 &
+sleep 3
+curl -s -G 'http://localhost:3100/loki/api/v1/query_range' \
+  --data-urlencode 'query={namespace="kube-system", container="cilium-agent"}' \
+  --data-urlencode 'limit=200' \
+  | jq -r '.data.result[].values[] | @tsv' | sort | uniq -c | awk '$1 > 1'
+kill %1
 ```
-{namespace="kube-system", container="cilium-agent"}
-```
+**ควรเห็น: ไม่มีอะไรออกมาเลย** — แต่ละบรรทัดเข้า Loki ครั้งเดียว
+
+ถ้ามีบรรทัดโผล่มาโดยมีเลข **`6`** นำหน้า แปลว่า Alloy ทั้ง 6 ตัวเก็บ log ชุดเดียวกัน
+ให้กลับไปดู `NODE_NAME` ข้างบน · ถ้าไม่มีอะไรออกมา**เลยแม้แต่ผลว่าง** แปลว่ายังไม่มี log
+เข้า Loki สักบรรทัด ซึ่งเป็นคนละปัญหา — ดู `kubectl -n monitoring logs ds/alloy`
 
 ---
 

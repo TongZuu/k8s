@@ -365,6 +365,56 @@
         - 4244-4245/tcp     # Hubble
       when: inventory_hostname in groups['workers']
 
+    # -------------------------------------------------------------------------
+    #  8.1 · firewalld policy — อนุญาตให้ forward เข้าออกวง pod
+    # -------------------------------------------------------------------------
+    #  🔴 ขาดข้อนี้แล้ว "เข้าจากนอกคลัสเตอร์ไม่ได้เลย" โดยไม่มี error ที่ไหน
+    #
+    #  zone public มีแค่ ens192 และ forward: yes อนุญาตเฉพาะ ens192 -> ens192
+    #  แต่ packet ที่วิ่งไปหา pod ต้องออกทาง lxc... ซึ่ง Cilium สร้างแบบไดนามิก
+    #  และไม่ได้อยู่ใน zone ไหนเลย firewalld จึงทิ้งเงียบ ๆ
+    #
+    #  อาการที่เจอจริง (6 ก.ย. 2026): SSH เข้า node ได้ (INPUT) แต่ NodePort
+    #  และ LoadBalancer IP เข้าไม่ได้ (FORWARD) — ทั้งที่ Gateway/Envoy/Cilium
+    #  ปกติทุกอย่าง ยืนยันด้วย tcpdump ว่า SYN มาถึง node แล้วไม่มี SYN-ACK ตอบ
+    #
+    #  ใช้ policy ไม่ใช่ zone เพราะชื่อ interface ของ pod เดาไม่ได้
+    #  target=CONTINUE + rich rule 2 ข้อ = เปิดเฉพาะ traffic ที่เกี่ยวกับวง pod
+    #  ไม่ได้เปิด forward ทั้งเครื่อง
+    - name: policy kube-pods มีอยู่แล้วหรือยัง
+      ansible.builtin.command: firewall-cmd --permanent --get-policies
+      register: _fw_policies
+      changed_when: false
+      check_mode: false
+
+    - name: สร้าง policy kube-pods
+      ansible.builtin.command: firewall-cmd --permanent --new-policy=kube-pods
+      when: "'kube-pods' not in _fw_policies.stdout"
+
+    - name: ตั้งค่า policy kube-pods
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -uo pipefail
+          out=$(firewall-cmd --permanent --policy=kube-pods {{ item | quote }} 2>&1) || true
+          echo "$out"
+          case "$out" in
+            *ALREADY_ENABLED*|success) exit 0 ;;
+            *) [ -n "${out##*Error*}" ] || exit 1 ;;
+          esac
+      loop:
+        - --add-ingress-zone=ANY
+        - --add-egress-zone=ANY
+        - --set-target=CONTINUE
+        - --add-rich-rule=rule family=ipv4 destination address={{ v.POD_CIDR }} accept
+        - --add-rich-rule=rule family=ipv4 source address={{ v.POD_CIDR }} accept
+      register: _fw_pol
+      changed_when: "'success' in _fw_pol.stdout"
+
+    - name: reload firewalld ถ้า policy เปลี่ยน
+      ansible.builtin.command: firewall-cmd --reload
+      when: _fw_pol is changed
+
 # =============================================================================
 #  reboot + ตรวจซ้ำ — ข้ามได้ด้วย --skip-tags reboot
 # =============================================================================

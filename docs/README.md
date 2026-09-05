@@ -186,7 +186,6 @@ grep -rn '<[A-Z_]*>' config/ docs/
 | `kube-prometheus-values.yaml` | `<GRAFANA_ADMIN_PASSWORD>` | เปลี่ยนทันทีหลังเข้าครั้งแรก |
 | `rbac.yaml` | `<LDAP_GROUP_*>` | ชื่อ group จริงขององค์กร |
 | `deployment-template.yaml` | `<IMAGE_DIGEST>` | `@sha256:...` |
-| `versions.env` | `<PIN_AT_INSTALL>` | chart version ของ Loki/Alloy |
 
 ---
 
