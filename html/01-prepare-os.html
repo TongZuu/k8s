@@ -602,9 +602,11 @@ grep -i '^SELINUX=' /etc/selinux/config
 <div class="cb"><pre><code class="language-bash">firewall-cmd --permanent --add-port=6443/tcp          # kube-apiserver
 firewall-cmd --permanent --add-port=8443/tcp          # HAProxy frontend (VIP)
 firewall-cmd --permanent --add-port=2379-2380/tcp     # etcd client + peer
+firewall-cmd --permanent --add-port=2381/tcp          # etcd metrics (บท 09)
 firewall-cmd --permanent --add-port=10250/tcp         # kubelet API
 firewall-cmd --permanent --add-port=10257/tcp         # controller-manager
 firewall-cmd --permanent --add-port=10259/tcp         # scheduler
+firewall-cmd --permanent --add-port=9100/tcp          # node-exporter (บท 09)
 firewall-cmd --permanent --add-protocol=vrrp          # keepalived เลือก master
 firewall-cmd --permanent --add-port=8472/udp          # Cilium VXLAN
 firewall-cmd --permanent --add-port=4240/tcp          # Cilium health
@@ -614,6 +616,7 @@ firewall-cmd --reload
 </div><div class="sub" data-machine="workers"><h3>⚙️ บน worker ทั้ง 3 เครื่อง</h3>
 <div class="cb"><pre><code class="language-bash">firewall-cmd --permanent --add-port=10250/tcp         # kubelet API
 firewall-cmd --permanent --add-port=30000-32767/tcp   # NodePort range
+firewall-cmd --permanent --add-port=9100/tcp          # node-exporter (บท 09)
 firewall-cmd --permanent --add-port=8472/udp          # Cilium VXLAN
 firewall-cmd --permanent --add-port=4240/tcp          # Cilium health
 firewall-cmd --permanent --add-port=4244-4245/tcp     # Hubble

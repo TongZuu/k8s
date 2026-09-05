@@ -110,7 +110,25 @@ sleep 3
 curl -s 'http://localhost:9090/api/v1/targets?state=active' | jq -r '.data.activeTargets[] | "\(.health)  \(.labels.job)"' | sort | uniq -c
 kill %1
 ```
-**ควรเห็น:** ทุกบรรทัดเป็น `up` — ถ้ามี `down` ให้ไล่ดูทีละตัวก่อนไปต่อ
+**ควรเห็น:** ทุกบรรทัดเป็น `up`
+
+**ถ้ามี `down` เอาสาเหตุจริงมาก่อน อย่าเดา:**
+```bash
+kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &
+sleep 3
+curl -s 'http://localhost:9090/api/v1/targets?state=active' | jq -r '.data.activeTargets[] | select(.health=="down") | "\(.labels.job)  \(.scrapeUrl)  \(.lastError)"' | sort -u
+kill %1
+```
+
+> 🔴 **`lastError` แยกสองสาเหตุออกจากกันได้ทันที**
+> · `no route to host` = **firewalld ปิดพอร์ตอยู่** — เปิดตาม [บทที่ 01 ข้อ 8](01-prepare-os.md)
+>   (`9100` node-exporter ทุกเครื่อง · `2381` etcd metrics บน master)
+> · `connection refused` = ถึงเครื่องแล้วแต่ component **bind อยู่ที่ `127.0.0.1`**
+>
+> `kubeadm-config.yaml` ตั้ง `bind-address: 0.0.0.0` และ `listen-metrics-urls` ไว้ให้แล้ว
+> ถ้ายังเจอ แปลว่า cluster นี้สร้างก่อนที่ไฟล์นั้นจะมีค่าดังกล่าว ต้องแก้
+> `/etc/kubernetes/manifests/` บน master เอง **ทีละเครื่อง รอ `Running` ก่อนไปเครื่องถัดไป**
+> เพราะการแก้ `etcd.yaml` ทำให้ etcd ของเครื่องนั้น restart — พร้อมกัน 3 เครื่องคือเสีย quorum
 
 ---
 

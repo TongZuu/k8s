@@ -292,7 +292,23 @@ sleep 3
 curl -s 'http://localhost:9090/api/v1/targets?state=active' | jq -r '.data.activeTargets[] | "\(.health)  \(.labels.job)"' | sort | uniq -c
 kill %1
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> ทุกบรรทัดเป็น <code>up</code> — ถ้ามี <code>down</code> ให้ไล่ดูทีละตัวก่อนไปต่อ</p>
+<p><strong>ควรเห็น:</strong> ทุกบรรทัดเป็น <code>up</code></p>
+<p><strong>ถ้ามี <code>down</code> เอาสาเหตุจริงมาก่อน อย่าเดา:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &amp;
+sleep 3
+curl -s 'http://localhost:9090/api/v1/targets?state=active' | jq -r '.data.activeTargets[] | select(.health=="down") | "\(.labels.job)  \(.scrapeUrl)  \(.lastError)"' | sort -u
+kill %1
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>🔴 <strong><code>lastError</code> แยกสองสาเหตุออกจากกันได้ทันที</strong>
+· <code>no route to host</code> = <strong>firewalld ปิดพอร์ตอยู่</strong> — เปิดตาม <a href="01-prepare-os.html">บทที่ 01 ข้อ 8</a>
+(<code>9100</code> node-exporter ทุกเครื่อง · <code>2381</code> etcd metrics บน master)
+· <code>connection refused</code> = ถึงเครื่องแล้วแต่ component <strong>bind อยู่ที่ <code>127.0.0.1</code></strong></p>
+<p><code>kubeadm-config.yaml</code> ตั้ง <code>bind-address: 0.0.0.0</code> และ <code>listen-metrics-urls</code> ไว้ให้แล้ว
+ถ้ายังเจอ แปลว่า cluster นี้สร้างก่อนที่ไฟล์นั้นจะมีค่าดังกล่าว ต้องแก้
+<code>/etc/kubernetes/manifests/</code> บน master เอง <strong>ทีละเครื่อง รอ <code>Running</code> ก่อนไปเครื่องถัดไป</strong>
+เพราะการแก้ <code>etcd.yaml</code> ทำให้ etcd ของเครื่องนั้น restart — พร้อมกัน 3 เครื่องคือเสีย quorum</p>
+</blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>3 · Loki + Alloy (รวม log)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>pod ตายแล้ว log หายไปด้วยถ้าไม่มีที่รวม</p>

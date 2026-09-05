@@ -332,9 +332,11 @@
         - 6443/tcp          # kube-apiserver
         - 8443/tcp          # HAProxy frontend (VIP)
         - 2379-2380/tcp     # etcd client + peer
+        - 2381/tcp          # etcd metrics — Prometheus scrape (บท 09)
         - 10250/tcp         # kubelet API
         - 10257/tcp         # controller-manager
         - 10259/tcp         # scheduler
+        - 9100/tcp          # node-exporter (บท 09)
         - 8472/udp          # Cilium VXLAN
         - 4240/tcp          # Cilium health
         - 4244-4245/tcp     # Hubble
@@ -357,6 +359,7 @@
       loop:
         - 10250/tcp         # kubelet API
         - 30000-32767/tcp   # NodePort range
+        - 9100/tcp          # node-exporter (บท 09)
         - 8472/udp          # Cilium VXLAN
         - 4240/tcp          # Cilium health
         - 4244-4245/tcp     # Hubble

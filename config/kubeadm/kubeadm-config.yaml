@@ -100,6 +100,16 @@ controllerManager:
   extraArgs:
     - name: "node-cidr-mask-size"
       value: "24"                       # /24 ต่อ node ให้ตรงกับ Cilium cluster-pool
+    # ค่าเริ่มต้นของ kubeadm คือ 127.0.0.1 → Prometheus ที่อยู่บน worker ต่อไม่ถึง
+    # อาการ: target down 3 ตัว ด้วย "connection refused" (ยืนยันบน cluster จริง 5 ก.ย. 2026)
+    - name: "bind-address"
+      value: "0.0.0.0"
+
+scheduler:
+  extraArgs:
+    # เหตุผลเดียวกับ controllerManager ข้างบน
+    - name: "bind-address"
+      value: "0.0.0.0"
 
 etcd:
   local:
@@ -108,6 +118,10 @@ etcd:
     extraArgs:
       - name: "quota-backend-bytes"
         value: "8589934592"             # 8 GB — default 2 GB เล็กไปสำหรับ cluster ที่อยู่ยาว
+      # ค่าเริ่มต้นคือ http://127.0.0.1:2381 → Prometheus ต่อไม่ถึงเหมือนกัน
+      # ต้องเปิดพอร์ต 2381/tcp ที่ firewalld ด้วย ไม่งั้นได้ "no route to host" (บท 01)
+      - name: "listen-metrics-urls"
+        value: "http://0.0.0.0:2381"
 
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
