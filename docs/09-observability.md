@@ -207,23 +207,62 @@ kill %1
 
 ## 4 · เข้า Grafana
 
+**รหัส admin** — ตัวที่ใส่ไว้ตั้งแต่ข้อ 2:
 ```bash
 kubectl -n monitoring get secret monitoring-grafana \
   -o jsonpath='{.data.admin-password}' | base64 -d; echo
 ```
 
-**เปิดผ่าน Gateway** (แนะนำ — จะได้ไม่ต้อง port-forward ทุกครั้ง):
+> 🔴 **ถ้าได้ `<GRAFANA_ADMIN_PASSWORD>` ออกมาตรง ๆ** แปลว่าข้ามขั้นแทนค่าในข้อ 2 ไป
+> **รหัส admin ของ Grafana คือข้อความนั้นจริง ๆ** ย้อนไปทำแล้ว `helm upgrade`
+> เปลี่ยนผ่านหน้าเว็บอย่างเดียวไม่พอ — chart ส่งค่านี้เป็น `GF_SECURITY_ADMIN_PASSWORD`
+> ซึ่งเขียนทับรหัสใน DB ทุกครั้งที่ pod start
+
+**เปิด route:**
 ```bash
 kubectl apply -f /root/k8s/config/monitoring/grafana-route.yaml
+```
+
+**ตรวจจาก master01 ว่า Gateway ทำงาน** — ขั้นนี้คือ*การตรวจ* ไม่ใช่วิธีเข้าใช้งาน:
+```bash
 GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
 curl -I --resolve "grafana.myhr.co.th:443:${GW_IP}" https://grafana.myhr.co.th
 ```
+**ควรเห็น:** `HTTP/2 302` และ `location: /login`
 
-> ถ้าชื่อนี้ใช้ cert จาก **internal CA** (บทที่ 07 ภาคผนวก ข) ให้เพิ่ม
-> `--cacert /root/k8s/myhr-root-ca.crt` ในคำสั่ง curl ข้างบน
-> ถ้าใช้ **public cert** ไม่ต้อง เพราะเครื่องเชื่อ CA นั้นอยู่แล้ว
+> `--resolve` บอกคู่ชื่อ→IP ให้ curl รู้เฉพาะครั้งนั้นครั้งเดียว **เบราว์เซอร์ไม่รู้เรื่องด้วย**
+> ผ่านตรงนี้จึงแปลว่า Gateway + route + cert ถูกต้อง ยังไม่ได้แปลว่าผู้ใช้เปิดได้
+>
+> ถ้า cert มาจาก internal CA (บทที่ 07 ทาง B) เพิ่ม `--cacert /root/k8s/myhr-root-ca.crt`
 
-**เปลี่ยนรหัส admin ทันทีหลังเข้าครั้งแรก** และเก็บลงที่เก็บ secret ไม่ใช่ในไฟล์นี้
+---
+
+### เปิดจริงในเบราว์เซอร์ — ทำบนเครื่องของคุณ ไม่ใช่ master01
+
+**1 · ให้ชื่อแปลงเป็น IP ได้** — ให้ DNS ขององค์กรชี้ `grafana.myhr.co.th` ไปที่ `GW_IP`
+หรือใส่ hosts เองก่อนระหว่างทดสอบ (Windows: เปิด Notepad แบบ **Run as administrator**
+แล้วแก้ `C:\Windows\System32\drivers\etc\hosts`)
+```
+192.168.50.200  grafana.myhr.co.th
+```
+
+**2 · เครื่องต้องวิ่งถึง IP นั้นได้จริง:**
+```bash
+Test-NetConnection 192.168.50.200 -Port 443
+```
+**ควรเห็น:** `TcpTestSucceeded : True` — แล้วเปิด `https://grafana.myhr.co.th` ได้เลย user `admin`
+
+> 🔴 **ถ้าได้ `False`** ให้ไปดู [บทที่ 01 — เปิดให้ forward เข้าวง pod](01-prepare-os.md) ก่อนอย่างอื่น
+> เป็นสาเหตุอันดับหนึ่ง และเป็นข้อที่ทุกอย่างฝั่งคลัสเตอร์จะขึ้นเขียวหมดทั้งที่เข้าไม่ได้
+> · `PingSucceeded: False` อย่างเดียวไม่ได้แปลว่าพัง ICMP อาจถูกปิดไว้ ให้ดู `TcpTestSucceeded`
+
+**ทางสำรอง — ใช้ได้เสมอ ไม่ต้องพึ่ง Gateway, DNS หรือ firewall** รันบนเครื่องของคุณ:
+```bash
+ssh -L 3000:127.0.0.1:3000 root@192.168.50.101 'kubectl -n monitoring port-forward svc/monitoring-grafana 3000:80'
+```
+ค้างหน้าต่างนั้นไว้ แล้วเปิด `http://localhost:3000`
+
+---
 
 **ตรวจ dashboard ที่ควรใช้ได้เลย:**
 - `Kubernetes / Compute Resources / Cluster`

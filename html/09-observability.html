@@ -366,20 +366,50 @@ kill %1
 เข้า Loki สักบรรทัด ซึ่งเป็นคนละปัญหา — ดู <code>kubectl -n monitoring logs ds/alloy</code></p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>4 · เข้า Grafana</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>รหัส admin</strong> — ตัวที่ใส่ไว้ตั้งแต่ข้อ 2:</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring get secret monitoring-grafana \
   -o jsonpath='{.data.admin-password}' | base64 -d; echo
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>เปิดผ่าน Gateway</strong> (แนะนำ — จะได้ไม่ต้อง port-forward ทุกครั้ง):</p>
+<blockquote>
+<p>🔴 <strong>ถ้าได้ <code>&lt;GRAFANA_ADMIN_PASSWORD&gt;</code> ออกมาตรง ๆ</strong> แปลว่าข้ามขั้นแทนค่าในข้อ 2 ไป
+<strong>รหัส admin ของ Grafana คือข้อความนั้นจริง ๆ</strong> ย้อนไปทำแล้ว <code>helm upgrade</code>
+เปลี่ยนผ่านหน้าเว็บอย่างเดียวไม่พอ — chart ส่งค่านี้เป็น <code>GF_SECURITY_ADMIN_PASSWORD</code>
+ซึ่งเขียนทับรหัสใน DB ทุกครั้งที่ pod start</p>
+</blockquote>
+<p><strong>เปิด route:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/monitoring/grafana-route.yaml
-GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ตรวจจาก master01 ว่า Gateway ทำงาน</strong> — ขั้นนี้คือ<em>การตรวจ</em> ไม่ใช่วิธีเข้าใช้งาน:</p>
+<div class="cb"><pre><code class="language-bash">GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
 curl -I --resolve "grafana.myhr.co.th:443:${GW_IP}" https://grafana.myhr.co.th
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>HTTP/2 302</code> และ <code>location: /login</code></p>
 <blockquote>
-<p>ถ้าชื่อนี้ใช้ cert จาก <strong>internal CA</strong> (บทที่ 07 ภาคผนวก ข) ให้เพิ่ม
-<code>--cacert /root/k8s/myhr-root-ca.crt</code> ในคำสั่ง curl ข้างบน
-ถ้าใช้ <strong>public cert</strong> ไม่ต้อง เพราะเครื่องเชื่อ CA นั้นอยู่แล้ว</p>
+<p><code>--resolve</code> บอกคู่ชื่อ→IP ให้ curl รู้เฉพาะครั้งนั้นครั้งเดียว <strong>เบราว์เซอร์ไม่รู้เรื่องด้วย</strong>
+ผ่านตรงนี้จึงแปลว่า Gateway + route + cert ถูกต้อง ยังไม่ได้แปลว่าผู้ใช้เปิดได้</p>
+<p>ถ้า cert มาจาก internal CA (บทที่ 07 ทาง B) เพิ่ม <code>--cacert /root/k8s/myhr-root-ca.crt</code></p>
 </blockquote>
-<p><strong>เปลี่ยนรหัส admin ทันทีหลังเข้าครั้งแรก</strong> และเก็บลงที่เก็บ secret ไม่ใช่ในไฟล์นี้</p>
+<hr />
+</div><div class="sub" data-machine="all"><h3>เปิดจริงในเบราว์เซอร์ — ทำบนเครื่องของคุณ ไม่ใช่ master01</h3>
+<p><strong>1 · ให้ชื่อแปลงเป็น IP ได้</strong> — ให้ DNS ขององค์กรชี้ <code>grafana.myhr.co.th</code> ไปที่ <code>GW_IP</code>
+หรือใส่ hosts เองก่อนระหว่างทดสอบ (Windows: เปิด Notepad แบบ <strong>Run as administrator</strong>
+แล้วแก้ <code>C:\Windows\System32\drivers\etc\hosts</code>)</p>
+<div class="cb"><pre><code class="language-text">192.168.50.200  grafana.myhr.co.th
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>2 · เครื่องต้องวิ่งถึง IP นั้นได้จริง:</strong></p>
+<div class="cb"><pre><code class="language-bash">Test-NetConnection 192.168.50.200 -Port 443
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>TcpTestSucceeded : True</code> — แล้วเปิด <code>https://grafana.myhr.co.th</code> ได้เลย user <code>admin</code></p>
+<blockquote>
+<p>🔴 <strong>ถ้าได้ <code>False</code></strong> ให้ไปดู <a href="01-prepare-os.html">บทที่ 01 — เปิดให้ forward เข้าวง pod</a> ก่อนอย่างอื่น
+เป็นสาเหตุอันดับหนึ่ง และเป็นข้อที่ทุกอย่างฝั่งคลัสเตอร์จะขึ้นเขียวหมดทั้งที่เข้าไม่ได้
+· <code>PingSucceeded: False</code> อย่างเดียวไม่ได้แปลว่าพัง ICMP อาจถูกปิดไว้ ให้ดู <code>TcpTestSucceeded</code></p>
+</blockquote>
+<p><strong>ทางสำรอง — ใช้ได้เสมอ ไม่ต้องพึ่ง Gateway, DNS หรือ firewall</strong> รันบนเครื่องของคุณ:</p>
+<div class="cb"><pre><code class="language-bash">ssh -L 3000:127.0.0.1:3000 root@192.168.50.101 'kubectl -n monitoring port-forward svc/monitoring-grafana 3000:80'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ค้างหน้าต่างนั้นไว้ แล้วเปิด <code>http://localhost:3000</code></p>
+<hr />
 <p><strong>ตรวจ dashboard ที่ควรใช้ได้เลย:</strong></p>
 <ul>
 <li><code>Kubernetes / Compute Resources / Cluster</code></li>
