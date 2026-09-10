@@ -219,7 +219,18 @@
         executable: /bin/bash
         cmd: |
           set -uo pipefail
-          echo "kpr=$(kubectl -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg status 2>/dev/null | grep -i KubeProxyReplacement | awk '{print $2}')"
+          # KubeProxyReplacement เป็นค่า "ต่อ node" — ต้องถาม agent ทุกตัว
+          # exec ds/cilium ได้ตัวเดียวที่ Kubernetes เลือกให้ ถ้าเครื่องนั้นปกติ
+          # จะได้ kpr=True แล้ว assert ผ่าน ทั้งที่อีกเครื่องยังไม่มีอะไรทำ Service
+          OK=0; SEEN=0
+          for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name 2>/dev/null); do
+            SEEN=$((SEEN+1))
+            v=$(kubectl -n kube-system exec "$p" -c cilium-agent -- \
+                  cilium-dbg status 2>/dev/null | grep -i KubeProxyReplacement | awk '{print $2}')
+            case "$v" in True|Strict) OK=$((OK+1));; esac
+          done
+          echo "kprok=$OK"
+          echo "kprseen=$SEEN"
           echo "ready=$(kubectl get nodes --no-headers 2>/dev/null | grep -c ' Ready ')"
           echo "total=$(kubectl get nodes --no-headers 2>/dev/null | wc -l)"
       register: _cst
@@ -227,7 +238,8 @@
       check_mode: false
       retries: 10
       delay: 15
-      until: "'ready=' ~ (groups['k8s_nodes'] | length) in _cst.stdout"
+      until: "'ready=' ~ (groups['k8s_nodes'] | length) in _cst.stdout
+               and 'kprok=' ~ (groups['k8s_nodes'] | length) in _cst.stdout"
 
     - name: สถานะหลังลง Cilium
       ansible.builtin.debug:
@@ -237,7 +249,9 @@
       ansible.builtin.assert:
         that:
           - "'ready=' ~ (groups['k8s_nodes'] | length) in _cst.stdout"
-          - "'kpr=True' in _cst.stdout or 'kpr=Strict' in _cst.stdout"
+          # ต้องครบทุกเครื่อง — ไม่ใช่ "มีอย่างน้อยหนึ่งเครื่องที่ True"
+          - "'kprok=' ~ (groups['k8s_nodes'] | length) in _cst.stdout"
+          - "'kprseen=' ~ (groups['k8s_nodes'] | length) in _cst.stdout"
         fail_msg: "Cilium ขึ้นแล้วแต่ยังไม่ครบ — {{ _cst.stdout }}"
         quiet: true
 
