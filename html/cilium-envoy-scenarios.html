@@ -912,16 +912,32 @@ kubectl -n kube-system get lease | grep -i l2announce
 
         <h4>วินิจฉัย — ดู verdict ของจริง</h4>
         <div class="cb"><pre><code># ทางที่ไม่ต้องลงอะไรเพิ่ม — ดู drop จาก agent บน node ตรง ๆ
-kubectl -n kube-system exec ds/cilium -- cilium-dbg monitor --type drop --type policy-verdict
+# monitor เป็น stream ที่ไม่จบเอง จึงวนทุก agent ไม่ได้ — จะค้างที่ตัวแรกตัวเดียว
+# ต้องเลือก agent ที่อยู่ "เครื่องเดียวกับ pod ที่มีปัญหา" เพราะ event
+# ที่ agent เห็นมีแค่ของ node ตัวเอง · exec ds/cilium ได้เครื่องที่ Kubernetes
+# เลือกให้ ซึ่งมักไม่ใช่เครื่องที่เกิดเหตุ แล้วจะนั่งดูจอเปล่า ๆ
+POD='&lt;pod ที่เรียกไม่ได้&gt;'
+NODE=$(kubectl -n demo get pod "$POD" -o jsonpath='{.spec.nodeName}')
+AGENT=$(kubectl -n kube-system get pod -l k8s-app=cilium \
+          --field-selector "spec.nodeName=$NODE" -o name | head -1)
+echo "ดู $NODE ผ่าน $AGENT"
+kubectl -n kube-system exec "$AGENT" -c cilium-agent -- \
+  cilium-dbg monitor --type drop --type policy-verdict
 
-# ถ้ามี hubble CLI (สะดวกกว่ามากเวลาไล่หลาย namespace)
+# ถ้ามี hubble CLI (สะดวกกว่ามากเวลาไล่หลาย namespace) — ตัวนี้เห็นทั้ง cluster
+# ไม่ต้องเลือก node เอง จึงเป็นทางที่ควรใช้ก่อนถ้าลงไว้แล้ว
 cilium hubble port-forward &amp;
 hubble observe --verdict DROPPED --last 100
 hubble observe --from-namespace envoy-gateway-system --to-namespace demo --last 50
 
 # pod ไหนโดน policy อะไรบังคับอยู่บ้าง
 kubectl -n demo get cnp,netpol
-kubectl -n kube-system exec ds/cilium -- cilium-dbg endpoint list | head -20
+# agent แต่ละตัวรู้จักแค่ endpoint ของ node ตัวเอง — ต้องวนให้ครบ
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    cilium-dbg endpoint list | head -20
+done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 
         <h4>สิ่งที่คนลืมเปิดทางให้บ่อยที่สุด</h4>
@@ -982,7 +998,18 @@ kubectl -n demo run dnstest --rm -it --image=nicolaka/netshoot --restart=Never -
   sh -c 'nslookup kubernetes.default; nslookup echo.demo.svc.cluster.local'
 
 # 3. ดูว่าโดน drop ที่พอร์ต 53 หรือเปล่า
-kubectl -n kube-system exec ds/cilium -- cilium-dbg monitor --type drop | grep -i 53
+#    เปิดค้างไว้อีกหน้าต่างก่อน แล้วค่อยรันข้อ 2 ซ้ำ ให้ pod ทดสอบไปลงเครื่องนี้
+# monitor เป็น stream ที่ไม่จบเอง จึงวนทุก agent ไม่ได้ — จะค้างที่ตัวแรกตัวเดียว
+# ต้องเลือก agent ที่อยู่ "เครื่องเดียวกับ pod ที่มีปัญหา" เพราะ event
+# ที่ agent เห็นมีแค่ของ node ตัวเอง · exec ds/cilium ได้เครื่องที่ Kubernetes
+# เลือกให้ ซึ่งมักไม่ใช่เครื่องที่เกิดเหตุ แล้วจะนั่งดูจอเปล่า ๆ
+POD='&lt;pod ที่ resolve ไม่ได้&gt;'
+NODE=$(kubectl -n demo get pod "$POD" -o jsonpath='{.spec.nodeName}')
+AGENT=$(kubectl -n kube-system get pod -l k8s-app=cilium \
+          --field-selector "spec.nodeName=$NODE" -o name | head -1)
+echo "ดู $NODE ผ่าน $AGENT"
+kubectl -n kube-system exec "$AGENT" -c cilium-agent -- \
+  cilium-dbg monitor --type drop | grep -i 53
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 
         <h4>แก้ — policy อนุญาต DNS ที่ต้องมีในทุก namespace</h4>
@@ -1233,7 +1260,12 @@ kubectl -n demo exec -it &lt;pod&gt; -- ping -M do -s 1400 &lt;ip-pod-อีก-
 kubectl -n demo exec -it &lt;pod&gt; -- ping -M do -s 1472 &lt;ip-pod-อีก-node&gt;
 
 # MTU ที่ Cilium ตรวจได้จริง
-kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep -i mtu
+# MTU เป็นค่าต่อ node และ "ไม่เท่ากันระหว่างเครื่อง" คือตัวปัญหาที่กำลังหา — ถามเครื่องเดียวจึงเทียบอะไรไม่ได้เลย
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    cilium-dbg status 2&gt;/dev/null | grep -i mtu
+done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 
         <h4>แก้ — ตั้ง MTU ตรง ๆ แทนการให้ตรวจเอง</h4>
@@ -1327,7 +1359,12 @@ kubectl -n kube-system get lease -o wide | grep -i l2announce
 watch -n1 'kubectl -n kube-system get lease | grep -i l2announce'
 
 # agent โดน throttle ไหม
-kubectl -n kube-system logs ds/cilium --tail=200 | grep -i -E 'throttl|rate limit|leader|lease'
+# logs ds/cilium ก็ได้ pod เดียวเหมือน exec — ของที่อยากเห็นมักอยู่เครื่องอื่น
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system logs "$p" -c cilium-agent --tail=200 \
+    | grep -i -E 'throttl|rate limit|leader|lease'
+done
 
 # ค่าที่ตั้งไว้จริงในคลัสเตอร์
 kubectl -n kube-system get cm cilium-config -o jsonpath='{.data.k8s-client-qps}{" / "}{.data.k8s-client-burst}{"\n"}'
@@ -1554,7 +1591,12 @@ kubectl -n kube-system rollout status ds/cilium --timeout=10m
 
 # ตรวจสิ่งที่ห้ามหลุด — ทั้งสามข้อนี้ต้องผ่านก่อนถือว่าจบ
 cilium status --wait
-kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep -i KubeProxyReplacement
+# ต้อง True ครบทุกเครื่อง — เครื่องที่พลาดจะไม่มีอะไรทำ Service เลย
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    cilium-dbg status 2&gt;/dev/null | grep -i KubeProxyReplacement
+done
 kubectl -n kube-system get lease | grep -i l2announce
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
         <blockquote><p><b>ห้าม <code>helm upgrade</code> โดยไม่ส่ง <code>-f values.yaml</code></b> —
@@ -2310,7 +2352,14 @@ spec:
             <div class="cb"><pre><code>cilium hubble port-forward &amp;
 hubble observe --namespace myhr-uat --verdict DROPPED --follow</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
             <p>ถ้ายังไม่มี hubble CLI ใช้ทางนี้แทนได้:</p>
-            <div class="cb"><pre><code>kubectl -n kube-system exec ds/cilium -- cilium-dbg monitor --type drop --type policy-verdict</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+            <div class="cb"><pre><code># ⚠️ ทางนี้เห็นแค่ node เดียว ไม่ใช่ทั้ง cluster เหมือน hubble ข้างบน
+#    ใช้ได้เมื่อรู้แล้วว่าจะทดสอบ pod ตัวไหน — เล็ง agent ที่เครื่องเดียวกับมัน
+POD='&lt;pod ที่จะเดินทดสอบ&gt;'
+NODE=$(kubectl -n myhr-uat get pod "$POD" -o jsonpath='{.spec.nodeName}')
+AGENT=$(kubectl -n kube-system get pod -l k8s-app=cilium \
+          --field-selector "spec.nodeName=$NODE" -o name | head -1)
+kubectl -n kube-system exec "$AGENT" -c cilium-agent -- \
+  cilium-dbg monitor --type drop --type policy-verdict</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
           </div>
           <div class="st">
             <h5>apply ที่ uat ก่อนเสมอ แล้วเดินทดสอบ flow จริงให้ครบ</h5>
@@ -2834,8 +2883,15 @@ cilium hubble ui        # วิธีที่ปลอดภัยกว่า
           ของเก่าถูกทับตลอดเวลา และหายหมดเมื่อ agent restart
           <b>ถ้าไม่ export ออกไป Loki ก็ไม่มีอะไรให้ตรวจย้อนหลังเลย</b>
           — ตอน incident จริงคุณจะเห็นแค่ช่วงไม่กี่นาทีล่าสุด ซึ่งมักผ่านช่วงที่เกิดเหตุไปแล้ว</p>
-        <div class="cb"><pre><code># ดูว่าตอนนี้เก็บย้อนหลังได้แค่ไหน — เทียบเวลาบรรทัดแรกกับตอนนี้
-kubectl -n kube-system exec ds/cilium -- hubble observe --last 1 --first 1
+        <div class="cb"><pre><code># ดูว่าตอนนี้เก็บย้อนหลังได้แค่ไหน — เทียบเวลาบรรทัดที่ได้กับตอนนี้
+# --first 1 คือ flow ที่เก่าที่สุดที่ยังเหลืออยู่ นั่นคือขอบของ buffer
+# (อย่าใส่ --last คู่กับ --first มันคนละคำถามกัน และ buffer ของแต่ละ node
+#  ก็ลึกไม่เท่ากันตามปริมาณ traffic ที่เครื่องนั้นรับ จึงต้องถามให้ครบ)
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    hubble observe --first 1
+done
 
 # metric ที่เปิดไว้แล้วใน values.yaml: dns drop tcp flow icmp http
 kubectl -n kube-system get cm cilium-config -o jsonpath='{.data.hubble-metrics}{"\n"}'
@@ -3044,7 +3100,12 @@ spec:
         </ol>
         <div class="cb"><pre><code># ดูว่ามี L7 policy อยู่ที่ไหนบ้างใน cluster
 kubectl get cnp,ccnp -A -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}'
-kubectl -n kube-system exec ds/cilium -- cilium-dbg policy get | grep -c 'http'
+# policy ถูก realise ที่ agent ของแต่ละ node — นับจากเครื่องเดียวได้เลขที่ต่ำกว่าจริง
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    cilium-dbg policy get 2&gt;/dev/null | grep -c 'http'
+done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
         <div class="tags"><span class="tag">#l7-policy</span><span class="tag">#ciliumnetworkpolicy</span><span class="tag">#identity</span></div>
       </div>
@@ -3355,8 +3416,14 @@ kubectl -n kube-system rollout status ds/cilium --timeout=10m</code></pre><div c
           </div>
           <div class="st">
             <h5>ยืนยันว่าเข้ารหัสจริง ไม่ใช่แค่ apply ผ่าน</h5>
-            <div class="cb"><pre><code>kubectl -n kube-system exec ds/cilium -- cilium-dbg encrypt status
-kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep -i -E 'encryption|mtu'</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+            <div class="cb"><pre><code># ทั้งสองค่าเป็นค่าต่อ node · เครื่องที่ยังไม่เข้ารหัสคือเครื่องที่เป็นปัญหา
+# ถามเครื่องเดียวแล้วเห็นว่าเข้ารหัสอยู่ ไม่ได้แปลว่าทั้ง cluster เข้ารหัส
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system exec "$p" -c cilium-agent -- cilium-dbg encrypt status
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    cilium-dbg status 2&gt;/dev/null | grep -i -E 'encryption|mtu'
+done</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
             <div class="expect"><b>ควรเห็น:</b> สถานะบอกว่า WireGuard ทำงานและมีจำนวน peer เท่ากับจำนวน node อื่น ๆ · ถ้าจำนวน peer ไม่ครบ แปลว่ามี node ที่ยังไม่เข้าร่วม</div>
           </div>
           <div class="st">
