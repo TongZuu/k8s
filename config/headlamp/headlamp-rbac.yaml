@@ -1,0 +1,143 @@
+# =============================================================================
+#  บัญชีสำหรับเข้า Headlamp — 3 ระดับ
+# =============================================================================
+#  Headlamp ที่รันใน cluster ไม่มี user/password ของตัวเอง มันรับ
+#  **token ของ ServiceAccount** แล้วยิงคำสั่งไป apiserver ในนามบัญชีนั้น
+#  → สิทธิ์ที่คนเห็นบนหน้าเว็บ เท่ากับสิทธิ์ของ ServiceAccount ที่เอา token มาเป๊ะ ๆ
+#
+#  🔴 เพราะฉะนั้น "ใครได้ token ไหน" คือการตัดสินใจด้านความปลอดภัย ไม่ใช่งานธุรการ
+#     แจก headlamp-admin ให้ทั้งทีม = แจก cluster-admin ให้ทั้งทีม
+#
+#  ⚠️ สามบัญชีนี้ **ไม่ใช่** ServiceAccount ของตัว Headlamp เอง
+#     ตัวนั้นชื่อ `headlamp` และเราตั้งใจไม่ผูก ClusterRole ให้มันเลย
+#     (`clusterRoleBinding.create: false` ใน headlamp-values.yaml)
+#     ถ้าเผลอไปผูก cluster-admin ให้ SA ตัวนั้น การล็อกอินจะไม่มีความหมายอีกต่อไป
+#
+#  วิธีออก token — ไม่ต้องสร้าง Secret ค้างไว้ (ดูบทที่ 15 ข้อ 3):
+#      kubectl -n headlamp create token headlamp-operator --duration=8h
+# =============================================================================
+
+---
+# --- 1 · viewer — อ่านอย่างเดียวทั้ง cluster ---------------------------------
+#  ClusterRole `view` ที่ Kubernetes ให้มา **ไม่รวม Secret** โดยตั้งใจ
+#  ตัวนี้จึงเป็นตัวที่ปลอดภัยพอจะแจกกว้างได้
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: headlamp-viewer
+  namespace: headlamp
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: headlamp-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: headlamp-viewer
+    namespace: headlamp
+
+---
+# --- 2 · operator — scale/แก้ config ได้ เฉพาะ namespace ของ application -----
+#  นี่คือตัวที่ตอบโจทย์ "อยากกด scale up/down กับแก้ ConfigMap" โดยไม่ต้องแจก
+#  cluster-admin · ผูกเป็น RoleBinding ราย namespace ไม่ใช่ ClusterRoleBinding
+#  จึงแตะ kube-system, monitoring หรือ node ไม่ได้เลย
+#
+#  ⚠️ ClusterRole `edit` **เห็น Secret ใน namespace ที่ผูกไว้** — รับได้เพราะเป็น
+#     secret ของ app เอง แต่ต้องรู้ตัวว่าให้ไปแล้ว ไม่ใช่นึกว่าไม่ได้ให้
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: headlamp-operator
+  namespace: headlamp
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: headlamp-operator
+  namespace: myhr-prod
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: edit
+subjects:
+  - kind: ServiceAccount
+    name: headlamp-operator
+    namespace: headlamp
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: headlamp-operator
+  namespace: myhr-uat
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: edit
+subjects:
+  - kind: ServiceAccount
+    name: headlamp-operator
+    namespace: headlamp
+
+---
+# operator ต้องเห็นรายชื่อ namespace และ node ไม่งั้นหน้าเว็บจะขึ้น error เต็มไปหมด
+# ตอนโหลดเมนูซ้าย ทั้งที่งานหลักทำได้ — ให้แค่ "อ่านรายการ" ไม่ใช่ `view` ทั้งก้อน
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: headlamp-navigation
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces", "nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["nodes", "pods"]
+    verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: headlamp-operator-navigation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: headlamp-navigation
+subjects:
+  - kind: ServiceAccount
+    name: headlamp-operator
+    namespace: headlamp
+
+---
+# --- 3 · admin — ทั้ง cluster รวม Secret ทุก namespace ------------------------
+#  🔴 บัญชีนี้เท่ากับ root ของ cluster ผ่านหน้าเว็บ
+#     ใช้เฉพาะตอนที่ต้องแตะ kube-system / monitoring / cert-manager จริง ๆ
+#     งานประจำวันให้ใช้ headlamp-operator ข้างบน
+#
+#  สิ่งที่บัญชีนี้ทำได้และย้อนไม่ได้: อ่าน `encryption-config` ของบทที่ 10
+#  ซึ่งหลุดเมื่อไรเท่ากับ etcd backup ทุกก้อนถูกถอดได้ตลอดกาล
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: headlamp-admin
+  namespace: headlamp
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: headlamp-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: headlamp-admin
+    namespace: headlamp

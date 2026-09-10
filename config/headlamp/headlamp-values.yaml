@@ -1,0 +1,98 @@
+# =============================================================================
+#  Headlamp — Helm values สำหรับ MyHR
+# =============================================================================
+#  เว็บ UI ที่กด scale / แก้ YAML / ดู ConfigMap-Secret ได้
+#  คนละตัวกับ Grafana ในบทที่ 09 — Grafana ตอบ "เมื่อคืนตอนตีสามเกิดอะไรขึ้น"
+#  ส่วนตัวนี้ตอบ "ตอนนี้ของอยู่ในสภาพไหน และขอแก้เดี๋ยวนี้"
+#
+#  ข้อจำกัดที่ค่าเหล่านี้ถูกออกแบบมารองรับ:
+#    - เรามี Gateway API (บทที่ 07) ไม่มี Ingress controller → ใช้ httpRoute ไม่ใช่ ingress
+#    - namespace ของ application เป็น PSA `restricted` (บทที่ 10) → ตัวนี้ต้องผ่านด้วย
+#    - ไม่มี CSI → ไม่ขอ PV เลย
+# =============================================================================
+
+replicaCount: 1
+
+# --- 🔴 ข้อที่สำคัญที่สุดในไฟล์นี้ --------------------------------------------
+#  ค่าเริ่มต้นของ chart คือ `create: true` + `clusterRoleName: cluster-admin`
+#  แปลว่าติดตั้งแบบไม่แตะอะไรเลย จะได้ **ServiceAccount ที่เป็น cluster-admin
+#  นอนอยู่ใน cluster ตลอดเวลา** ใครที่ exec เข้า pod นี้ได้ หรือได้ token ของ SA นี้
+#  ก็เป็นเจ้าของ cluster ทันที โดยไม่ต้องผ่านหน้า login สักขั้น
+#
+#  เราปิดมัน แล้วให้ทุกคน**ล็อกอินด้วย token ของตัวเอง**แทน (ดู headlamp-rbac.yaml)
+#  → Headlamp เอา token ที่ผู้ใช้วางเข้ามายิง apiserver ต่อ สิทธิ์จึงเป็นของคนนั้นจริง ๆ
+#  → SA ของ pod เองไม่มีสิทธิ์อะไรเลย ไม่มีอะไรให้ขโมย
+#
+#  ⚠️ ถ้าเปิดเป็น true เมื่อไร จะกลายเป็นว่าใครเปิดหน้าเว็บได้ = เป็น cluster-admin
+#     ต่อให้ไม่มี token ก็ตาม อย่าเปิดเพื่อ "ให้มันใช้ง่ายขึ้น"
+clusterRoleBinding:
+  create: false
+
+serviceAccount:
+  create: true
+
+# --- ผ่าน PSA `restricted` ----------------------------------------------------
+#  chart ให้ runAsNonRoot/runAsUser/runAsGroup มาแล้ว แต่ยังขาดอีก 3 ข้อที่
+#  `restricted` บังคับ — ใส่ครบตรงนี้จึงตั้ง namespace เป็น restricted ได้เลย
+#  ไม่ต้องลดเป็น baseline เหมือนที่ต้องยอมให้ chart ที่ลาก Kong มาด้วย
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 100
+  runAsGroup: 101
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 512Mi
+
+service:
+  type: ClusterIP        # ไม่ขอ LoadBalancer IP — ทางเข้าคือ Gateway ตัวเดิม
+  port: 80
+
+ingress:
+  enabled: false         # เราไม่มี Ingress controller — ใช้ httpRoute ข้างล่างแทน
+
+# --- ทางเข้าผ่าน Gateway ของบทที่ 07 -----------------------------------------
+#  🔴 ค่าเริ่มต้นคือ false และ **ควรปล่อยไว้แบบนั้นจนกว่าจะเคาะ**
+#
+#     Grafana ที่หลุด = คนนอกเห็น metric กับ log
+#     ตัวนี้หลุดพร้อม token ของ headlamp-admin = คนนอกลบทั้ง cluster ได้
+#
+#  ทางเข้าที่ปลอดภัยกว่าและใช้ได้เสมอคือ `kubectl port-forward` (บทที่ 15 ข้อ 4)
+#  ซึ่งต้องมี kubeconfig อยู่แล้วถึงจะเปิดได้ = มีชั้นกันอีกชั้นหนึ่ง
+#
+#  เปิดเป็น true ก็ต่อเมื่อตอบ "ใช่" ได้ครบทั้ง 3 ข้อ:
+#    1. `dashboard.myhr.co.th` เข้าถึงได้เฉพาะจากในวง/VPN ไม่ออกอินเทอร์เน็ต
+#    2. ทีมรู้แล้วว่า token ของ headlamp-admin ห้ามแปะในแชท/วิกิ/ไฟล์ที่แชร์กัน
+#    3. มี audit log ของบทที่ 10 เปิดอยู่จริง (ไม่งั้นสืบย้อนไม่ได้ว่าใครกดอะไร)
+#
+#  เปลี่ยนเป็น true แล้วสั่ง `helm upgrade` ด้วยไฟล์นี้ — chart สร้าง HTTPRoute ให้เอง
+#  ไม่ต้องมีไฟล์ route แยก และไม่ต้องแก้ backendRefs เอง
+httpRoute:
+  enabled: false
+  parentRefs:
+    - name: myhr-gateway
+      namespace: envoy-gateway-system
+      sectionName: https
+  hostnames:
+    - dashboard.myhr.co.th
+  # ไม่ใส่ `rules:` → chart จะทำ catch-all `/` ชี้ไปที่ service.port ให้เอง
+
+config:
+  inCluster: true
+  # อายุ session หลังใส่ token — 8 ชั่วโมง ให้เท่ากับอายุ token ที่ออกในบทที่ 15 ข้อ 3
+  # ถ้าปล่อยค่าเริ่มต้น 86400 (24 ชม.) หน้าเว็บจะยังคิดว่ายังล็อกอินอยู่
+  # ทั้งที่ token หมดอายุไปแล้ว แล้วอาการจะออกมาเป็น error ที่อ่านไม่รู้เรื่อง
+  sessionTTL: 28800
+
+persistentVolumeClaim:
+  enabled: false         # ไม่มี CSI และตัวนี้ไม่มี state ที่ต้องเก็บ
