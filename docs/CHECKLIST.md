@@ -17,7 +17,7 @@
       และห้ามใช้ค่าเดิมซ้ำ ทั้งใน production และ lab
 - [ ] 🔴 **commit `docs/` และ `config/`** — ตอนนี้ยัง untracked ทั้งโฟลเดอร์ (เสี่ยงหายทั้งชุด)
       พร้อม README.md และ blueprint ที่แก้ค้างไว้ · commit หลังข้อบนเท่านั้น
-- [ ] เพิ่มไฟล์ [`config/monitoring/alertmanager-config.yaml`](../config/monitoring) — บท 09 อ้างถึงแต่ไฟล์ยังไม่มี
+- [x] เพิ่มไฟล์ [`config/monitoring/alertmanager-config.yaml`](../config/monitoring) — เขียนแล้ว เหลือแทนค่า SMTP/ปลายทางจริงตอนทำบท 09 ข้อ 5
       ([09-observability.md:192](09-observability.md:192)) และวิธีที่เขียนไว้ตอนนี้คือ `kubectl edit secret`
       ซึ่งขัดกับกติกาข้อ 4 ของคู่มือ
 - [x] **เพิ่ม `config/audit-node.sh`** (26 ส.ค. 2026) — ตรวจว่าเครื่องทำบท 01/02 ไปถึงไหน
@@ -28,7 +28,8 @@
       ปุ่มลอยกระโดดไปขั้นที่ค้าง · ทดสอบด้วยเบราว์เซอร์จริงแล้ว
 - [ ] **แก้ `.md` แล้วอย่าลืมรัน `python tools/build-html.py` ใหม่** — `html/` ไม่ได้ sync เอง
 - [x] **เพิ่ม `.gitattributes` บังคับ LF** — กัน CRLF ตอน clone บน Windows แล้ว scp ไป Linux
-- [ ] เตรียมช่องทางแจ้งเตือนจริง (email / Teams / Line) ให้ทีม แล้วใส่ลง alertmanager config
+- [ ] เตรียมช่องทางแจ้งเตือนจริงให้ทีม แล้วใส่ลง alertmanager config — email หรือ Teams
+      (LINE Notify **ปิดบริการไปแล้ว** ถ้าจะใช้ LINE ต้องเป็น Messaging API ผ่าน webhook + ตัวกลาง)
 - [x] 🔴 **แก้ `versions.env` บั๊ก `<` ที่ทำให้ `source` แตก** — `LOKI_CHART=<PIN_AT_INSTALL>` และ
       `ALLOY_CHART=<PIN_AT_INSTALL>` ไม่ได้ใส่ quote ทำให้ bash อ่าน `<` เป็น input redirection
       แทนตัวอักษรจริง (เจอจริงตอนรัน `source /root/k8s/versions.env`) → ใส่ quote ครอบเป็น
@@ -164,6 +165,19 @@
       · **ไม่ต้องเคาะก่อนขึ้น production** — เปลี่ยนทีหลังแค่ถอด flag ออก ไม่ต้องรื้ออะไร
         แต่ทั้งสองทางต้อง restart kubelet ทั้ง 6 เครื่อง จึงห้ามทำตอนเร่ง
 
+- [ ] 🔴 **เคาะว่าจะเปิด `dashboard.myhr.co.th` ผ่าน Gateway หรือใช้ `port-forward` อย่างเดียว**
+      (บทที่ 15 ข้อ 5 · ตอนนี้ `httpRoute.enabled: false` ใน `config/headlamp/headlamp-values.yaml`)
+      · Headlamp ที่หลุด **ไม่เท่ากับ** Grafana ที่หลุด — token ของ `headlamp-admin`
+        คือ `cluster-admin` ที่เอาไปยิง `curl` ตรง ๆ ก็ได้ ไม่ต้องผ่านหน้าเว็บ
+      · เงื่อนไขที่ต้องจริงครบ 3 ข้อก่อนเปิด เขียนไว้ในไฟล์ values แล้ว
+      · **ต้องเคาะก่อนส่งมอบให้ทีม dev** เพราะมันเปลี่ยนวิธีที่ทีมเข้าใช้งานทั้งหมด
+
+- [ ] **บอกทีม dev ว่า Headlamp แก้ของผ่าน YAML ไม่เหมือน Dashboard ตัวเก่าที่มีปุ่มแยก**
+      (บทที่ 15 ข้อ 4 · ต้องกดดูของจริงก่อนแล้วจดว่าเห็นอะไร)
+      · ทีมมาจาก cluster เดิมที่ใช้ Kubernetes Dashboard จึงคาดหวังปุ่ม Scale
+      · ถ้าไม่บอกล่วงหน้า จะกลายเป็น "ของใหม่ใช้ยากกว่าเดิม" ทั้งที่เป็นแค่คนละ UX
+      · **ทำก่อนส่งมอบ** — ราคาถูกมากถ้าบอกก่อน แพงมากถ้าให้เขาไปเจอเอง
+
 ---
 
 ## D · Phase 1 — Lab (~2 สัปดาห์)
@@ -204,7 +218,7 @@
 - [ ] ทำบท 09 observability — metrics-server · Prometheus · Loki · Alloy
 - [ ] ทำบท 10 security — etcd encryption · PSA · NetworkPolicy (`default-deny` + `allow-dns` คู่กันเสมอ) · RBAC · audit
 - [ ] ทำบท 12 day-2 — **etcd backup CronJob ต้องทำงานจริง + ทดสอบ restore หนึ่งรอบ**
-- [ ] alert 10 ข้อใน `myhr-alerts.yaml` ยิงถึงปลายทางจริง (ทดสอบด้วยของปลอมหนึ่งครั้ง)
+- [ ] alert 11 ข้อใน `myhr-alerts.yaml` ยิงถึงปลายทางจริง (ทดสอบด้วยของปลอมหนึ่งครั้ง)
 - [ ] ตรวจว่า PVC ของ monitoring **ผูก PV ถูกก้อน** (ดูคอลัมน์ `VOL` ไม่ใช่แค่คำว่า `Bound`)
 - [ ] ตรวจว่า **Alloy ไม่เก็บ log ซ้ำ** — บรรทัดเดียวกันต้องโผล่ครั้งเดียว ไม่ใช่ 6 ครั้ง
 - [ ] ประกาศ **กฎ log 3 ข้อ** ให้ทีม dev (stdout เท่านั้น · JSON บรรทัดเดียว · มีเพดาน 10 MB/s)

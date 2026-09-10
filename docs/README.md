@@ -14,6 +14,9 @@
 คู่มือชุดเดียวกันนี้มีเวอร์ชัน HTML ที่มีปุ่มคัดลอกทุก code block,
 ปุ่มทำเครื่องหมาย "ทำแล้ว" รายขั้น และปุ่มลอยกระโดดกลับไปขั้นที่ค้างอยู่
 
+บนหัวทุกหน้ามี **ทางลัด** เป็น dropdown รวมทุกหัวข้อของบทนั้น เลือกแล้ววิ่งไปหัวข้อนั้นเลย
+ไม่ต้องเลื่อนหา · ขั้นที่ทำแล้วขึ้น ✓ นำหน้าในลิสต์ และตัวที่โชว์อยู่คือหัวข้อที่กำลังอ่าน
+
 บทที่มีขั้นตอนของหลายเครื่องปนกัน (01 และ 04) มี **แถบ "แสดงเฉพาะ:"** ให้เลือกเครื่อง
 กดแล้วจะเหลือเฉพาะขั้นของเครื่องนั้น — คนที่นั่งอยู่หน้า master02 จะไม่ต้องเลื่อนข้าม
 ขั้นของ master01 ไปมา · ตัวเลือกจำข้ามบทให้ และถ้าบทถัดไปไม่มีเครื่องนั้นจะกลับเป็น "ทั้งหมด" เอง
@@ -49,6 +52,8 @@ python tools/build-html.py     # แล้วเปิด html/index.html
 | [11](11-deploy-app.md) | แม่แบบ manifest + CI policy check | dev + ops |
 | [12](12-day2-operations.md) | **backup · cert renewal · rolling reboot · upgrade** | ops |
 | [13](13-troubleshooting.md) | ไล่ปัญหาตามอาการที่เห็น | ทุกคน |
+| [14](14-grafana-logs.md) | **ดู log ใน Grafana ตามอาการของ pod** | ทุกคน |
+| [15](15-headlamp.md) | **Headlamp** — เว็บ UI ที่กด scale / แก้ config ได้ | ops + dev |
 
 **เอกสารเสริม (HTML อย่างเดียว — ไม่มีขั้นตอนให้ทำตาม):**
 [`../html/cilium-envoy-scenarios.html`](../html/cilium-envoy-scenarios.html) — สองฝั่งในหน้าเดียว มีช่องค้นหาและตัวกรอง
@@ -99,7 +104,8 @@ config/
 │   ├── kube-prometheus-values.yaml
 │   ├── loki-values.yaml
 │   ├── alloy-values.yaml
-│   ├── myhr-alerts.yaml                   alert 6 ข้อที่เฉพาะกับ cluster นี้
+│   ├── myhr-alerts.yaml                   alert 11 ข้อที่เฉพาะกับ cluster นี้
+│   ├── alertmanager-config.yaml           ปลายทางของ alert · values ชิ้นที่ 2 ของ chart
 │   └── grafana-route.yaml
 ├── security/                              บท 10
 │   ├── encryption-config.yaml             etcd encryption at rest
