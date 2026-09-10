@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: demo-jwt
+  namespace: myhr-uat
+  labels:
+    app.kubernetes.io/name: demo-jwt
+spec:
+  parentRefs:
+    - name: myhr-gateway
+      namespace: envoy-gateway-system
+      sectionName: https
+  hostnames:
+    - "demo-jwt.myhr.co.th"      # อยู่ใต้ wildcard *.myhr.co.th ของ listener จึงไม่ต้องแก้ cert
+  rules:
+    - matches:
+        - path: { type: PathPrefix, value: / }
+      backendRefs:
+        - name: demo-jwt
+          port: 80

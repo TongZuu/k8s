@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-jwt
+  namespace: myhr-uat
+  labels:
+    app.kubernetes.io/name: demo-jwt
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: demo-jwt
+  ports:
+    - name: http
+      port: 80
+      targetPort: http     # = containerPort 8080

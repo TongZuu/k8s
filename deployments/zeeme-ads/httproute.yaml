@@ -1,0 +1,72 @@
+# =============================================================================
+#  zeeme-ads — HTTPRoute (ของใหม่ ของเดิมไม่มีไฟล์นี้)
+# =============================================================================
+#  ของเดิมเข้าผ่าน NodePort ตรง ๆ ทีละเครื่อง ตัวนี้ทำให้เข้าผ่าน
+#  Gateway IP เดียว (192.168.50.200) แยกปลายทางด้วย host — บทที่ 07
+#
+#  listener https ของ myhr-gateway ใช้ wildcard cert *.myhr.co.th อยู่แล้ว
+#  ชื่อทั้งสองข้างล่างจึงไม่ต้องแก้ cert เพิ่ม แต่ต้องมี DNS record ชี้มาที่ Gateway IP
+#
+#  parentRef ข้าม namespace ได้เพราะ listener ตั้ง allowedRoutes.namespaces.from: All
+#  (config/gateway/gateway.yaml) ไม่ต้องมี ReferenceGrant
+# =============================================================================
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: zeeme-ads
+  namespace: myhr-prod
+  labels:
+    app.kubernetes.io/name: zeeme-ads
+    app.kubernetes.io/part-of: myhr
+spec:
+  # Gateway · listener · cert เป็นของกลางใน config/gateway/ (บทที่ 07)
+  # ตรงนี้แค่ไปเกาะ ถ้าต้องแก้ listener หรือเพิ่มชื่อใน cert ให้แก้ที่นั่น ไม่ใช่ที่นี่
+  parentRefs:
+    - name: myhr-gateway
+      namespace: envoy-gateway-system
+      sectionName: https         # ผูกกับ listener 443 เท่านั้น listener 80 มีไว้ redirect
+
+  hostnames:
+    - "ads.myhr.co.th"           # ชื่อตามผังบทที่ 07
+    - "zeeme-ads.myhr.co.th"     # ชื่อที่คำสั่งทดสอบในบทที่ 11 ใช้ — ตัดออกได้ถ้าไม่ต้องการ
+
+  rules:
+    # --- ทางเข้าเดิมของ client ที่ยังใช้ /ZeemeAds อยู่ ------------------------
+    # cluster เก่าเข้าผ่าน https://zeeserver.myhr.co.th/ZeemeAds/... ซึ่ง proxy ตัวเก่า
+    # ตัด /ZeemeAds ทิ้งก่อนส่งต่อ app จึงไม่เคยเห็น prefix นี้
+    #
+    # พิสูจน์แล้วด้วยการยิงตรงเข้า pod ข้าม Gateway (2026-09-09):
+    #   /zee-me-news/16101           -> 200
+    #   /ZeemeAds/zee-me-news/16101  -> 404
+    # ถ้า /ZeemeAds เป็น context path ของ app ผลจะกลับกัน
+    #
+    # กติกาของ Gateway API: prefix ที่ยาวกว่าชนะเสมอ rule นี้จึงถูกเลือกก่อน "/" ข้างล่าง
+    # ไม่ว่าจะเรียงลำดับยังไงในไฟล์
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /ZeemeAds
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: zeeme-ads
+          port: 80
+      timeouts:
+        request: 30s
+
+    # --- path ตรงตามที่ app รู้จักจริง ----------------------------------------
+    # ใช้ได้เลยโดยไม่ต้องมี /ZeemeAds: https://ads.myhr.co.th/zee-me-news/16101
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: zeeme-ads        # ⚠️ ชื่อ Service ไม่ใช่ชื่อ Deployment
+          port: 80               # พอร์ตของ Service ไม่ใช่ 8100 ของ container
+      timeouts:
+        request: 30s

@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: demo-apikey
+  namespace: myhr-uat
+  labels:
+    app.kubernetes.io/name: demo-apikey
+spec:
+  parentRefs:
+    - name: myhr-gateway
+      namespace: envoy-gateway-system
+      sectionName: https
+  hostnames:
+    - "demo-apikey.myhr.co.th"
+  rules:
+    - matches:
+        - path: { type: PathPrefix, value: / }
+      backendRefs:
+        - name: demo-apikey
+          port: 80

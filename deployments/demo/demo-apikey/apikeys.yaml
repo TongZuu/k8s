@@ -1,0 +1,24 @@
+# =============================================================================
+#  🔴 ไฟล์นี้มีกุญแจจริงอยู่ข้างใน — ของ demo เท่านั้น
+# =============================================================================
+#  ของจริงห้าม commit ไฟล์แบบนี้ลง git เด็ดขาด (บทที่ 10 หัวข้อ 6)
+#  ให้สร้างด้วยคำสั่งแทน แล้วเก็บค่าไว้ในที่เก็บ secret ขององค์กร:
+#
+#    kubectl -n myhr-uat create secret generic demo-apikey-keys \
+#      --from-literal='<ชื่อ client>=<api key>'
+#
+#  โครงสร้างที่ Envoy Gateway ต้องการ: 1 key ใน Secret = 1 client
+#    ชื่อ key   = client id  (โผล่ใน header ที่ forwardClientIDHeader ตั้งไว้)
+#    ค่าของ key = API key ที่ client ต้องส่งมา
+# =============================================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: demo-apikey-keys
+  namespace: myhr-uat
+  labels:
+    app.kubernetes.io/name: demo-apikey
+type: Opaque
+stringData:
+  mobile-app: "demo-key-mobile-9f2a4c7e15b3"
+  partner-a:  "demo-key-partner-3d81ba60ff42"

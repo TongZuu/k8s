@@ -1,0 +1,1143 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>zeeme-ads — manifest ของจริงที่ deploy ลง `myhr-prod` — MyHR Kubernetes</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#f6f7f9; --panel:#fff; --ink:#1c1f24; --dim:#5d6570; --line:#e0e4e9;
+  --accent:#2d6ae0; --accent-soft:#eaf1fe;
+  --done-bg:#eaf7ee; --done-line:#8fd3a8; --done-ink:#1c6b3c;
+  --code-bg:#1e2530; --code-ink:#e6edf3; --warn:#b4530a;
+  --f1:#d1372b; --f1-bg:#fdeceb;
+  --radius:10px;
+  --font:"Segoe UI","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;
+  --mono:"Cascadia Mono",Consolas,"Noto Sans Thai Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151a; --panel:#181c23; --ink:#e5e9ef; --dim:#98a2b0; --line:#272d37;
+    --accent:#6ea3ff; --accent-soft:#1b2740;
+    --done-bg:#152a1e; --done-line:#2f6b47; --done-ink:#7fd9a3;
+    --code-bg:#0d1117; --code-ink:#e6edf3; --warn:#e0913f;
+    --f1:#ff8b80; --f1-bg:#331b19;
+  }
+}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
+     font-size:15.5px;line-height:1.75}
+
+/* ---------- sidebar ---------- */
+.sidebar{position:fixed;inset:0 auto 0 0;width:260px;background:var(--panel);
+  border-right:1px solid var(--line);overflow-y:auto;padding:14px 0;z-index:40}
+.brand{display:block;padding:8px 18px 14px;font-weight:700;font-size:15px;
+  color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);margin-bottom:8px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 18px;text-decoration:none;
+  color:var(--dim);font-size:13.5px;border-left:3px solid transparent}
+.nav-item:hover{background:var(--accent-soft);color:var(--ink)}
+.nav-item.cur{border-left-color:var(--accent);color:var(--ink);font-weight:600;
+  background:var(--accent-soft)}
+.nav-num{font-family:var(--mono);font-size:11.5px;opacity:.65;min-width:18px}
+.nav-t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-p{font-size:11px;font-family:var(--mono);opacity:.8}
+.nav-p.full{color:var(--done-ink);font-weight:700}
+
+/* ---------- layout ---------- */
+.wrap{margin-left:260px;min-height:100vh}
+.stick{position:sticky;top:0;z-index:30}
+.top{display:flex;align-items:center;gap:16px;
+  padding:12px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
+.top-t{flex:1;min-width:0}
+.top h1{margin:0;font-size:19px;line-height:1.3}
+.sub{margin:2px 0 0;font-size:12.5px;color:var(--dim)}
+.top-p{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--dim);
+  font-family:var(--mono);white-space:nowrap}
+.bar{width:96px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.reset{border:1px solid var(--line);background:transparent;color:var(--dim);
+  border-radius:6px;padding:3px 9px;font-size:11.5px;cursor:pointer;font-family:var(--font)}
+.reset:hover{border-color:var(--accent);color:var(--accent)}
+.burger{display:none;border:0;background:transparent;color:var(--ink);font-size:20px;cursor:pointer}
+main{max-width:920px;padding:24px 30px 120px}
+
+/* ---------- แถบทางลัดไปแต่ละขั้น ---------- */
+/* dropdown ตัวเดียว สูงบรรทัดเดียวเท่ากันทุกบท ไม่ว่าบทนั้นจะมีกี่ขั้น
+   และตัวที่โชว์อยู่คือขั้นที่กำลังอ่าน จึงบอกตำแหน่งตัวเองไปในตัว */
+.jump{display:flex;gap:9px;align-items:center;
+  padding:7px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
+.jump-l{color:var(--dim);font-size:12.5px;flex-shrink:0}
+.jump-s{flex:1;min-width:0;max-width:520px;font:inherit;font-size:13px;
+  color:var(--ink);background:var(--panel);border:1px solid var(--line);
+  border-radius:7px;padding:4px 9px;cursor:pointer}
+.jump-s:hover,.jump-s:focus{border-color:var(--accent);outline:none}
+/* ขั้นที่ทำแล้วขึ้น ✓ นำหน้าในลิสต์ — กวาดตาเห็นว่าค้างตรงไหน */
+.jump-s option{color:var(--ink);background:var(--panel)}
+
+/* ---------- steps ---------- */
+.intro{padding:0 2px 6px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:4px 22px 14px;margin:0 0 18px;transition:background .25s,border-color .25s}
+.step.done{background:var(--done-bg);border-color:var(--done-line)}
+.step.done .step-body{opacity:.62}
+.step-head{display:flex;align-items:flex-start;gap:10px;padding-top:14px}
+.step-head h2{flex:1;margin:0;font-size:17.5px;line-height:1.45}
+.step.done .step-head h2{color:var(--done-ink)}
+/* เครื่องหมายถูกที่หัวข้อ — โผล่เฉพาะตอนทำแล้ว ให้กวาดตาหาได้เร็วตอนเลื่อนผ่าน */
+.head-tick{display:none;flex-shrink:0;color:var(--done-ink);font-size:19px;
+  font-weight:700;line-height:1.5}
+.step.done .head-tick{display:block}
+
+/* ปุ่มอยู่ท้ายส่วน ตรงกับลำดับที่คนใช้จริง */
+.step-foot{display:flex;justify-content:flex-end;padding:6px 0 2px;margin-top:14px;
+  border-top:1px dashed var(--line)}
+.step.done .step-foot{border-top-color:var(--done-line)}
+.done-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:20px;padding:7px 18px;font-size:13px;font-family:var(--font);
+  transition:all .2s;margin-top:10px}
+.done-btn:hover{border-color:var(--accent);color:var(--accent)}
+.done-btn .tick{opacity:.35;font-weight:700}
+.step.done .done-btn{background:var(--done-line);border-color:var(--done-line);color:#08301b}
+.step.done .done-btn .tick{opacity:1}
+
+/* ---------- เนื้อหา ---------- */
+h3{font-size:15.5px;margin:22px 0 8px}
+h4{font-size:14px;margin:18px 0 6px;color:var(--dim)}
+p{margin:10px 0}
+a{color:var(--accent)}
+ul,ol{padding-left:22px;margin:10px 0}
+li{margin:4px 0}
+blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--warn);
+  background:var(--accent-soft);border-radius:0 6px 6px 0;color:var(--ink)}
+blockquote p{margin:5px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--accent-soft);
+  padding:1.5px 5px;border-radius:4px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px;display:block;
+  overflow-x:auto;white-space:nowrap}
+th,td{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);font-weight:600}
+tbody tr:nth-child(even){background:rgba(128,128,128,.045)}
+hr{border:0;border-top:1px solid var(--line);margin:22px 0}
+img{max-width:100%}
+
+/* ---------- ภาพประกอบ (SVG ฝังในเนื้อ markdown) ---------- */
+.fig{margin:18px 0;padding:14px 14px 10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto}
+.fig svg{display:block;width:100%;height:auto;min-width:560px}
+.fig figcaption{margin-top:9px;font-size:12.5px;color:var(--dim);text-align:center;line-height:1.6}
+.fig text{font-family:var(--font);font-size:13px;fill:var(--ink)}
+.fig text.t-mono{font-family:var(--mono);font-size:11.5px}
+.fig text.t-dim{fill:var(--dim);font-size:11.5px}
+.fig text.t-ok{fill:var(--done-ink);font-size:12px}
+.fig text.t-bad{fill:var(--f1);font-size:12px}
+.fig text.t-sm{font-size:12px}
+.fig text.t-hd{font-size:13.5px;font-weight:700}
+.fig .box{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+.fig .box-p{fill:var(--panel);stroke:var(--line);stroke-width:1.5}
+.fig .box-bad{fill:var(--f1-bg);stroke:var(--f1);stroke-width:1.5}
+.fig .box-ok{fill:var(--done-bg);stroke:var(--done-line);stroke-width:1.5}
+.fig .zone{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:6 4}
+.fig .wall{fill:none;stroke:var(--f1);stroke-width:2;stroke-dasharray:7 5}
+.fig .ln{stroke:var(--dim);stroke-width:1.6;fill:none}
+.fig .ln-a{stroke:var(--accent);stroke-width:2;fill:none}
+.fig .ln-ok{stroke:var(--done-line);stroke-width:2;fill:none}
+.fig .ln-bad{stroke:var(--f1);stroke-width:2;fill:none}
+.fig .ln-d{stroke-dasharray:5 4}
+
+/* ---------- code block ---------- */
+.cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.cb-bar{display:flex;align-items:center;justify-content:space-between;
+  padding:5px 8px 5px 12px;background:rgba(128,128,128,.13);border-top:1px solid var(--line)}
+.cb-lang{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;
+  letter-spacing:.5px}
+.cb-copy{border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:5px;padding:3px 11px;font-size:11.5px;cursor:pointer;font-family:var(--font);
+  transition:all .15s}
+.cb-copy:hover{border-color:var(--accent);color:var(--accent)}
+.cb-copy.ok{background:var(--done-line);border-color:var(--done-line);color:#08301b}
+.cb pre{margin:0;padding:13px 15px;background:var(--code-bg);color:var(--code-ink);
+  overflow-x:auto;font-size:13px;line-height:1.65}
+.cb pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+/* ---------- prev/next ---------- */
+/* <details> ที่ใช้เก็บทางเลือกที่ยังไม่ต้องทำ */
+.step-body details{margin:16px 0;border:1px solid var(--line);border-radius:8px;
+  background:rgba(128,128,128,.05)}
+.step-body details[open]{background:transparent}
+.step-body summary{cursor:pointer;padding:10px 14px;font-size:14px;color:var(--dim);
+  user-select:none;list-style:none}
+.step-body summary::-webkit-details-marker{display:none}
+.step-body summary::before{content:'▸ ';color:var(--accent)}
+.step-body details[open] summary::before{content:'▾ '}
+.step-body summary:hover{color:var(--accent)}
+.step-body details > *:not(summary){margin-left:14px;margin-right:14px}
+.step-body details > *:last-child{margin-bottom:14px}
+
+.pn-row{display:flex;justify-content:space-between;gap:14px;margin-top:34px;
+  padding-top:18px;border-top:1px solid var(--line)}
+.pn{color:var(--accent);text-decoration:none;font-size:14px}
+.pn.dim{color:var(--dim);opacity:.6}
+
+/* ---------- ปุ่มลอย ---------- */
+.fab{position:fixed;right:24px;bottom:24px;z-index:50;display:inline-flex;align-items:center;
+  gap:9px;border:0;border-radius:26px;padding:13px 20px;cursor:pointer;
+  background:var(--accent);color:#fff;font-family:var(--font);font-size:14px;font-weight:600;
+  box-shadow:0 5px 18px rgba(0,0,0,.28);transition:transform .18s,opacity .18s,background .18s}
+.fab:hover{transform:translateY(-2px)}
+.fab.alldone{background:var(--done-line);color:#08301b}
+.fab-ico{font-size:16px;line-height:1}
+
+.toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,26px);z-index:60;
+  background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:13px;
+  opacity:0;pointer-events:none;transition:all .25s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);transition:transform .22s}
+  .sidebar.open{transform:none}
+  .wrap{margin-left:0}
+  .burger{display:block}
+  main{padding:18px 16px 120px}
+  .top{padding:10px 14px}
+  .jump{padding:6px 12px}
+  .top h1{font-size:16px}
+  .top-p .bar{display:none}
+  .fab-txt{display:none}
+  .fab{padding:15px;border-radius:50%}
+}
+@media print{
+  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger,.jump{display:none}
+  .wrap{margin-left:0}
+}
+
+/* ---------- แถบกรองตามเครื่อง ---------- */
+/* บทที่ join ทีละเครื่องมีขั้นของ master01 กับของเครื่องปลายทางสลับกัน
+   คนที่นั่งอยู่หน้าเครื่องไหนควรเห็นเฉพาะของเครื่องนั้นได้ ไม่ต้องเลื่อนข้าม */
+.mtabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 20px}
+.mtabs-l{color:var(--dim);font-size:13px;margin-right:2px}
+.mtab{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer;transition:all .15s}
+.mtab:hover{border-color:var(--accent);color:var(--accent)}
+.mtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.hide-m{display:none !important}
+.mnote{color:var(--dim);font-size:13px;margin:-10px 0 18px}
+
+</style>
+</head>
+<body data-chapter="deploy-zeeme-ads.md" data-total="20">
+
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="14"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="12"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="11"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="18"></span></a><a href="14-grafana-logs.html" class="nav-item" data-chapter="14-grafana-logs.md"><span class="nav-num">14</span><span class="nav-t">ดู log ใน Grafana</span><span class="nav-p" data-progress-for="14-grafana-logs.md" data-total="15"></span></a><a href="15-headlamp.html" class="nav-item" data-chapter="15-headlamp.md"><span class="nav-num">15</span><span class="nav-t">Headlamp — เว็บ UI</span><span class="nav-p" data-progress-for="15-headlamp.md" data-total="10"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a><a href="deploy-zeeme-ads.html" class="nav-item cur" data-chapter="deploy-zeeme-ads.md"><span class="nav-num">✓</span><span class="nav-t">Deploy zeeme-ads</span><span class="nav-p" data-progress-for="deploy-zeeme-ads.md" data-total="20"></span></a><a href="deploy-demo.html" class="nav-item" data-chapter="deploy-demo.md"><span class="nav-num">✓</span><span class="nav-t">Demo — auth ที่ Gateway</span><span class="nav-p" data-progress-for="deploy-demo.md" data-total="12"></span></a></nav>
+</aside>
+
+<div class="wrap">
+  <div class="stick">
+    <header class="top">
+      <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
+      <div class="top-t">
+        <h1>zeeme-ads — manifest ของจริงที่ deploy ลง `myhr-prod`</h1>
+        <p class="sub">รันที่: 👑 master01 หรือเครื่องที่มี kubeconfig ของ cluster ใหม่ · ผู้อ่าน: dev เจ้าของ service + ops · ที่นี่ตอบว่า "apply อะไร ยังไง" · [บทที่ 11](../../docs/11-deploy-app.md) ตอบว่า "ทำไมต้องเป็นแบบนี้"</p>
+      </div>
+      <div class="top-p">
+        <span id="pcount">0/20</span>
+        <div class="bar"><i id="pbar"></i></div>
+        <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
+      </div>
+    </header>
+    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="เลือกทางก่อน — A หรือ B">เลือกทางก่อน — A หรือ B</option><option value="2" data-t="🅰 ทาง A · ครั้งแรก">🅰 ทาง A · ครั้งแรก</option><option value="3" data-t="A1 · ตรวจว่าของกลางพร้อม">A1 · ตรวจว่าของกลางพร้อม</option><option value="4" data-t="A2 · ตอบ 3 คำถามที่ยังไม่มีใครรู้คำตอบ">A2 · ตอบ 3 คำถามที่ยังไม่มีใครรู้คำตอบ</option><option value="5" data-t="A3 · ตรวจ manifest — สิ่งที่มาแทน GitOps">A3 · ตรวจ manifest — สิ่งที่มาแทน GitOps</option><option value="6" data-t="A4 · ลง uat ก่อนเสมอ">A4 · ลง uat ก่อนเสมอ</option><option value="7" data-t="A5 · ลง prod">A5 · ลง prod</option><option value="8" data-t="A6 · ตรวจ 4 อย่างหลัง apply">A6 · ตรวจ 4 อย่างหลัง apply</option><option value="9" data-t="A7 · ยิงของจริงจากนอก cluster">A7 · ยิงของจริงจากนอก cluster</option><option value="10" data-t="A8 · ย้าย DNS แล้วเฝ้า 24 ชั่วโมง">A8 · ย้าย DNS แล้วเฝ้า 24 ชั่วโมง</option><option value="11" data-t="A9 · ตัดของเดิมทิ้ง">A9 · ตัดของเดิมทิ้ง</option><option value="12" data-t="🅱 ทาง B · deploy version ใหม่">🅱 ทาง B · deploy version ใหม่</option><option value="13" data-t="B1 · แก้ image ให้ชี้ของใหม่">B1 · แก้ image ให้ชี้ของใหม่</option><option value="14" data-t="B2 · commit ก่อน apply เสมอ">B2 · commit ก่อน apply เสมอ</option><option value="15" data-t="B3 · ตรวจ + ดู diff">B3 · ตรวจ + ดู diff</option><option value="16" data-t="B4 · apply แล้วเฝ้า rollout">B4 · apply แล้วเฝ้า rollout</option><option value="17" data-t="B5 · ตรวจว่าของใหม่ขึ้นจริง">B5 · ตรวจว่าของใหม่ขึ้นจริง</option><option value="18" data-t="B6 · ถ้าพัง — ถอยกลับ">B6 · ถ้าพัง — ถอยกลับ</option><option value="19" data-t="ถ้าไม่ผ่าน — ตารางอาการ">ถ้าไม่ผ่าน — ตารางอาการ</option><option value="20" data-t="อ้างอิง · ขอบเขต — ของกลาง กับ ของ service">อ้างอิง · ขอบเขต — ของกลาง กับ ของ service</option></select></div>
+  </div>
+
+  <main>
+    <div class="intro"><p>4 ไฟล์ในโฟลเดอร์นี้คือของที่<strong>เป็นของ service ตัวนี้ตัวเดียว</strong>
+แปลงมาจาก <a href="../deployments/zeeme-ads/old"><code>old/</code></a> ตามแม่แบบ <a href="../config/app/deployment-template.yaml"><code>../../config/app/deployment-template.yaml</code></a></p>
+<p><strong>ของกลางไม่ได้อยู่ที่นี่</strong> — Namespace, Secret <code>regcred</code>, NetworkPolicy ระดับ namespace
+และ Gateway อยู่ใน <code>config/</code> และมีคนอื่นดูแล เส้นแบ่งอยู่ที่หัวข้อสุดท้าย</p>
+<table>
+<thead>
+<tr>
+<th>ไฟล์</th>
+<th>คือ</th>
+<th>ต้องแก้ตอน deploy version ใหม่ไหม</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>deployment.yaml</code></td>
+<td>8 replica · uid 10001 · rootfs read-only · probe 3 ตัว · กระจายข้าม node</td>
+<td>✅ <strong>แก้บรรทัด <code>image:</code> บรรทัดเดียว</strong></td>
+</tr>
+<tr>
+<td><code>service.yaml</code></td>
+<td>ClusterIP <code>80 → 8100</code> — ไม่ใช่ NodePort แล้ว</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>pdb.yaml</code></td>
+<td><code>minAvailable: 50%</code> — ตัวที่กัน <code>kubectl drain</code> ทำ service ดับ</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>httproute.yaml</code></td>
+<td>ทางเข้าจาก <code>ads.myhr.co.th</code> ผ่าน <code>myhr-gateway</code></td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>old/</code></td>
+<td>manifest เดิมของ cluster เก่า <strong>อ้างอิงอย่างเดียว ห้าม apply</strong></td>
+<td>❌</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ทุกคำสั่งในไฟล์นี้ยืนอยู่ที่โฟลเดอร์นี้</strong> — <code>cd</code> ก่อนแล้วค่อยเริ่ม:</p>
+<div class="cb"><pre><code class="language-bash">cd /root/k8s/deployments/zeeme-ads
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>สถานะตอนนี้</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>แปลงตามแม่แบบครบ</td>
+<td>✅ ครบทุกข้อในตารางบทที่ 11 หัวข้อ 2</td>
+</tr>
+<tr>
+<td>ตรวจแล้วแค่ไหน</td>
+<td>⚠️ <strong>YAML parse ผ่านอย่างเดียว</strong> — ยังไม่ได้รัน <code>validate-manifests.sh</code></td>
+</tr>
+<tr>
+<td>apply จริง</td>
+<td>⬜ <strong>ยังไม่เคย</strong> — ตัวเลข resources กับ path ของ probe ยังไม่มีอะไรยืนยัน</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>📘 <strong>จะเพิ่ม service ใหม่ · เพิ่ม namespace · เปิดพอร์ต · เพิ่ม hostname · ขอ storage</strong>
+อ่าน <a href="../deployments/README.md"><code>../README.md</code></a> — คู่มือว่าของแต่ละแบบต้องไปแตะตรงไหน และใครมีสิทธิ์ทำ</p>
+</blockquote>
+<hr />
+</div>
+    
+    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2 id="เลือกทางก่อน--a-หรือ-b">เลือกทางก่อน — A หรือ B</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>อย่าไล่ทั้งไฟล์</strong> ทางซ้ายทำครั้งเดียวตลอดชีพของ service ทางขวาทำซ้ำทุกรอบที่มีของใหม่</p>
+<table>
+<thead>
+<tr>
+<th>สถานการณ์</th>
+<th>ไปที่</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>service นี้ยังไม่เคยขึ้น cluster ใหม่เลย</td>
+<td><strong>A1 → A9</strong> ข้างล่าง — ทำเรียงลำดับ ห้ามข้าม</td>
+</tr>
+<tr>
+<td>ขึ้นแล้ว · จะเปลี่ยน version ของ image</td>
+<td><strong>B1 → B5</strong></td>
+</tr>
+<tr>
+<td>ขึ้นแล้ว · จะแก้ replica / resources / probe / hostname</td>
+<td><strong>B1 → B5</strong> เหมือนกัน (ข้าม B1 ไปแก้ไฟล์ที่ต้องแก้แทน)</td>
+</tr>
+<tr>
+<td>ของใหม่ขึ้นไปแล้วแต่พัง ต้องถอย</td>
+<td><strong>B6</strong></td>
+</tr>
+<tr>
+<td>จะเพิ่ม service ตัวใหม่ทั้งตัว</td>
+<td><a href="../deployments/README.md"><code>../README.md</code></a> ไม่ใช่ไฟล์นี้</td>
+</tr>
+</tbody>
+</table>
+<p><strong>สิ่งที่ต่างกันจริง ๆ:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>A · ครั้งแรก</th>
+<th>B · version ใหม่</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ตรวจของกลาง (ns · regcred · gateway · netpol)</td>
+<td>✅ ต้องตรวจ</td>
+<td>❌ ตรวจไปแล้วตั้งแต่ A1</td>
+</tr>
+<tr>
+<td>ตอบ 3 คำถามเรื่อง actuator · ชื่อเดิม · พอร์ต scrape</td>
+<td>✅ ครั้งเดียวพอ</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>ลง uat ก่อน</td>
+<td>✅</td>
+<td>✅ <strong>ยังต้องทำทุกครั้ง</strong></td>
+</tr>
+<tr>
+<td>ย้าย DNS · ตัดของเดิมบน cluster เก่า</td>
+<td>✅</td>
+<td>❌ ทำไปแล้ว</td>
+</tr>
+<tr>
+<td>ถอยกลับด้วย <code>rollout undo</code></td>
+<td>❌ ไม่ต้อง — ของเดิมยังรับ traffic อยู่</td>
+<td>✅ <strong>นี่คือทางถอยทางเดียวที่มี</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2 id="-ทาง-a--ครั้งแรก">🅰 ทาง A · ครั้งแรก</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>ทำครั้งเดียวตลอดชีพของ service นี้ ทำจบแล้วไม่ต้องกลับมาอีก
+<strong>A1 → A9 ทำเรียงลำดับ ห้ามข้าม</strong></p>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="a1--ตรวจว่าของกลางพร้อม">A1 · ตรวจว่าของกลางพร้อม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ตรวจอย่างเดียว ไม่ต้องสร้าง</strong> ขาดตัวไหนให้ไปทำที่บทของมัน
+ถ้าข้ามข้อนี้ pod จะขึ้นได้แต่เรียกไม่ถึง และอาการจะดูเหมือน app พัง</p>
+<p><strong>ก่อนอื่น — ยืนยันว่า context ชี้ cluster ใหม่จริง:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl config current-context
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">kubectl get ns myhr-prod
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod get secret regcred
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get gateway myhr-gateway
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod get netpol
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ns มี label <code>pod-security.kubernetes.io/enforce=restricted</code> ·
+มี secret <code>regcred</code> ชนิด <code>kubernetes.io/dockerconfigjson</code> ·
+Gateway <code>PROGRAMMED=True</code> และมี address <code>192.168.50.200</code> ·
+netpol ครบทั้ง <code>default-deny-all</code> · <code>allow-from-gateway</code> · <code>allow-dns-egress</code></p>
+<table>
+<thead>
+<tr>
+<th>ขาดตัวไหน</th>
+<th>ไปทำที่</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Namespace · NetworkPolicy</td>
+<td><a href="10-security.html">บทที่ 10</a></td>
+</tr>
+<tr>
+<td>Secret <code>regcred</code></td>
+<td><a href="10-security.html">บทที่ 10 หัวข้อ 7</a> · <code>NAMESPACES='myhr-prod' bash config/registry/create-regcred.sh</code></td>
+</tr>
+<tr>
+<td>Gateway</td>
+<td><a href="07-gateway-tls.html">บทที่ 07</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="a2--ตอบ-3-คำถามที่ยังไม่มีใครรู้คำตอบ">A2 · ตอบ 3 คำถามที่ยังไม่มีใครรู้คำตอบ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>ทั้งสามข้อคือของที่ manifest เดิมไม่เคยมี จึงไม่เคยมีใครต้องตอบ
+<strong>ตอบให้ครบก่อน apply</strong> ไม่งั้นจะไปรู้ตอน pod พังบน prod</p>
+</div><div class="sub" data-machine="all"><h3 id="1--actuator-เปิดอยู่จริงไหม">1 · actuator เปิดอยู่จริงไหม</h3>
+<p>probe ทั้ง 3 ตัวยิงไปที่ <code>/actuator/health/*</code>
+🔴 <strong>ถ้า path นี้ไม่มีจริง <code>livenessProbe</code> จะฆ่า pod เป็น CrashLoop ตลอดกาล</strong></p>
+<p>ถามจากของที่รันอยู่ตอนนี้ ซึ่งอยู่บน <strong>cluster เดิม</strong> (<code>kubectl config get-contexts</code> ดูชื่อ):</p>
+<div class="cb"><pre><code class="language-bash">kubectl --context=CLUSTER_เดิม exec deploy/zeeme-ads-deployment -- wget -qO- localhost:8100/actuator/health/readiness
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>{&quot;status&quot;:&quot;UP&quot;}</code>
+ถ้าได้ 404 หรือ connection refused ให้เปลี่ยนทั้ง 3 probe เป็น <code>tcpSocket</code> ก่อน
+(ท่าเต็มอยู่ในคอมเมนต์ของ <code>deployment.yaml</code>)</p>
+</div><div class="sub" data-machine="all"><h3 id="2--ใครเรียก-zeeme-ads-service-อยู่บ้าง">2 · ใครเรียก <code>zeeme-ads-service</code> อยู่บ้าง</h3>
+<p>ชื่อ Service ของใหม่คือ <code>zeeme-ads</code> ตัวที่เรียกชื่อเดิมจะ resolve ไม่เจอ</p>
+<div class="cb"><pre><code class="language-bash">kubectl --context=CLUSTER_เดิม get cm -A -o yaml | grep -n 'zeeme-ads-service'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>แล้ว <code>grep -rn 'zeeme-ads-service'</code> ใน repo ของ service ที่เรียกใช้ด้วย
+ตัวที่ย้ายตามมาทีหลังให้เรียกชื่อใหม่ ส่วนตัวที่ยังอยู่ cluster เดิมยังเรียกของเดิมต่อไปได้</p>
+</div><div class="sub" data-machine="all"><h3 id="3--พอร์ต-scrape-ของ-networkpolicy">3 · พอร์ต scrape ของ NetworkPolicy</h3>
+<p><a href="../config/security/default-deny.yaml"><code>allow-prometheus-scrape</code></a> เปิดไว้ที่ <strong>8080</strong>
+แต่ service นี้ฟังที่ <strong>8100</strong> — ถ้าจะให้ Prometheus เก็บ metric ได้ ต้องเปิดพอร์ต 8100 ให้ก่อน</p>
+<p>policy ตัวนั้นใช้ <code>podSelector: {}</code> คือมีผลกับ <strong>ทุก pod ใน <code>myhr-prod</code></strong>
+การไปเปลี่ยนเลขพอร์ตในนั้นจึงกระทบ service อื่นด้วย มี 2 ทาง เลือกทางที่ 2 ถ้าเลือกได้:</p>
+<table>
+<thead>
+<tr>
+<th>ทาง</th>
+<th>ทำอะไร</th>
+<th>ข้อเสีย</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 · แก้ของกลาง</td>
+<td>เปลี่ยน 8080 เป็น 8100 ใน <code>config/security/default-deny.yaml</code></td>
+<td>เปิดพอร์ต 8100 ให้ <strong>ทุก pod</strong> ใน namespace และต้องให้ทีมที่ดูแล cluster ทำให้</td>
+</tr>
+<tr>
+<td>2 · เขียน policy เจาะจง service นี้</td>
+<td>policy ใหม่ <code>podSelector</code> = label ของ <code>zeeme-ads</code> เปิด ingress จาก <code>monitoring</code> ที่ 8100 วางไว้<strong>ในโฟลเดอร์นี้</strong></td>
+<td>ต้องเขียนเพิ่มหนึ่งไฟล์</td>
+</tr>
+</tbody>
+</table>
+<p>NetworkPolicy หลายตัวรวมกันแบบ &quot;บวกกัน&quot; — เพิ่ม policy อนุญาตเส้นใหม่ได้โดยไม่ต้องแก้ของเดิม
+ทางที่ 2 จึงไม่แตะของใคร และถูกลบตามไปเองตอนลบ service (<a href="../deployments/README.md"><code>../README.md</code> ข้อ D</a>)</p>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2 id="a3--ตรวจ-manifest--สิ่งที่มาแทน-gitops">A3 · ตรวจ manifest — สิ่งที่มาแทน GitOps</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<div class="cb"><pre><code class="language-bash">../../config/app/validate-manifests.sh .
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ต้องได้ <code>ผ่านทั้งหมด</code> และ exit 0 ก่อนเสมอ · บรรทัดเตือนเรื่อง digest สีเหลืองยังปล่อยผ่านได้ในรอบแรก</p>
+<blockquote>
+<p>ต้องมี <code>kubeconform</code> กับ <code>yq</code> บนเครื่องที่รัน ถ้าไม่มี สคริปต์จะหยุดตั้งแต่ข้อ 0</p>
+</blockquote>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2 id="a4--ลง-uat-ก่อนเสมอ">A4 · ลง uat ก่อนเสมอ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>บทที่ 11 หัวข้อ 6 — ห้ามลง prod เป็นที่แรก</p>
+<p>ทุกไฟล์ปัก <code>namespace: myhr-prod</code> ไว้ในตัวแล้ว และ <code>--namespace</code> <strong>ทับค่าที่เขียนในไฟล์ไม่ได้</strong>
+(<code>kubectl</code> จะฟ้อง namespace ไม่ตรงแล้วหยุด) และ <strong>hostname ต้องเปลี่ยนด้วย</strong>
+ไม่งั้น route ของ uat จะชนกับของ prod บน listener เดียวกัน ตัวที่มาทีหลังจะได้ <code>Accepted=False</code> เงียบ ๆ:</p>
+<div class="cb"><pre><code class="language-bash">sed -e 's/namespace: myhr-prod/namespace: myhr-uat/' -e 's/ads[.]myhr[.]co[.]th/ads-uat.myhr.co.th/' *.yaml | kubectl apply -f -
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-uat rollout status deploy/zeeme-ads --timeout=5m
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-uat get deploy,svc,pdb,httproute -l app.kubernetes.io/name=zeeme-ads
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>นี่เป็นท่าชั่วคราวให้ผ่าน uat ไปก่อน ถ้าต้องแยกสอง environment ระยะยาว
+ให้ทำเป็น kustomize overlay แล้วเลิกใช้ <code>sed</code> — ของที่ต่างกันจะได้เห็นชัดใน git</p>
+</blockquote>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2 id="a5--ลง-prod">A5 · ลง prod</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3 id="-f--คืออะไร--apply-ทั้งโฟลเดอร์จริงไหม"><code>-f .</code> คืออะไร — apply ทั้งโฟลเดอร์จริงไหม</h3>
+<p>จริง <code>.</code> คือโฟลเดอร์ที่ยืนอยู่ และ <code>kubectl</code> จะ apply <strong>ทุกไฟล์ YAML ในนั้นพร้อมกัน</strong>
+ที่นี่คือ 4 ไฟล์: <code>deployment.yaml</code> · <code>service.yaml</code> · <code>pdb.yaml</code> · <code>httproute.yaml</code></p>
+<p><strong>2 อย่างในโฟลเดอร์นี้ที่มันไม่แตะ:</strong></p>
+<table>
+<thead>
+<tr>
+<th>ของในโฟลเดอร์</th>
+<th>โดน apply ไหม</th>
+<th>เพราะ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>README.md</code></td>
+<td>❌</td>
+<td><code>kubectl</code> รับเฉพาะ <code>.yaml</code> · <code>.yml</code> · <code>.json</code></td>
+</tr>
+<tr>
+<td><code>old/</code> — manifest ของ cluster เก่า</td>
+<td>❌</td>
+<td><strong><code>-f .</code> ไม่ลงโฟลเดอร์ย่อย</strong> ต้องเติม <code>-R</code> ถึงจะลง</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>🔴 <strong>อย่าเติม <code>-R</code> เด็ดขาด</strong> — มันจะลากของใน <code>old/</code> (ซึ่งรันเป็น root และไม่มี PDB)
+ขึ้น prod ไปด้วย ของใน <code>old/</code> มีไว้อ่านเทียบอย่างเดียว</p>
+</blockquote>
+<p><strong>ที่ apply ทั้ง 4 ไฟล์ทีเดียวเพราะมันเป็นชุดเดียวกัน</strong> แยกทีละไฟล์จะได้สภาพครึ่ง ๆ กลาง ๆ
+ที่ไล่ยาก — Deployment ขึ้นแล้วแต่ยังไม่มี PDB (มีคน drain ตอนนั้นคือดับ) หรือ
+Service ขึ้นแล้วแต่ยังไม่มี HTTPRoute (เรียกจากนอกไม่ได้ แต่ดูเผิน ๆ ทุกอย่างเขียว)</p>
+</div><div class="sub" data-machine="all"><h3 id="ดูรายชื่อของที่จะขึ้นก่อน">ดูรายชื่อของที่จะขึ้นก่อน</h3>
+<div class="cb"><pre><code class="language-bash">kubectl apply -f . --dry-run=client -o name
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น 4 บรรทัด</strong> — <code>deployment.apps/zeeme-ads</code> · <code>service/zeeme-ads</code> ·
+<code>poddisruptionbudget.policy/zeeme-ads</code> · <code>httproute.gateway.networking.k8s.io/zeeme-ads</code>
+ถ้าเห็น 6 บรรทัดแปลว่าเผลอลาก <code>old/</code> มาด้วย <strong>หยุดทันที</strong></p>
+</div><div class="sub" data-machine="all"><h3 id="ดูว่าจะเปลี่ยนอะไรบ้าง-แล้วค่อยยิง">ดูว่าจะเปลี่ยนอะไรบ้าง แล้วค่อยยิง</h3>
+<div class="cb"><pre><code class="language-bash">kubectl diff -f .
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">kubectl apply -f .
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ครั้งแรกขึ้น <code>created</code> ทั้ง 4 ตัว</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod rollout status deploy/zeeme-ads --timeout=5m
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p><code>apply</code> เป็น idempotent — รันซ้ำได้ตลอด ตัวที่ไม่เปลี่ยนจะขึ้น <code>unchanged</code> เฉย ๆ
+ตอน <a href="#b4--apply-%E0%B9%81%E0%B8%A5%E0%B9%89%E0%B8%A7%E0%B9%80%E0%B8%9D%E0%B9%89%E0%B8%B2-rollout">B4</a> ที่แก้แค่ <code>image:</code> ก็ใช้คำสั่งเดียวกันนี้
+แล้วจะเห็น 3 ตัวขึ้น <code>unchanged</code> มีแค่ deployment ตัวเดียวที่ <code>configured</code></p>
+</blockquote>
+<blockquote>
+<p>ของเดิมบน cluster เก่ายังรับ traffic ต่อไปตราบใดที่ยังไม่ย้าย DNS
+<strong>อย่าเพิ่งลบ</strong> จนกว่าจะผ่าน A7 แล้วเฝ้าครบ 24 ชั่วโมง</p>
+</blockquote>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2 id="a6--ตรวจ-4-อย่างหลัง-apply">A6 · ตรวจ 4 อย่างหลัง apply</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod get deploy,svc,pdb,httproute -l app.kubernetes.io/name=zeeme-ads
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> deploy <code>8/8</code> · svc เป็น <code>ClusterIP</code> · pdb <code>ALLOWED DISRUPTIONS = 4</code></p>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod get pods -l app.kubernetes.io/name=zeeme-ads -o wide
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> pod กระจาย <strong>3/3/2 คนละ worker</strong> — ถ้ากองเครื่องเดียว topology spread ไม่ทำงาน</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod get httproute zeeme-ads -o jsonpath='{range .status.parents[0].conditions[*]}{.type}={.status}{"\n"}{end}'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>Accepted=True</code> และ <code>ResolvedRefs=True</code>
+<code>kubectl get httproute</code> เปล่า ๆ <strong>ไม่มีคอลัมน์สถานะ</strong> route ที่ผูกไม่ติดหน้าตาเหมือน route ที่ดีเป๊ะ ·
+<code>ResolvedRefs=False</code> คือพิมพ์ชื่อ Service ผิด</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod get endpointslice -l kubernetes.io/service-name=zeeme-ads
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> endpoint 8 ตัว — ว่างเปล่าแปลว่าไม่มี pod ไหนผ่าน readinessProbe เลย</p>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2 id="a7--ยิงของจริงจากนอก-cluster">A7 · ยิงของจริงจากนอก cluster</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>รันจากเครื่องในวง <code>192.168.50.0/24</code> ที่ไม่ใช่ node</p>
+<div class="cb"><pre><code class="language-bash">GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">curl -I --resolve "ads.myhr.co.th:443:${GW_IP}" https://ads.myhr.co.th
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>HTTP/2 200</code> — cert เป็น wildcard <code>*.myhr.co.th</code> ขององค์กร จึงไม่ต้องใส่ <code>--cacert</code></p>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2 id="a8--ย้าย-dns-แล้วเฝ้า-24-ชั่วโมง">A8 · ย้าย DNS แล้วเฝ้า 24 ชั่วโมง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>ผ่าน A7 แล้วค่อย <strong>ย้าย DNS record ของ <code>ads.myhr.co.th</code> มาที่ Gateway IP</strong></p>
+<p>แล้วเฝ้า Grafana 24 ชั่วโมง (<a href="14-grafana-logs.html">บทที่ 14</a>) ก่อนไป A9
+ระหว่างนี้เก็บตัวเลขจริงไว้ปรับ <code>resources</code> ด้วย — ค่าที่อยู่ในไฟล์ตอนนี้เป็นค่าเดา:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod top pod -l app.kubernetes.io/name=zeeme-ads
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11" data-machines="all"><div class="step-head"><h2 id="a9--ตัดของเดิมทิ้ง">A9 · ตัดของเดิมทิ้ง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>สำรองจาก cluster ก่อน</strong> ไฟล์ใน <code>old/</code> เป็นสำเนาที่คนเขียนไว้ ไม่ใช่ของที่รันอยู่จริง
+(อาจมีคน <code>kubectl edit</code> ทับไปแล้วโดยไม่มีใครรู้)</p>
+<div class="cb"><pre><code class="language-bash">kubectl --context=CLUSTER_เดิม get deploy zeeme-ads-deployment -o yaml &gt; ~/zeeme-ads-old-deploy.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">kubectl --context=CLUSTER_เดิม get svc zeeme-ads-service -o yaml &gt; ~/zeeme-ads-old-svc.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ลด replica ลงก่อน — ยังกลับได้ทันทีถ้าของใหม่มีปัญหา</p>
+<div class="cb"><pre><code class="language-bash">kubectl --context=CLUSTER_เดิม scale deploy zeeme-ads-deployment --replicas=0
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>รอจนแน่ใจแล้วค่อยลบจริง</p>
+<div class="cb"><pre><code class="language-bash">kubectl --context=CLUSTER_เดิม delete deploy/zeeme-ads-deployment svc/zeeme-ads-service
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ทำถึงตรงนี้แล้วทาง A จบ</strong> ครั้งต่อ ๆ ไปใช้ทาง B อย่างเดียว</p>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-12" data-step="12" data-machines="all"><div class="step-head"><h2 id="-ทาง-b--deploy-version-ใหม่">🅱 ทาง B · deploy version ใหม่</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>ทำซ้ำทุกครั้งที่มีของใหม่ · ปกติใช้เวลาไม่เกิน 10 นาที
+ไม่ต้องกลับไปทำ A ซ้ำ <strong>ยกเว้นตอนที่มีคนไปแตะของกลาง</strong> (namespace · regcred · Gateway)</p>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="12"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-13" data-step="13" data-machines="all"><div class="step-head"><h2 id="b1--แก้-image-ให้ชี้ของใหม่">B1 · แก้ image ให้ชี้ของใหม่</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3 id="-อ่านก่อน--tag-เปล่า-ๆ-ทำให้-deploy-แล้ว-ทั้งที่-code-ยังเป็นตัวเก่า">🔴 อ่านก่อน — tag เปล่า ๆ ทำให้ &quot;deploy แล้ว&quot; ทั้งที่ code ยังเป็นตัวเก่า</h3>
+<p>ตอนนี้ <a href="../deployments/zeeme-ads/deployment.yaml"><code>deployment.yaml</code></a> ยังเขียนเป็น tag เปล่า คู่กับ <code>imagePullPolicy: IfNotPresent</code>
+ถ้า build image ใหม่ทับ tag เดิม แล้ว <code>kubectl apply -f .</code> จะเจอ <strong>2 ชั้นที่กันไม่ให้ของใหม่ขึ้น</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>ชั้น</th>
+<th>เกิดอะไร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 · Deployment spec ไม่เปลี่ยน</td>
+<td><code>apply</code> ได้ <code>unchanged</code> และ <strong>ไม่เกิด rollout เลย</strong> pod เดิมรันต่อไปเฉย ๆ</td>
+</tr>
+<tr>
+<td>2 · <code>IfNotPresent</code></td>
+<td>ต่อให้บังคับ rollout ได้ kubelet เห็นว่ามี tag นี้บน node แล้ว จึง <strong>ไม่ pull ใหม่</strong></td>
+</tr>
+</tbody>
+</table>
+<p>จบด้วยสภาพที่ทุกคนคิดว่า deploy สำเร็จ แต่ยังรัน code เก่าอยู่ <strong>และไม่มี error สักบรรทัด</strong></p>
+<p><strong>ทางแก้คือ pin digest</strong> — digest เปลี่ยนทุกครั้งที่ image เปลี่ยน spec จึงเปลี่ยนตามเสมอ</p>
+<p>หา digest ของ image ที่จะขึ้น:</p>
+<div class="cb"><pre><code class="language-bash">skopeo inspect docker://registry.myhr.co.th/zeeme-ads-service:1.0.0 | jq -r .Digest
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>ไม่มี <code>skopeo</code> บนเครื่อง? ใช้ <code>crane digest registry.myhr.co.th/zeeme-ads-service:1.0.0</code>
+หรือขอค่าจาก CI ที่ push image ตัวนั้นขึ้นไป — <strong>อย่าเดา</strong></p>
+</blockquote>
+<p>แล้วแก้บรรทัด <code>image:</code> ใน <a href="../deployments/zeeme-ads/deployment.yaml"><code>deployment.yaml</code></a> ให้เป็นรูปนี้:</p>
+<div class="cb"><pre><code class="language-yaml">          image: registry.myhr.co.th/zeeme-ads-service:1.0.0@sha256:&lt;digest&gt;
+</code></pre><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>เก็บ tag ไว้ข้างหน้าด้วย</strong> — Kubernetes ใช้ digest ตัดสิน ส่วน tag มีไว้ให้คนอ่านออกว่านี่คือ version ไหน</p>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="13"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-14" data-step="14" data-machines="all"><div class="step-head"><h2 id="b2--commit-ก่อน-apply-เสมอ">B2 · commit ก่อน apply เสมอ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>repo นี้ไม่มี GitOps จึงไม่มีอะไรบังคับ — กติกานี้บังคับด้วยคนอย่างเดียว</p>
+<div class="cb"><pre><code class="language-bash">git add deployment.yaml &amp;&amp; git commit -m "zeeme-ads: 0.0.9 -&gt; 1.0.0" &amp;&amp; git push
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ทำไมต้องก่อน ไม่ใช่หลัง:</strong> ถ้า apply ไปแล้วยังไม่ commit แล้วมีคนอื่น <code>apply -f .</code>
+จาก git ที่ยังเป็นของเก่า ของที่คุณเพิ่งขึ้นจะถูกถอยกลับเงียบ ๆ โดยไม่มีใครตั้งใจ</p>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="14"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-15" data-step="15" data-machines="all"><div class="step-head"><h2 id="b3--ตรวจ--ดู-diff">B3 · ตรวจ + ดู diff</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<div class="cb"><pre><code class="language-bash">../../config/app/validate-manifests.sh .
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">kubectl diff -f .
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> มีบรรทัด <code>image:</code> เปลี่ยนอยู่ใน diff จริง ๆ
+🔴 <strong>ถ้า <code>kubectl diff</code> ไม่ขึ้นอะไรเลย แปลว่ายังไม่ได้แก้ image สำเร็จ — หยุดตรงนี้</strong> อย่า apply ต่อ</p>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="15"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-16" data-step="16" data-machines="all"><div class="step-head"><h2 id="b4--apply-แล้วเฝ้า-rollout">B4 · apply แล้วเฝ้า rollout</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>ลง uat ก่อน:</p>
+<div class="cb"><pre><code class="language-bash">sed -e 's/namespace: myhr-prod/namespace: myhr-uat/' -e 's/ads[.]myhr[.]co[.]th/ads-uat.myhr.co.th/' *.yaml | kubectl apply -f -
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-uat rollout status deploy/zeeme-ads --timeout=5m
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ผ่านแล้วลง prod:</p>
+<div class="cb"><pre><code class="language-bash">kubectl apply -f .
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod rollout status deploy/zeeme-ads --timeout=5m
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>deployment &quot;zeeme-ads&quot; successfully rolled out</code></p>
+<p><code>maxUnavailable: 0</code> แปลว่าระหว่าง rollout จะมี pod พร้อมใช้ครบ 8 ตัวตลอด
+pod ใหม่ต้องผ่าน <code>readinessProbe</code> ก่อน ตัวเก่าถึงจะถูกลบทีละตัว — <strong>ไม่มีช่วง downtime</strong></p>
+<p>ถ้าคำสั่งค้างเกิน 5 นาที แปลว่า pod ใหม่ไม่ผ่าน readiness ดูว่าติดตรงไหน:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod get pods -l app.kubernetes.io/name=zeeme-ads
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod logs -l app.kubernetes.io/name=zeeme-ads --tail=50
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="16"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-17" data-step="17" data-machines="all"><div class="step-head"><h2 id="b5--ตรวจว่าของใหม่ขึ้นจริง">B5 · ตรวจว่าของใหม่ขึ้นจริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>อ่าน digest ที่รันอยู่จริง ไม่ใช่ดูแค่ว่า pod เขียว</strong> — นี่คือข้อที่กันกับดักใน B1:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod get pods -l app.kubernetes.io/name=zeeme-ads -o jsonpath='{range .items[*]}{.metadata.name}{"  "}{.status.containerStatuses[0].imageID}{"\n"}{end}'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ทุก pod ขึ้น digest ตัวใหม่ <strong>เหมือนกันหมด</strong> ไม่มีตัวไหนค้างของเก่า</p>
+<div class="cb"><pre><code class="language-bash">curl -I --resolve "ads.myhr.co.th:443:$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')" https://ads.myhr.co.th
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>HTTP/2 200</code></p>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="17"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-18" data-step="18" data-machines="all"><div class="step-head"><h2 id="b6--ถ้าพัง--ถอยกลับ">B6 · ถ้าพัง — ถอยกลับ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>หยุดเลือดก่อน</strong> คำสั่งเดียว กลับไป revision ก่อนหน้าทันที:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod rollout undo deploy/zeeme-ads
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod rollout status deploy/zeeme-ads --timeout=5m
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ดูว่ามี revision ไหนให้ถอยกลับบ้าง:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod rollout history deploy/zeeme-ads
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>🔴 <strong><code>rollout undo</code> ทำให้ cluster ไม่ตรงกับ git ทันที</strong>
+กติกาของ repo นี้คือ <em>git ถูกเสมอ</em> — คนถัดไปที่ <code>apply -f .</code> จะเอาของพังกลับขึ้นไปให้เอง</p>
+<p><strong>ถอยเสร็จแล้วต้อง revert ที่ git ทันทีในวันเดียวกัน</strong> ไม่ใช่ค่อยทำทีหลัง:</p>
+<div class="cb"><pre><code class="language-text">git revert &lt;commit ของ B2&gt;  &amp;&amp;  git push
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+</blockquote>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="18"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-19" data-step="19" data-machines="all"><div class="step-head"><h2 id="ถ้าไม่ผ่าน--ตารางอาการ">ถ้าไม่ผ่าน — ตารางอาการ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<table>
+<thead>
+<tr>
+<th>อาการ</th>
+<th>ดูตรงไหน</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ImagePullBackOff</code> · <code>ErrImagePull</code></td>
+<td>ถาม registry ก่อนว่าเป็นเรื่องรหัสจริงไหม — <a href="10-security.html">บทที่ 10 หัวข้อ 7.1</a> · ถ้า <code>regcred</code> หาย: <code>NAMESPACES='myhr-prod' bash config/registry/create-regcred.sh</code></td>
+</tr>
+<tr>
+<td><code>apply</code> ขึ้น <code>unchanged</code> ทั้งที่เพิ่ง build ของใหม่</td>
+<td>tag เขียนทับ — <a href="#b1--%E0%B9%81%E0%B8%81%E0%B9%89-image-%E0%B9%83%E0%B8%AB%E0%B9%89%E0%B8%8A%E0%B8%B5%E0%B9%89%E0%B8%82%E0%B8%AD%E0%B8%87%E0%B9%83%E0%B8%AB%E0%B8%A1%E0%B9%88">B1</a></td>
+</tr>
+<tr>
+<td><code>violates PodSecurity &quot;restricted&quot;</code></td>
+<td>image ต้องรันด้วย uid 10001 ได้ — <code>kubectl -n myhr-prod get events --sort-by=.lastTimestamp | tail -10</code></td>
+</tr>
+<tr>
+<td>pod ค้าง <code>Pending</code></td>
+<td><code>kubectl -n myhr-prod describe pod ชื่อ</code> — <code>didn't match pod topology spread constraints</code> = replica ไม่ลงตัวกับจำนวน node ที่เหลือ</td>
+</tr>
+<tr>
+<td><code>CrashLoopBackOff</code> ทันทีที่ขึ้น</td>
+<td>เกือบทุกครั้งคือ probe path ผิด (<a href="#a2--%E0%B8%95%E0%B8%AD%E0%B8%9A-3-%E0%B8%84%E0%B8%B3%E0%B8%96%E0%B8%B2%E0%B8%A1%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%B1%E0%B8%87%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B9%83%E0%B8%84%E0%B8%A3%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%84%E0%B8%B3%E0%B8%95%E0%B8%AD%E0%B8%9A">A2 ข้อ 1</a>) หรือเขียน rootfs ไม่ได้ — <code>kubectl -n myhr-prod logs deploy/zeeme-ads --previous</code></td>
+</tr>
+<tr>
+<td><code>Running</code> แต่เรียกไม่ได้</td>
+<td>NetworkPolicy — <code>kubectl -n kube-system exec -it ds/cilium -- hubble observe --namespace myhr-prod --verdict DROPPED --last 50</code></td>
+</tr>
+<tr>
+<td>curl ค้างหรือไม่ตอบ</td>
+<td>เข้าไม่ถึง Gateway ไม่ใช่เรื่อง app — <a href="13-troubleshooting.html">บทที่ 13</a></td>
+</tr>
+</tbody>
+</table>
+<p>รายละเอียดเต็มอยู่ที่ <a href="11-deploy-app.html">บทที่ 11 หัวข้อ 4</a> และ <a href="13-troubleshooting.html">บทที่ 13</a></p>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="19"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-20" data-step="20" data-machines="all"><div class="step-head"><h2 id="อ้างอิง--ขอบเขต--ของกลาง-กับ-ของ-service">อ้างอิง · ขอบเขต — ของกลาง กับ ของ service</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>ไม่ต้องอ่านตอนรัน — อ่านตอนสงสัยว่าไฟล์ใหม่ควรวางตรงไหน</p>
+<div class="cb"><pre><code class="language-text">k8s/
+├── config/                          ← ของกลาง · ทำครั้งเดียวตอนตั้ง cluster
+│   ├── security/namespaces.yaml         Namespace myhr-prod + PSA + Quota   (บท 10)
+│   ├── security/default-deny.yaml       NetworkPolicy ของทั้ง namespace     (บท 10)
+│   ├── security/allow-dns.yaml          ให้ทุก pod resolve DNS ได้          (บท 10)
+│   ├── gateway/gateway.yaml             Gateway + listener 443 + cert       (บท 07)
+│   └── (Secret regcred ไม่มีไฟล์ที่นี่ — มีรหัสจริง สร้างด้วยคำสั่งในบท 10)
+│
+└── deployments/
+    ├── zeeme-ads/                   ← ที่นี่ · ของ zeeme-ads ตัวเดียว
+    │   ├── deployment.yaml
+    │   ├── service.yaml
+    │   ├── pdb.yaml
+    │   └── httproute.yaml
+    └── zeeme-hr/                    ← service ตัวถัดไป ก็ 4 ไฟล์แบบเดียวกัน
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>วิธีตัดสินว่าไฟล์ควรอยู่ตรงไหน ถามข้อเดียว:</strong></p>
+<blockquote>
+<p><em>&quot;พรุ่งนี้เพิ่ม <code>zeeme-hr</code> ต้องแก้ไฟล์นี้ หรือต้องมีสำเนาอีกอันไหม&quot;</em></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>ตอบว่า</th>
+<th>แปลว่า</th>
+<th>ไปอยู่</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ต้องแก้ / ต้องมีสำเนา</td>
+<td>ของกลาง</td>
+<td><code>config/</code> — ทำครั้งเดียว ทุก service ใช้ร่วมกัน</td>
+</tr>
+<tr>
+<td>ไม่ต้องยุ่งเลย</td>
+<td>ของ service</td>
+<td><code>deployments/ชื่อ-service/</code></td>
+</tr>
+</tbody>
+</table>
+<p>Namespace · <code>regcred</code> · NetworkPolicy ระดับ namespace · Gateway ผ่านคำถามนี้ทั้งหมด (<code>zeeme-hr</code> ใช้ตัวเดียวกัน) → อยู่ <code>config/</code>
+Deployment · Service · PDB · HTTPRoute ของ <code>zeeme-ads</code> ไม่มีใครใช้ต่อ → อยู่ที่นี่</p>
+<p><code>kubectl apply -f .</code> ตรงนี้จึงสร้างแค่ 4 อย่างนั้น <strong>ไม่สร้าง Namespace · Secret · Gateway</strong>
+และไม่สร้าง NetworkPolicy ที่มีผลทั้ง namespace</p>
+<blockquote>
+<p>ข้อยกเว้นเดียวของ NetworkPolicy: policy ที่ <code>podSelector</code> เจาะจง label ของ <code>zeeme-ads</code>
+ตัวเดียว <strong>วางไว้ที่นี่ได้และควรวางที่นี่</strong> เพราะลบ service แล้วมันต้องถูกลบตามไปด้วย
+ส่วนที่ใช้ <code>podSelector: {}</code> (มีผลทุก pod) เป็นของกลางเสมอ — <a href="../deployments/README.md"><code>../README.md</code> ข้อ D</a></p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3 id="อ้างถึงของกลางได้-แต่ไม่สร้างมัน">อ้างถึงของกลางได้ แต่ไม่สร้างมัน</h3>
+<p>ในไฟล์มีสองบรรทัดที่พูดถึงของกลาง:</p>
+<table>
+<thead>
+<tr>
+<th>บรรทัด</th>
+<th>ความหมาย</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>imagePullSecrets: regcred</code></td>
+<td>&quot;ขอใช้ Secret ที่มีคนสร้างไว้แล้ว&quot;</td>
+</tr>
+<tr>
+<td><code>parentRefs: myhr-gateway</code></td>
+<td>&quot;ขอไปเกาะ Gateway ที่มีคนสร้างไว้แล้ว&quot;</td>
+</tr>
+</tbody>
+</table>
+<p>ทั้งคู่คือการ <strong>ขอใช้</strong> ไม่ใช่การสร้าง ถ้าของนั้นยังไม่มี → ไปสร้างที่ต้นทางตามบทของมัน
+<strong>ไม่ใช่เพิ่มไฟล์ลงในโฟลเดอร์นี้</strong></p>
+<p>เทียบง่าย ๆ: บรรทัด <code>namespace: myhr-prod</code> ก็เหมือนจ่าหน้าซองว่าส่งไปบ้านเลขที่ไหน
+<strong>ไม่ได้แปลว่าเป็นเจ้าของบ้าน</strong></p>
+<p>ที่ต้องจ่าหน้าไว้เพราะ repo นี้ apply มือทั้งหมด ไม่มี GitOps — พลาด <code>-n</code> ตอน context
+ชี้ผิดที่เกิดได้จริง ปักไว้แล้ว <code>kubectl</code> ฟ้องทันทีแทนที่จะลงผิดที่เงียบ ๆ
+(ผลข้างเคียง: ลง uat ต้องแก้ค่านี้ก่อน — จึงต้องใช้ <code>sed</code> ใน <a href="#a4--%E0%B8%A5%E0%B8%87-uat-%E0%B8%81%E0%B9%88%E0%B8%AD%E0%B8%99%E0%B9%80%E0%B8%AA%E0%B8%A1%E0%B8%AD">A4</a>)</p>
+</div><div class="sub" data-machine="all"><h3 id="ถ้าดื้อเอาของกลางมาไว้ที่นี่-จะเจออะไร">ถ้าดื้อเอาของกลางมาไว้ที่นี่ จะเจออะไร</h3>
+<table>
+<thead>
+<tr>
+<th>เอามาไว้ที่นี่</th>
+<th>สิ่งที่เกิดขึ้นจริง</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>namespaces.yaml</code></td>
+<td>วันที่ <code>zeeme-hr</code> apply ของตัวเอง ResourceQuota ของทั้ง namespace ถูกทับด้วยตัวเลขที่ <code>zeeme-hr</code> คิดไว้ <strong>ไม่มี error ให้เห็น</strong></td>
+</tr>
+<tr>
+<td>Secret <code>regcred</code></td>
+<td>รหัสจริงเข้า git history — ลบไฟล์ทีหลังไม่ได้ทำให้ปลอดภัยขึ้น</td>
+</tr>
+<tr>
+<td>NetworkPolicy ระดับ namespace</td>
+<td>policy พวกนี้ใช้ <code>podSelector: {}</code> = มีผลกับ <strong>ทุก pod ใน namespace</strong> แก้ให้ตัวเองแต่กระทบคนอื่นหมด</td>
+</tr>
+<tr>
+<td>Namespace</td>
+<td><code>kubectl delete -f .</code> ที่ตั้งใจลบ service ตัวเดียว จะลบ <strong>ทุก service ใน namespace</strong></td>
+</tr>
+<tr>
+<td>Gateway</td>
+<td>สอง service แก้ listener คนละทาง ทับกันไปมา</td>
+</tr>
+</tbody>
+</table>
+<p>และ RBAC ก็ไม่ให้อยู่แล้ว — dev สร้าง Namespace, Gateway, NetworkPolicy ไม่ได้ (บทที่ 10)
+apply เข้าไปจะโดน <code>Forbidden</code> เฉพาะชิ้นที่เป็นของกลาง ส่วนที่เหลือขึ้นไปเรียบร้อย
+จบด้วยสภาพ <strong>ขึ้นไปครึ่งเดียว</strong> ซึ่งไล่ยากกว่าพังทั้งก้อนมาก</p>
+</div><div class="sub" data-machine="all"><h3 id="เส้นแบ่งของ-httproute">เส้นแบ่งของ HTTPRoute</h3>
+<p>อันนี้สับสนง่ายที่สุด เพราะมันพูดถึง Gateway ที่เป็นของกลาง แต่ตัวไฟล์อยู่ที่นี่:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>ของใคร</th>
+<th>อยู่ที่</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gateway · listener 443 · cert wildcard</td>
+<td>ของกลาง — ทุก service มาเกาะตัวเดียวกัน</td>
+<td><code>config/gateway/</code></td>
+</tr>
+<tr>
+<td>hostname <code>ads.myhr.co.th</code> + path ของ <code>zeeme-ads</code></td>
+<td>ของ service ตัวนี้ตัวเดียว</td>
+<td><code>httproute.yaml</code> ที่นี่</td>
+</tr>
+</tbody>
+</table>
+<p>ตัวที่ยอมให้ route จาก namespace อื่นมาเกาะได้คือ <code>allowedRoutes.namespaces.from: All</code>
+ที่ตั้งไว้<strong>ฝั่ง Gateway</strong> ไม่ใช่สิ่งที่ไฟล์นี้เปิดเอง</p>
+<blockquote>
+<p>ถ้าต้องแก้ listener หรือเพิ่มชื่อใน cert เพื่อ service นี้
+<strong>แก้ที่ <code>config/gateway/</code> แล้วบันทึกในบทที่ 07</strong> อย่าเอามาไว้ที่นี่</p>
+</blockquote>
+<hr />
+<blockquote>
+<p><strong>ถ้าคู่มือกับไฟล์ที่นี่ไม่ตรงกัน — <a href="11-deploy-app.html">บทที่ 11</a> ถูก</strong> แล้วแก้ไฟล์ที่นี่ตาม
+<strong>ถ้าของบน cluster ไม่ตรงกับที่นี่ — ที่นี่ถูก</strong> แล้ว apply ทับ
+🔴 ห้าม <code>kubectl edit</code> บน cluster ตรง ๆ เด็ดขาด</p>
+</blockquote>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="20"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
+    <div class="pn-row"><a class="pn" href="ansible.html">← Ansible runbook</a><a class="pn" href="deploy-demo.html">Demo — auth ที่ Gateway →</a></div>
+  </main>
+</div>
+
+<button class="fab" id="fab" type="button">
+  <span class="fab-ico">↓</span><span class="fab-txt">ขั้นที่ต้องทำ</span>
+</button>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var CH    = document.body.dataset.chapter;
+  var TOTAL = +document.body.dataset.total;
+  var KEY   = 'myhr-k8s-progress';
+
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ return {}; } }
+  function save(o){ try{ localStorage.setItem(KEY, JSON.stringify(o)); }catch(e){} }
+  function mine(){ var a=load(); return (a[CH]||[]); }
+  function setMine(list){ var a=load(); a[CH]=list; save(a); }
+
+  var jumpSel=document.getElementById('jumpsel'), stick;
+  var toastEl=document.getElementById('toast'), toastT;
+  function toast(msg){
+    toastEl.textContent=msg; toastEl.classList.add('show');
+    clearTimeout(toastT); toastT=setTimeout(function(){toastEl.classList.remove('show');},1600);
+  }
+
+  /* ---------- ทำแล้ว / ยังไม่ทำ ---------- */
+  function paint(){
+    var done=mine();
+    document.querySelectorAll('.step').forEach(function(s){
+      var n=+s.dataset.step, is=done.indexOf(n)>=0;
+      s.classList.toggle('done', is);
+      var b=s.querySelector('.done-btn');
+      if(b) b.querySelector('.lbl').textContent = is ? 'ทำแล้ว' : 'ทำแล้ว';
+    });
+    if(jumpSel){
+      [].forEach.call(jumpSel.options, function(o){
+        if(!o.value) return;
+        o.textContent=(done.indexOf(+o.value)>=0 ? '✓ ' : '')+o.dataset.t;
+      });
+    }
+    var n=done.length;
+    document.getElementById('pcount').textContent=n+'/'+TOTAL;
+    document.getElementById('pbar').style.width=(TOTAL?100*n/TOTAL:0)+'%';
+    paintFab();
+    paintNav();
+  }
+
+  document.querySelectorAll('.done-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var n=+btn.dataset.step, done=mine(), i=done.indexOf(n);
+      var marking = i<0;
+      if(i>=0){ done.splice(i,1); } else { done.push(n); }
+      setMine(done); paint();
+      // กดทำแล้ว = พาไปขั้นถัดไปให้เลย ไม่ต้องเลื่อนหาเอง
+      // ตอนยกเลิกไม่พาไปไหน เพราะคนน่าจะอยากอยู่ตรงนั้นต่อ
+      if(marking){
+        var nx=nextStep();
+        if(nx){ nx.scrollIntoView({behavior:'smooth', block:'start'}); }
+        else { toast('ครบทุกขั้นของบทนี้แล้ว'); }
+      }
+    });
+  });
+
+  document.getElementById('reset').addEventListener('click', function(){
+    if(!confirm('ล้างสถานะ "ทำแล้ว" ทั้งหมดของบทนี้?')) return;
+    setMine([]); paint(); toast('ล้างแล้ว');
+  });
+
+  /* ---------- ขั้นที่ต้องทำต่อไป ---------- */
+  function nextStep(){
+    var done=mine(), out=null;
+    document.querySelectorAll('.step').forEach(function(s){
+      if(out) return;
+      if(done.indexOf(+s.dataset.step)<0) out=s;
+    });
+    return out;
+  }
+  function paintFab(){
+    var fab=document.getElementById('fab'), s=nextStep();
+    if(s){
+      fab.classList.remove('alldone');
+      fab.querySelector('.fab-ico').textContent='↓';
+      fab.querySelector('.fab-txt').textContent='ขั้นที่ต้องทำ';
+      fab.title='ไปที่: '+s.querySelector('h2').textContent.trim();
+    }else{
+      fab.classList.add('alldone');
+      fab.querySelector('.fab-ico').textContent='✓';
+      fab.querySelector('.fab-txt').textContent='บทนี้เสร็จแล้ว';
+      fab.title='ไปบทถัดไป';
+    }
+  }
+  document.getElementById('fab').addEventListener('click', function(){
+    var s=nextStep();
+    if(s){
+      s.scrollIntoView({behavior:'smooth', block:'start'});
+      s.animate([{outline:'2px solid var(--accent)'},{outline:'2px solid transparent'}],
+                {duration:1100});
+    }else{
+      var nx=document.querySelector('.pn-row a:last-child');
+      if(nx && nx.classList.contains('pn')) nx.click(); else toast('ครบทุกขั้นแล้ว');
+    }
+  });
+
+  /* ---------- ความคืบหน้าใน sidebar ---------- */
+  function paintNav(){
+    var all=load();
+    document.querySelectorAll('[data-progress-for]').forEach(function(el){
+      var f=el.dataset.progressFor, d=(all[f]||[]).length, t=+el.dataset.total||0;
+      el.textContent = d ? (d+'/'+t) : '';
+      el.classList.toggle('full', t>0 && d>=t);
+    });
+  }
+
+  /* ---------- ปุ่มคัดลอก ---------- */
+  function copyText(t){
+    if(navigator.clipboard && window.isSecureContext){
+      return navigator.clipboard.writeText(t);
+    }
+    return new Promise(function(res,rej){
+      var ta=document.createElement('textarea');
+      ta.value=t; ta.setAttribute('readonly','');
+      ta.style.cssText='position:fixed;top:-1000px;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy') ? res() : rej(); }
+      catch(e){ rej(e); }
+      finally{ document.body.removeChild(ta); }
+    });
+  }
+  document.querySelectorAll('.cb-copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var code=btn.closest('.cb').querySelector('code');
+      copyText(code.innerText).then(function(){
+        btn.textContent='คัดลอกแล้ว'; btn.classList.add('ok');
+        setTimeout(function(){ btn.textContent='คัดลอก'; btn.classList.remove('ok'); },1400);
+      }).catch(function(){
+        // คัดลอกอัตโนมัติไม่ได้ (เบราว์เซอร์บล็อก) — เลือกข้อความให้เลย เหลือแค่กด Ctrl+C
+        try{
+          var sel=window.getSelection(), rng=document.createRange();
+          rng.selectNodeContents(code); sel.removeAllRanges(); sel.addRange(rng);
+          toast('เบราว์เซอร์บล็อกการคัดลอก — เลือกให้แล้ว กด Ctrl+C ได้เลย');
+        }catch(e){ toast('คัดลอกไม่สำเร็จ — ลากเลือกข้อความแล้วกด Ctrl+C'); }
+      });
+    });
+  });
+
+  /* ---------- กรองตามเครื่อง ---------- */
+  /* จำไว้ข้ามบทด้วย เพราะคนหนึ่งรอบมักนั่งอยู่หน้าเครื่องเดียว
+     ถ้าบทถัดไปไม่มีเครื่องนั้น จะเด้งกลับเป็น "ทั้งหมด" เองไม่ให้หน้าว่างเปล่า */
+  var MKEY='myhr-k8s-machine';
+  var tabs=document.getElementById('mtabs');
+  if(tabs){
+    var avail=[].map.call(tabs.querySelectorAll('.mtab'), function(b){ return b.dataset.m; });
+    var applyM=function(m){
+      if(avail.indexOf(m)<0) m='all';
+      document.body.dataset.mfilter=m;
+      tabs.querySelectorAll('.mtab').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); });
+      document.querySelectorAll('.step').forEach(function(sec){
+        var list=(sec.dataset.machines||'all').split(' ');
+        /* ขั้นที่ไม่ได้ระบุเครื่องเลย = ใช้ได้ทุกเครื่อง ต้องเห็นเสมอ
+           ขั้นที่ระบุแล้ว ต้องมีเครื่องที่เลือกอยู่ในรายการถึงจะโชว์ */
+        var show = (m==='all') || (list.length===1 && list[0]==='all') || list.indexOf(m)>=0;
+        sec.classList.toggle('hide-m', !show);
+      });
+      document.querySelectorAll('.sub').forEach(function(d){
+        var dm=d.dataset.machine||'all';
+        d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
+      });
+      syncJump(); spy();
+      try{ localStorage.setItem(MKEY,m); }catch(e){}
+      paintFab();
+    };
+    tabs.addEventListener('click', function(e){
+      var b=e.target.closest('.mtab');
+      if(b){ applyM(b.dataset.m); }
+    });
+    var savedM='all';
+    try{ savedM=localStorage.getItem(MKEY)||'all'; }catch(e){}
+    applyM(savedM);
+  }
+
+  /* ---------- แถบทางลัด ---------- */
+  stick=document.querySelector('.stick');
+  function stickH(){ return stick ? stick.getBoundingClientRect().height : 0; }
+  function fitPad(){
+    /* หัวข้อต้องไม่โดนแถบที่ติดหนึบทับตอนกดทางลัด — ความสูงของแถบไม่เท่ากันระหว่าง
+       จอใหญ่กับจอเล็ก จึงวัดเอาจริงแทนที่จะ hardcode ตัวเลขไว้ใน css
+       แต่ถ้าวัดได้ตอนหน้ายังไม่วางเลย์เอาต์ ค่าที่ได้จะเพี้ยนจนดันหัวข้อไปกลางจอ */
+    var h=stickH();
+    if(!h || !window.innerHeight) return;
+    document.documentElement.style.scrollPaddingTop=Math.min(h+12, innerHeight*0.6)+'px';
+  }
+  function syncJump(){
+    if(!jumpSel) return;
+    /* ขั้นที่แถบกรองเครื่องซ่อนอยู่ ต้องหายจากลิสต์ด้วย
+       ไม่งั้นเลือกแล้ววิ่งไปจอดตรงส่วนที่มองไม่เห็น */
+    [].forEach.call(jumpSel.options, function(o){
+      if(!o.value) return;
+      var sec=document.getElementById('step-'+o.value);
+      o.hidden = !!(sec && sec.classList.contains('hide-m'));
+    });
+  }
+  function spy(){
+    if(!jumpSel) return;
+    var line=stickH()+16, cur='';
+    document.querySelectorAll('.step').forEach(function(s){
+      if(s.classList.contains('hide-m')) return;
+      if(s.getBoundingClientRect().top<=line) cur=s.dataset.step;
+    });
+    /* ตัวที่โชว์อยู่ = ขั้นที่กำลังอ่าน แต่ไม่แตะตอนลิสต์กำลังเปิด เดี๋ยวค่าเปลี่ยนใต้มือ */
+    if(document.activeElement!==jumpSel && jumpSel.value!==cur) jumpSel.value=cur;
+  }
+  if(jumpSel){
+    jumpSel.addEventListener('change', function(){
+      var sec=jumpSel.value && document.getElementById('step-'+jumpSel.value);
+      if(!sec) return;
+      sec.scrollIntoView();          /* ใช้ scroll-padding-top ที่ fitPad วัดไว้ */
+      jumpSel.blur();                /* คืน scroll ให้ล้อเมาส์ ไม่ค้างอยู่ที่ลิสต์ */
+    });
+    var spyQ=false;
+    window.addEventListener('scroll', function(){
+      if(spyQ) return;
+      spyQ=true;
+      requestAnimationFrame(function(){ spyQ=false; spy(); });
+    }, {passive:true});
+    window.addEventListener('resize', function(){ fitPad(); spy(); });
+    fitPad(); syncJump(); spy();
+  }
+
+  /* ---------- เมนูบนจอเล็ก ---------- */
+  var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');
+  if(burger) burger.addEventListener('click', function(){ sb.classList.toggle('open'); });
+
+  paint();
+  spy();
+})();
+</script>
+</body>
+</html>

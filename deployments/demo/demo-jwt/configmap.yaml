@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-jwt-page
+  namespace: myhr-uat
+  labels:
+    app.kubernetes.io/name: demo-jwt
+data:
+  index.html: |
+    <!doctype html><meta charset="utf-8"><title>demo-jwt</title>
+    <h1>demo-jwt · HTTP 200</h1>
+    <p>ถ้าเห็นหน้านี้ แปลว่า Gateway ตรวจ JWT ผ่านแล้วถึงจะส่ง request มาถึงที่นี่</p>
+    <p>ตัว app ไม่มี code ตรวจ JWT อยู่เลยสักบรรทัด</p>

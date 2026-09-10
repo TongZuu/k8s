@@ -1,0 +1,43 @@
+# =============================================================================
+#  🔑 แบบที่ 2 — ผูก API key ไว้ที่ Gateway
+# =============================================================================
+#  Envoy เทียบค่าที่ client ส่งมากับ Secret ให้ก่อน ตัวที่ไม่ตรงถูกตอบ 401
+#  ที่ Gateway เลย ไม่วิ่งไปถึง pod
+#
+#  ต่างจาก JWT ตรงที่ API key ไม่มีวันหมดอายุในตัวเอง และไม่มี claim อะไรติดมา
+#  การเพิกถอน = ลบ key ออกจาก Secret แล้ว apply ทับ
+# =============================================================================
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: demo-apikey
+  namespace: myhr-uat
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: demo-apikey
+
+  apiKeyAuth:
+    # ---- กุญแจอยู่ที่ไหน ---------------------------------------------------
+    # Secret ต้องอยู่ namespace เดียวกับ SecurityPolicy
+    credentialRefs:
+      - name: demo-apikey-keys
+
+    # ---- client ส่งกุญแจมาทางไหน -------------------------------------------
+    # เลือกได้อย่างเดียวต่อ 1 entry: headers / params / cookies
+    # ใส่หลาย entry ได้ Envoy จะไล่ตามลำดับจนกว่าจะเจอ
+    #
+    # ⚠️ params คือ query string ซึ่งจะไปโผล่ใน access log และ browser history
+    #    ถ้าเลือกได้ให้ใช้ header เสมอ
+    extractFrom:
+      - headers:
+          - X-API-Key
+
+    # ---- บอก backend ว่าใครเป็นคนเรียก --------------------------------------
+    # ค่าที่ส่งไปคือ "ชื่อ key" ใน Secret (client id) ไม่ใช่ตัว API key
+    forwardClientIDHeader: x-client-id
+
+    # ---- ลบกุญแจทิ้งก่อนส่งต่อ ----------------------------------------------
+    # 🔴 ควรเปิดไว้เสมอ ไม่งั้น API key จะไหลต่อไปถึง app และโผล่ใน log ของ app ด้วย
+    sanitize: true

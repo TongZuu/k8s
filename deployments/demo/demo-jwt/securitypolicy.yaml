@@ -1,0 +1,63 @@
+# =============================================================================
+#  🔑 แบบที่ 1 — ผูก JWT ไว้ที่ Gateway
+# =============================================================================
+#  Envoy ตรวจลายเซ็น · iss · aud · exp ให้ก่อน request จะออกจาก Gateway
+#  ตัวที่ไม่ผ่านจะถูกตอบ 401 ที่ Gateway เลย ไม่วิ่งไปถึง pod
+#
+#  ---- token สำหรับทดสอบ demo นี้ (หมดอายุ 2036-09-06) ----------------------
+#  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlbW8ta2V5In0.eyJpc3MiOiJteWhyLWRlbW8taXNzdWVyIiwiYXVkIjoiZGVtby1qd3QiLCJzdWIiOiJkZW1vLXVzZXIiLCJuYW1lIjoiRGVtbyBVc2VyIiwiaWF0IjoxNzg4OTc1MTc5LCJleHAiOjIxMDQzMzUxNzl9.pdeKYgoq9fO08jRIWBFJu7oxH7DSRs4Ydl0qx3jQBAg
+#
+#  payload: {"iss":"myhr-demo-issuer","aud":"demo-jwt","sub":"demo-user","name":"Demo User"}
+#  เซ็นด้วย HS256 ด้วยกุญแจเดียวกับที่อยู่ใน localJWKS ข้างล่าง
+#
+#  targetRefs ชี้ที่ HTTPRoute จึงมีผลเฉพาะ route นี้
+#  ถ้าอยากให้ทั้ง Gateway ใช้ policy เดียวกัน เปลี่ยน kind เป็น Gateway
+#  แต่จะกระทบทุก service ที่มาเกาะ listener เดียวกัน — คิดให้ดีก่อนทำ
+# =============================================================================
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: demo-jwt
+  namespace: myhr-uat
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: demo-jwt
+
+  jwt:
+    providers:
+      - name: demo
+
+        # ---- ที่มาของกุญแจ ------------------------------------------------
+        # Inline = ใส่ JWKS ลงไปตรง ๆ เหมาะกับ demo และ HS256 (กุญแจลับร่วมกัน)
+        #
+        # 🔴 ของจริงห้ามใช้แบบนี้ — JWKS ของ HS256 มี "กุญแจลับ" อยู่ข้างใน
+        #    ใครอ่านไฟล์นี้ได้ก็ปลอม token ได้ทันที
+        #    ของจริงให้ใช้ remoteJWKS ชี้ไป IdP (คีย์เป็น public key ของ RS256/ES256)
+        #    หรืออย่างน้อยย้ายไป valueRef ที่อ่านจาก ConfigMap
+        localJWKS:
+          type: Inline
+          inline: '{"keys":[{"kty":"oct","alg":"HS256","kid":"demo-key","k":"bXloci1kZW1vLWp3dC1zZWNyZXQtZG8tbm90LXVzZS1pbi1wcm9kdWN0aW9u"}]}'
+
+        # ---- เงื่อนไขที่ต้องตรงถึงจะผ่าน ------------------------------------
+        # ทั้งสองค่าต้องตรงกับที่อยู่ใน payload ของ token เป๊ะ ไม่งั้น 401
+        issuer: myhr-demo-issuer
+        audiences:
+          - demo-jwt
+
+        # ---- เอา token มาจากไหน ---------------------------------------------
+        # ไม่ใส่ก็ได้ ค่าเริ่มต้นคือ "Authorization: Bearer <token>" อยู่แล้ว
+        # เขียนไว้ให้เห็นว่าเปลี่ยนได้ เช่นรับจาก cookie หรือ query param
+        extractFrom:
+          headers:
+            - name: Authorization
+              valuePrefix: "Bearer "
+
+        # ---- ส่ง claim ต่อให้ backend --------------------------------------
+        # app อ่าน header ธรรมดาแทนการถอด JWT เอง
+        claimToHeaders:
+          - claim: sub
+            header: x-jwt-sub
+          - claim: name
+            header: x-jwt-name

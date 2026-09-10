@@ -1,0 +1,30 @@
+# =============================================================================
+#  เปิดทางให้ Envoy เข้าถึง pod ของ demo-jwt เท่านั้น
+# =============================================================================
+#  🔴 myhr-uat มี default-deny-all แต่ *ไม่มี* allow-from-gateway แบบที่ myhr-prod มี
+#     ถ้าไม่มีไฟล์นี้ pod จะขึ้นเขียวปกติ แต่ยิงจากข้างนอกจะไม่มีวันถึง — และไม่มี log
+#     บอกด้วย เพราะ NetworkPolicy ไม่เขียน log ตอนปฏิเสธ
+#
+#  ใช้ podSelector เจาะจง demo-jwt ไม่ใช่ {} จึงเป็นของ service ตัวนี้ตัวเดียว
+#  ลบ demo ทิ้งเมื่อไหร่ policy นี้หายตามไปด้วย ไม่ค้างเป็นรูโหว่ให้ใคร
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-gateway-to-demo-jwt
+  namespace: myhr-uat
+  labels:
+    app.kubernetes.io/name: demo-jwt
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: demo-jwt
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+      ports:
+        - protocol: TCP
+          port: 8080

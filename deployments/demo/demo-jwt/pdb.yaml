@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: demo-jwt
+  namespace: myhr-uat
+  labels:
+    app.kubernetes.io/name: demo-jwt
+spec:
+  minAvailable: 50%
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: demo-jwt

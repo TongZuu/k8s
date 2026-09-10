@@ -1,0 +1,26 @@
+# =============================================================================
+#  zeeme-ads — Service (myhr-prod)
+# =============================================================================
+#  ⚠️ เปลี่ยนจากของเดิม 2 อย่าง ทั้งคู่กระทบคนเรียกใช้:
+#     1. NodePort → ClusterIP   ทางเข้าจากนอกไปอยู่ที่ Gateway ตัวเดียว (httproute.yaml)
+#     2. ชื่อ zeeme-ads-service → zeeme-ads
+#        service อื่นที่เรียกด้วยชื่อ DNS เดิมจะหาไม่เจอ ต้องแก้ตามให้ครบก่อนตัดของเดิมทิ้ง
+#        (หาได้จาก: grep -rn 'zeeme-ads-service' ใน repo ของแต่ละ service)
+# =============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: zeeme-ads
+  namespace: myhr-prod
+  labels:
+    app.kubernetes.io/name: zeeme-ads
+    app.kubernetes.io/part-of: myhr
+spec:
+  type: ClusterIP              # ไม่ใช่ NodePort/LoadBalancer — เข้าผ่าน Gateway เท่านั้น
+  selector:
+    app.kubernetes.io/name: zeeme-ads
+  ports:
+    - name: http
+      port: 80
+      targetPort: http         # = containerPort 8100
