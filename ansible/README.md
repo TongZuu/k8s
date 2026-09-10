@@ -116,8 +116,22 @@ ping -c2 192.168.50.101
 
 ### 4 · SSH key
 
+> 🔴 **ถ้าเพิ่งลง OS ใหม่ ต้องล้าง `known_hosts` ก่อน** — เครื่องที่ลงใหม่ได้ host key
+> ชุดใหม่ แต่ของเก่ายังค้างในไฟล์ `accept-new` ไม่ช่วยเลยเพราะมันรับเฉพาะเครื่องที่
+> **ยังไม่มี** entry · ที่มี entry แล้วแต่คีย์ไม่ตรงจะถูกปฏิเสธด้วย
+> `REMOTE HOST IDENTIFICATION HAS CHANGED!` แล้ว `ssh-copy-id` ข้างล่างจะไม่ทำงาน
+>
+> ```bash
+> for ip in 101 102 103 104 105 106; do
+>   ssh-keygen -f ~/.ssh/known_hosts -R 192.168.50.$ip
+> done
+> ```
+>
+> ลบเฉพาะ 6 IP นี้ ไม่แตะ entry ของเครื่องอื่น · ถ้า **ไม่ได้** ลง OS ใหม่แล้วเจอ
+> ข้อความนี้ ให้หยุดตรวจก่อน — มันคือสิ่งที่ข้อความนั้นเตือนจริง ๆ
+
 ```bash
-ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ''
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ''   # ข้ามถ้ามี key อยู่แล้ว
 for ip in 101 102 103 104 105 106; do
   ssh-copy-id -o StrictHostKeyChecking=accept-new root@192.168.50.$ip
 done

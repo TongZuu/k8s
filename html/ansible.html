@@ -398,7 +398,19 @@ EOF
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ผ่านแล้วจบ ไม่ต้องแก้อะไร · ถ้าไม่ผ่านดู <a href="#%E0%B9%81%E0%B8%81%E0%B9%89%E0%B8%9B%E0%B8%B1%E0%B8%8D%E0%B8%AB%E0%B8%B2%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%80%E0%B8%84%E0%B8%A2%E0%B9%80%E0%B8%88%E0%B8%AD%E0%B8%88%E0%B8%A3%E0%B8%B4%E0%B8%87">แก้ปัญหา</a></p>
 </div><div class="sub" data-machine="all"><h3 id="4--ssh-key">4 · SSH key</h3>
-<div class="cb"><pre><code class="language-bash">ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ''
+<blockquote>
+<p>🔴 <strong>ถ้าเพิ่งลง OS ใหม่ ต้องล้าง <code>known_hosts</code> ก่อน</strong> — เครื่องที่ลงใหม่ได้ host key
+ชุดใหม่ แต่ของเก่ายังค้างในไฟล์ <code>accept-new</code> ไม่ช่วยเลยเพราะมันรับเฉพาะเครื่องที่
+<strong>ยังไม่มี</strong> entry · ที่มี entry แล้วแต่คีย์ไม่ตรงจะถูกปฏิเสธด้วย
+<code>REMOTE HOST IDENTIFICATION HAS CHANGED!</code> แล้ว <code>ssh-copy-id</code> ข้างล่างจะไม่ทำงาน</p>
+<div class="cb"><pre><code class="language-bash">for ip in 101 102 103 104 105 106; do
+  ssh-keygen -f ~/.ssh/known_hosts -R 192.168.50.$ip
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ลบเฉพาะ 6 IP นี้ ไม่แตะ entry ของเครื่องอื่น · ถ้า <strong>ไม่ได้</strong> ลง OS ใหม่แล้วเจอ
+ข้อความนี้ ให้หยุดตรวจก่อน — มันคือสิ่งที่ข้อความนั้นเตือนจริง ๆ</p>
+</blockquote>
+<div class="cb"><pre><code class="language-bash">ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ''   # ข้ามถ้ามี key อยู่แล้ว
 for ip in 101 102 103 104 105 106; do
   ssh-copy-id -o StrictHostKeyChecking=accept-new root@192.168.50.$ip
 done
