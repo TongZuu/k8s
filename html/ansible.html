@@ -487,7 +487,64 @@ grep -c k8s-master01 /etc/hosts   # ต้องได้ 0 หรือ 1 ไ�
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ทำครั้งเดียวพอ — คู่มือปัจจุบันและ playbook ใช้ marker <code># BEGIN k8s cluster</code> ชุดเดียวกันแล้ว</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="ลำดับการรัน--ห้ามข้าม">ลำดับการรัน — ห้ามข้าม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3 id="ขั้น-1--ทำมือหนึ่งเครื่องก่อน-">ขั้น 1 · ทำมือหนึ่งเครื่องก่อน ✅</h3>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="ลำดับการรัน--ห้ามข้าม">ลำดับการรัน — ห้ามข้าม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>🔴 <strong>เลือกเส้นทางตามสถานะตั้งต้นก่อน — สองแบบนี้คนละลำดับกัน</strong></p>
+<table>
+<thead>
+<tr>
+<th>สถานะตั้งต้น</th>
+<th>ใช้เส้นทาง</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>มีเครื่องที่<strong>ทำมือตามบท 01 เสร็จแล้ว</strong> อย่างน้อยหนึ่งเครื่อง</td>
+<td>ขั้น 1-5 ข้างล่าง</td>
+</tr>
+<tr>
+<td><strong>เครื่องเปล่าทั้งหมด</strong> — ลง OS ใหม่ / cluster ใหม่</td>
+<td><a href="#%E0%B9%80%E0%B8%AA%E0%B9%89%E0%B8%99%E0%B8%97%E0%B8%B2%E0%B8%87%E0%B9%80%E0%B8%84%E0%B8%A3%E0%B8%B7%E0%B9%88%E0%B8%AD%E0%B8%87%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B9%88%E0%B8%B2--%E0%B8%A2%E0%B8%B1%E0%B8%87%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B9%80%E0%B8%84%E0%B8%A3%E0%B8%B7%E0%B9%88%E0%B8%AD%E0%B8%87%E0%B9%84%E0%B8%AB%E0%B8%99%E0%B8%97%E0%B8%B3%E0%B8%A1%E0%B8%B7%E0%B8%AD">เส้นทางเครื่องเปล่า</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+</div><div class="sub" data-machine="all"><h3 id="เส้นทางเครื่องเปล่า--ยังไม่มีเครื่องไหนทำมือ">เส้นทางเครื่องเปล่า — ยังไม่มีเครื่องไหนทำมือ</h3>
+<p>ขั้น 1-5 ตั้งอยู่บนสมมติฐานว่ามีเครื่องที่ทำมือไว้เทียบ <strong>ถ้าไม่มี สมมติฐานนั้นหายไปทั้งชุด</strong>
+· <code>--check</code> ใส่เครื่องเปล่าจะล้มเองที่ task แรกที่ต่อเนื่องกัน (ดู
+<a href="#--check-%E0%B8%A5%E0%B9%89%E0%B8%A1%E0%B8%9A%E0%B8%99%E0%B9%80%E0%B8%84%E0%B8%A3%E0%B8%B7%E0%B9%88%E0%B8%AD%E0%B8%87%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B9%88%E0%B8%B2--dest--must-be-an-existing-dir">ตารางในหัวข้อแก้ปัญหา</a>)
+<strong>อย่าเริ่มด้วย <code>--check</code></strong></p>
+<p>ทำ 2 ข้อที่ playbook ไม่ทำให้ก่อน (หัวข้อข้างบน) แล้ว:</p>
+<div class="cb"><pre><code class="language-bash"># 1 · master01 เครื่องเดียวก่อน — รันจริงเลย ไม่ต้อง --check
+ansible-playbook prepare-os.yml --limit k8s-master01
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash"># 2 · ผ่านแล้ว --check ซ้ำเครื่องเดิม — ตอนนี้มันมีความหมายแล้ว
+#     เครื่องอยู่ในสถานะปลายทาง จึงเป็นการทดสอบว่า playbook idempotent จริง
+ansible-playbook prepare-os.yml --check --diff --limit k8s-master01 --skip-tags reboot
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ต้องได้ <code>changed=0</code></strong> — ถ้ายังมี <code>changed</code> แปลว่ามี task ที่รายงานผิดหรือแก้ซ้ำทุกรอบ
+หยุดดูก่อนไปเครื่องอื่น เพราะจะเจอปัญหาเดียวกันคูณหกเครื่อง</p>
+<div class="cb"><pre><code class="language-bash"># 3 · master ที่เหลือ ทีละเครื่อง (VIP ยังไม่มี ยังไม่ต้องกลัวลำดับ)
+ansible-playbook prepare-os.yml --limit k8s-master02
+ansible-playbook prepare-os.yml --limit k8s-master03
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash"># 4 · worker01 เครื่องเดียวก่อน — เส้นทาง worker ต่างจาก master จริง (ดูขั้น 4)
+ansible-playbook prepare-os.yml --limit k8s-worker01
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<div class="cb"><pre><code class="language-bash"># 5 · worker ที่เหลือ พร้อมกันได้
+ansible-playbook prepare-os.yml --limit 'k8s-worker02,k8s-worker03'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>จบบท 01 แล้วไปบทถัดไปด้วยลำดับเดียวกัน — <code>container-runtime.yml</code> → <code>ha-layer.yml</code>
+→ <code>create-cluster.yml</code> → <code>cilium.yml</code></p>
+<blockquote>
+<p><strong>ไม่ใส่ <code>--skip-tags reboot</code> ตอนรันจริง</strong> — playbook reboot ทีละเครื่อง (<code>serial: 1</code>)
+แล้ว assert ซ้ำหลังบูตให้เอง · ที่ใส่ <code>--skip-tags reboot</code> มีแค่ตอน <code>--check</code></p>
+</blockquote>
+<hr />
+</div><div class="sub" data-machine="all"><h3 id="ขั้น-1--ทำมือหนึ่งเครื่องก่อน-">ขั้น 1 · ทำมือหนึ่งเครื่องก่อน ✅</h3>
+<blockquote>
+<p>ขั้น 1-5 คือ<strong>เส้นทางที่มีเครื่องทำมือไว้เทียบ</strong> — ถ้าเครื่องเปล่าทั้งหมด
+ให้ใช้ <a href="#%E0%B9%80%E0%B8%AA%E0%B9%89%E0%B8%99%E0%B8%97%E0%B8%B2%E0%B8%87%E0%B9%80%E0%B8%84%E0%B8%A3%E0%B8%B7%E0%B9%88%E0%B8%AD%E0%B8%87%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B9%88%E0%B8%B2--%E0%B8%A2%E0%B8%B1%E0%B8%87%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B9%80%E0%B8%84%E0%B8%A3%E0%B8%B7%E0%B9%88%E0%B8%AD%E0%B8%87%E0%B9%84%E0%B8%AB%E0%B8%99%E0%B8%97%E0%B8%B3%E0%B8%A1%E0%B8%B7%E0%B8%AD">เส้นทางเครื่องเปล่า</a> ข้างบนแทน</p>
+</blockquote>
 <p>ต้องรู้ก่อนว่า &quot;ถูกต้อง&quot; หน้าตาเป็นยังไง ถึงจะบอกได้ว่า playbook ทำถูกหรือเปล่า</p>
 </div><div class="sub" data-machine="all"><h3 id="ขั้น-2-----check-ใส่เครื่องที่ทำมือเสร็จแล้ว">ขั้น 2 · 🔑 <code>--check</code> ใส่เครื่องที่ทำมือเสร็จแล้ว</h3>
 <p><strong>การทดสอบที่ดีที่สุดที่มี</strong> เพราะรู้คำตอบล่วงหน้า — เครื่องนั้นอยู่ในสถานะปลายทางที่ถูกต้องอยู่แล้ว</p>
