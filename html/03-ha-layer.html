@@ -286,9 +286,15 @@ echo "VIP=$VIP:$VIP_PORT  IFACE=$NODE_IFACE  VRID=$VRRP_ROUTER_ID"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ชื่อ interface พร้อม IP ของเครื่องนี้ เช่น <code>ens192  UP  192.168.50.101/24</code></p>
 <blockquote>
-<p>⚠️ <strong>ชื่อ NIC ไม่จำเป็นต้องเหมือนกันทุกเครื่อง</strong> — เคยเจอจริงว่า master01 เป็น <code>ens192</code>
-แต่ master02 เป็น <code>ens33</code> ขึ้นกับว่า VM ถูกสร้างด้วย virtual hardware รุ่นไหน
+<p>⚠️ <strong>ชื่อ NIC ไม่จำเป็นต้องเหมือนกันทุกเครื่อง</strong> — ขึ้นกับว่า VM ถูกสร้างด้วย
+virtual hardware รุ่นไหน (<code>ens192</code> มักเป็น VMXNET3 · <code>ens33</code>/<code>ens32</code> มักเป็น E1000)
 <strong>อย่าจดค่าจากเครื่องแรกแล้วเหมาว่าใช้ได้ทุกเครื่อง</strong> — ต้องดูทีละเครื่อง</p>
+<p><strong>สถานะของ cluster นี้ (11 ก.ย. 2026):</strong> ทั้ง 6 เครื่องเป็น <code>ens192</code> ตรงกันหมดแล้ว
+— master02 (<code>192.168.50.102</code>) เคยเป็น <code>ens33</code> เครื่องเดียวในหกเครื่อง และถูกปรับมา
+เป็น <code>ens192</code> ก่อนการติดตั้งรอบนี้ · <code>NODE_IFACE=ens192</code> ใน <code>versions.env</code> จึงใช้ได้
+ทุกเครื่องแล้ว (ก่อนหน้านี้บท 01 ข้อ 1.1/1.2 จะฟ้อง <code>NOCONN</code> บน master02)</p>
+<p><strong>ยังต้องตรวจทีละเครื่องอยู่</strong> — ใช้เวลาไม่ถึงนาที แต่ถ้าชื่อไม่ตรง keepalived จะ
+start ไม่ขึ้นเลย (อาการเต็ม ๆ อยู่ท้ายข้อ 3)</p>
 <p>ไฟล์ <code>keepalived-*.conf</code> เขียน <code>ens192</code> ไว้ตายตัว 2 จุด ข้อ 3 จึงมีขั้นตอนแก้ให้ตรงกับ
 เครื่องที่ทำอยู่แบบอัตโนมัติ — ไม่ต้องมาไล่แก้ในรีโปเอง</p>
 </blockquote>
