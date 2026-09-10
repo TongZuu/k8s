@@ -741,7 +741,7 @@ pod ใหม่ต้องผ่าน <code>readinessProbe</code> ก่อ�
 </tr>
 <tr>
 <td><code>Running</code> แต่เรียกไม่ได้</td>
-<td>NetworkPolicy — <code>kubectl -n kube-system exec -it ds/cilium -- hubble observe --namespace myhr-prod --verdict DROPPED --last 50</code></td>
+<td>NetworkPolicy — ดู flow ที่ถูกทิ้ง <strong>ทุก agent</strong> (<code>for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do kubectl -n kube-system exec &quot;$p&quot; -c cilium-agent -- hubble observe --namespace myhr-prod --verdict DROPPED --last 50; done</code>) — ถาม agent ตัวเดียวได้ผลว่างทั้งที่มีของถูก drop</td>
 </tr>
 <tr>
 <td>curl ค้างหรือไม่ตอบ</td>

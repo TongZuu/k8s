@@ -411,10 +411,21 @@ DaemonSet    cilium    Desired: 6, Ready: 6/6, Available: 6/6
 <p><strong>ควรเห็น:</strong> ทั้ง 6 เครื่องเป็น <strong><code>Ready</code></strong> แล้ว</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2 id="4--ยืนยันว่า-kube-proxy-replacement-ทำงานจริง">4 · ยืนยันว่า kube-proxy replacement ทำงานจริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep -i 'KubeProxyReplacement'
+<div class="cb"><pre><code class="language-bash">for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  n=$(kubectl -n kube-system get "$p" -o jsonpath='{.spec.nodeName}')
+  echo "$n  $(kubectl -n kube-system exec "$p" -c cilium-agent -- \
+      cilium-dbg status 2&gt;/dev/null | grep -i KubeProxyReplacement | tr -s ' ')"
+done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>KubeProxyReplacement:   True   [&lt;ชื่อ interface ของ node นั้น&gt; 192.168.50.10X ...]</code></p>
-<p>ถ้าเห็น <code>False</code> หรือ <code>Disabled</code> <strong>ให้หยุด</strong> — cluster จะไม่มีอะไรทำ Service เลย</p>
+<p><strong>ควรเห็น:</strong> ครบ 6 บรรทัด บรรทัดละเครื่อง และเป็น <code>KubeProxyReplacement: True</code> ทุกบรรทัด
+(ในวงเล็บต่อท้ายคือ interface กับ IP ของเครื่องนั้น จึงไม่เหมือนกันแต่ละบรรทัด)</p>
+<blockquote>
+<p>🔴 <strong>ต้องวนทุก agent เพราะค่านี้เป็นค่าต่อ node</strong> — <code>exec ds/cilium</code> ได้ agent
+ตัวเดียวที่ Kubernetes เลือกให้ ถ้าเครื่องที่มันเลือกปกติ จะเห็น <code>True</code> แล้วผ่านไป
+ทั้งที่อีกเครื่องยังเป็น <code>False</code> · เครื่องนั้นจะไม่มีอะไรทำ Service เลย
+แล้วอาการจะออกมาเป็น &quot;บาง request ใช้ได้ บางอันไม่ได้&quot; ซึ่งไล่ยากที่สุด</p>
+</blockquote>
+<p>ถ้ามีบรรทัดไหนเป็น <code>False</code> หรือ <code>Disabled</code> <strong>ให้หยุด</strong> — เครื่องนั้นไม่มีอะไรทำ Service เลย</p>
 <p><strong>ตรวจว่าไม่มี kube-proxy จริง ๆ:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl -n kube-system get ds
 kubectl get pods -A | grep -c kube-proxy

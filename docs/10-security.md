@@ -476,10 +476,18 @@ done
 
 **เช็กว่า Hubble ทำงานอยู่จริง:**
 ```bash
-kubectl -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg status | grep -i hubble
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system exec "$p" -c cilium-agent -- cilium-dbg status | grep -i hubble
+done
 ```
-**ควรเห็น:** `Hubble: Ok` พร้อมตัวเลข `Current/Max Flows` — ถ้าขึ้น `Disabled`
-แปลว่า values ที่ deploy จริงไม่ตรงกับ [`values.yaml`](../config/cilium/values.yaml) ในrepo
+**ควรเห็น:** ทุกเครื่องขึ้น `Hubble: Ok` พร้อมตัวเลข `Current/Max Flows`
+
+> เหตุผลเดียวกับกรอบข้างบน — ค่านี้เป็นของ agent แต่ละตัว เครื่องที่ยัง `Disabled`
+> คือเครื่องที่จะไม่มี flow ให้ดูตอนของพัง และเป็นเครื่องที่ไล่ปัญหาไม่ได้
+
+ถ้ามีเครื่องไหนขึ้น `Disabled` แปลว่า values ที่ deploy จริงไม่ตรงกับ
+[`values.yaml`](../config/cilium/values.yaml) ในrepo หรือ agent เครื่องนั้นยังไม่ได้ restart
 
 ---
 

@@ -641,7 +641,11 @@ kubectl -n kube-system rollout status ds/cilium --timeout=10m
 <p><strong>ตรวจทันทีหลังเสร็จ:</strong></p>
 <div class="cb"><pre><code class="language-bash">GW_IP=$(kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}')
 cilium status --wait
-kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep KubeProxyReplacement
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  kubectl -n kube-system get "$p" -o jsonpath='{.spec.nodeName}{" "}'
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    cilium-dbg status 2&gt;/dev/null | grep -i KubeProxyReplacement
+done                                   # ต้อง True ครบทุกเครื่อง ไม่ใช่แค่เครื่องแรก
 kubectl get svc -A | grep LoadBalancer        # EXTERNAL-IP ต้องยังอยู่
 curl -I "http://${GW_IP}"                     # จากเครื่องทดสอบในวง 192.168.50.0/24
 cilium connectivity test

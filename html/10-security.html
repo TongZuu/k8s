@@ -699,10 +699,18 @@ agent บน <strong>เครื่องที่ pod นั้นรัน</s
 เพราะ ring buffer มีขนาดจำกัด ของเก่าถูกทับได้</p>
 </blockquote>
 <p><strong>เช็กว่า Hubble ทำงานอยู่จริง:</strong></p>
-<div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg status | grep -i hubble
+<div class="cb"><pre><code class="language-bash">for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system exec "$p" -c cilium-agent -- cilium-dbg status | grep -i hubble
+done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>Hubble: Ok</code> พร้อมตัวเลข <code>Current/Max Flows</code> — ถ้าขึ้น <code>Disabled</code>
-แปลว่า values ที่ deploy จริงไม่ตรงกับ <a href="../config/cilium/values.yaml"><code>values.yaml</code></a> ในrepo</p>
+<p><strong>ควรเห็น:</strong> ทุกเครื่องขึ้น <code>Hubble: Ok</code> พร้อมตัวเลข <code>Current/Max Flows</code></p>
+<blockquote>
+<p>เหตุผลเดียวกับกรอบข้างบน — ค่านี้เป็นของ agent แต่ละตัว เครื่องที่ยัง <code>Disabled</code>
+คือเครื่องที่จะไม่มี flow ให้ดูตอนของพัง และเป็นเครื่องที่ไล่ปัญหาไม่ได้</p>
+</blockquote>
+<p>ถ้ามีเครื่องไหนขึ้น <code>Disabled</code> แปลว่า values ที่ deploy จริงไม่ตรงกับ
+<a href="../config/cilium/values.yaml"><code>values.yaml</code></a> ในrepo หรือ agent เครื่องนั้นยังไม่ได้ restart</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2 id="4--rbac-ตามหน้าที่">4 · RBAC ตามหน้าที่</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><code>cluster-admin</code> ควรมีคนถือน้อยที่สุด และต้องรู้ว่าใครถือบ้าง</p>

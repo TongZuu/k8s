@@ -149,11 +149,21 @@ kubectl get nodes
 ## 4 · ยืนยันว่า kube-proxy replacement ทำงานจริง
 
 ```bash
-kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep -i 'KubeProxyReplacement'
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  n=$(kubectl -n kube-system get "$p" -o jsonpath='{.spec.nodeName}')
+  echo "$n  $(kubectl -n kube-system exec "$p" -c cilium-agent -- \
+      cilium-dbg status 2>/dev/null | grep -i KubeProxyReplacement | tr -s ' ')"
+done
 ```
-**ควรเห็น:** `KubeProxyReplacement:   True   [<ชื่อ interface ของ node นั้น> 192.168.50.10X ...]`
+**ควรเห็น:** ครบ 6 บรรทัด บรรทัดละเครื่อง และเป็น `KubeProxyReplacement: True` ทุกบรรทัด
+(ในวงเล็บต่อท้ายคือ interface กับ IP ของเครื่องนั้น จึงไม่เหมือนกันแต่ละบรรทัด)
 
-ถ้าเห็น `False` หรือ `Disabled` **ให้หยุด** — cluster จะไม่มีอะไรทำ Service เลย
+> 🔴 **ต้องวนทุก agent เพราะค่านี้เป็นค่าต่อ node** — `exec ds/cilium` ได้ agent
+> ตัวเดียวที่ Kubernetes เลือกให้ ถ้าเครื่องที่มันเลือกปกติ จะเห็น `True` แล้วผ่านไป
+> ทั้งที่อีกเครื่องยังเป็น `False` · เครื่องนั้นจะไม่มีอะไรทำ Service เลย
+> แล้วอาการจะออกมาเป็น "บาง request ใช้ได้ บางอันไม่ได้" ซึ่งไล่ยากที่สุด
+
+ถ้ามีบรรทัดไหนเป็น `False` หรือ `Disabled` **ให้หยุด** — เครื่องนั้นไม่มีอะไรทำ Service เลย
 
 **ตรวจว่าไม่มี kube-proxy จริง ๆ:**
 ```bash

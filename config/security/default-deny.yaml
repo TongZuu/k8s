@@ -8,8 +8,14 @@
 #     และอาการจะดูเหมือน application พังทั้งที่เป็นเรื่อง network policy
 #
 #  วิธีหาว่าต้องเปิดเส้นไหนบ้าง — ดูของจริงอย่าเดา:
-#    kubectl -n kube-system exec -it ds/cilium -- \
-#      hubble observe --namespace myhr-prod --verdict DROPPED --last 100
+#    for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+#      echo "== $p"
+#      kubectl -n kube-system exec "$p" -c cilium-agent -- \
+#        hubble observe --namespace myhr-prod --verdict DROPPED --last 100
+#    done
+#
+#    วนทุก agent — flow อยู่ใน ring buffer ของเครื่องที่ pod รันเท่านั้น
+#    ถาม agent ตัวเดียวแล้วได้ผลว่าง ไม่ได้แปลว่าไม่มีอะไรถูก drop
 # =============================================================================
 
 ---

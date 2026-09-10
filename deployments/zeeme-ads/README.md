@@ -494,7 +494,7 @@ kubectl -n myhr-prod rollout history deploy/zeeme-ads
 | `violates PodSecurity "restricted"` | image ต้องรันด้วย uid 10001 ได้ — `kubectl -n myhr-prod get events --sort-by=.lastTimestamp \| tail -10` |
 | pod ค้าง `Pending` | `kubectl -n myhr-prod describe pod ชื่อ` — `didn't match pod topology spread constraints` = replica ไม่ลงตัวกับจำนวน node ที่เหลือ |
 | `CrashLoopBackOff` ทันทีที่ขึ้น | เกือบทุกครั้งคือ probe path ผิด ([A2 ข้อ 1](#a2--ตอบ-3-คำถามที่ยังไม่มีใครรู้คำตอบ)) หรือเขียน rootfs ไม่ได้ — `kubectl -n myhr-prod logs deploy/zeeme-ads --previous` |
-| `Running` แต่เรียกไม่ได้ | NetworkPolicy — `kubectl -n kube-system exec -it ds/cilium -- hubble observe --namespace myhr-prod --verdict DROPPED --last 50` |
+| `Running` แต่เรียกไม่ได้ | NetworkPolicy — ดู flow ที่ถูกทิ้ง **ทุก agent** (`for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do kubectl -n kube-system exec "$p" -c cilium-agent -- hubble observe --namespace myhr-prod --verdict DROPPED --last 50; done`) — ถาม agent ตัวเดียวได้ผลว่างทั้งที่มีของถูก drop |
 | curl ค้างหรือไม่ตอบ | เข้าไม่ถึง Gateway ไม่ใช่เรื่อง app — [บทที่ 13](../../docs/13-troubleshooting.md) |
 
 รายละเอียดเต็มอยู่ที่ [บทที่ 11 หัวข้อ 4](../../docs/11-deploy-app.md) และ [บทที่ 13](../../docs/13-troubleshooting.md)

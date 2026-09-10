@@ -235,7 +235,11 @@ kubectl get resourcequota -A
 **ดูของจริงก่อนเสมอ อย่าเดาว่าเส้นไหนโดนปิด:**
 
 ```bash
-kubectl -n kube-system exec -it ds/cilium -- hubble observe --namespace myhr-prod --verdict DROPPED --last 50
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    hubble observe --namespace myhr-prod --verdict DROPPED --last 50
+done
 ```
 
 แล้วเปิดเฉพาะเส้นที่ถูก drop จริง · **จะเขียนไว้ที่ไหนขึ้นกับว่า policy กว้างแค่ไหน:**
