@@ -225,7 +225,7 @@ ansible-playbook prepare-os.yml --check --diff --limit k8s-master01 --skip-tags 
 
 > **`--check` ตรวจได้ไม่ครบ** — Ansible ข้าม `shell`/`command` ทุกตัวใน check mode
 > (`skipped=6` ที่เห็นคือพวกนั้น) `changed=0` จึงยังไม่ใช่หลักฐานเต็ม
-> ตัวที่พิสูจน์จริงคือ [ขั้น 5](#ขั้น-5--พิสูจน์ว่า-playbook-เทียบเท่าการทำมือ)
+> ตัวที่พิสูจน์จริงคือ [ขั้น 5](#ขั้น-5---พิสูจน์ว่า-playbook-เทียบเท่าการทำมือ)
 
 > **ทำไม `versions.env` โหลดใน `pre_tasks` ไม่ใช่ play แยก** — `--limit` มีผลกับ *ทุก* play
 > ถ้าแยก play ที่ `hosts: localhost` ไว้ต่างหาก พอสั่ง `--limit k8s-master01` มันจะตัด play นั้นทิ้ง
