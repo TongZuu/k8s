@@ -251,6 +251,91 @@ for f in docs/*.md; do
 done
 [ $MD -eq 0 ] && ok "โค้ดบล็อกปิดครบ และภาพประกอบเว้นบรรทัดถูกต้อง"
 
+echo "9 · ด่านก่อนเริ่มงานของ Ansible ที่จะหายไปเงียบ ๆ ตอน --check"
+# module shell/command ถูก skip อัตโนมัติใน check mode → ตัวแปรที่ register ไม่มีค่า
+# → failed_when ไม่เคยถูกประเมิน → ด่านนั้นหายไปทั้งด่านโดยไม่มี error
+# และ ansible.cfg ตั้ง display_skipped_hosts = False ไว้ จึงไม่มีบรรทัดไหนบอกด้วยซ้ำ
+# ผลคือ --check เขียวหมด แล้วรันจริงตายทันที (เจอจริง 11 ก.ย. 2026 ที่ด่าน versionlock)
+#
+# กฎนี้จับแค่คลาสที่อันตรายจริง: ด่านที่อยู่ "ก่อน" task แรกที่แก้เครื่อง
+# นั่นคือเงื่อนไขที่ playbook ไม่ได้ทำให้เอง จึงต้องเห็นตั้งแต่ dry run
+#   → ต้องใส่ check_mode: false
+# ด่านที่อยู่ "หลัง" task ที่แก้เครื่องแล้ว เป็นเงื่อนไขที่ playbook สร้างเอง
+# (เช่นเวลา sync ที่มาหลังเปิด chronyd) ต้องปล่อยให้ skip ไม่งั้น --check จะ fail
+# ทั้งที่รันจริงผ่าน — กฎนี้จึงไม่แตะพวกนั้น
+#
+# 🔴 ห้ามใช้ check_mode: true แทน — มันแปลว่า "รันแบบ check ตลอด แม้ตอนรันจริง"
+#    ซึ่งเท่ากับปิดด่านนั้นถาวร ไม่ใช่ "ยอมให้ --check ข้าม"
+if command -v python >/dev/null 2>&1 && python -c 'import yaml' 2>/dev/null; then
+    PYTHONIOENCODING=utf-8 python - <<'PY'
+import glob, io, sys
+import yaml
+
+RUN = ('ansible.builtin.shell', 'ansible.builtin.command', 'shell', 'command')
+# module ที่เปลี่ยนสภาพเครื่อง — ตัวแรกที่เจอคือเส้นแบ่ง ก่อน/หลัง
+MUTATE = (
+    'copy', 'file', 'template', 'dnf', 'yum', 'package', 'systemd', 'service',
+    'lineinfile', 'blockinfile', 'replace', 'sysctl', 'hostname', 'reboot',
+    'firewalld', 'mount', 'user', 'group', 'unarchive', 'get_url', 'command',
+    'shell', 'pip', 'modprobe',
+)
+
+
+def mod_names(task):
+    out = []
+    for k in task:
+        out.append(k.split('.')[-1] if '.' in k else k)
+    return out
+
+
+bad = []
+checked = 0
+
+for f in sorted(glob.glob('ansible/*.yml')):
+    try:
+        doc = yaml.safe_load(io.open(f, encoding='utf-8').read())
+    except Exception as e:
+        bad.append((f, '(parse ไม่ผ่าน)', str(e).split('\n')[0]))
+        continue
+    for play in (doc or []):
+        if not isinstance(play, dict):
+            continue
+        flat = []
+        for sect in ('pre_tasks', 'tasks', 'post_tasks'):
+            for t in (play.get(sect) or []):
+                if isinstance(t, dict):
+                    flat.append(t)
+        # หา index ของ task แรกที่แก้เครื่อง — ข้าม task ที่อ่านอย่างเดียว
+        first_mutate = len(flat)
+        for i, t in enumerate(flat):
+            names = mod_names(t)
+            if any(m in names for m in MUTATE):
+                # shell/command ที่ changed_when: false คืออ่านอย่างเดียว ไม่นับว่าแก้
+                if any(m in names for m in RUN) and t.get('changed_when') is False:
+                    continue
+                first_mutate = i
+                break
+        for i, t in enumerate(flat[:first_mutate]):
+            if 'failed_when' not in t:
+                continue
+            if not any(m in t for m in RUN):
+                continue
+            checked += 1
+            if t.get('check_mode') is not False:
+                bad.append((f, t.get('name', '(ไม่มีชื่อ)'),
+                            'อยู่ก่อน task ที่แก้เครื่อง แต่ไม่ได้ใส่ check_mode: false'))
+
+for f, name, why in bad:
+    print(f"  FAIL  {f} — {name} — {why}")
+if not bad:
+    print(f"  ok    ด่านก่อนเริ่มงานใส่ check_mode: false ครบ ({checked} ตัว)")
+sys.exit(1 if bad else 0)
+PY
+    [ $? -ne 0 ] && FAILED=1
+else
+    echo "  ข้าม  (ไม่มี python + pyyaml)"
+fi
+
 echo
 if [ $FAILED -eq 0 ]; then
     echo "ผ่านหมด — commit ได้"
