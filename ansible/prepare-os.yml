@@ -4,11 +4,13 @@
 #  รัน:   ansible-playbook prepare-os.yml --check     ← ดูอย่างเดียว ไม่แก้อะไร
 #         ansible-playbook prepare-os.yml
 #
-#  ⚠️ playbook นี้ "ไม่ได้" ทำสองข้อของบท 01 โดยเจตนา:
+#  ⚠️ playbook นี้ "ไม่ได้" ทำข้อ 2 ของบท 01 โดยเจตนา:
 #     · ข้อ 2 สลับ/ตรึง kernel  → ควรอยู่ใน VM template ไม่ใช่ที่นี่
-#     · ข้อ 5 ย้าย partition    → umount + แก้ fstab พลาดแล้วเครื่องบูตไม่ขึ้น
-#                                 ต้องแบ่ง partition ให้ถูกตั้งแต่สร้าง template
-#     ทั้งสองข้อมี task ตรวจให้ว่าทำมาแล้วหรือยัง ถ้ายังจะหยุดทันที
+#       มี task ตรวจให้ว่าทำมาแล้วหรือยัง ถ้ายังจะหยุดทันที
+#
+#  ข้อ 5 ย้าย partition เป็น "ทางเลือก" (เปลี่ยนเมื่อ 11 ก.ย. 2026)
+#     เคยเป็น assert ที่หยุด playbook · ตอนนี้แค่ print สถานะแล้วทำงานต่อ
+#     เหตุผลเต็ม ๆ อยู่ในคอมเมนต์เหนือ task นั้น (ค้นคำว่า "ไม่บล็อก")
 # =============================================================================
 ---
 - name: เตรียม OS ทุกเครื่อง
@@ -85,15 +87,30 @@
       changed_when: false
       failed_when: _vlock.stdout | int == 0
 
-    - name: partition ต้องถูกย้ายมาแล้วตั้งแต่สร้าง VM
+    # -------------------------------------------------------------------------
+    #  partition แยก — บอกสถานะ ไม่บล็อก
+    # -------------------------------------------------------------------------
+    #  เคยเป็น assert ที่หยุด playbook · เอาออกเมื่อ 11 ก.ย. 2026 เพราะตัวเลขไม่สนับสนุน:
+    #  master disk 400 GB · worker 500 GB · /home กินแค่ 100 GB → /var เหลือ 300-400 GB
+    #  etcd ใช้ระดับ GB · containerd cache ระดับสิบ GB จึงไม่มีอะไรจะเต็ม
+    #
+    #  ที่ยังได้จากการแยก mount คือ "กำแพงกันพื้นที่" อย่างเดียว — วันที่ image cache
+    #  หรือ log บวมผิดปกติ มันจะกิน / ร่วมกับ OS แทนที่จะเต็มแค่ partition ตัวเอง
+    #  ไม่ได้ช่วยเรื่อง latency ของ etcd เลย เพราะ LV ทั้งสองอยู่บน datastore ก้อนเดียวกัน
+    #
+    #  🔴 ที่ไม่บล็อกแล้วแต่ยัง print ทุกรอบ เพราะเป็นข้อมูลที่ต้องรู้ตอนไล่ปัญหา
+    #     "ดิสก์เต็มจนกระทบ node" — ไม่ใช่เรื่องที่ควรไปเดาย้อนหลัง
+    - name: partition แยกสำหรับ etcd/containerd มีหรือยัง (ไม่หยุดงาน)
       vars:
         _want: "{{ '/var/lib/etcd' if inventory_hostname in groups['masters'] else '/var/lib/containerd' }}"
-      ansible.builtin.assert:
-        that:
-          - _want in (ansible_facts['mounts'] | map(attribute='mount') | list)
-        fail_msg: >-
-          ยังไม่มี partition แยกสำหรับ {{ _want }}
-          → ทำใน VM template หรือทำมือตามบท 01 ข้อ 5 · playbook ไม่แตะ fstab ให้
+        _has: "{{ _want in (ansible_facts['mounts'] | map(attribute='mount') | list) }}"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'partition แยกสำหรับ ' ~ _want ~ ' — มีแล้ว'
+             if _has | bool
+             else 'ℹ️  ไม่มี partition แยกสำหรับ ' ~ _want ~ ' — ใช้พื้นที่ร่วมกับ /'
+                  ~ ' · ตั้งใจแล้ว ไม่ใช่ของค้าง (ดูคอมเมนต์เหนือ task นี้)'
+                  ~ ' · ถ้าอยากแยกทีหลัง ต้องหยุด service ก่อน — บท 01 ข้อ 5' }}
 
     # -------------------------------------------------------------------------
     #  1 · hostname และ /etc/hosts

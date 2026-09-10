@@ -150,9 +150,9 @@ ansible k8s_nodes -m ping
 
 ---
 
-## ก่อนรันทุกเครื่อง — 3 ข้อที่ playbook ไม่ทำให้
+## ก่อนรันทุกเครื่อง — 2 ข้อที่ playbook ไม่ทำให้
 
-playbook **ตรวจ** ทั้งสามข้อและหยุดถ้ายังไม่ได้ทำ แต่ **ไม่ทำให้** โดยเจตนา
+playbook **ตรวจ** ทั้งสองข้อและหยุดถ้ายังไม่ได้ทำ แต่ **ไม่ทำให้** โดยเจตนา
 
 ดูสถานะรวดเดียว:
 
@@ -168,7 +168,17 @@ done
 |---|---|
 | kernel สาย `6.12` และเป็น `uek` | เปลี่ยน kernel + reboot พร้อมกัน 6 เครื่องคือความเสี่ยงฟรี ๆ |
 | `versionlock` kernel-uek | ควรอยู่ใน VM template |
-| ย้าย partition `/home` แล้ว | `umount` + แก้ `/etc/fstab` พลาดแล้ว **เครื่องบูตไม่ขึ้น** |
+
+> **partition แยกไม่ใช่เงื่อนไขอีกแล้ว** (11 ก.ย. 2026) — เคยเป็นข้อที่สามและหยุด
+> playbook · ตอนนี้ playbook แค่ print ว่ามีหรือไม่มี แล้วทำงานต่อ
+>
+> เหตุผล: master disk 400 GB · worker 500 GB และ `/home` กินแค่ 100 GB → `/var`
+> เหลือ 300-400 GB · etcd ใช้ระดับ GB ส่วน containerd cache ระดับสิบ GB
+> **ไม่มีอะไรจะเต็ม** · ที่เสียไปคือกำแพงกันพื้นที่ (image cache บวมแล้วกิน `/`
+> ร่วมกับ OS) ไม่ใช่เรื่อง latency — LV ทั้งสองอยู่บน datastore ก้อนเดียวกันอยู่แล้ว
+>
+> ยังอยากแยกก็ทำได้ตามหัวข้อข้างล่าง แต่ต้องทำ **ก่อน** ลง containerd และก่อน
+> `kubeadm init` · แยกทีหลังต้องหยุด service
 
 ### ย้าย partition — 🔴 master กับ worker คนละปลายทาง
 
@@ -230,7 +240,7 @@ ansible-playbook prepare-os.yml --check --diff --limit k8s-master01 --skip-tags 
 |---|---|
 | `changed=0` | playbook ตรงกับคู่มือ |
 | `changed=N` | อ่าน `--diff` ว่ามันอยากเปลี่ยนอะไร แล้วตัดสินว่าใครผิด |
-| `failed` | assert ไม่ผ่าน — มักเป็น kernel, versionlock หรือ partition |
+| `failed` | assert ไม่ผ่าน — มักเป็น kernel หรือ versionlock (partition ไม่บล็อกแล้ว) |
 
 > ⚠️ ใส่ `--skip-tags reboot` เสมอในขั้นนี้ ไม่งั้นมันจะ reboot เครื่องที่เพิ่งทำเสร็จ
 
@@ -303,7 +313,7 @@ ansible-playbook prepare-os.yml --check --diff --limit k8s-worker01 --skip-tags 
 
 - เปิดพอร์ต **5 ตัว** ไม่ใช่ 9 — ต้องมี `30000-32767/tcp` (NodePort)
 - **ไม่มี** task `เปิด VRRP`
-- assert partition มองหา `/var/lib/containerd` ไม่ใช่ `/var/lib/etcd`
+- บรรทัดสถานะ partition พูดถึง `/var/lib/containerd` ไม่ใช่ `/var/lib/etcd`
 
 ผ่านแล้วค่อย:
 

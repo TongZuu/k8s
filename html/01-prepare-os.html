@@ -247,7 +247,7 @@ img{max-width:100%}
         <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
       </div>
     </header>
-    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="0 · โหลดตัวแปร">0 · โหลดตัวแปร</option><option value="2" data-t="1 · Hostname และ /etc/hosts">1 · Hostname และ /etc/hosts</option><option value="3" data-t="1.1 · ตั้ง resolver option — ทำให้ทุกอย่างที่เหลือเร็วขึ้น 6 เท่า">1.1 · ตั้ง resolver option — ทำให้ทุกอย่างที่เหลือเร็วขึ้น 6 เท่า</option><option value="4" data-t="1.2 · ปิด IPv6 ที่ interface">1.2 · ปิด IPv6 ที่ interface</option><option value="5" data-t="2 · ยืนยัน kernel และตรึงไว้">2 · ยืนยัน kernel และตรึงไว้</option><option value="6" data-t="3 · จัดการ repo">3 · จัดการ repo</option><option value="7" data-t="4 · ลง package พื้นฐาน">4 · ลง package พื้นฐาน</option><option value="8" data-t="5 · ย้าย partition /home">5 · ย้าย partition /home</option><option value="9" data-t="6 · kernel module และ sysctl">6 · kernel module และ sysctl</option><option value="10" data-t="7 · ปิด swap และตั้ง SELinux">7 · ปิด swap และตั้ง SELinux</option><option value="11" data-t="8 · firewalld">8 · firewalld</option><option value="12" data-t="9 · วัด disk latency ของ etcd">9 · วัด disk latency ของ etcd</option><option value="13" data-t="10 · Reboot แล้วตรวจซ้ำ">10 · Reboot แล้วตรวจซ้ำ</option><option value="14" data-t="✅ เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</option></select></div>
+    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="0 · โหลดตัวแปร">0 · โหลดตัวแปร</option><option value="2" data-t="1 · Hostname และ /etc/hosts">1 · Hostname และ /etc/hosts</option><option value="3" data-t="1.1 · ตั้ง resolver option — ทำให้ทุกอย่างที่เหลือเร็วขึ้น 6 เท่า">1.1 · ตั้ง resolver option — ทำให้ทุกอย่างที่เหลือเร็วขึ้น 6 เท่า</option><option value="4" data-t="1.2 · ปิด IPv6 ที่ interface">1.2 · ปิด IPv6 ที่ interface</option><option value="5" data-t="2 · ยืนยัน kernel และตรึงไว้">2 · ยืนยัน kernel และตรึงไว้</option><option value="6" data-t="3 · จัดการ repo">3 · จัดการ repo</option><option value="7" data-t="4 · ลง package พื้นฐาน">4 · ลง package พื้นฐาน</option><option value="8" data-t="5 · ย้าย partition /home — ทางเลือก ไม่ใช่ข้อบังคับ">5 · ย้าย partition /home — ทางเลือก ไม่ใช่ข้อบังคับ</option><option value="9" data-t="6 · kernel module และ sysctl">6 · kernel module และ sysctl</option><option value="10" data-t="7 · ปิด swap และตั้ง SELinux">7 · ปิด swap และตั้ง SELinux</option><option value="11" data-t="8 · firewalld">8 · firewalld</option><option value="12" data-t="9 · วัด disk latency ของ etcd">9 · วัด disk latency ของ etcd</option><option value="13" data-t="10 · Reboot แล้วตรวจซ้ำ">10 · Reboot แล้วตรวจซ้ำ</option><option value="14" data-t="✅ เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</option></select></div>
   </div>
 
   <main>
@@ -540,11 +540,21 @@ systemctl enable --now chronyd
 <p><strong>ควรเห็น:</strong> <code>Leap status : Normal</code> และ <code>System time</code> ต่างไม่เกินหลัก <strong>มิลลิวินาที</strong>
 ถ้าเห็น <code>Not synchronised</code> ให้หยุดแล้วแก้ NTP ก่อน</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all masters workers"><div class="step-head"><h2 id="5--ย้าย-partition-home">5 · ย้าย partition /home</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all masters workers"><div class="step-head"><h2 id="5--ย้าย-partition-home--ทางเลือก-ไม่ใช่ข้อบังคับ">5 · ย้าย partition /home — ทางเลือก ไม่ใช่ข้อบังคับ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>Kubernetes ไม่ใช้ <code>/home</code> เลย ขณะที่ของที่โตเร็วทั้งหมดไปกองใต้ <code>/var</code>
 ย้าย partition 100 GB นี้ไปรับงานที่มีประโยชน์แทน</p>
 <blockquote>
 <p>⚠️ ทำ <strong>ก่อน</strong> ติดตั้ง containerd และก่อน <code>kubeadm init</code> — ย้ายทีหลังต้องหยุด service</p>
+</blockquote>
+<blockquote>
+<p><strong>ข้ามข้อนี้ได้ และ <code>prepare-os.yml</code> ไม่บล็อกแล้ว</strong> (11 ก.ย. 2026)
+master disk 400 GB · worker 500 GB · <code>/home</code> กินแค่ 100 GB → <code>/var</code> เหลือ 300-400 GB
+ซึ่งเกินพอ · etcd ใช้ระดับ GB ส่วน containerd cache ระดับสิบ GB</p>
+<p><strong>สิ่งที่ได้จากการทำข้อนี้</strong> มีอย่างเดียวคือ <strong>กำแพงกันพื้นที่</strong> — วันที่ image cache
+หรือ log บวมผิดปกติ มันจะเต็มแค่ partition ตัวเองแทนที่จะลาก <code>/</code> ไปด้วย
+· <strong>ไม่ได้ช่วยเรื่องความเร็วของ etcd</strong> เพราะ LV ทั้งสองอยู่บน datastore ก้อนเดียวกัน</p>
+<p><strong>ผลพลอยได้ของการไม่ทำ:</strong> กับดัก <code>lost+found</code> ข้างล่างหายไปเลย เพราะ
+<code>/var/lib/etcd</code> จะเป็นแค่โฟลเดอร์เปล่าบน <code>/</code> ที่ kubeadm นับว่าว่างอยู่แล้ว</p>
 </blockquote>
 <p><strong>ดูก่อนว่า <code>/home</code> คือ device อะไร:</strong></p>
 <div class="cb"><pre><code class="language-bash">lsblk -f

@@ -247,7 +247,7 @@ img{max-width:100%}
         <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
       </div>
     </header>
-    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="สถานะ">สถานะ</option><option value="2" data-t="ติดตั้งครั้งเดียว">ติดตั้งครั้งเดียว</option><option value="3" data-t="ก่อนรันทุกเครื่อง — 3 ข้อที่ playbook ไม่ทำให้">ก่อนรันทุกเครื่อง — 3 ข้อที่ playbook ไม่ทำให้</option><option value="4" data-t="ลำดับการรัน — ห้ามข้าม">ลำดับการรัน — ห้ามข้าม</option><option value="5" data-t="สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;">สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;</option><option value="6" data-t="แหล่งความจริงของเวอร์ชัน">แหล่งความจริงของเวอร์ชัน</option><option value="7" data-t="แก้ปัญหาที่เคยเจอจริง">แก้ปัญหาที่เคยเจอจริง</option><option value="8" data-t="คำสั่งที่ใช้บ่อย">คำสั่งที่ใช้บ่อย</option><option value="9" data-t="เมื่อไหร่ควรใช้จริง">เมื่อไหร่ควรใช้จริง</option></select></div>
+    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="สถานะ">สถานะ</option><option value="2" data-t="ติดตั้งครั้งเดียว">ติดตั้งครั้งเดียว</option><option value="3" data-t="ก่อนรันทุกเครื่อง — 2 ข้อที่ playbook ไม่ทำให้">ก่อนรันทุกเครื่อง — 2 ข้อที่ playbook ไม่ทำให้</option><option value="4" data-t="ลำดับการรัน — ห้ามข้าม">ลำดับการรัน — ห้ามข้าม</option><option value="5" data-t="สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;">สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;</option><option value="6" data-t="แหล่งความจริงของเวอร์ชัน">แหล่งความจริงของเวอร์ชัน</option><option value="7" data-t="แก้ปัญหาที่เคยเจอจริง">แก้ปัญหาที่เคยเจอจริง</option><option value="8" data-t="คำสั่งที่ใช้บ่อย">คำสั่งที่ใช้บ่อย</option><option value="9" data-t="เมื่อไหร่ควรใช้จริง">เมื่อไหร่ควรใช้จริง</option></select></div>
   </div>
 
   <main>
@@ -422,8 +422,8 @@ done
 <p>ต้องได้ <code>SUCCESS</code> หกบรรทัด ไม่มีเครื่องไหนถามรหัสอีก
 ถ้าเครื่องไหนขึ้น <code>Permission denied (publickey,...)</code> แปลว่ายังไม่ได้แลก key กับเครื่องนั้น</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="ก่อนรันทุกเครื่อง--3-ข้อที่-playbook-ไม่ทำให้">ก่อนรันทุกเครื่อง — 3 ข้อที่ playbook ไม่ทำให้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p>playbook <strong>ตรวจ</strong> ทั้งสามข้อและหยุดถ้ายังไม่ได้ทำ แต่ <strong>ไม่ทำให้</strong> โดยเจตนา</p>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="ก่อนรันทุกเครื่อง--2-ข้อที่-playbook-ไม่ทำให้">ก่อนรันทุกเครื่อง — 2 ข้อที่ playbook ไม่ทำให้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>playbook <strong>ตรวจ</strong> ทั้งสองข้อและหยุดถ้ายังไม่ได้ทำ แต่ <strong>ไม่ทำให้</strong> โดยเจตนา</p>
 <p>ดูสถานะรวดเดียว:</p>
 <div class="cb"><pre><code class="language-bash">for ip in 101 102 103 104 105 106; do
   echo "=== .$ip ==="
@@ -447,12 +447,18 @@ done
 <td><code>versionlock</code> kernel-uek</td>
 <td>ควรอยู่ใน VM template</td>
 </tr>
-<tr>
-<td>ย้าย partition <code>/home</code> แล้ว</td>
-<td><code>umount</code> + แก้ <code>/etc/fstab</code> พลาดแล้ว <strong>เครื่องบูตไม่ขึ้น</strong></td>
-</tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>partition แยกไม่ใช่เงื่อนไขอีกแล้ว</strong> (11 ก.ย. 2026) — เคยเป็นข้อที่สามและหยุด
+playbook · ตอนนี้ playbook แค่ print ว่ามีหรือไม่มี แล้วทำงานต่อ</p>
+<p>เหตุผล: master disk 400 GB · worker 500 GB และ <code>/home</code> กินแค่ 100 GB → <code>/var</code>
+เหลือ 300-400 GB · etcd ใช้ระดับ GB ส่วน containerd cache ระดับสิบ GB
+<strong>ไม่มีอะไรจะเต็ม</strong> · ที่เสียไปคือกำแพงกันพื้นที่ (image cache บวมแล้วกิน <code>/</code>
+ร่วมกับ OS) ไม่ใช่เรื่อง latency — LV ทั้งสองอยู่บน datastore ก้อนเดียวกันอยู่แล้ว</p>
+<p>ยังอยากแยกก็ทำได้ตามหัวข้อข้างล่าง แต่ต้องทำ <strong>ก่อน</strong> ลง containerd และก่อน
+<code>kubeadm init</code> · แยกทีหลังต้องหยุด service</p>
+</blockquote>
 </div><div class="sub" data-machine="all"><h3 id="ย้าย-partition---master-กับ-worker-คนละปลายทาง">ย้าย partition — 🔴 master กับ worker คนละปลายทาง</h3>
 <p><strong>master → <code>/var/lib/etcd</code></strong></p>
 <div class="cb"><pre><code class="language-bash">findmnt /home                     # ยืนยันว่าเป็น partition แยกจริงก่อน
@@ -505,7 +511,7 @@ grep -c k8s-master01 /etc/hosts   # ต้องได้ 0 หรือ 1 ไ�
 </tr>
 <tr>
 <td><code>failed</code></td>
-<td>assert ไม่ผ่าน — มักเป็น kernel, versionlock หรือ partition</td>
+<td>assert ไม่ผ่าน — มักเป็น kernel หรือ versionlock (partition ไม่บล็อกแล้ว)</td>
 </tr>
 </tbody>
 </table>
@@ -587,7 +593,7 @@ join ข้ามถ้ามี <code>/etc/kubernetes/kubelet.conf</code> · ma
 <ul>
 <li>เปิดพอร์ต <strong>5 ตัว</strong> ไม่ใช่ 9 — ต้องมี <code>30000-32767/tcp</code> (NodePort)</li>
 <li><strong>ไม่มี</strong> task <code>เปิด VRRP</code></li>
-<li>assert partition มองหา <code>/var/lib/containerd</code> ไม่ใช่ <code>/var/lib/etcd</code></li>
+<li>บรรทัดสถานะ partition พูดถึง <code>/var/lib/containerd</code> ไม่ใช่ <code>/var/lib/etcd</code></li>
 </ul>
 <p>ผ่านแล้วค่อย:</p>
 <div class="cb"><pre><code class="language-bash">ansible-playbook prepare-os.yml --limit k8s-worker01
