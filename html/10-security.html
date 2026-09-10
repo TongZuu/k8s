@@ -11,6 +11,7 @@
   --accent:#2d6ae0; --accent-soft:#eaf1fe;
   --done-bg:#eaf7ee; --done-line:#8fd3a8; --done-ink:#1c6b3c;
   --code-bg:#1e2530; --code-ink:#e6edf3; --warn:#b4530a;
+  --f1:#d1372b; --f1-bg:#fdeceb;
   --radius:10px;
   --font:"Segoe UI","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;
   --mono:"Cascadia Mono",Consolas,"Noto Sans Thai Mono",monospace;
@@ -21,6 +22,7 @@
     --accent:#6ea3ff; --accent-soft:#1b2740;
     --done-bg:#152a1e; --done-line:#2f6b47; --done-ink:#7fd9a3;
     --code-bg:#0d1117; --code-ink:#e6edf3; --warn:#e0913f;
+    --f1:#ff8b80; --f1-bg:#331b19;
   }
 }
 html{scroll-behavior:smooth;scroll-padding-top:84px}
@@ -44,7 +46,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
 
 /* ---------- layout ---------- */
 .wrap{margin-left:260px;min-height:100vh}
-.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;
+.stick{position:sticky;top:0;z-index:30}
+.top{display:flex;align-items:center;gap:16px;
   padding:12px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
 .top-t{flex:1;min-width:0}
 .top h1{margin:0;font-size:19px;line-height:1.3}
@@ -58,6 +61,19 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
 .reset:hover{border-color:var(--accent);color:var(--accent)}
 .burger{display:none;border:0;background:transparent;color:var(--ink);font-size:20px;cursor:pointer}
 main{max-width:920px;padding:24px 30px 120px}
+
+/* ---------- แถบทางลัดไปแต่ละขั้น ---------- */
+/* dropdown ตัวเดียว สูงบรรทัดเดียวเท่ากันทุกบท ไม่ว่าบทนั้นจะมีกี่ขั้น
+   และตัวที่โชว์อยู่คือขั้นที่กำลังอ่าน จึงบอกตำแหน่งตัวเองไปในตัว */
+.jump{display:flex;gap:9px;align-items:center;
+  padding:7px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
+.jump-l{color:var(--dim);font-size:12.5px;flex-shrink:0}
+.jump-s{flex:1;min-width:0;max-width:520px;font:inherit;font-size:13px;
+  color:var(--ink);background:var(--panel);border:1px solid var(--line);
+  border-radius:7px;padding:4px 9px;cursor:pointer}
+.jump-s:hover,.jump-s:focus{border-color:var(--accent);outline:none}
+/* ขั้นที่ทำแล้วขึ้น ✓ นำหน้าในลิสต์ — กวาดตาเห็นว่าค้างตรงไหน */
+.jump-s option{color:var(--ink);background:var(--panel)}
 
 /* ---------- steps ---------- */
 .intro{padding:0 2px 6px}
@@ -105,6 +121,30 @@ th{background:var(--accent-soft);font-weight:600}
 tbody tr:nth-child(even){background:rgba(128,128,128,.045)}
 hr{border:0;border-top:1px solid var(--line);margin:22px 0}
 img{max-width:100%}
+
+/* ---------- ภาพประกอบ (SVG ฝังในเนื้อ markdown) ---------- */
+.fig{margin:18px 0;padding:14px 14px 10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto}
+.fig svg{display:block;width:100%;height:auto;min-width:560px}
+.fig figcaption{margin-top:9px;font-size:12.5px;color:var(--dim);text-align:center;line-height:1.6}
+.fig text{font-family:var(--font);font-size:13px;fill:var(--ink)}
+.fig text.t-mono{font-family:var(--mono);font-size:11.5px}
+.fig text.t-dim{fill:var(--dim);font-size:11.5px}
+.fig text.t-ok{fill:var(--done-ink);font-size:12px}
+.fig text.t-bad{fill:var(--f1);font-size:12px}
+.fig text.t-sm{font-size:12px}
+.fig text.t-hd{font-size:13.5px;font-weight:700}
+.fig .box{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+.fig .box-p{fill:var(--panel);stroke:var(--line);stroke-width:1.5}
+.fig .box-bad{fill:var(--f1-bg);stroke:var(--f1);stroke-width:1.5}
+.fig .box-ok{fill:var(--done-bg);stroke:var(--done-line);stroke-width:1.5}
+.fig .zone{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:6 4}
+.fig .wall{fill:none;stroke:var(--f1);stroke-width:2;stroke-dasharray:7 5}
+.fig .ln{stroke:var(--dim);stroke-width:1.6;fill:none}
+.fig .ln-a{stroke:var(--accent);stroke-width:2;fill:none}
+.fig .ln-ok{stroke:var(--done-line);stroke-width:2;fill:none}
+.fig .ln-bad{stroke:var(--f1);stroke-width:2;fill:none}
+.fig .ln-d{stroke-dasharray:5 4}
 
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
@@ -161,13 +201,14 @@ img{max-width:100%}
   .burger{display:block}
   main{padding:18px 16px 120px}
   .top{padding:10px 14px}
+  .jump{padding:6px 12px}
   .top h1{font-size:16px}
   .top-p .bar{display:none}
   .fab-txt{display:none}
   .fab{padding:15px;border-radius:50%}
 }
 @media print{
-  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
+  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger,.jump{display:none}
   .wrap{margin-left:0}
 }
 
@@ -185,32 +226,35 @@ img{max-width:100%}
 
 </style>
 </head>
-<body data-chapter="10-security.md" data-total="8">
+<body data-chapter="10-security.md" data-total="11">
 
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
-  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="14"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="12"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item cur" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="17"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="14"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="12"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item cur" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="11"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="18"></span></a><a href="14-grafana-logs.html" class="nav-item" data-chapter="14-grafana-logs.md"><span class="nav-num">14</span><span class="nav-t">ดู log ใน Grafana</span><span class="nav-p" data-progress-for="14-grafana-logs.md" data-total="15"></span></a><a href="15-headlamp.html" class="nav-item" data-chapter="15-headlamp.md"><span class="nav-num">15</span><span class="nav-t">Headlamp — เว็บ UI</span><span class="nav-p" data-progress-for="15-headlamp.md" data-total="10"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a><a href="deploy-zeeme-ads.html" class="nav-item" data-chapter="deploy-zeeme-ads.md"><span class="nav-num">✓</span><span class="nav-t">Deploy zeeme-ads</span><span class="nav-p" data-progress-for="deploy-zeeme-ads.md" data-total="20"></span></a><a href="deploy-demo.html" class="nav-item" data-chapter="deploy-demo.md"><span class="nav-num">✓</span><span class="nav-t">Demo — auth ที่ Gateway</span><span class="nav-p" data-progress-for="deploy-demo.md" data-total="12"></span></a></nav>
 </aside>
 
 <div class="wrap">
-  <header class="top">
-    <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
-    <div class="top-t">
-      <h1>บทที่ 10 — Security Baseline</h1>
-      <p class="sub">รันที่: 🎩 master ทั้ง 3 (สำหรับ etcd encryption) + 👑 master01 (ที่เหลือ) · เวลาที่ใช้: ~60 นาที · ต้องผ่านบทที่ 09 — ต้องมี monitoring ก่อน เพราะขั้นตอนบางอย่างอาจทำของพัง</p>
-    </div>
-    <div class="top-p">
-      <span id="pcount">0/8</span>
-      <div class="bar"><i id="pbar"></i></div>
-      <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
-    </div>
-  </header>
+  <div class="stick">
+    <header class="top">
+      <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
+      <div class="top-t">
+        <h1>บทที่ 10 — Security Baseline</h1>
+        <p class="sub">รันที่: 🎩 master ทั้ง 3 (สำหรับ etcd encryption) + 👑 master01 (ที่เหลือ) · เวลาที่ใช้: ~60 นาที · ต้องผ่านบทที่ 09 — ต้องมี monitoring ก่อน เพราะขั้นตอนบางอย่างอาจทำของพัง</p>
+      </div>
+      <div class="top-p">
+        <span id="pcount">0/11</span>
+        <div class="bar"><i id="pbar"></i></div>
+        <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
+      </div>
+    </header>
+    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="ทำไมบทนี้ไม่ใช่ทางเลือก">ทำไมบทนี้ไม่ใช่ทางเลือก</option><option value="2" data-t="0 · ส่งไฟล์ config ขึ้นเครื่องก่อน">0 · ส่งไฟล์ config ขึ้นเครื่องก่อน</option><option value="3" data-t="1 · 🔴 etcd encryption at rest">1 · 🔴 etcd encryption at rest</option><option value="4" data-t="2 · Pod Security Admission">2 · Pod Security Admission</option><option value="5" data-t="3 · 🔴 NetworkPolicy default-deny">3 · 🔴 NetworkPolicy default-deny</option><option value="6" data-t="4 · RBAC ตามหน้าที่">4 · RBAC ตามหน้าที่</option><option value="7" data-t="5 · Audit log">5 · Audit log</option><option value="8" data-t="6 · หนี้เก่าที่ต้องจ่าย — หมุน credential">6 · หนี้เก่าที่ต้องจ่าย — หมุน credential</option><option value="9" data-t="7 · imagePullSecret — ให้ cluster ดึง image จาก private registry">7 · imagePullSecret — ให้ cluster ดึง image จาก private registry</option><option value="10" data-t="8 · ตรวจทั้งบทด้วยสคริปต์เดียว">8 · ตรวจทั้งบทด้วยสคริปต์เดียว</option><option value="11" data-t="✅ เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</option></select></div>
+  </div>
 
   <main>
     <div class="intro"><hr />
 </div>
     
-    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2>ทำไมบทนี้ไม่ใช่ทางเลือก</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2 id="ทำไมบทนี้ไม่ใช่ทางเลือก">ทำไมบทนี้ไม่ใช่ทางเลือก</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>ระบบนี้เก็บ <strong>ข้อมูลส่วนบุคคลของพนักงาน</strong> ซึ่งทำให้เรื่องที่หลายที่ถือเป็น &quot;ทำก็ดี&quot;
 กลายเป็นข้อกำหนดจริง โดยเฉพาะ NetworkPolicy แบบ default-deny และ encryption at rest</p>
 <p><strong>และมีหนี้เก่าที่ต้องจ่ายด้วย:</strong> คู่มือชุดเดิมมี root password, VPN password,
@@ -223,16 +267,81 @@ registry password, cluster-admin token และ client key <strong>ฝังอ
 ที่แคบกว่าไฟล์ตั้งต้น · ฝั่ง P07 อธิบายว่าต้องเตรียมอะไรถึงจะตอบคำถาม audit ย้อนหลังได้</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all masters"><div class="step-head"><h2>1 · 🔴 etcd encryption at rest</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<figure class="fig">
+<svg viewBox="0 0 900 360" role="img" aria-label="แผนผังเครื่องทั้งหมดใน cluster และวงเครือข่าย">
+  <text class="t-dim" x="8" y="16">ทุกเครื่องอยู่วงเดียวกัน 192.168.50.0/24 · pod อยู่ในวงของตัวเองที่ 10.246.0.0/16 · service 10.247.0.0/16</text>
+  <rect class="zone" x="8" y="26" width="884" height="256" rx="12"/>
+  <text class="t-dim" x="20" y="44">Kubernetes cluster</text>
+  <rect class="box"   x="330" y="52" width="240" height="42" rx="8"/>
+  <text class="t-hd"  x="450" y="70" text-anchor="middle">VIP 192.168.50.100:8443</text>
+  <text class="t-mono" x="450" y="87" text-anchor="middle">keepalived + HAProxy → apiserver</text>
+  <rect class="box-p" x="20"  y="108" width="270" height="78" rx="9"/>
+  <text class="t-hd"  x="155" y="130" text-anchor="middle">🎩 k8s-master01</text>
+  <text class="t-mono" x="155" y="150" text-anchor="middle">192.168.50.101</text>
+  <text class="t-sm"  x="155" y="171" text-anchor="middle">apiserver · etcd · controller</text>
+  <rect class="box-p" x="315" y="108" width="270" height="78" rx="9"/>
+  <text class="t-hd"  x="450" y="130" text-anchor="middle">🎩 k8s-master02</text>
+  <text class="t-mono" x="450" y="150" text-anchor="middle">192.168.50.102</text>
+  <text class="t-sm"  x="450" y="171" text-anchor="middle">apiserver · etcd · controller</text>
+  <rect class="box-p" x="610" y="108" width="270" height="78" rx="9"/>
+  <text class="t-hd"  x="745" y="130" text-anchor="middle">🎩 k8s-master03</text>
+  <text class="t-mono" x="745" y="150" text-anchor="middle">192.168.50.103</text>
+  <text class="t-sm"  x="745" y="171" text-anchor="middle">apiserver · etcd · controller</text>
+  <rect class="box-ok" x="20"  y="196" width="270" height="72" rx="9"/>
+  <text class="t-hd"  x="155" y="218" text-anchor="middle">🖥 k8s-worker01</text>
+  <text class="t-mono" x="155" y="238" text-anchor="middle">192.168.50.104</text>
+  <text class="t-sm"  x="155" y="258" text-anchor="middle">pod ของแอปรันที่นี่</text>
+  <rect class="box-ok" x="315" y="196" width="270" height="72" rx="9"/>
+  <text class="t-hd"  x="450" y="218" text-anchor="middle">🖥 k8s-worker02</text>
+  <text class="t-mono" x="450" y="238" text-anchor="middle">192.168.50.105</text>
+  <text class="t-sm"  x="450" y="258" text-anchor="middle">pod ของแอปรันที่นี่</text>
+  <rect class="box-ok" x="610" y="196" width="270" height="72" rx="9"/>
+  <text class="t-hd"  x="745" y="218" text-anchor="middle">🖥 k8s-worker03</text>
+  <text class="t-mono" x="745" y="238" text-anchor="middle">192.168.50.106</text>
+  <text class="t-sm"  x="745" y="258" text-anchor="middle">pod ของแอปรันที่นี่</text>
+<p><text class="t-dim" x="8" y="304">นอก cluster — คนละวง ต้องวิ่งผ่าน gateway ของเครือข่ายออกไป</text>
+<rect class="box-p" x="20"  y="312" width="270" height="38" rx="8"/>
+<text class="t-sm"  x="155" y="336" text-anchor="middle">ฐานข้อมูล · 192.168.30.0/24</text>
+<rect class="box-p" x="315" y="312" width="270" height="38" rx="8"/>
+<text class="t-sm"  x="450" y="336" text-anchor="middle">registry · 192.168.30.207</text>
+<rect class="box-p" x="610" y="312" width="270" height="38" rx="8"/>
+<text class="t-sm"  x="745" y="336" text-anchor="middle">อินเทอร์เน็ต</text>
+</svg></p>
+<figcaption>เครื่องทั้งหมดที่มี — master 3 ตัวรับคำสั่ง (apiserver) และเก็บสถานะ (etcd) ·
+worker 3 ตัวเป็นที่ที่ pod รันจริง · ฐานข้อมูลกับ registry อยู่<b>นอก</b> cluster คนละวง IP</figcaption>
+</figure>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2 id="0--ส่งไฟล์-config-ขึ้นเครื่องก่อน">0 · ส่งไฟล์ config ขึ้นเครื่องก่อน</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ถ้าเพิ่งแก้ไฟล์ในrepo ต้องส่งขึ้นเครื่องก่อน</strong> — รันจากrepoบนเครื่องตัวเอง ไม่ใช่บน master
+(ไฟล์ใน <code>/root/k8s/</code> เป็นคนละก๊อปปี้กับrepo แก้ในrepoแล้วเครื่องไม่รู้เรื่องด้วย)</p>
+<p>บทนี้ใช้ <code>encryption-config.yaml</code> กับ <code>audit-policy.yaml</code> <strong>ทั้ง 3 master</strong> ส่วนที่เหลือ
+apply จาก master01 อย่างเดียว — ส่งให้ครบทุกเครื่องไปเลยง่ายกว่า:</p>
+<div class="cb"><pre><code class="language-bash">for ip in 101 102 103; do
+  ssh root@192.168.50.$ip 'mkdir -p /root/k8s/config/security'
+  scp config/security/*.yaml root@192.168.50.$ip:/root/k8s/config/security/
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ตรวจว่าของขึ้นจริงและตรงกับrepo</strong> — เทียบ md5 ทีเดียวทั้ง 3 เครื่อง:</p>
+<div class="cb"><pre><code class="language-bash">md5sum config/security/*.yaml
+for ip in 101 102 103; do echo "== .$ip"; ssh root@192.168.50.$ip 'md5sum /root/k8s/config/security/*.yaml'; done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ค่า md5 เหมือนกันทั้ง 4 ชุด ครบ 6 ไฟล์ (<code>allow-dns</code> · <code>audit-policy</code> ·
+<code>default-deny</code> · <code>encryption-config</code> · <code>namespaces</code> · <code>rbac</code>)</p>
+<blockquote>
+<p>⚠️ การ copy รอบนี้ทับแค่ไฟล์ใน <code>/root/k8s/</code> — ของที่วางไว้ที่ <code>/etc/kubernetes/</code> แล้ว
+<strong>ไม่โดน</strong> ถ้าแก้ไฟล์ต้นทางหลังจากทำข้อ 1.2 หรือข้อ 5 ไปแล้ว ต้อง <code>\cp -f</code> ซ้ำ
+แล้วใส่ encryption key ใหม่ เพราะ placeholder กลับมาแล้ว</p>
+</blockquote>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all masters"><div class="step-head"><h2 id="1---etcd-encryption-at-rest">1 · 🔴 etcd encryption at rest</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>โดยค่าเริ่มต้น Kubernetes เก็บ Secret ใน etcd เป็น <strong>base64 ธรรมดา ไม่ได้เข้ารหัส</strong>
 ใครที่อ่านไฟล์ etcd ได้ (หรือได้ backup ไป) จะเห็น secret ทั้งหมด</p>
-</div><div class="sub" data-machine="all"><h3>1.1 สร้าง encryption key</h3>
+</div><div class="sub" data-machine="all"><h3 id="11-สร้าง-encryption-key">1.1 สร้าง encryption key</h3>
 <p><strong>👑 บน master01:</strong></p>
 <div class="cb"><pre><code class="language-bash">head -c 32 /dev/urandom | base64
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>เก็บค่านี้ไว้ให้ดี</strong> — ถ้าหายจะถอดรหัส etcd backup เก่าไม่ได้เลย
 เอาไปใส่ที่เก็บ secret ขององค์กรทันที <strong>ห้ามใส่ใน git</strong></p>
-</div><div class="sub" data-machine="masters"><h3>1.2 วางไฟล์ config — 🎩 ทำเหมือนกันทั้ง 3 master</h3>
+</div><div class="sub" data-machine="masters"><h3 id="12-วางไฟล์-config---ทำเหมือนกันทั้ง-3-master">1.2 วางไฟล์ config — 🎩 ทำเหมือนกันทั้ง 3 master</h3>
 <div class="cb"><pre><code class="language-bash">mkdir -p /etc/kubernetes/enc
 \cp -f /root/k8s/config/security/encryption-config.yaml /etc/kubernetes/enc/encryption-config.yaml
 
@@ -260,7 +369,7 @@ awk '$1=="secret:"{print "secret ยาว " length($2) " ตัว"}' /etc/kube
 <blockquote>
 <p><strong>key ต้องเหมือนกันทั้ง 3 เครื่อง</strong> ไม่งั้น apiserver ตัวหนึ่งจะอ่านของที่อีกตัวเขียนไม่ออก</p>
 </blockquote>
-</div><div class="sub" data-machine="all"><h3>1.3 เปิดใช้ — ทำทีละเครื่อง</h3>
+</div><div class="sub" data-machine="all"><h3 id="13-เปิดใช้--ทำทีละเครื่อง">1.3 เปิดใช้ — ทำทีละเครื่อง</h3>
 <p><strong>🎩 บนแต่ละ master ทีละตัว</strong> แก้ <code>/etc/kubernetes/manifests/kube-apiserver.yaml</code>:</p>
 <div class="cb"><pre><code class="language-bash">\cp -f /etc/kubernetes/manifests/kube-apiserver.yaml /root/k8s/kube-apiserver.yaml.bak
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -287,13 +396,14 @@ kubectl get --raw='/healthz'
 <p>⚠️ <strong>ห้ามทำพร้อมกันทั้ง 3 เครื่อง</strong> ถ้า apiserver ล้มพร้อมกันหมด cluster จะเข้าไม่ได้เลย
 ทำทีละตัวแล้วรอ <code>/healthz</code> ผ่านก่อนเสมอ</p>
 </blockquote>
-</div><div class="sub" data-machine="all"><h3>1.4 เข้ารหัส Secret ที่มีอยู่แล้ว</h3>
+</div><div class="sub" data-machine="all"><h3 id="14-เข้ารหัส-secret-ที่มีอยู่แล้ว">1.4 เข้ารหัส Secret ที่มีอยู่แล้ว</h3>
 <p>การเปิด encryption มีผลเฉพาะกับของที่เขียน<strong>หลังจากนี้</strong> ของเก่ายังเป็น plaintext
 ต้องเขียนทับทั้งหมดหนึ่งรอบ:</p>
 <div class="cb"><pre><code class="language-bash">kubectl get secrets -A -o json | kubectl replace -f -
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจว่าเข้ารหัสจริง — อ่านตรงจาก etcd:</strong></p>
-<div class="cb"><pre><code class="language-bash">kubectl -n default create secret generic enc-test --from-literal=key=supersecret
+<div class="cb"><pre><code class="language-bash">kubectl -n default create secret generic enc-test --from-literal=key=supersecret \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl -n kube-system exec -it etcd-k8s-master01 -- etcdctl \
   --endpoints=https://127.0.0.1:2379 \
@@ -302,12 +412,36 @@ kubectl -n kube-system exec -it etcd-k8s-master01 -- etcdctl \
   --key=/etc/kubernetes/pki/etcd/server.key \
   get /registry/secrets/default/enc-test | hexdump -C | head -5
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>k8s:enc:aescbc:v1:key1:</code> แล้วตามด้วยข้อมูลที่อ่านไม่ออก
-<strong>ต้องไม่เห็นคำว่า <code>supersecret</code></strong> — ถ้าเห็นแปลว่ายังไม่ได้เข้ารหัส</p>
+<p><strong>ควรเห็น:</strong> <code>k8s:enc:aescbc:v1:key1:</code> แล้วตามด้วย byte ที่อ่านไม่ออก</p>
+<blockquote>
+<p>ใช้ <code>apply</code> แทน <code>create</code> เพราะถ้ารันบล็อกนี้ซ้ำ <code>create</code> จะขึ้น
+<code>error: ... &quot;enc-test&quot; already exists</code> — คำสั่ง etcdctl บรรทัดล่างยังรันต่อได้ปกติ
+เพราะเป็นคนละคำสั่ง แต่ error ที่ไม่มีความหมายทำให้อ่านผลยาก</p>
+</blockquote>
+<p><strong><code>head -5</code> เห็นแค่ 80 byte แรก</strong> ยืนยันให้ขาดว่าไม่มี plaintext หลงเหลือท้ายไฟล์:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key \
+  get /registry/secrets/default/enc-test | strings | grep -c supersecret
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>0</code> — ถ้าได้ <code>1</code> แปลว่ายังไม่ได้เข้ารหัส</p>
+<p><strong>แล้วเช็กว่าทั้ง 3 master ถอดรหัสได้จริง</strong> — ยิงตรงเข้าแต่ละ apiserver ข้าม VIP ไป
+(ผ่าน VIP จะสุ่มเครื่อง เครื่องที่ key ผิดอาจไม่โดนเลย แล้วเข้าใจผิดว่าผ่าน):</p>
+<div class="cb"><pre><code class="language-bash">for ip in 101 102 103; do
+  printf "== .%s : " "$ip"
+  kubectl --server=https://192.168.50.$ip:6443 --insecure-skip-tls-verify \
+    -n default get secret enc-test -o jsonpath='{.data.key}' | base64 -d
+  echo
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>supersecret</code> ครบทั้ง 3 บรรทัด — เครื่องไหนขึ้น <code>no matching key</code>
+แปลว่าเครื่องนั้น key ไม่ตรงหรือยังไม่ได้วางไฟล์ ให้กลับไปทำข้อ 1.2 ใหม่</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n default delete secret enc-test
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>2 · Pod Security Admission</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="2--pod-security-admission">2 · Pod Security Admission</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>PSA เป็นของที่มีอยู่ใน Kubernetes อยู่แล้ว ไม่ต้องลงอะไรเพิ่ม แค่ติด label ที่ namespace</p>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/security/namespaces.yaml
 kubectl get ns -L pod-security.kubernetes.io/enforce
@@ -341,33 +475,236 @@ kubectl get ns -L pod-security.kubernetes.io/enforce
 <p>ตั้ง <code>warn</code> และ <code>audit</code> ไว้ด้วยเสมอ จะได้เห็นว่าอะไรจะพังก่อนที่จะบังคับจริง</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>3 · 🔴 NetworkPolicy default-deny</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2 id="3---networkpolicy-default-deny">3 · 🔴 NetworkPolicy default-deny</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>นี่คือเหตุผลหลักที่เลือก Cilium แทน Flannel — Flannel ทำข้อนี้ไม่ได้เลย</p>
 <p><strong>หลักการ: ปิดทุกอย่างก่อน แล้วค่อยเปิดทีละเส้นที่จำเป็น</strong></p>
+</div><div class="sub" data-machine="all"><h3 id="31-วัดค่าก่อน-apply">3.1 วัดค่าก่อน apply</h3>
+<p>สร้าง pod ชั่วคราวใน <code>myhr-prod</code> → ยิงออกไปข้างนอก → ดูผล → pod ลบตัวเองทิ้ง
+รันชุดเดียวกัน <strong>สองรอบ</strong> ก่อนและหลัง apply แล้วเทียบกัน</p>
+<p><strong>ผลที่ต้องได้คือ &quot;เปลี่ยน&quot; ไม่ใช่ &quot;ตก&quot;</strong> — ปลายทางที่ต่อไม่ได้อยู่แล้วก็ตกทั้งสองรอบ
+โดยไม่เกี่ยวกับ policy เลย</p>
+<blockquote>
+<p><strong>ถ้าเผลอ apply ไปแล้ว</strong> ถอยกลับมาวัดได้ ลบด้วยไฟล์เดิมที่ใช้ apply:</p>
+<div class="cb"><pre><code class="language-bash">kubectl delete -f /root/k8s/config/security/default-deny.yaml --ignore-not-found
+kubectl delete -f /root/k8s/config/security/allow-dns.yaml --ignore-not-found
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ระหว่างนี้ namespace เปิดโล่ง ทำตอนที่ยังไม่มี traffic จริง แล้ว apply กลับให้ครบทั้งสองไฟล์</p>
+</blockquote>
+<h4 id="เลือกปลายทางที่จะใช้วัด">เลือกปลายทางที่จะใช้วัด</h4>
+<p>pod ที่นี่ออกอินเทอร์เน็ตได้หรือไม่ <strong>ยังไม่มีใครพิสูจน์ อย่าเดา</strong> — วัดก่อน:</p>
+<div class="cb"><pre><code class="language-bash">PUB='{"spec":{"containers":[{"name":"pubtest","image":"curlimages/curl","command":["curl","-m","5","-sk","-o","/dev/null","-w","ip=%{http_code} exit=%{exitcode}\n","https://1.1.1.1"],"securityContext":{"allowPrivilegeEscalation":false,"runAsNonRoot":true,"runAsUser":100,"capabilities":{"drop":["ALL"]},"seccompProfile":{"type":"RuntimeDefault"}}}]}}'
+
+kubectl -n myhr-prod run pubtest --rm -i --restart=Never \
+  --image=curlimages/curl --overrides="$PUB"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<table>
+<thead>
+<tr>
+<th>ผลที่ได้</th>
+<th>ใช้ปลายทางไหนต่อ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>มีเลข HTTP · <code>exit=0</code></td>
+<td>ใช้ <code>https://1.1.1.1</code> — <strong>เป็นด่านที่สำคัญที่สุดของบทนี้</strong> เพราะระบบเก็บข้อมูลพนักงาน ช่องที่อันตรายคือ pod ส่งข้อมูลออกเน็ตได้</td>
+</tr>
+<tr>
+<td><code>exit=28</code></td>
+<td>pod ออกเน็ตไม่ได้อยู่แล้ว ใช้เป็นด่านวัด policy ไม่ได้ — ใช้ apiserver <code>192.168.50.101:6443</code> แทน (ตอบ <code>403</code> แปลว่าต่อถึง)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="คำสั่งทดสอบ">คำสั่งทดสอบ</h4>
+<figure class="fig">
+<svg viewBox="0 0 900 440" role="img" aria-label="เส้นทางของ packet ตอนทดสอบ จุดที่ NetworkPolicy ตัด และเส้นทางออกอินเทอร์เน็ต">
+  <defs>
+    <marker id="a10b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- ---------- worker01 ---------- -->
+  <rect class="box-p" x="12" y="48" width="420" height="250" rx="10"/>
+  <text class="t-hd"  x="28" y="70">🖥 k8s-worker01 · 192.168.50.104</text>
+  <rect class="zone" x="30" y="86" width="252" height="140" rx="10"/>
+  <text class="t-sm" x="156" y="106" text-anchor="middle">namespace myhr-prod</text>
+  <rect class="box"  x="56" y="122" width="204" height="70" rx="8"/>
+  <text class="t-hd"  x="158" y="150" text-anchor="middle">pod nptest</text>
+  <text class="t-mono" x="158" y="172" text-anchor="middle">10.246.1.37</text>
+  <circle class="box" cx="44" cy="122" r="14"/>
+  <text class="t-hd" x="44" y="127" text-anchor="middle">1</text>
+  <path class="wall" d="M306 86 V266"/>
+  <circle class="box-bad" cx="306" cy="164" r="15"/>
+  <text class="t-hd" x="306" y="169" text-anchor="middle">2</text>
+  <text class="t-bad" x="306" y="288" text-anchor="middle">veth ของ pod · eBPF ของ Cilium — จุดที่ policy ตัด</text>
+  <rect class="box-p" x="342" y="140" width="80" height="48" rx="8"/>
+  <text class="t-sm"  x="382" y="160" text-anchor="middle">NIC</text>
+  <text class="t-mono" x="382" y="178" text-anchor="middle">.104</text>
+  <!-- ---------- เครือข่าย ---------- -->
+  <rect class="box-p" x="452" y="48" width="40" height="330" rx="8"/>
+  <circle class="box" cx="472" cy="164" r="14"/>
+  <text class="t-hd" x="472" y="169" text-anchor="middle">3</text>
+  <text class="t-dim" x="472" y="40" text-anchor="middle">วง 192.168.50.0/24</text>
+  <path class="ln-a" d="M260 164 H288"/>
+  <path class="ln-a" d="M324 164 H338" marker-end="url(#a10b)"/>
+  <path class="ln-a" d="M422 164 H448" marker-end="url(#a10b)"/>
+  <path class="ln"   d="M472 92 V341"/>
+  <!-- ---------- ปลายทาง ---------- -->
+  <path class="ln-a"  d="M492 92 H532" marker-end="url(#a10b)"/>
+  <rect class="box"    x="548" y="60" width="340" height="64" rx="9"/>
+  <text class="t-hd"   x="718" y="84"  text-anchor="middle">🎩 master01 · kube-apiserver</text>
+  <text class="t-mono" x="718" y="105" text-anchor="middle">192.168.50.101:6443 ← ที่เราใช้ทดสอบ</text>
+  <text class="t-bad"  x="538" y="98" text-anchor="middle">✗</text>
+  <path class="ln-ok" d="M492 172 H532" marker-end="url(#a10b)"/>
+  <rect class="box-ok" x="548" y="140" width="340" height="64" rx="9"/>
+  <text class="t-hd"   x="718" y="164" text-anchor="middle">CoreDNS · kube-system</text>
+  <text class="t-mono" x="718" y="185" text-anchor="middle">เปิดไว้ด้วย allow-dns-egress</text>
+  <text class="t-ok"   x="538" y="178" text-anchor="middle">✓</text>
+  <path class="ln-ok" d="M492 250 H532" marker-end="url(#a10b)"/>
+  <rect class="box-ok" x="548" y="220" width="340" height="60" rx="9"/>
+  <text class="t-hd"   x="718" y="243" text-anchor="middle">ฐานข้อมูล · นอก cluster</text>
+  <text class="t-mono" x="718" y="264" text-anchor="middle">ผ่าน router → 192.168.30.0/24</text>
+  <text class="t-ok"   x="538" y="256" text-anchor="middle">✓</text>
+  <path class="ln-bad ln-d" d="M492 328 H532" marker-end="url(#a10b)"/>
+  <rect class="box-bad" x="548" y="298" width="340" height="60" rx="9"/>
+  <text class="t-hd"   x="718" y="321" text-anchor="middle">อินเทอร์เน็ต · นอก cluster</text>
+  <text class="t-mono" x="718" y="342" text-anchor="middle">ผ่าน router → ออกเน็ต</text>
+  <text class="t-bad"  x="538" y="334" text-anchor="middle">✗</text>
+<p><text class="t-ok"  x="12" y="396">ก่อน apply — วิ่งครบทาง 1 → 2 → 3 ทุกเส้น · ยิง :6443 ได้ http=403 exit=0</text>
+<text class="t-bad" x="12" y="418">หลัง apply — เส้น ✗ ถูกตัดที่ 2 ตั้งแต่ยังไม่ออกจาก worker01 ปลายทางไม่เคยเห็น request เลย · curl รอครบ 5 วิ ได้ exit=28</text>
+</svg></p>
+<figcaption>Cilium ตัดที่ <b>veth ของ pod บนเครื่องที่ pod นั้นรันอยู่</b> ไม่ใช่ที่ปลายทางและไม่ใช่ firewall ของเครือข่าย —
+ทุกเส้นถูกตัดที่จุด 2 เหมือนกันหมด ไม่ว่าปลายทางจะอยู่ใน cluster หรือออกอินเทอร์เน็ต ·
+เส้น ✓ คือปลายทางที่ <code>allow-*</code> เปิดไว้ตั้งใจ จึงผ่านจุด 2 ไปได้ตามเดิม</figcaption>
+</figure>
+<div class="cb"><pre><code class="language-bash">NPPOD='{"spec":{"containers":[{"name":"nptest","image":"curlimages/curl","command":["curl","-m","5","-sk","-o","/dev/null","-w","http=%{http_code} exit=%{exitcode}\n","https://192.168.50.101:6443"],"securityContext":{"allowPrivilegeEscalation":false,"runAsNonRoot":true,"runAsUser":100,"capabilities":{"drop":["ALL"]},"seccompProfile":{"type":"RuntimeDefault"}}}]}}'
+
+kubectl -n myhr-prod run nptest --rm -i --restart=Never \
+  --image=curlimages/curl --overrides="$NPPOD"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น (รอบแรก):</strong> <code>http=403 exit=0</code> — หรือ <code>401</code> ก็ได้ ทั้งคู่แปลว่าต่อถึงแล้ว
+<strong>ถ้าได้ <code>http=000</code> ตั้งแต่รอบแรก อย่าเพิ่งไปต่อ</strong> ปลายทางนี้ใช้วัดไม่ได้</p>
+<table>
+<thead>
+<tr>
+<th>ผลที่ได้</th>
+<th>แปลว่า</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>exit=0</code> + มีเลข HTTP</td>
+<td>✅ ต่อถึง — นี่คือค่าตั้งต้น</td>
+</tr>
+<tr>
+<td><code>exit=28</code></td>
+<td>timeout · packet ถูกทิ้งเงียบ ๆ = <strong>NetworkPolicy ทำงาน</strong></td>
+</tr>
+<tr>
+<td><code>exit=7</code></td>
+<td>connection refused · <strong>ไม่ใช่</strong>ผลของ policy — มีคนตอบว่าไม่รับ</td>
+</tr>
+<tr>
+<td><code>exit=6</code></td>
+<td>resolve ชื่อไม่ได้ · เรายิงเป็น IP จึงไม่ควรเจอ</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>🔴 <strong>คำสั่ง <code>curl</code> ต้องอยู่ใน <code>command</code> ของ JSON ห้ามเขียนต่อท้ายหลัง <code>--</code></strong>
+<code>--overrides</code> ใช้ JSON merge patch ที่แทน <code>containers</code> ทั้ง array อะไรที่อยู่หลัง <code>--</code>
+จะหายไปทั้งชุด แล้วขึ้น <code>curl: try 'curl --help'</code> ซึ่งดูเหมือน curl พัง</p>
+</blockquote>
+<blockquote>
+<p><code>securityContext</code> ทั้ง 5 ข้อในนั้นมีไว้ให้ผ่าน <strong>PSA <code>restricted</code></strong> จากหัวข้อ 2 — ขาดข้อเดียว
+จะโดนปฏิเสธด้วย <code>violates PodSecurity</code> ตั้งแต่ยังไม่ได้สร้าง pod ซึ่ง<strong>ไม่ใช่</strong>ผลของ NetworkPolicy ·
+ส่วน <code>warning: couldn't attach ... falling back to streaming logs</code> และ <code>terminated (Error)</code>
+เป็นเรื่องปกติ ไม่ใช่ error</p>
+</blockquote>
+<h4 id="ทดสอบ-dns--คู่กันเสมอ">ทดสอบ DNS — คู่กันเสมอ</h4>
+<div class="cb"><pre><code class="language-bash">DNSPOD='{"spec":{"containers":[{"name":"dnstest","image":"busybox:1.36","command":["nslookup","kubernetes.default.svc.cluster.local"],"securityContext":{"allowPrivilegeEscalation":false,"runAsNonRoot":true,"runAsUser":65534,"capabilities":{"drop":["ALL"]},"seccompProfile":{"type":"RuntimeDefault"}}}]}}'
+
+kubectl -n myhr-prod run dnstest --rm -i --restart=Never \
+  --image=busybox:1.36 --overrides="$DNSPOD"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ตอบกลับเป็น IP ปกติ — และต้องได้แบบนี้<strong>ทั้งสองรอบ</strong> ต่างจาก curl ที่ต้องเปลี่ยน
+เพราะ <code>allow-dns.yaml</code> มีหน้าที่เปิดช่อง DNS ไว้ให้ ถ้ารอบสอง DNS ตาย แปลว่าลืม apply ไฟล์นั้น</p>
+</div><div class="sub" data-machine="all"><h3 id="32-apply">3.2 apply</h3>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/security/default-deny.yaml
 kubectl apply -f /root/k8s/config/security/allow-dns.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ตรวจว่า default-deny ทำงาน:</strong></p>
-<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod run nptest --rm -it --restart=Never --image=curlimages/curl -- \
-  curl -m 5 -s https://www.google.com
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> timeout ← <strong>ถูกต้องแล้ว</strong></p>
-<p><strong>ตรวจว่า DNS ยังใช้ได้ (ไม่งั้นทุกอย่างพัง):</strong></p>
-<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod run dnstest --rm -it --restart=Never --image=busybox:1.36 -- \
-  nslookup kubernetes.default.svc.cluster.local
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> ตอบกลับปกติ</p>
 <blockquote>
 <p><strong>ลำดับสำคัญมาก</strong> — ถ้า apply <code>default-deny</code> โดยไม่ apply <code>allow-dns</code> พร้อมกัน
 ทุก pod ใน namespace จะ resolve DNS ไม่ได้ทันที และอาการจะดูเหมือน application พัง</p>
 </blockquote>
-<p><strong>ดู flow จริงด้วย Hubble เพื่อรู้ว่าต้องเปิดเส้นไหนบ้าง:</strong></p>
-<div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec -it ds/cilium -- hubble observe --namespace myhr-prod --verdict DROPPED --last 50
+<p>รอให้ Cilium รับ policy ไปบังคับใช้ก่อนวัดซ้ำ (ปกติไม่ถึงวินาที แต่อย่ายิงทันที)
+— ต้องถามที่ <strong>worker</strong> เพราะ policy ถูกโหลดเฉพาะเครื่องที่มี pod ของ namespace นั้นอยู่:</p>
+<div class="cb"><pre><code class="language-bash">for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  n=$(kubectl -n kube-system exec "$p" -c cilium-agent -- \
+        cilium-dbg policy get 2&gt;/dev/null | grep -c myhr-prod)
+  echo "$p → $n"
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> มีอย่างน้อยหนึ่งบรรทัดที่ไม่ใช่ <code>0</code> (เครื่องที่ pod รันอยู่) · ถ้าเป็น <code>0</code> หมดทุกบรรทัด
+แปลว่า Cilium ยังไม่รับ policy ไปบังคับใช้ อย่าเพิ่งไปวัดรอบสอง</p>
+</div><div class="sub" data-machine="all"><h3 id="33-วัดซ้ำด้วยคำสั่งเดิมเป๊ะ-ๆ">3.3 วัดซ้ำด้วยคำสั่งเดิมเป๊ะ ๆ</h3>
+<p>รัน <strong>สองบล็อกเดิมในข้อ 3.1 ซ้ำอีกรอบ</strong> (คำสั่งเดียวกัน ปลายทางเดียวกัน) แล้วเทียบผล:</p>
+<table>
+<thead>
+<tr>
+<th>ทดสอบ</th>
+<th>ก่อน apply</th>
+<th>หลัง apply</th>
+<th>แปลว่า</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>curl ออกนอก namespace</td>
+<td><code>http=403 exit=0</code></td>
+<td><code>http=000 exit=28</code></td>
+<td>🔴 egress ถูกปิดจริง</td>
+</tr>
+<tr>
+<td>DNS lookup</td>
+<td>ตอบเป็น IP</td>
+<td>ตอบเป็น IP <strong>เหมือนเดิม</strong></td>
+<td><code>allow-dns</code> ทำงาน</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ค่าที่ต้องได้คือ &quot;เปลี่ยน&quot;</strong> ไม่ใช่แค่ &quot;ตก&quot; — ถ้าคอลัมน์ก่อนกับหลังเหมือนกันทั้งคู่
+แปลว่าการทดสอบไม่ได้วัด policy ไม่ว่าผลจะออกมาหน้าตาดีแค่ไหน</p>
+<ul>
+<li>ทั้งสองช่องเป็น <code>000</code> → ปลายทางต่อไม่ถึงตั้งแต่แรก เลือกปลายทางใหม่</li>
+<li>ทั้งสองช่องมีเลข HTTP (<code>403</code>/<code>401</code>) → policy <strong>ยังไม่ถูกบังคับใช้</strong> ดูด้วยบล็อกวน agent ในข้อ 3.2
+และตรวจว่า apply ลง namespace ถูกตัวหรือไม่ (<code>kubectl -n myhr-prod get netpol</code>)</li>
+<li>DNS ตายหลัง apply → ลืม <code>allow-dns.yaml</code> ให้ apply ทันที</li>
+</ul>
+</div><div class="sub" data-machine="all"><h3 id="34-ดู-flow-จริงด้วย-hubble-เพื่อรู้ว่าต้องเปิดเส้นไหนบ้าง">3.4 ดู flow จริงด้วย Hubble เพื่อรู้ว่าต้องเปิดเส้นไหนบ้าง</h3>
+<div class="cb"><pre><code class="language-bash">for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    hubble observe --namespace myhr-prod --verdict DROPPED --last 20
+done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>นี่คือวิธีที่ถูกต้องในการเขียน policy — <strong>ดูของจริงว่าอะไรถูก drop แล้วเปิดเฉพาะเส้นนั้น</strong>
-ไม่ใช่เดาเอาจากเอกสาร</p>
+ไม่ใช่เดาเอาจากเอกสาร · ควรเห็น flow ของ <code>nptest</code> โผล่เป็น <code>DROPPED</code>
+ซึ่งเป็นหลักฐานชิ้นที่สองว่า policy ทำงานจริง ไม่ใช่ pod ต่อไม่ได้ด้วยเหตุอื่น</p>
+<blockquote>
+<p>🔴 <strong>ต้องวนถามทุก agent ห้ามใช้ <code>ds/cilium</code> เฉย ๆ</strong> — flow เก็บอยู่ใน ring buffer ของ
+agent บน <strong>เครื่องที่ pod นั้นรัน</strong> เท่านั้น ส่วน <code>exec ds/cilium</code> ได้ agent ตัวเดียว
+ที่ Kubernetes เลือกให้ (มักเป็นตัวบน master) ถามผิดเครื่องจะได้ผลว่างเปล่า
+แล้วเข้าใจผิดว่าไม่มี flow ถูก drop · ถ้ายังว่าง ให้ยิง pod ทดสอบใหม่แล้วรันทันที
+เพราะ ring buffer มีขนาดจำกัด ของเก่าถูกทับได้</p>
+</blockquote>
+<p><strong>เช็กว่า Hubble ทำงานอยู่จริง:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg status | grep -i hubble
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>Hubble: Ok</code> พร้อมตัวเลข <code>Current/Max Flows</code> — ถ้าขึ้น <code>Disabled</code>
+แปลว่า values ที่ deploy จริงไม่ตรงกับ <a href="../config/cilium/values.yaml"><code>values.yaml</code></a> ในrepo</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>4 · RBAC ตามหน้าที่</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2 id="4--rbac-ตามหน้าที่">4 · RBAC ตามหน้าที่</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><code>cluster-admin</code> ควรมีคนถือน้อยที่สุด และต้องรู้ว่าใครถือบ้าง</p>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/security/rbac.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -409,19 +746,116 @@ kubectl apply -f /root/k8s/config/security/allow-dns.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ทบทวนรายชื่อนี้ทุกไตรมาส</strong> และลบคนที่ไม่ได้อยู่แล้วออก</p>
 <p><strong>ทดสอบว่า RBAC ทำงานจริง:</strong></p>
-<div class="cb"><pre><code class="language-bash">kubectl auth can-i delete nodes --as=system:serviceaccount:myhr-prod:developer
-kubectl auth can-i get pods --as=system:serviceaccount:myhr-prod:developer -n myhr-prod
+<blockquote>
+<p>🔴 <strong>ต้องสวมรอยเป็น group ไม่ใช่ ServiceAccount</strong> — <a href="../config/security/rbac.yaml"><code>rbac.yaml</code></a>
+ผูกสิทธิ์ไว้กับ Group <code>myhr:developers</code> / <code>myhr:operators</code> (มาจากช่อง <code>O</code> ของ client cert)
+ไม่ได้ผูกกับ ServiceAccount ตัวไหนเลย · ถ้าทดสอบด้วย
+<code>--as=system:serviceaccount:myhr-prod:developer</code> จะได้ <code>no</code> <strong>เสมอ</strong>
+ไม่ว่า RBAC จะถูกหรือผิด แล้วจะแปลผลผิดว่า &quot;ปิดแน่นดี&quot; ทั้งที่ไม่ได้ทดสอบอะไรเลย
+· <code>--as-group</code> ต้องมาคู่กับ <code>--as</code> เพราะ apiserver ต้องการชื่อ user ด้วย</p>
+</blockquote>
+<blockquote>
+<p>🔴 <strong>subresource ต้องใช้ <code>--subresource</code> ห้ามเขียน <code>pods/exec</code> ติดกัน</strong>
+kubectl ตีความ <code>pods/exec</code> เป็นรูปแบบ TYPE/NAME คือ &quot;resource <code>pods</code> ที่ชื่อ <code>exec</code>&quot;
+ไม่ใช่ subresource · มันจะไปถามว่า &quot;create pods ได้ไหม&quot; ซึ่งเป็นคนละคำถาม
+แล้วมักได้ <code>no</code> ออกมาพอดี ทำให้ดูเหมือนทดสอบผ่านทั้งที่ไม่ได้ทดสอบสิ่งที่ตั้งใจเลย</p>
+</blockquote>
+<div class="cb"><pre><code class="language-bash">kubectl auth can-i get pods    --as=tester --as-group=myhr:developers -n myhr-prod
+kubectl auth can-i get secrets --as=tester --as-group=myhr:developers -n myhr-prod
+kubectl auth can-i create pods --subresource=exec \
+                               --as=tester --as-group=myhr:developers -n myhr-prod
+kubectl auth can-i get pods    --subresource=log \
+                               --as=tester --as-group=myhr:developers -n myhr-prod
+kubectl auth can-i get pods    --as=tester --as-group=myhr:developers -n myhr-uat
+kubectl auth can-i delete nodes --as=tester --as-group=myhr:developers
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>no</code> และ <code>yes</code> ตามลำดับ</p>
+<p><strong>ควรเห็นเรียงลงมา:</strong> <code>yes</code> <code>no</code> <code>no</code> <code>yes</code> <code>no</code> <code>no</code></p>
+<table>
+<thead>
+<tr>
+<th>ทดสอบ</th>
+<th>ต้องได้</th>
+<th>เพราะ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>get pods -n myhr-prod</code></td>
+<td><code>yes</code></td>
+<td>RoleBinding <code>myhr-developers</code> อยู่ใน namespace นี้</td>
+</tr>
+<tr>
+<td><code>get secrets</code></td>
+<td><code>no</code></td>
+<td>ตั้งใจไม่ให้ — กันการดูดค่า secret</td>
+</tr>
+<tr>
+<td><code>create pods --subresource=exec</code></td>
+<td><code>no</code></td>
+<td>ตั้งใจไม่ให้ — <code>exec</code> คืออ่าน secret ทางอ้อมโดยไม่โผล่ใน audit log</td>
+</tr>
+<tr>
+<td><code>get pods --subresource=log</code></td>
+<td><code>yes</code></td>
+<td>ดู log ได้ เป็นงานประจำของ dev</td>
+</tr>
+<tr>
+<td><code>get pods -n myhr-uat</code></td>
+<td><code>no</code></td>
+<td>binding ผูกไว้เฉพาะ <code>myhr-prod</code></td>
+</tr>
+<tr>
+<td><code>delete nodes</code></td>
+<td><code>no</code></td>
+<td>คนละ role กัน</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ฝั่ง ops:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl auth can-i get nodes    --as=tester --as-group=myhr:operators
+kubectl auth can-i create pods  --subresource=eviction \
+                                --as=tester --as-group=myhr:operators -n myhr-prod
+kubectl auth can-i delete nodes --as=tester --as-group=myhr:operators
+kubectl auth can-i get secrets  --as=tester --as-group=myhr:operators -A
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>yes</code> <code>yes</code> <code>no</code> <code>no</code> — <code>delete nodes</code> ต้องเป็น <code>no</code> เพราะ role ให้แค่
+<code>get/list/watch/patch/update</code> · ส่วน <code>pods --subresource=eviction</code> ต้องเป็น <code>yes</code>
+ไม่งั้น <code>kubectl drain</code> ในบทที่ 12 จะใช้ไม่ได้</p>
+<blockquote>
+<p>⚠️ <strong><code>myhr:deployer</code> ยังไม่มี binding ชี้ถึงเลย</strong> — ClusterRole ถูกสร้างไว้แล้วแต่ยังไม่มีใครใช้ได้
+ตั้งใจไว้แบบนั้นจนกว่าจะมีคน deploy จริง วันที่จะใช้ ให้สร้าง RoleBinding ผูกกับ group
+ของทีมนั้นใน namespace ที่ต้องการ แล้วทดสอบด้วยวิธีเดียวกันข้างบน</p>
+</blockquote>
 <hr />
-</div><div class="sub" data-machine="all"><h3>4.1 ออก kubeconfig ให้คนใหม่</h3>
+</div><div class="sub" data-machine="all"><h3 id="41-ออก-kubeconfig-ให้คนใหม่">4.1 ออก kubeconfig ให้คนใหม่</h3>
 <p>ตอนนี้ยังไม่มี OIDC — ตัวตนของคนมาจาก <strong>client certificate</strong> ที่เซ็นด้วย CA ของ cluster
 โดย <code>CN</code> กลายเป็นชื่อ user และ <code>O</code> กลายเป็น group ที่ <a href="../config/security/rbac.yaml"><code>rbac.yaml</code></a> ผูกสิทธิ์ไว้</p>
 <div class="cb"><pre><code class="language-text">/CN=somchai/O=myhr:developers
      │              └── group → ได้สิทธิ์ myhr:developer
      └── user → ชื่อที่โผล่ใน audit log
 </code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>👑 ทำบน master01:</strong></p>
+<p><strong>ทางลัด — ใช้สคริปต์ทำทั้ง 5 ขั้นให้จบในคำสั่งเดียว</strong>
+(<a href="../config/security/issue-kubeconfig.sh"><code>issue-kubeconfig.sh</code></a> ทำตามขั้นตอนด้านล่างนี้ทั้งหมด
+แล้วทดสอบสิทธิ์ด้วยไฟล์ที่เพิ่งออกก่อนบอกว่าเสร็จ):</p>
+<div class="cb"><pre><code class="language-bash">bash /root/k8s/config/security/issue-kubeconfig.sh teeradach --admin   # ผู้ดูแล cluster
+bash /root/k8s/config/security/issue-kubeconfig.sh somchai             # dev (ค่าเริ่มต้น)
+bash /root/k8s/config/security/issue-kubeconfig.sh somsak myhr:operators
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ได้ไฟล์ <code>&lt;ชื่อ&gt;.kubeconfig</code> (0600) ไฟล์เดียวจบ · ไฟล์กลาง (key/csr/crt) ถูกลบให้อัตโนมัติ ·
+รันซ้ำได้ ของเดิมชื่อเดียวกันจะถูกออกใหม่ทับ</p>
+<blockquote>
+<p><strong><code>--admin</code> ผูกกับ group <code>myhr:admins</code> ไม่ใช่ <code>system:masters</code></strong> — <code>system:masters</code>
+ข้าม RBAC ทั้งหมดและ<strong>ถอนไม่ได้</strong>ถ้า cert หลุด สคริปต์จึงปฏิเสธให้ตรง ๆ ·
+ส่วน <code>myhr:admins</code> ตัดได้ทันทีด้วย <code>kubectl delete clusterrolebinding myhr-admins</code>
+โดยไม่ต้องรื้อ CA · binding อยู่ใน <a href="../config/security/rbac.yaml"><code>rbac.yaml</code></a> แล้ว
+ต้อง <code>kubectl apply</code> ก่อนออก cert ใบแรก</p>
+</blockquote>
+<blockquote>
+<p>ไฟล์นี้เป็น kubeconfig มาตรฐาน ใช้กับ <code>kubectl</code>, k9s, Lens หรือ <strong>Headlamp แบบ desktop app</strong>
+ได้ทันที · แต่ <strong>Headlamp ที่ deploy ไว้ใน cluster ล็อกอินด้วย token ไม่ใช่ client cert</strong>
+ต้องใช้ ServiceAccount แทน ดูหัวข้อ 4.1ก</p>
+</blockquote>
+<p><strong>ทำเองทีละขั้น — 👑 บน master01:</strong></p>
 <div class="cb"><pre><code class="language-bash">USER_NAME=somchai
 GROUP=myhr:developers          # หรือ myhr:operators
 
@@ -477,7 +911,28 @@ kubectl --kubeconfig="$KCFG" auth can-i get secrets -n myhr-prod # ต้อง�
 <strong>นี่คือราคาของการยังไม่ตั้ง OIDC</strong> ยอมรับได้ตราบใดที่คนถือ kubeconfig ยังนับหัวได้</p>
 </blockquote>
 <hr />
-</div><div class="sub" data-machine="all"><h3>4.2 วันที่จะย้ายไปใช้ OIDC — ทำอะไรบ้าง</h3>
+</div><div class="sub" data-machine="all"><h3 id="41ก-เข้าผ่าน-headlamp--dashboard-ที่รันใน-cluster">4.1ก เข้าผ่าน Headlamp / dashboard ที่รันใน cluster</h3>
+<p>UI ที่ deploy อยู่ใน cluster (Headlamp, Kubernetes Dashboard) รับ <strong>bearer token</strong> อย่างเดียว
+ไม่รับ client certificate — kubeconfig จากข้อ 4.1 จึงใช้ล็อกอินหน้าเว็บไม่ได้
+(ใช้ได้กับ Headlamp แบบ <strong>desktop app</strong> เพราะตัวนั้นอ่าน kubeconfig ตรง ๆ)</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system create serviceaccount headlamp-admin
+kubectl create clusterrolebinding headlamp-admin \
+  --clusterrole=cluster-admin --serviceaccount=kube-system:headlamp-admin
+
+# token อายุสั้น — ขอใหม่ทุกครั้งที่จะใช้
+kubectl -n kube-system create token headlamp-admin --duration=8h
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>เอา token ที่ได้ไปวางในหน้าล็อกอินของ Headlamp</p>
+<blockquote>
+<p>🔴 <strong>อย่าสร้าง Secret แบบ token ถาวรให้ ServiceAccount นี้</strong> — token ที่ไม่มีวันหมดอายุ
+คือ cluster-admin ที่หลุดแล้วหลุดเลย · <code>kubectl create token --duration</code> ออกใบใหม่ได้
+ทุกครั้งที่ต้องใช้ ซึ่งเพียงพอสำหรับการเข้าดูเป็นครั้งคราว</p>
+<p>ถ้าจะให้ทีมใช้ประจำ ให้ผูก ServiceAccount กับ role ที่แคบกว่าแทน เช่น
+<code>--clusterrole=myhr:developer --serviceaccount=kube-system:headlamp-viewer</code>
+แล้วออก token คนละใบ จะได้แยกได้ใน audit log ว่าใครทำอะไร</p>
+</blockquote>
+<hr />
+</div><div class="sub" data-machine="all"><h3 id="42-วันที่จะย้ายไปใช้-oidc--ทำอะไรบ้าง">4.2 วันที่จะย้ายไปใช้ OIDC — ทำอะไรบ้าง</h3>
 <p>ยังไม่ต้องทำตอนนี้ บันทึกไว้เฉย ๆ ว่าเส้นทางเป็นยังไง
 <strong>สัญญาณว่าถึงเวลา:</strong> คนถือ kubeconfig เกินราว 10 คน หรือมีคนเข้าออกบ่อยจนตามถอนไม่ไหว</p>
 <p>Kubernetes ต่อ AD/LDAP ตรง ๆ <strong>ไม่ได้</strong> รับได้แค่ OIDC จึงต้องมีตัวกลาง:</p>
@@ -503,7 +958,7 @@ oidc-groups-claim: "groups"
 <p><strong><a href="../config/security/rbac.yaml"><code>rbac.yaml</code></a> ไม่ต้องแก้เลยสักบรรทัด</strong> เพราะผูกกับชื่อ group ไม่ได้ผูกกับวิธี login
 — นั่นคือเหตุผลที่ตั้งชื่อ group ไว้แบบนี้ตั้งแต่ตอนที่ยังไม่มี OIDC</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2>5 · Audit log</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2 id="5--audit-log">5 · Audit log</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>เปิดไว้แล้วตั้งแต่ <code>kubeadm-config.yaml</code> (บทที่ 04) แต่ยังไม่มี policy
 ซึ่งแปลว่า<strong>ยังไม่ได้บันทึกอะไรเลย</strong></p>
 <p><strong>🎩 ทำทั้ง 3 master ทีละตัว:</strong></p>
@@ -518,17 +973,108 @@ grep -c 'kind: Policy' /etc/kubernetes/audit-policy.yaml
 <div class="cb"><pre><code class="language-yaml">    - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>พร้อม volumeMount ของ <code>/etc/kubernetes/audit-policy.yaml</code> และ <code>/var/log/kubernetes</code></p>
-<p><strong>ตรวจ:</strong></p>
-<div class="cb"><pre><code class="language-bash">tail -3 /var/log/kubernetes/audit.log | jq -r '"\(.verb) \(.objectRef.resource) by \(.user.username)"'
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> บรรทัด JSON ของ event จริง</p>
+</div><div class="sub" data-machine="all"><h3 id="51-มันคืออะไร-และไฟล์อยู่ที่ไหน">5.1 มันคืออะไร และไฟล์อยู่ที่ไหน</h3>
+<p>apiserver เขียนบันทึกทุก request ที่เข้ามาหามันเป็น JSON บรรทัดละ event —
+<strong>ใคร ทำอะไร กับอะไร เมื่อไหร่ ผลเป็นยังไง</strong> เป็นที่เดียวในระบบที่ตอบได้ว่า
+ใครลบ deployment ตอนตีสอง · ใครอ่าน secret ของ HR · ใครเพิ่มสิทธิ์ให้ตัวเอง
+(log ของ pod ตอบไม่ได้ เพราะนั่นคือเสียงของแอป ไม่ใช่ของ Kubernetes)</p>
 <blockquote>
-<p><strong>audit log กิน disk เร็วมาก</strong> ถ้าเขียนทุก event — policy ที่ให้มาจึงบันทึกเฉพาะ
-สิ่งที่มีความหมายจริง (secret access, การเปลี่ยนแปลง RBAC, exec เข้า pod)
-และตั้ง rotate ไว้ที่ 100 MB × 10 ไฟล์</p>
+<p>🔴 <strong>ไฟล์เป็นของแต่ละ master แยกกัน</strong> — <code>/var/log/kubernetes/audit.log</code> บนเครื่องนั้น ๆ
+request วิ่งผ่าน VIP แล้วตกที่ apiserver ตัวไหน event ก็ไปโผล่เครื่องนั้นเครื่องเดียว
+<strong>อย่าคาดหวังว่าทั้ง 3 เครื่องจะมีเนื้อหาเหมือนกัน</strong> ตอนสืบสวนต้องไล่ให้ครบทั้งสามเสมอ</p>
 </blockquote>
+</div><div class="sub" data-machine="all"><h3 id="52-อะไรถูกบันทึก-อะไรไม่ถูกบันทึก">5.2 อะไรถูกบันทึก อะไรไม่ถูกบันทึก</h3>
+<table>
+<thead>
+<tr>
+<th>ทำอะไร</th>
+<th>บันทึกไหม</th>
+<th><code>level</code></th>
+<th>เห็นอะไร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>อ่าน Secret</td>
+<td>✅</td>
+<td><code>Metadata</code></td>
+<td>รู้ว่าใครอ่าน แต่<strong>ไม่เก็บค่า secret</strong> — ถ้าเก็บ log จะกลายเป็นที่รั่วเสียเอง</td>
+</tr>
+<tr>
+<td>แก้ RBAC</td>
+<td>✅</td>
+<td><code>RequestResponse</code></td>
+<td>เห็นทั้งของที่ส่งไปและผลลัพธ์</td>
+</tr>
+<tr>
+<td><code>exec</code> · <code>attach</code> · <code>port-forward</code></td>
+<td>✅</td>
+<td><code>RequestResponse</code></td>
+<td>ช่องอ้อมที่เอาข้อมูลออกได้โดยไม่แตะ API ตรง ๆ</td>
+</tr>
+<tr>
+<td><code>create</code>/<code>update</code>/<code>delete</code> ทุกอย่าง</td>
+<td>✅</td>
+<td><code>RequestResponse</code></td>
+<td>ทุกการเปลี่ยนแปลงสถานะ</td>
+</tr>
+<tr>
+<td><code>get</code>/<code>list</code> pod · service · node</td>
+<td>✅</td>
+<td><code>Metadata</code></td>
+<td>รู้ว่ามีคนดู ไม่เก็บเนื้อหา</td>
+</tr>
+<tr>
+<td><code>/healthz</code> · <code>/metrics</code> · kubelet watch · Prometheus scrape</td>
+<td>❌</td>
+<td><code>None</code></td>
+<td>ตัดทิ้งตั้งใจ — เกิดวินาทีละหลายครั้ง เก็บไปก็มีแต่ทำให้ disk เต็มและหาของจริงไม่เจอ</td>
+</tr>
+</tbody>
+</table>
+<p>rotate ไว้ที่ <strong>100 MB × 10 ไฟล์ เก็บ 30 วัน</strong>
+(ตั้งไว้ที่ <a href="../config/kubeadm/kubeadm-config.yaml"><code>kubeadm-config.yaml</code></a> ตั้งแต่บทที่ 04)</p>
+</div><div class="sub" data-machine="all"><h3 id="53-พิสูจน์ว่าบันทึกจริง">5.3 พิสูจน์ว่าบันทึกจริง</h3>
+<p>สร้าง event ที่รู้หน้าตาแน่ ๆ แล้วไปหามันให้เจอ:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system get secret &gt; /dev/null
+
+grep -h '"resource":"secrets"' /var/log/kubernetes/audit.log | tail -1 \
+  | jq '{level, user:.user.username, verb, resource:.objectRef.resource,
+         ns:.objectRef.namespace, time:.requestReceivedTimestamp}'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> JSON ที่มี <code>&quot;level&quot;: &quot;Metadata&quot;</code> · <code>&quot;verb&quot;: &quot;list&quot;</code> · <code>user</code> เป็นชื่อคุณ
+และ<strong>ต้องไม่มี</strong> <code>requestObject</code>/<code>responseObject</code> — นั่นคือหลักฐานว่าเนื้อ secret ไม่ได้ลงไฟล์</p>
+<p>ถ้าไม่เจอ ให้ตามหาที่ master อีกสองเครื่อง เพราะ request อาจตกที่นั่น:</p>
+<div class="cb"><pre><code class="language-bash">for ip in 101 102 103; do
+  printf "== .%s : " "$ip"
+  ssh root@192.168.50.$ip "grep -hc '\"resource\":\"secrets\"' /var/log/kubernetes/audit.log 2&gt;/dev/null || echo 0"
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> มีอย่างน้อยหนึ่งเครื่องที่ไม่ใช่ <code>0</code></p>
+<p><strong>ทดสอบด้านกลับ — เสียงรบกวนต้องไม่อยู่ในไฟล์:</strong></p>
+<div class="cb"><pre><code class="language-bash">grep -c '"/healthz' /var/log/kubernetes/audit.log
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>0</code> — ถ้าได้เลขเยอะแปลว่า policy ไม่ถูกโหลด apiserver กำลังบันทึกทุกอย่าง
+แบบ default แล้ว disk จะเต็มใน 2-3 วัน</p>
+</div><div class="sub" data-machine="all"><h3 id="54-เอาไปใช้ตอนสืบสวน">5.4 เอาไปใช้ตอนสืบสวน</h3>
+<div class="cb"><pre><code class="language-bash">jq -r 'select(.verb=="delete")
+       | "\(.requestReceivedTimestamp) \(.user.username) ลบ \(.objectRef.resource)/\(.objectRef.name)"' \
+  /var/log/kubernetes/audit.log | tail -20
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> รายการว่าใครลบอะไรไปบ้างเรียงตามเวลา — คำถามแรกที่จะถูกถามเวลาของหาย</p>
+<p>ใครแตะ RBAC บ้าง:</p>
+<div class="cb"><pre><code class="language-bash">jq -r 'select(.objectRef.apiGroup=="rbac.authorization.k8s.io")
+       | "\(.requestReceivedTimestamp) \(.user.username) \(.verb) \(.objectRef.resource)/\(.objectRef.name)"' \
+  /var/log/kubernetes/audit.log | tail -20
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ใคร exec เข้า pod ไหน:</p>
+<div class="cb"><pre><code class="language-bash">jq -r 'select(.objectRef.subresource=="exec")
+       | "\(.requestReceivedTimestamp) \(.user.username) → \(.objectRef.namespace)/\(.objectRef.name)"' \
+  /var/log/kubernetes/audit.log
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ว่างเปล่าในระบบที่ปกติ — ทุกบรรทัดที่โผล่ต้องอธิบายได้ว่าใครทำและทำไม</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2>6 · หนี้เก่าที่ต้องจ่าย — หมุน credential</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2 id="6--หนี้เก่าที่ต้องจ่าย--หมุน-credential">6 · หนี้เก่าที่ต้องจ่าย — หมุน credential</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <blockquote>
 <p>🔴 <strong>ข้อนี้ไม่เกี่ยวกับ cluster ใหม่ แต่ห้ามข้าม</strong></p>
 </blockquote>
@@ -564,32 +1110,248 @@ grep -c 'kind: Policy' /etc/kubernetes/audit-policy.yaml
 </tr>
 </tbody>
 </table>
-<p><strong>สำหรับ registry — สร้าง 2 account แยกกัน:</strong></p>
-<div class="cb"><pre><code class="language-bash"># บน cluster ใหม่ ใช้ account ที่ pull ได้อย่างเดียว
-kubectl -n myhr-prod create secret docker-registry regcred \
-  --docker-server="${REGISTRY_HOST}" \
-  --docker-username='&lt;PULL_ONLY_USER&gt;' \
-  --docker-password='&lt;PULL_ONLY_PASSWORD&gt;'
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>สำหรับ registry — สร้าง 2 account แยกกัน:</strong> account สำหรับ push (คนหรือ CI ที่สร้าง image)
+กับ account ที่ <strong>pull ได้อย่างเดียว</strong> สำหรับ cluster</p>
+<p>cluster ต้องใช้ตัวหลังเท่านั้น วิธีเอาเข้า cluster อยู่ที่ <strong>หัวข้อ 7</strong> ข้างล่าง</p>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2 id="7--imagepullsecret--ให้-cluster-ดึง-image-จาก-private-registry">7 · imagePullSecret — ให้ cluster ดึง image จาก private registry</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><code>registry.myhr.co.th</code> เป็น registry ส่วนตัว ยิง <code>/v2/</code> เปล่า ๆ จะได้ <code>401</code> เสมอ
+<strong>kubelet บนทุก node จึงต้องมี credential ก่อน ไม่งั้น pod ทุกตัวจะค้างที่ <code>ImagePullBackOff</code></strong></p>
+<p>วิธีที่ใช้คือแบบเดิมที่เคยทำมา 2 ขั้น: <strong>สร้าง Secret ชนิด <code>dockerconfigjson</code> ชื่อ <code>regcred</code></strong>
+แล้ว <strong>อ้างถึงมันใน Deployment ด้วย <code>imagePullSecrets</code></strong></p>
 <blockquote>
-<p><strong>secret ไม่ข้าม namespace</strong> ต้องสร้างทุก namespace ที่ต้อง pull image
-คู่มือเดิมสร้างแค่ <code>default</code> แล้วงงว่าทำไม namespace อื่น pull ไม่ได้</p>
+<p>🔴 <strong>Secret ผูกกับ namespace</strong> — ต้องสร้างทุก namespace ที่มี pod ดึง image
+จาก registry ส่วนตัว (ตอนนี้คือ <code>myhr-prod</code> และ <code>myhr-uat</code>)
+คู่มือชุดเดิมสร้างแค่ใน <code>default</code> แล้วงงว่าทำไม namespace อื่น pull ไม่ได้
+· Kubernetes ไม่มี imagePullSecret ระดับ cluster ให้ใช้ ทำซ้ำต่อ namespace คือทางที่ถูกแล้ว</p>
+<p>ไฟล์ Secret <strong>ไม่มีอยู่ในrepo โดยตั้งใจ</strong> เพราะมีรหัสจริงอยู่ข้างใน — เก็บได้แค่วิธีสร้าง</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div><div class="sub" data-machine="all"><h3 id="71-เช็กก่อนว่าเป็นปัญหารหัสจริงไหม">7.1 เช็กก่อนว่าเป็นปัญหารหัสจริงไหม</h3>
+<p><code>ImagePullBackOff</code> ไม่ได้แปลว่าเรื่อง credential เสมอไป ถามตัว registry ก่อน —
+บรรทัดแรกเอาค่า <code>REGISTRY_HOST</code> เข้า shell <strong>ต้องรันใหม่ทุกครั้งที่ ssh เข้ามา</strong>
+ไม่งั้น URL จะกลายเป็น <code>https:///v2/</code> แล้วอ่านผลไม่ได้ความ:</p>
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; . &lt;(tr -d '\r' &lt; /root/k8s/versions.env) &amp;&amp; set +a
+curl -sS -o /dev/null -w "HTTP %{http_code}\n" "https://${REGISTRY_HOST}/v2/"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<table>
+<thead>
+<tr>
+<th>ผลที่ได้</th>
+<th>แปลว่า</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HTTP 401</code></td>
+<td>✅ เครือข่ายถึง · TLS ผ่าน · เหลือแค่ยังไม่ได้ล็อกอิน → ทำข้อ 7.2 ต่อ</td>
+</tr>
+<tr>
+<td><code>certificate ...</code> · <code>unknown authority</code></td>
+<td>cert/CA ของ registry — <strong>สร้าง secret กี่รอบก็ไม่หาย</strong> (<a href="02-container-runtime.html">บทที่ 02 หัวข้อ 4</a>)</td>
+</tr>
+<tr>
+<td><code>could not resolve host</code></td>
+<td>DNS หรือ <code>/etc/hosts</code> (<a href="01-prepare-os.html">บทที่ 01</a>)</td>
+</tr>
+<tr>
+<td><code>connection refused</code> · timeout</td>
+<td>ไปไม่ถึงเครื่อง registry — ทีม network</td>
+</tr>
+</tbody>
+</table>
+<hr />
+</div><div class="sub" data-machine="all"><h3 id="72-สร้าง-secret">7.2 สร้าง Secret</h3>
+<p><strong>👑 บน master01</strong> — เอาค่า <code>REGISTRY_HOST</code> เข้า shell ก่อน (shell ใหม่ทุกครั้งที่ ssh เข้ามา
+ไม่มีค่านี้ติดมาเอง):</p>
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; . &lt;(tr -d '\r' &lt; /root/k8s/versions.env) &amp;&amp; set +a
+echo "REGISTRY_HOST=[$REGISTRY_HOST]"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>REGISTRY_HOST=[registry.myhr.co.th]</code> — ถ้าได้ <code>[]</code> อย่าเพิ่งไปต่อ</p>
+<p>รับรหัสทางแป้นพิมพ์ ไม่พิมพ์ต่อท้ายคำสั่ง (ไม่งั้นรหัสค้างใน <code>~/.bash_history</code>
+และเห็นได้จาก <code>ps aux</code> ของทุกคนบนเครื่อง) แล้ว<strong>ตรวจว่าครบทั้งสามค่าก่อนยิงจริง</strong>:</p>
+<div class="cb"><pre><code class="language-bash">read -rp  'registry user: ' PULL_USER
+read -rsp 'registry password: ' PULL_PASS &amp;&amp; echo
+
+if [ -n "$REGISTRY_HOST" ] &amp;&amp; [ -n "$PULL_USER" ] &amp;&amp; [ -n "$PULL_PASS" ]; then
+    echo "ครบ: host=$REGISTRY_HOST user=$PULL_USER pass=${#PULL_PASS} ตัวอักษร"
+else
+    echo "❌ ยังมีตัวที่ว่างอยู่ อย่าเพิ่งไปต่อ"
+fi
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>ครบ: host=... user=... pass=N ตัวอักษร</code></p>
+<blockquote>
+<p>⚠️ <strong>ด่านนี้มีไว้เพราะตัวแปรว่างไม่ได้ทำให้คำสั่งเงียบ ๆ ผ่านไป</strong> — <code>kubectl</code> จะขึ้น
+<code>error: either --from-file or the combination of --docker-username, --docker-password and --docker-server is required</code> ตามด้วย <code>no objects passed to apply</code>
+ซึ่งอ่านแล้วเหมือนพิมพ์คำสั่งผิด ทั้งที่จริงคือลืม source <code>versions.env</code></p>
+</blockquote>
+<div class="cb"><pre><code class="language-bash">for ns in myhr-prod myhr-uat; do
+  kubectl -n "$ns" create secret docker-registry regcred \
+    --docker-server="${REGISTRY_HOST}" \
+    --docker-username="$PULL_USER" \
+    --docker-password="$PULL_PASS" \
+    --dry-run=client -o yaml | kubectl apply -f -
+done
+unset PULL_PASS
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>secret/regcred created</code> (หรือ <code>configured</code> ถ้าเคยสร้างไว้แล้ว) namespace ละบรรทัด</p>
+<blockquote>
+<p>🔴 <strong>เพิ่ม namespace ใหม่เมื่อไหร่ ต้องกลับมารันบล็อกนี้ใหม่โดยใส่ชื่อมันเข้าไปด้วย</strong>
+ไม่มีอะไรเตือนเลยจนกว่าจะ deploy แล้ว pod ค้าง <code>ImagePullBackOff</code> อยู่ namespace เดียว
+ทั้งที่ namespace อื่นใช้ได้ปกติ · เกณฑ์คือ <strong>namespace ไหนมี pod ที่ดึง image
+จาก <code>registry.myhr.co.th</code> namespace นั้นต้องมี <code>regcred</code></strong> — namespace ที่ใช้ image
+จาก public registry ล้วน ๆ ไม่ต้องมี</p>
+</blockquote>
+<p><strong>ตรวจว่าครบทุก namespace ที่ต้องมี:</strong></p>
+<div class="cb"><pre><code class="language-bash">for ns in myhr-prod myhr-uat; do
+  printf '%-12s ' "$ns"
+  kubectl -n "$ns" get secret regcred -o name 2&gt;/dev/null || echo "❌ ยังไม่มี"
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>secret/regcred</code> ครบทุกบรรทัด</p>
+<p>ใช้ <code>--dry-run=client | kubectl apply</code> แทน <code>create</code> เฉย ๆ เพื่อให้<strong>รันซ้ำได้</strong>
+ตอนหมุนรหัส <code>create</code> ธรรมดาจะขึ้น <code>already exists</code> แล้วรหัสเก่าค้างอยู่โดยไม่มีใครรู้</p>
+<p><strong>สามข้อที่พลาดกันบ่อยที่สุด:</strong></p>
+<table>
+<thead>
+<tr>
+<th>พลาด</th>
+<th>ผลที่ได้</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--docker-server</code> ใส่เป็น <code>https://...</code> หรือมี path ต่อท้าย</td>
+<td>ได้ <code>401</code> เหมือนไม่มี secret เลย — ต้องเป็น <strong>host เปล่า ๆ</strong> ตรงกับที่เขียนใน <code>image:</code></td>
+</tr>
+<tr>
+<td>สร้างแค่ namespace เดียว</td>
+<td>namespace อื่น pull ไม่ได้ และไม่มีอะไรเตือนจนกว่าจะ deploy</td>
+</tr>
+<tr>
+<td>ใช้ account เดียวกับที่ push ได้</td>
+<td>รหัสที่ push ได้กระจายไปอยู่ทุก node — ใช้ account ที่ <strong>pull อย่างเดียว</strong> (ข้อ 6)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+</div><div class="sub" data-machine="all"><h3 id="73-อ้างถึงใน-deployment">7.3 อ้างถึงใน Deployment</h3>
+<p><code>imagePullSecrets</code> อยู่ใต้ <code>spec.template.spec</code> <strong>ระดับเดียวกับ <code>containers</code></strong> ไม่ใช่ข้างใน container:</p>
+<div class="cb"><pre><code class="language-yaml">spec:
+  template:
+    spec:
+      imagePullSecrets:
+        - name: regcred          # ชื่อ Secret ใน namespace เดียวกับ Deployment
+      containers:
+        - name: zeeme-ads
+          image: registry.myhr.co.th/myhr/zeeme-ads:1.0.0
+</code></pre><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ใส่ไว้ให้แล้วทั้งใน <a href="../deployments/zeeme-ads/deployment.yaml"><code>deployments/zeeme-ads/deployment.yaml</code></a>
+และแม่แบบ <a href="../config/app/deployment-template.yaml"><code>config/app/deployment-template.yaml</code></a>
+— แอปใหม่ก็อปจากแม่แบบจะมีติดมาเอง</p>
+<blockquote>
+<p><strong>host ใน <code>image:</code> ต้องตรงกับ <code>--docker-server</code> เป๊ะ</strong> — <code>registry.myhr.co.th/myhr/app</code>
+จะไปหา secret ที่ผูกกับ host <code>registry.myhr.co.th</code> เท่านั้น ถ้าตัวใดตัวหนึ่งเขียนเป็น IP
+หรือมี <code>:443</code> ต่อท้าย จะไม่ match กันแล้วได้ <code>401</code> ทั้งที่ secret ถูกต้องทุกอย่าง</p>
+</blockquote>
+<hr />
+</div><div class="sub" data-machine="all"><h3 id="74-ตรวจว่าใช้ได้จริง">7.4 ตรวจว่าใช้ได้จริง</h3>
+<p><strong>อ่าน host ที่อยู่ในตัว secret จริง ๆ ไม่ใช่แค่ดูว่ามี secret อยู่:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod get secret regcred -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>{&quot;auths&quot;:{&quot;registry.myhr.co.th&quot;:{&quot;auth&quot;:&quot;...&quot;}}}</code> — host ต้องตรงกับใน <code>image:</code>
+· ผลลัพธ์มี credential อยู่ข้างใน <strong>อย่าวางต่อลงแชตหรือ ticket</strong></p>
+<p><strong>Deployment เห็น secret จริงไหม:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod get deploy zeeme-ads -o jsonpath='{.spec.template.spec.imagePullSecrets[*].name}{"\n"}'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>regcred</code></p>
+<p><strong>pod ที่ค้างอยู่ต้องสั่งให้ลองใหม่</strong> — <code>ImagePullBackOff</code> retry เองแต่ backoff ถอยไปถึง 5 นาที:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n myhr-prod rollout restart deploy/zeeme-ads
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ถ้ายังไม่ผ่าน แยกชั้นด้วยการ pull จาก node ตรง ๆ:</strong></p>
+<div class="cb"><pre><code class="language-bash">crictl pull --creds '&lt;PULL_ONLY_USER&gt;:&lt;PULL_ONLY_PASSWORD&gt;' "${REGISTRY_HOST}/myhr/zeeme-ads:1.0.0"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<ul>
+<li>node pull ได้ แต่ pod ไม่ได้ → เรื่อง secret · namespace · หรือชื่อ host (ข้อ 7.2/7.3)</li>
+<li>node ก็ pull ไม่ได้ → เรื่อง containerd · cert · network (<a href="02-container-runtime.html">บทที่ 02 หัวข้อ 4</a>)</li>
+</ul>
+<hr />
+</div><div class="sub" data-machine="all"><h3 id="75-ตอนหมุนรหัส-registry">7.5 ตอนหมุนรหัส registry</h3>
+<p>รันบล็อกในข้อ 7.2 ซ้ำได้เลย — <code>apply</code> เขียนทับให้</p>
+<blockquote>
+<p>⚠️ <strong>pod ที่รันอยู่แล้วจะไม่รู้ว่ารหัสเปลี่ยน</strong> เพราะมันไม่ pull ใหม่ ปัญหาจะโผล่ตอน
+pod ถัดไปเกิด ซึ่งอาจเป็นตอน drain กลางดึกที่ไม่มีใครนั่งดู — หมุนรหัสเมื่อไหร่
+ให้ <code>rollout restart</code> ทุก Deployment ที่ใช้ registry นี้ในเวลาทำการเลย</p>
+</blockquote>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2 id="8--ตรวจทั้งบทด้วยสคริปต์เดียว">8 · ตรวจทั้งบทด้วยสคริปต์เดียว</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>ทุกด่านในบทนี้ผ่านได้ทั้งที่ระบบยังไม่ปลอดภัย — เปิด encryption แค่ master01
+แล้วทดสอบผ่าน VIP ก็ยังผ่าน 2 ใน 3 ครั้ง · ติด label PSA แล้วแต่ไม่มีผลจะรู้ตอนบทที่ 11 ·
+apply NetworkPolicy สำเร็จไม่ได้แปลว่า Cilium บังคับใช้จริง</p>
+<p><a href="../config/security/verify-security.sh"><code>verify-security.sh</code></a> ยิงของจริงทุกข้อแล้วสรุปเป็น ผ่าน/ตก:</p>
+<div class="cb"><pre><code class="language-bash">scp config/security/verify-security.sh root@192.168.50.101:/root/k8s/config/security/
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>👑 บน master01:</strong></p>
+<div class="cb"><pre><code class="language-bash">bash /root/k8s/config/security/verify-security.sh
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>ผ่าน N · ตก 0 · ระวัง 0</code> แล้วปิดท้ายด้วย <code>✅ บทที่ 10 ใช้งานได้จริง</code>
+(คืน exit code 0 เมื่อไม่มีข้อไหนตก — เอาไปต่อกับ CI ได้)</p>
+<p>สคริปต์ตรวจ 5 เรื่อง:</p>
+<table>
+<thead>
+<tr>
+<th>ตรวจ</th>
+<th>วิธี</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>etcd encryption</td>
+<td>เขียน Secret ใหม่จริง แล้วอ่าน byte ตรงจาก etcd · เทียบว่าค่าที่เขียนไม่โผล่เป็น plaintext</td>
+</tr>
+<tr>
+<td>key ตรงกันทั้ง 3 master</td>
+<td>ยิงตรงเข้า <code>:6443</code> ทีละเครื่อง ไม่ผ่าน VIP</td>
+</tr>
+<tr>
+<td>PSA</td>
+<td>ขอสร้าง privileged pod ด้วย <code>--dry-run=server</code> ต้องโดนปฏิเสธ</td>
+</tr>
+<tr>
+<td>NetworkPolicy</td>
+<td><code>default-deny-all</code> กับ <code>allow-dns-egress</code> ต้องมาคู่กัน + Cilium โหลด policy แล้ว</td>
+</tr>
+<tr>
+<td>audit log</td>
+<td>flag ครบทั้ง 3 apiserver + ไฟล์ถูกเขียนภายใน 5 นาทีที่ผ่านมา</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>สคริปต์แตะของจริงอย่างเดียวคือสร้าง Secret ชั่วคราว <code>enc-verify-*</code> ใน <code>default</code>
+แล้วลบทิ้งเมื่อจบ — ต้องเขียนของใหม่ถึงจะรู้ว่า<strong>ตอนนี้</strong>ยังเข้ารหัสอยู่จริง
+ที่เหลืออ่านอย่างเดียว รันซ้ำได้ตลอด และควรรันซ้ำหลังทุกครั้งที่แตะ apiserver</p>
+</blockquote>
+<p><strong>สองข้อที่สคริปต์ตรวจแทนไม่ได้</strong> ต้องยืนยันด้วยคน — การหมุน credential เก่า (หัวข้อ 6)
+และ encryption key ต้องอยู่ในที่เก็บ secret ขององค์กร ไม่ใช่ในเครื่องใครเครื่องมัน</p>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11" data-machines="all"><div class="step-head"><h2 id="-เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[ ] 🔴 อ่าน Secret ตรงจาก etcd แล้ว <strong>เห็นเป็นข้อมูลเข้ารหัส</strong> ไม่ใช่ plaintext</li>
 <li>[ ] encryption key เก็บในที่เก็บ secret แล้ว <strong>และไม่ได้อยู่ใน git</strong></li>
 <li>[ ] Secret เก่าถูกเขียนทับให้เข้ารหัสครบแล้ว</li>
+<li>[ ] 🔴 <strong>apiserver ทั้ง 3 เครื่องถอดรหัส Secret ตัวเดียวกันได้</strong> — ยิงตรงที่ <code>--server=https://192.168.50.101|102|103:6443</code> ไม่ผ่าน VIP</li>
 <li>[ ] namespace ของ application เป็น PSA <code>restricted</code></li>
-<li>[ ] 🔴 NetworkPolicy default-deny ทำงาน — curl ออกนอกไม่ได้ แต่ DNS ยังใช้ได้</li>
+<li>[ ] 🔴 NetworkPolicy default-deny ทำงาน — <strong>เทียบก่อน/หลัง apply ด้วยคำสั่งเดียวกัน</strong> ผลต้องเปลี่ยนจาก <code>http=403</code> เป็น <code>exit=28</code> และ DNS ยังใช้ได้เหมือนเดิม</li>
 <li>[ ] RBAC role ครบ 3 ระดับ · <code>cluster-admin</code> ไม่เกิน 2 คน · จดรายชื่อไว้แล้ว</li>
 <li>[ ] audit log เขียนไฟล์จริงและอ่านได้</li>
 <li>[ ] 🔴 <strong>credential ที่รั่วในเอกสารเดิม หมุนครบทุกตัวแล้ว</strong></li>
 <li>[ ] <code>regcred</code> เป็น account ที่ pull ได้อย่างเดียว ไม่ใช่รหัสเดียวกับ root</li>
+<li>[ ] 🔴 <code>regcred</code> มีครบ <strong>ทุก namespace</strong> ที่ต้อง pull image · host ในตัว secret ตรงกับที่เขียนใน <code>image:</code></li>
+<li>[ ] <code>bash config/security/verify-security.sh</code> ขึ้น <strong>ตก 0</strong> บน master01</li>
 </ul>
 <p><strong>➡️ ต่อที่ <a href="11-deploy-app.html">บทที่ 11 — Deploy Application</a></strong></p>
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="09-observability.html">← Observability</a><a class="pn" href="11-deploy-app.html">Deploy App →</a></div>
   </main>
 </div>
@@ -611,6 +1373,7 @@ kubectl -n myhr-prod create secret docker-registry regcred \
   function mine(){ var a=load(); return (a[CH]||[]); }
   function setMine(list){ var a=load(); a[CH]=list; save(a); }
 
+  var jumpSel=document.getElementById('jumpsel'), stick;
   var toastEl=document.getElementById('toast'), toastT;
   function toast(msg){
     toastEl.textContent=msg; toastEl.classList.add('show');
@@ -626,6 +1389,12 @@ kubectl -n myhr-prod create secret docker-registry regcred \
       var b=s.querySelector('.done-btn');
       if(b) b.querySelector('.lbl').textContent = is ? 'ทำแล้ว' : 'ทำแล้ว';
     });
+    if(jumpSel){
+      [].forEach.call(jumpSel.options, function(o){
+        if(!o.value) return;
+        o.textContent=(done.indexOf(+o.value)>=0 ? '✓ ' : '')+o.dataset.t;
+      });
+    }
     var n=done.length;
     document.getElementById('pcount').textContent=n+'/'+TOTAL;
     document.getElementById('pbar').style.width=(TOTAL?100*n/TOTAL:0)+'%';
@@ -753,6 +1522,7 @@ kubectl -n myhr-prod create secret docker-registry regcred \
         var dm=d.dataset.machine||'all';
         d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
       });
+      syncJump(); spy();
       try{ localStorage.setItem(MKEY,m); }catch(e){}
       paintFab();
     };
@@ -765,11 +1535,60 @@ kubectl -n myhr-prod create secret docker-registry regcred \
     applyM(savedM);
   }
 
+  /* ---------- แถบทางลัด ---------- */
+  stick=document.querySelector('.stick');
+  function stickH(){ return stick ? stick.getBoundingClientRect().height : 0; }
+  function fitPad(){
+    /* หัวข้อต้องไม่โดนแถบที่ติดหนึบทับตอนกดทางลัด — ความสูงของแถบไม่เท่ากันระหว่าง
+       จอใหญ่กับจอเล็ก จึงวัดเอาจริงแทนที่จะ hardcode ตัวเลขไว้ใน css
+       แต่ถ้าวัดได้ตอนหน้ายังไม่วางเลย์เอาต์ ค่าที่ได้จะเพี้ยนจนดันหัวข้อไปกลางจอ */
+    var h=stickH();
+    if(!h || !window.innerHeight) return;
+    document.documentElement.style.scrollPaddingTop=Math.min(h+12, innerHeight*0.6)+'px';
+  }
+  function syncJump(){
+    if(!jumpSel) return;
+    /* ขั้นที่แถบกรองเครื่องซ่อนอยู่ ต้องหายจากลิสต์ด้วย
+       ไม่งั้นเลือกแล้ววิ่งไปจอดตรงส่วนที่มองไม่เห็น */
+    [].forEach.call(jumpSel.options, function(o){
+      if(!o.value) return;
+      var sec=document.getElementById('step-'+o.value);
+      o.hidden = !!(sec && sec.classList.contains('hide-m'));
+    });
+  }
+  function spy(){
+    if(!jumpSel) return;
+    var line=stickH()+16, cur='';
+    document.querySelectorAll('.step').forEach(function(s){
+      if(s.classList.contains('hide-m')) return;
+      if(s.getBoundingClientRect().top<=line) cur=s.dataset.step;
+    });
+    /* ตัวที่โชว์อยู่ = ขั้นที่กำลังอ่าน แต่ไม่แตะตอนลิสต์กำลังเปิด เดี๋ยวค่าเปลี่ยนใต้มือ */
+    if(document.activeElement!==jumpSel && jumpSel.value!==cur) jumpSel.value=cur;
+  }
+  if(jumpSel){
+    jumpSel.addEventListener('change', function(){
+      var sec=jumpSel.value && document.getElementById('step-'+jumpSel.value);
+      if(!sec) return;
+      sec.scrollIntoView();          /* ใช้ scroll-padding-top ที่ fitPad วัดไว้ */
+      jumpSel.blur();                /* คืน scroll ให้ล้อเมาส์ ไม่ค้างอยู่ที่ลิสต์ */
+    });
+    var spyQ=false;
+    window.addEventListener('scroll', function(){
+      if(spyQ) return;
+      spyQ=true;
+      requestAnimationFrame(function(){ spyQ=false; spy(); });
+    }, {passive:true});
+    window.addEventListener('resize', function(){ fitPad(); spy(); });
+    fitPad(); syncJump(); spy();
+  }
+
   /* ---------- เมนูบนจอเล็ก ---------- */
   var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');
   if(burger) burger.addEventListener('click', function(){ sb.classList.toggle('open'); });
 
   paint();
+  spy();
 })();
 </script>
 </body>

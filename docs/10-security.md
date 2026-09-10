@@ -22,6 +22,88 @@ registry password, cluster-admin token และ client key **ฝังอยู
 
 ---
 
+<figure class="fig">
+<svg viewBox="0 0 900 360" role="img" aria-label="แผนผังเครื่องทั้งหมดใน cluster และวงเครือข่าย">
+  <text class="t-dim" x="8" y="16">ทุกเครื่องอยู่วงเดียวกัน 192.168.50.0/24 · pod อยู่ในวงของตัวเองที่ 10.246.0.0/16 · service 10.247.0.0/16</text>
+
+  <rect class="zone" x="8" y="26" width="884" height="256" rx="12"/>
+  <text class="t-dim" x="20" y="44">Kubernetes cluster</text>
+
+  <rect class="box"   x="330" y="52" width="240" height="42" rx="8"/>
+  <text class="t-hd"  x="450" y="70" text-anchor="middle">VIP 192.168.50.100:8443</text>
+  <text class="t-mono" x="450" y="87" text-anchor="middle">keepalived + HAProxy → apiserver</text>
+
+  <rect class="box-p" x="20"  y="108" width="270" height="78" rx="9"/>
+  <text class="t-hd"  x="155" y="130" text-anchor="middle">🎩 k8s-master01</text>
+  <text class="t-mono" x="155" y="150" text-anchor="middle">192.168.50.101</text>
+  <text class="t-sm"  x="155" y="171" text-anchor="middle">apiserver · etcd · controller</text>
+
+  <rect class="box-p" x="315" y="108" width="270" height="78" rx="9"/>
+  <text class="t-hd"  x="450" y="130" text-anchor="middle">🎩 k8s-master02</text>
+  <text class="t-mono" x="450" y="150" text-anchor="middle">192.168.50.102</text>
+  <text class="t-sm"  x="450" y="171" text-anchor="middle">apiserver · etcd · controller</text>
+
+  <rect class="box-p" x="610" y="108" width="270" height="78" rx="9"/>
+  <text class="t-hd"  x="745" y="130" text-anchor="middle">🎩 k8s-master03</text>
+  <text class="t-mono" x="745" y="150" text-anchor="middle">192.168.50.103</text>
+  <text class="t-sm"  x="745" y="171" text-anchor="middle">apiserver · etcd · controller</text>
+
+  <rect class="box-ok" x="20"  y="196" width="270" height="72" rx="9"/>
+  <text class="t-hd"  x="155" y="218" text-anchor="middle">🖥 k8s-worker01</text>
+  <text class="t-mono" x="155" y="238" text-anchor="middle">192.168.50.104</text>
+  <text class="t-sm"  x="155" y="258" text-anchor="middle">pod ของแอปรันที่นี่</text>
+
+  <rect class="box-ok" x="315" y="196" width="270" height="72" rx="9"/>
+  <text class="t-hd"  x="450" y="218" text-anchor="middle">🖥 k8s-worker02</text>
+  <text class="t-mono" x="450" y="238" text-anchor="middle">192.168.50.105</text>
+  <text class="t-sm"  x="450" y="258" text-anchor="middle">pod ของแอปรันที่นี่</text>
+
+  <rect class="box-ok" x="610" y="196" width="270" height="72" rx="9"/>
+  <text class="t-hd"  x="745" y="218" text-anchor="middle">🖥 k8s-worker03</text>
+  <text class="t-mono" x="745" y="238" text-anchor="middle">192.168.50.106</text>
+  <text class="t-sm"  x="745" y="258" text-anchor="middle">pod ของแอปรันที่นี่</text>
+
+  <text class="t-dim" x="8" y="304">นอก cluster — คนละวง ต้องวิ่งผ่าน gateway ของเครือข่ายออกไป</text>
+  <rect class="box-p" x="20"  y="312" width="270" height="38" rx="8"/>
+  <text class="t-sm"  x="155" y="336" text-anchor="middle">ฐานข้อมูล · 192.168.30.0/24</text>
+  <rect class="box-p" x="315" y="312" width="270" height="38" rx="8"/>
+  <text class="t-sm"  x="450" y="336" text-anchor="middle">registry · 192.168.30.207</text>
+  <rect class="box-p" x="610" y="312" width="270" height="38" rx="8"/>
+  <text class="t-sm"  x="745" y="336" text-anchor="middle">อินเทอร์เน็ต</text>
+</svg>
+<figcaption>เครื่องทั้งหมดที่มี — master 3 ตัวรับคำสั่ง (apiserver) และเก็บสถานะ (etcd) ·
+worker 3 ตัวเป็นที่ที่ pod รันจริง · ฐานข้อมูลกับ registry อยู่<b>นอก</b> cluster คนละวง IP</figcaption>
+</figure>
+
+## 0 · ส่งไฟล์ config ขึ้นเครื่องก่อน
+
+**ถ้าเพิ่งแก้ไฟล์ในrepo ต้องส่งขึ้นเครื่องก่อน** — รันจากrepoบนเครื่องตัวเอง ไม่ใช่บน master
+(ไฟล์ใน `/root/k8s/` เป็นคนละก๊อปปี้กับrepo แก้ในrepoแล้วเครื่องไม่รู้เรื่องด้วย)
+
+บทนี้ใช้ `encryption-config.yaml` กับ `audit-policy.yaml` **ทั้ง 3 master** ส่วนที่เหลือ
+apply จาก master01 อย่างเดียว — ส่งให้ครบทุกเครื่องไปเลยง่ายกว่า:
+
+```bash
+for ip in 101 102 103; do
+  ssh root@192.168.50.$ip 'mkdir -p /root/k8s/config/security'
+  scp config/security/*.yaml root@192.168.50.$ip:/root/k8s/config/security/
+done
+```
+
+**ตรวจว่าของขึ้นจริงและตรงกับrepo** — เทียบ md5 ทีเดียวทั้ง 3 เครื่อง:
+```bash
+md5sum config/security/*.yaml
+for ip in 101 102 103; do echo "== .$ip"; ssh root@192.168.50.$ip 'md5sum /root/k8s/config/security/*.yaml'; done
+```
+**ควรเห็น:** ค่า md5 เหมือนกันทั้ง 4 ชุด ครบ 6 ไฟล์ (`allow-dns` · `audit-policy` ·
+`default-deny` · `encryption-config` · `namespaces` · `rbac`)
+
+> ⚠️ การ copy รอบนี้ทับแค่ไฟล์ใน `/root/k8s/` — ของที่วางไว้ที่ `/etc/kubernetes/` แล้ว
+> **ไม่โดน** ถ้าแก้ไฟล์ต้นทางหลังจากทำข้อ 1.2 หรือข้อ 5 ไปแล้ว ต้อง `\cp -f` ซ้ำ
+> แล้วใส่ encryption key ใหม่ เพราะ placeholder กลับมาแล้ว
+
+---
+
 ## 1 · 🔴 etcd encryption at rest
 
 โดยค่าเริ่มต้น Kubernetes เก็บ Secret ใน etcd เป็น **base64 ธรรมดา ไม่ได้เข้ารหัส**
@@ -116,7 +198,8 @@ kubectl get secrets -A -o json | kubectl replace -f -
 
 **ตรวจว่าเข้ารหัสจริง — อ่านตรงจาก etcd:**
 ```bash
-kubectl -n default create secret generic enc-test --from-literal=key=supersecret
+kubectl -n default create secret generic enc-test --from-literal=key=supersecret \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl -n kube-system exec -it etcd-k8s-master01 -- etcdctl \
   --endpoints=https://127.0.0.1:2379 \
@@ -125,8 +208,35 @@ kubectl -n kube-system exec -it etcd-k8s-master01 -- etcdctl \
   --key=/etc/kubernetes/pki/etcd/server.key \
   get /registry/secrets/default/enc-test | hexdump -C | head -5
 ```
-**ควรเห็น:** `k8s:enc:aescbc:v1:key1:` แล้วตามด้วยข้อมูลที่อ่านไม่ออก
-**ต้องไม่เห็นคำว่า `supersecret`** — ถ้าเห็นแปลว่ายังไม่ได้เข้ารหัส
+**ควรเห็น:** `k8s:enc:aescbc:v1:key1:` แล้วตามด้วย byte ที่อ่านไม่ออก
+
+> ใช้ `apply` แทน `create` เพราะถ้ารันบล็อกนี้ซ้ำ `create` จะขึ้น
+> `error: ... "enc-test" already exists` — คำสั่ง etcdctl บรรทัดล่างยังรันต่อได้ปกติ
+> เพราะเป็นคนละคำสั่ง แต่ error ที่ไม่มีความหมายทำให้อ่านผลยาก
+
+**`head -5` เห็นแค่ 80 byte แรก** ยืนยันให้ขาดว่าไม่มี plaintext หลงเหลือท้ายไฟล์:
+```bash
+kubectl -n kube-system exec etcd-k8s-master01 -- etcdctl \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key \
+  get /registry/secrets/default/enc-test | strings | grep -c supersecret
+```
+**ควรเห็น:** `0` — ถ้าได้ `1` แปลว่ายังไม่ได้เข้ารหัส
+
+**แล้วเช็กว่าทั้ง 3 master ถอดรหัสได้จริง** — ยิงตรงเข้าแต่ละ apiserver ข้าม VIP ไป
+(ผ่าน VIP จะสุ่มเครื่อง เครื่องที่ key ผิดอาจไม่โดนเลย แล้วเข้าใจผิดว่าผ่าน):
+```bash
+for ip in 101 102 103; do
+  printf "== .%s : " "$ip"
+  kubectl --server=https://192.168.50.$ip:6443 --insecure-skip-tls-verify \
+    -n default get secret enc-test -o jsonpath='{.data.key}' | base64 -d
+  echo
+done
+```
+**ควรเห็น:** `supersecret` ครบทั้ง 3 บรรทัด — เครื่องไหนขึ้น `no matching key`
+แปลว่าเครื่องนั้น key ไม่ตรงหรือยังไม่ได้วางไฟล์ ให้กลับไปทำข้อ 1.2 ใหม่
 
 ```bash
 kubectl -n default delete secret enc-test
@@ -164,34 +274,212 @@ kubectl get ns -L pod-security.kubernetes.io/enforce
 
 **หลักการ: ปิดทุกอย่างก่อน แล้วค่อยเปิดทีละเส้นที่จำเป็น**
 
+### 3.1 วัดค่าก่อน apply
+
+สร้าง pod ชั่วคราวใน `myhr-prod` → ยิงออกไปข้างนอก → ดูผล → pod ลบตัวเองทิ้ง
+รันชุดเดียวกัน **สองรอบ** ก่อนและหลัง apply แล้วเทียบกัน
+
+**ผลที่ต้องได้คือ "เปลี่ยน" ไม่ใช่ "ตก"** — ปลายทางที่ต่อไม่ได้อยู่แล้วก็ตกทั้งสองรอบ
+โดยไม่เกี่ยวกับ policy เลย
+
+> **ถ้าเผลอ apply ไปแล้ว** ถอยกลับมาวัดได้ ลบด้วยไฟล์เดิมที่ใช้ apply:
+> ```bash
+> kubectl delete -f /root/k8s/config/security/default-deny.yaml --ignore-not-found
+> kubectl delete -f /root/k8s/config/security/allow-dns.yaml --ignore-not-found
+> ```
+> ระหว่างนี้ namespace เปิดโล่ง ทำตอนที่ยังไม่มี traffic จริง แล้ว apply กลับให้ครบทั้งสองไฟล์
+
+#### เลือกปลายทางที่จะใช้วัด
+
+pod ที่นี่ออกอินเทอร์เน็ตได้หรือไม่ **ยังไม่มีใครพิสูจน์ อย่าเดา** — วัดก่อน:
+
+```bash
+PUB='{"spec":{"containers":[{"name":"pubtest","image":"curlimages/curl","command":["curl","-m","5","-sk","-o","/dev/null","-w","ip=%{http_code} exit=%{exitcode}\n","https://1.1.1.1"],"securityContext":{"allowPrivilegeEscalation":false,"runAsNonRoot":true,"runAsUser":100,"capabilities":{"drop":["ALL"]},"seccompProfile":{"type":"RuntimeDefault"}}}]}}'
+
+kubectl -n myhr-prod run pubtest --rm -i --restart=Never \
+  --image=curlimages/curl --overrides="$PUB"
+```
+
+| ผลที่ได้ | ใช้ปลายทางไหนต่อ |
+|---|---|
+| มีเลข HTTP · `exit=0` | ใช้ `https://1.1.1.1` — **เป็นด่านที่สำคัญที่สุดของบทนี้** เพราะระบบเก็บข้อมูลพนักงาน ช่องที่อันตรายคือ pod ส่งข้อมูลออกเน็ตได้ |
+| `exit=28` | pod ออกเน็ตไม่ได้อยู่แล้ว ใช้เป็นด่านวัด policy ไม่ได้ — ใช้ apiserver `192.168.50.101:6443` แทน (ตอบ `403` แปลว่าต่อถึง) |
+
+#### คำสั่งทดสอบ
+
+<figure class="fig">
+<svg viewBox="0 0 900 440" role="img" aria-label="เส้นทางของ packet ตอนทดสอบ จุดที่ NetworkPolicy ตัด และเส้นทางออกอินเทอร์เน็ต">
+  <defs>
+    <marker id="a10b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+
+  <!-- ---------- worker01 ---------- -->
+  <rect class="box-p" x="12" y="48" width="420" height="250" rx="10"/>
+  <text class="t-hd"  x="28" y="70">🖥 k8s-worker01 · 192.168.50.104</text>
+
+  <rect class="zone" x="30" y="86" width="252" height="140" rx="10"/>
+  <text class="t-sm" x="156" y="106" text-anchor="middle">namespace myhr-prod</text>
+  <rect class="box"  x="56" y="122" width="204" height="70" rx="8"/>
+  <text class="t-hd"  x="158" y="150" text-anchor="middle">pod nptest</text>
+  <text class="t-mono" x="158" y="172" text-anchor="middle">10.246.1.37</text>
+  <circle class="box" cx="44" cy="122" r="14"/>
+  <text class="t-hd" x="44" y="127" text-anchor="middle">1</text>
+
+  <path class="wall" d="M306 86 V266"/>
+  <circle class="box-bad" cx="306" cy="164" r="15"/>
+  <text class="t-hd" x="306" y="169" text-anchor="middle">2</text>
+  <text class="t-bad" x="306" y="288" text-anchor="middle">veth ของ pod · eBPF ของ Cilium — จุดที่ policy ตัด</text>
+
+  <rect class="box-p" x="342" y="140" width="80" height="48" rx="8"/>
+  <text class="t-sm"  x="382" y="160" text-anchor="middle">NIC</text>
+  <text class="t-mono" x="382" y="178" text-anchor="middle">.104</text>
+
+  <!-- ---------- เครือข่าย ---------- -->
+  <rect class="box-p" x="452" y="48" width="40" height="330" rx="8"/>
+  <circle class="box" cx="472" cy="164" r="14"/>
+  <text class="t-hd" x="472" y="169" text-anchor="middle">3</text>
+  <text class="t-dim" x="472" y="40" text-anchor="middle">วง 192.168.50.0/24</text>
+
+  <path class="ln-a" d="M260 164 H288"/>
+  <path class="ln-a" d="M324 164 H338" marker-end="url(#a10b)"/>
+  <path class="ln-a" d="M422 164 H448" marker-end="url(#a10b)"/>
+  <path class="ln"   d="M472 92 V341"/>
+
+  <!-- ---------- ปลายทาง ---------- -->
+  <path class="ln-a"  d="M492 92 H532" marker-end="url(#a10b)"/>
+  <rect class="box"    x="548" y="60" width="340" height="64" rx="9"/>
+  <text class="t-hd"   x="718" y="84"  text-anchor="middle">🎩 master01 · kube-apiserver</text>
+  <text class="t-mono" x="718" y="105" text-anchor="middle">192.168.50.101:6443 ← ที่เราใช้ทดสอบ</text>
+  <text class="t-bad"  x="538" y="98" text-anchor="middle">✗</text>
+
+  <path class="ln-ok" d="M492 172 H532" marker-end="url(#a10b)"/>
+  <rect class="box-ok" x="548" y="140" width="340" height="64" rx="9"/>
+  <text class="t-hd"   x="718" y="164" text-anchor="middle">CoreDNS · kube-system</text>
+  <text class="t-mono" x="718" y="185" text-anchor="middle">เปิดไว้ด้วย allow-dns-egress</text>
+  <text class="t-ok"   x="538" y="178" text-anchor="middle">✓</text>
+
+  <path class="ln-ok" d="M492 250 H532" marker-end="url(#a10b)"/>
+  <rect class="box-ok" x="548" y="220" width="340" height="60" rx="9"/>
+  <text class="t-hd"   x="718" y="243" text-anchor="middle">ฐานข้อมูล · นอก cluster</text>
+  <text class="t-mono" x="718" y="264" text-anchor="middle">ผ่าน router → 192.168.30.0/24</text>
+  <text class="t-ok"   x="538" y="256" text-anchor="middle">✓</text>
+
+  <path class="ln-bad ln-d" d="M492 328 H532" marker-end="url(#a10b)"/>
+  <rect class="box-bad" x="548" y="298" width="340" height="60" rx="9"/>
+  <text class="t-hd"   x="718" y="321" text-anchor="middle">อินเทอร์เน็ต · นอก cluster</text>
+  <text class="t-mono" x="718" y="342" text-anchor="middle">ผ่าน router → ออกเน็ต</text>
+  <text class="t-bad"  x="538" y="334" text-anchor="middle">✗</text>
+
+  <text class="t-ok"  x="12" y="396">ก่อน apply — วิ่งครบทาง 1 → 2 → 3 ทุกเส้น · ยิง :6443 ได้ http=403 exit=0</text>
+  <text class="t-bad" x="12" y="418">หลัง apply — เส้น ✗ ถูกตัดที่ 2 ตั้งแต่ยังไม่ออกจาก worker01 ปลายทางไม่เคยเห็น request เลย · curl รอครบ 5 วิ ได้ exit=28</text>
+</svg>
+<figcaption>Cilium ตัดที่ <b>veth ของ pod บนเครื่องที่ pod นั้นรันอยู่</b> ไม่ใช่ที่ปลายทางและไม่ใช่ firewall ของเครือข่าย —
+ทุกเส้นถูกตัดที่จุด 2 เหมือนกันหมด ไม่ว่าปลายทางจะอยู่ใน cluster หรือออกอินเทอร์เน็ต ·
+เส้น ✓ คือปลายทางที่ <code>allow-*</code> เปิดไว้ตั้งใจ จึงผ่านจุด 2 ไปได้ตามเดิม</figcaption>
+</figure>
+
+```bash
+NPPOD='{"spec":{"containers":[{"name":"nptest","image":"curlimages/curl","command":["curl","-m","5","-sk","-o","/dev/null","-w","http=%{http_code} exit=%{exitcode}\n","https://192.168.50.101:6443"],"securityContext":{"allowPrivilegeEscalation":false,"runAsNonRoot":true,"runAsUser":100,"capabilities":{"drop":["ALL"]},"seccompProfile":{"type":"RuntimeDefault"}}}]}}'
+
+kubectl -n myhr-prod run nptest --rm -i --restart=Never \
+  --image=curlimages/curl --overrides="$NPPOD"
+```
+**ควรเห็น (รอบแรก):** `http=403 exit=0` — หรือ `401` ก็ได้ ทั้งคู่แปลว่าต่อถึงแล้ว
+**ถ้าได้ `http=000` ตั้งแต่รอบแรก อย่าเพิ่งไปต่อ** ปลายทางนี้ใช้วัดไม่ได้
+
+| ผลที่ได้ | แปลว่า |
+|---|---|
+| `exit=0` + มีเลข HTTP | ✅ ต่อถึง — นี่คือค่าตั้งต้น |
+| `exit=28` | timeout · packet ถูกทิ้งเงียบ ๆ = **NetworkPolicy ทำงาน** |
+| `exit=7` | connection refused · **ไม่ใช่**ผลของ policy — มีคนตอบว่าไม่รับ |
+| `exit=6` | resolve ชื่อไม่ได้ · เรายิงเป็น IP จึงไม่ควรเจอ |
+
+> 🔴 **คำสั่ง `curl` ต้องอยู่ใน `command` ของ JSON ห้ามเขียนต่อท้ายหลัง `--`**
+> `--overrides` ใช้ JSON merge patch ที่แทน `containers` ทั้ง array อะไรที่อยู่หลัง `--`
+> จะหายไปทั้งชุด แล้วขึ้น `curl: try 'curl --help'` ซึ่งดูเหมือน curl พัง
+
+> `securityContext` ทั้ง 5 ข้อในนั้นมีไว้ให้ผ่าน **PSA `restricted`** จากหัวข้อ 2 — ขาดข้อเดียว
+> จะโดนปฏิเสธด้วย `violates PodSecurity` ตั้งแต่ยังไม่ได้สร้าง pod ซึ่ง**ไม่ใช่**ผลของ NetworkPolicy ·
+> ส่วน `warning: couldn't attach ... falling back to streaming logs` และ `terminated (Error)`
+> เป็นเรื่องปกติ ไม่ใช่ error
+
+#### ทดสอบ DNS — คู่กันเสมอ
+
+```bash
+DNSPOD='{"spec":{"containers":[{"name":"dnstest","image":"busybox:1.36","command":["nslookup","kubernetes.default.svc.cluster.local"],"securityContext":{"allowPrivilegeEscalation":false,"runAsNonRoot":true,"runAsUser":65534,"capabilities":{"drop":["ALL"]},"seccompProfile":{"type":"RuntimeDefault"}}}]}}'
+
+kubectl -n myhr-prod run dnstest --rm -i --restart=Never \
+  --image=busybox:1.36 --overrides="$DNSPOD"
+```
+**ควรเห็น:** ตอบกลับเป็น IP ปกติ — และต้องได้แบบนี้**ทั้งสองรอบ** ต่างจาก curl ที่ต้องเปลี่ยน
+เพราะ `allow-dns.yaml` มีหน้าที่เปิดช่อง DNS ไว้ให้ ถ้ารอบสอง DNS ตาย แปลว่าลืม apply ไฟล์นั้น
+
+### 3.2 apply
+
 ```bash
 kubectl apply -f /root/k8s/config/security/default-deny.yaml
 kubectl apply -f /root/k8s/config/security/allow-dns.yaml
 ```
 
-**ตรวจว่า default-deny ทำงาน:**
-```bash
-kubectl -n myhr-prod run nptest --rm -it --restart=Never --image=curlimages/curl -- \
-  curl -m 5 -s https://www.google.com
-```
-**ควรเห็น:** timeout ← **ถูกต้องแล้ว**
-
-**ตรวจว่า DNS ยังใช้ได้ (ไม่งั้นทุกอย่างพัง):**
-```bash
-kubectl -n myhr-prod run dnstest --rm -it --restart=Never --image=busybox:1.36 -- \
-  nslookup kubernetes.default.svc.cluster.local
-```
-**ควรเห็น:** ตอบกลับปกติ
-
 > **ลำดับสำคัญมาก** — ถ้า apply `default-deny` โดยไม่ apply `allow-dns` พร้อมกัน
 > ทุก pod ใน namespace จะ resolve DNS ไม่ได้ทันที และอาการจะดูเหมือน application พัง
 
-**ดู flow จริงด้วย Hubble เพื่อรู้ว่าต้องเปิดเส้นไหนบ้าง:**
+รอให้ Cilium รับ policy ไปบังคับใช้ก่อนวัดซ้ำ (ปกติไม่ถึงวินาที แต่อย่ายิงทันที)
+— ต้องถามที่ **worker** เพราะ policy ถูกโหลดเฉพาะเครื่องที่มี pod ของ namespace นั้นอยู่:
 ```bash
-kubectl -n kube-system exec -it ds/cilium -- hubble observe --namespace myhr-prod --verdict DROPPED --last 50
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  n=$(kubectl -n kube-system exec "$p" -c cilium-agent -- \
+        cilium-dbg policy get 2>/dev/null | grep -c myhr-prod)
+  echo "$p → $n"
+done
+```
+**ควรเห็น:** มีอย่างน้อยหนึ่งบรรทัดที่ไม่ใช่ `0` (เครื่องที่ pod รันอยู่) · ถ้าเป็น `0` หมดทุกบรรทัด
+แปลว่า Cilium ยังไม่รับ policy ไปบังคับใช้ อย่าเพิ่งไปวัดรอบสอง
+
+### 3.3 วัดซ้ำด้วยคำสั่งเดิมเป๊ะ ๆ
+
+รัน **สองบล็อกเดิมในข้อ 3.1 ซ้ำอีกรอบ** (คำสั่งเดียวกัน ปลายทางเดียวกัน) แล้วเทียบผล:
+
+| ทดสอบ | ก่อน apply | หลัง apply | แปลว่า |
+|---|---|---|---|
+| curl ออกนอก namespace | `http=403 exit=0` | `http=000 exit=28` | 🔴 egress ถูกปิดจริง |
+| DNS lookup | ตอบเป็น IP | ตอบเป็น IP **เหมือนเดิม** | `allow-dns` ทำงาน |
+
+**ค่าที่ต้องได้คือ "เปลี่ยน"** ไม่ใช่แค่ "ตก" — ถ้าคอลัมน์ก่อนกับหลังเหมือนกันทั้งคู่
+แปลว่าการทดสอบไม่ได้วัด policy ไม่ว่าผลจะออกมาหน้าตาดีแค่ไหน
+
+- ทั้งสองช่องเป็น `000` → ปลายทางต่อไม่ถึงตั้งแต่แรก เลือกปลายทางใหม่
+- ทั้งสองช่องมีเลข HTTP (`403`/`401`) → policy **ยังไม่ถูกบังคับใช้** ดูด้วยบล็อกวน agent ในข้อ 3.2
+  และตรวจว่า apply ลง namespace ถูกตัวหรือไม่ (`kubectl -n myhr-prod get netpol`)
+- DNS ตายหลัง apply → ลืม `allow-dns.yaml` ให้ apply ทันที
+
+### 3.4 ดู flow จริงด้วย Hubble เพื่อรู้ว่าต้องเปิดเส้นไหนบ้าง
+
+```bash
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    hubble observe --namespace myhr-prod --verdict DROPPED --last 20
+done
 ```
 นี่คือวิธีที่ถูกต้องในการเขียน policy — **ดูของจริงว่าอะไรถูก drop แล้วเปิดเฉพาะเส้นนั้น**
-ไม่ใช่เดาเอาจากเอกสาร
+ไม่ใช่เดาเอาจากเอกสาร · ควรเห็น flow ของ `nptest` โผล่เป็น `DROPPED`
+ซึ่งเป็นหลักฐานชิ้นที่สองว่า policy ทำงานจริง ไม่ใช่ pod ต่อไม่ได้ด้วยเหตุอื่น
+
+> 🔴 **ต้องวนถามทุก agent ห้ามใช้ `ds/cilium` เฉย ๆ** — flow เก็บอยู่ใน ring buffer ของ
+> agent บน **เครื่องที่ pod นั้นรัน** เท่านั้น ส่วน `exec ds/cilium` ได้ agent ตัวเดียว
+> ที่ Kubernetes เลือกให้ (มักเป็นตัวบน master) ถามผิดเครื่องจะได้ผลว่างเปล่า
+> แล้วเข้าใจผิดว่าไม่มี flow ถูก drop · ถ้ายังว่าง ให้ยิง pod ทดสอบใหม่แล้วรันทันที
+> เพราะ ring buffer มีขนาดจำกัด ของเก่าถูกทับได้
+
+**เช็กว่า Hubble ทำงานอยู่จริง:**
+```bash
+kubectl -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg status | grep -i hubble
+```
+**ควรเห็น:** `Hubble: Ok` พร้อมตัวเลข `Current/Max Flows` — ถ้าขึ้น `Disabled`
+แปลว่า values ที่ deploy จริงไม่ตรงกับ [`values.yaml`](../config/cilium/values.yaml) ในrepo
 
 ---
 
@@ -219,11 +507,55 @@ kubectl get clusterrolebinding -o json \
 **ทบทวนรายชื่อนี้ทุกไตรมาส** และลบคนที่ไม่ได้อยู่แล้วออก
 
 **ทดสอบว่า RBAC ทำงานจริง:**
+
+> 🔴 **ต้องสวมรอยเป็น group ไม่ใช่ ServiceAccount** — [`rbac.yaml`](../config/security/rbac.yaml)
+> ผูกสิทธิ์ไว้กับ Group `myhr:developers` / `myhr:operators` (มาจากช่อง `O` ของ client cert)
+> ไม่ได้ผูกกับ ServiceAccount ตัวไหนเลย · ถ้าทดสอบด้วย
+> `--as=system:serviceaccount:myhr-prod:developer` จะได้ `no` **เสมอ**
+> ไม่ว่า RBAC จะถูกหรือผิด แล้วจะแปลผลผิดว่า "ปิดแน่นดี" ทั้งที่ไม่ได้ทดสอบอะไรเลย
+> · `--as-group` ต้องมาคู่กับ `--as` เพราะ apiserver ต้องการชื่อ user ด้วย
+
+> 🔴 **subresource ต้องใช้ `--subresource` ห้ามเขียน `pods/exec` ติดกัน**
+> kubectl ตีความ `pods/exec` เป็นรูปแบบ TYPE/NAME คือ "resource `pods` ที่ชื่อ `exec`"
+> ไม่ใช่ subresource · มันจะไปถามว่า "create pods ได้ไหม" ซึ่งเป็นคนละคำถาม
+> แล้วมักได้ `no` ออกมาพอดี ทำให้ดูเหมือนทดสอบผ่านทั้งที่ไม่ได้ทดสอบสิ่งที่ตั้งใจเลย
+
 ```bash
-kubectl auth can-i delete nodes --as=system:serviceaccount:myhr-prod:developer
-kubectl auth can-i get pods --as=system:serviceaccount:myhr-prod:developer -n myhr-prod
+kubectl auth can-i get pods    --as=tester --as-group=myhr:developers -n myhr-prod
+kubectl auth can-i get secrets --as=tester --as-group=myhr:developers -n myhr-prod
+kubectl auth can-i create pods --subresource=exec \
+                               --as=tester --as-group=myhr:developers -n myhr-prod
+kubectl auth can-i get pods    --subresource=log \
+                               --as=tester --as-group=myhr:developers -n myhr-prod
+kubectl auth can-i get pods    --as=tester --as-group=myhr:developers -n myhr-uat
+kubectl auth can-i delete nodes --as=tester --as-group=myhr:developers
 ```
-**ควรเห็น:** `no` และ `yes` ตามลำดับ
+**ควรเห็นเรียงลงมา:** `yes` `no` `no` `yes` `no` `no`
+
+| ทดสอบ | ต้องได้ | เพราะ |
+|---|---|---|
+| `get pods -n myhr-prod` | `yes` | RoleBinding `myhr-developers` อยู่ใน namespace นี้ |
+| `get secrets` | `no` | ตั้งใจไม่ให้ — กันการดูดค่า secret |
+| `create pods --subresource=exec` | `no` | ตั้งใจไม่ให้ — `exec` คืออ่าน secret ทางอ้อมโดยไม่โผล่ใน audit log |
+| `get pods --subresource=log` | `yes` | ดู log ได้ เป็นงานประจำของ dev |
+| `get pods -n myhr-uat` | `no` | binding ผูกไว้เฉพาะ `myhr-prod` |
+| `delete nodes` | `no` | คนละ role กัน |
+
+**ฝั่ง ops:**
+```bash
+kubectl auth can-i get nodes    --as=tester --as-group=myhr:operators
+kubectl auth can-i create pods  --subresource=eviction \
+                                --as=tester --as-group=myhr:operators -n myhr-prod
+kubectl auth can-i delete nodes --as=tester --as-group=myhr:operators
+kubectl auth can-i get secrets  --as=tester --as-group=myhr:operators -A
+```
+**ควรเห็น:** `yes` `yes` `no` `no` — `delete nodes` ต้องเป็น `no` เพราะ role ให้แค่
+`get/list/watch/patch/update` · ส่วน `pods --subresource=eviction` ต้องเป็น `yes`
+ไม่งั้น `kubectl drain` ในบทที่ 12 จะใช้ไม่ได้
+
+> ⚠️ **`myhr:deployer` ยังไม่มี binding ชี้ถึงเลย** — ClusterRole ถูกสร้างไว้แล้วแต่ยังไม่มีใครใช้ได้
+> ตั้งใจไว้แบบนั้นจนกว่าจะมีคน deploy จริง วันที่จะใช้ ให้สร้าง RoleBinding ผูกกับ group
+> ของทีมนั้นใน namespace ที่ต้องการ แล้วทดสอบด้วยวิธีเดียวกันข้างบน
 
 ---
 
@@ -238,7 +570,29 @@ kubectl auth can-i get pods --as=system:serviceaccount:myhr-prod:developer -n my
      └── user → ชื่อที่โผล่ใน audit log
 ```
 
-**👑 ทำบน master01:**
+**ทางลัด — ใช้สคริปต์ทำทั้ง 5 ขั้นให้จบในคำสั่งเดียว**
+([`issue-kubeconfig.sh`](../config/security/issue-kubeconfig.sh) ทำตามขั้นตอนด้านล่างนี้ทั้งหมด
+แล้วทดสอบสิทธิ์ด้วยไฟล์ที่เพิ่งออกก่อนบอกว่าเสร็จ):
+
+```bash
+bash /root/k8s/config/security/issue-kubeconfig.sh teeradach --admin   # ผู้ดูแล cluster
+bash /root/k8s/config/security/issue-kubeconfig.sh somchai             # dev (ค่าเริ่มต้น)
+bash /root/k8s/config/security/issue-kubeconfig.sh somsak myhr:operators
+```
+ได้ไฟล์ `<ชื่อ>.kubeconfig` (0600) ไฟล์เดียวจบ · ไฟล์กลาง (key/csr/crt) ถูกลบให้อัตโนมัติ ·
+รันซ้ำได้ ของเดิมชื่อเดียวกันจะถูกออกใหม่ทับ
+
+> **`--admin` ผูกกับ group `myhr:admins` ไม่ใช่ `system:masters`** — `system:masters`
+> ข้าม RBAC ทั้งหมดและ**ถอนไม่ได้**ถ้า cert หลุด สคริปต์จึงปฏิเสธให้ตรง ๆ ·
+> ส่วน `myhr:admins` ตัดได้ทันทีด้วย `kubectl delete clusterrolebinding myhr-admins`
+> โดยไม่ต้องรื้อ CA · binding อยู่ใน [`rbac.yaml`](../config/security/rbac.yaml) แล้ว
+> ต้อง `kubectl apply` ก่อนออก cert ใบแรก
+
+> ไฟล์นี้เป็น kubeconfig มาตรฐาน ใช้กับ `kubectl`, k9s, Lens หรือ **Headlamp แบบ desktop app**
+> ได้ทันที · แต่ **Headlamp ที่ deploy ไว้ใน cluster ล็อกอินด้วย token ไม่ใช่ client cert**
+> ต้องใช้ ServiceAccount แทน ดูหัวข้อ 4.1ก
+
+**ทำเองทีละขั้น — 👑 บน master01:**
 ```bash
 USER_NAME=somchai
 GROUP=myhr:developers          # หรือ myhr:operators
@@ -302,6 +656,32 @@ shred -u ${USER_NAME}.key ${USER_NAME}.csr ${USER_NAME}.crt
 
 ---
 
+### 4.1ก เข้าผ่าน Headlamp / dashboard ที่รันใน cluster
+
+UI ที่ deploy อยู่ใน cluster (Headlamp, Kubernetes Dashboard) รับ **bearer token** อย่างเดียว
+ไม่รับ client certificate — kubeconfig จากข้อ 4.1 จึงใช้ล็อกอินหน้าเว็บไม่ได้
+(ใช้ได้กับ Headlamp แบบ **desktop app** เพราะตัวนั้นอ่าน kubeconfig ตรง ๆ)
+
+```bash
+kubectl -n kube-system create serviceaccount headlamp-admin
+kubectl create clusterrolebinding headlamp-admin \
+  --clusterrole=cluster-admin --serviceaccount=kube-system:headlamp-admin
+
+# token อายุสั้น — ขอใหม่ทุกครั้งที่จะใช้
+kubectl -n kube-system create token headlamp-admin --duration=8h
+```
+เอา token ที่ได้ไปวางในหน้าล็อกอินของ Headlamp
+
+> 🔴 **อย่าสร้าง Secret แบบ token ถาวรให้ ServiceAccount นี้** — token ที่ไม่มีวันหมดอายุ
+> คือ cluster-admin ที่หลุดแล้วหลุดเลย · `kubectl create token --duration` ออกใบใหม่ได้
+> ทุกครั้งที่ต้องใช้ ซึ่งเพียงพอสำหรับการเข้าดูเป็นครั้งคราว
+>
+> ถ้าจะให้ทีมใช้ประจำ ให้ผูก ServiceAccount กับ role ที่แคบกว่าแทน เช่น
+> `--clusterrole=myhr:developer --serviceaccount=kube-system:headlamp-viewer`
+> แล้วออก token คนละใบ จะได้แยกได้ใน audit log ว่าใครทำอะไร
+
+---
+
 ### 4.2 วันที่จะย้ายไปใช้ OIDC — ทำอะไรบ้าง
 
 ยังไม่ต้องทำตอนนี้ บันทึกไว้เฉย ๆ ว่าเส้นทางเป็นยังไง
@@ -357,15 +737,83 @@ grep -c 'kind: Policy' /etc/kubernetes/audit-policy.yaml
 ```
 พร้อม volumeMount ของ `/etc/kubernetes/audit-policy.yaml` และ `/var/log/kubernetes`
 
-**ตรวจ:**
-```bash
-tail -3 /var/log/kubernetes/audit.log | jq -r '"\(.verb) \(.objectRef.resource) by \(.user.username)"'
-```
-**ควรเห็น:** บรรทัด JSON ของ event จริง
+### 5.1 มันคืออะไร และไฟล์อยู่ที่ไหน
 
-> **audit log กิน disk เร็วมาก** ถ้าเขียนทุก event — policy ที่ให้มาจึงบันทึกเฉพาะ
-> สิ่งที่มีความหมายจริง (secret access, การเปลี่ยนแปลง RBAC, exec เข้า pod)
-> และตั้ง rotate ไว้ที่ 100 MB × 10 ไฟล์
+apiserver เขียนบันทึกทุก request ที่เข้ามาหามันเป็น JSON บรรทัดละ event —
+**ใคร ทำอะไร กับอะไร เมื่อไหร่ ผลเป็นยังไง** เป็นที่เดียวในระบบที่ตอบได้ว่า
+ใครลบ deployment ตอนตีสอง · ใครอ่าน secret ของ HR · ใครเพิ่มสิทธิ์ให้ตัวเอง
+(log ของ pod ตอบไม่ได้ เพราะนั่นคือเสียงของแอป ไม่ใช่ของ Kubernetes)
+
+> 🔴 **ไฟล์เป็นของแต่ละ master แยกกัน** — `/var/log/kubernetes/audit.log` บนเครื่องนั้น ๆ
+> request วิ่งผ่าน VIP แล้วตกที่ apiserver ตัวไหน event ก็ไปโผล่เครื่องนั้นเครื่องเดียว
+> **อย่าคาดหวังว่าทั้ง 3 เครื่องจะมีเนื้อหาเหมือนกัน** ตอนสืบสวนต้องไล่ให้ครบทั้งสามเสมอ
+
+### 5.2 อะไรถูกบันทึก อะไรไม่ถูกบันทึก
+
+| ทำอะไร | บันทึกไหม | `level` | เห็นอะไร |
+|---|---|---|---|
+| อ่าน Secret | ✅ | `Metadata` | รู้ว่าใครอ่าน แต่**ไม่เก็บค่า secret** — ถ้าเก็บ log จะกลายเป็นที่รั่วเสียเอง |
+| แก้ RBAC | ✅ | `RequestResponse` | เห็นทั้งของที่ส่งไปและผลลัพธ์ |
+| `exec` · `attach` · `port-forward` | ✅ | `RequestResponse` | ช่องอ้อมที่เอาข้อมูลออกได้โดยไม่แตะ API ตรง ๆ |
+| `create`/`update`/`delete` ทุกอย่าง | ✅ | `RequestResponse` | ทุกการเปลี่ยนแปลงสถานะ |
+| `get`/`list` pod · service · node | ✅ | `Metadata` | รู้ว่ามีคนดู ไม่เก็บเนื้อหา |
+| `/healthz` · `/metrics` · kubelet watch · Prometheus scrape | ❌ | `None` | ตัดทิ้งตั้งใจ — เกิดวินาทีละหลายครั้ง เก็บไปก็มีแต่ทำให้ disk เต็มและหาของจริงไม่เจอ |
+
+rotate ไว้ที่ **100 MB × 10 ไฟล์ เก็บ 30 วัน**
+(ตั้งไว้ที่ [`kubeadm-config.yaml`](../config/kubeadm/kubeadm-config.yaml) ตั้งแต่บทที่ 04)
+
+### 5.3 พิสูจน์ว่าบันทึกจริง
+
+สร้าง event ที่รู้หน้าตาแน่ ๆ แล้วไปหามันให้เจอ:
+```bash
+kubectl -n kube-system get secret > /dev/null
+
+grep -h '"resource":"secrets"' /var/log/kubernetes/audit.log | tail -1 \
+  | jq '{level, user:.user.username, verb, resource:.objectRef.resource,
+         ns:.objectRef.namespace, time:.requestReceivedTimestamp}'
+```
+**ควรเห็น:** JSON ที่มี `"level": "Metadata"` · `"verb": "list"` · `user` เป็นชื่อคุณ
+และ**ต้องไม่มี** `requestObject`/`responseObject` — นั่นคือหลักฐานว่าเนื้อ secret ไม่ได้ลงไฟล์
+
+ถ้าไม่เจอ ให้ตามหาที่ master อีกสองเครื่อง เพราะ request อาจตกที่นั่น:
+```bash
+for ip in 101 102 103; do
+  printf "== .%s : " "$ip"
+  ssh root@192.168.50.$ip "grep -hc '\"resource\":\"secrets\"' /var/log/kubernetes/audit.log 2>/dev/null || echo 0"
+done
+```
+**ควรเห็น:** มีอย่างน้อยหนึ่งเครื่องที่ไม่ใช่ `0`
+
+**ทดสอบด้านกลับ — เสียงรบกวนต้องไม่อยู่ในไฟล์:**
+```bash
+grep -c '"/healthz' /var/log/kubernetes/audit.log
+```
+**ควรเห็น:** `0` — ถ้าได้เลขเยอะแปลว่า policy ไม่ถูกโหลด apiserver กำลังบันทึกทุกอย่าง
+แบบ default แล้ว disk จะเต็มใน 2-3 วัน
+
+### 5.4 เอาไปใช้ตอนสืบสวน
+
+```bash
+jq -r 'select(.verb=="delete")
+       | "\(.requestReceivedTimestamp) \(.user.username) ลบ \(.objectRef.resource)/\(.objectRef.name)"' \
+  /var/log/kubernetes/audit.log | tail -20
+```
+**ควรเห็น:** รายการว่าใครลบอะไรไปบ้างเรียงตามเวลา — คำถามแรกที่จะถูกถามเวลาของหาย
+
+ใครแตะ RBAC บ้าง:
+```bash
+jq -r 'select(.objectRef.apiGroup=="rbac.authorization.k8s.io")
+       | "\(.requestReceivedTimestamp) \(.user.username) \(.verb) \(.objectRef.resource)/\(.objectRef.name)"' \
+  /var/log/kubernetes/audit.log | tail -20
+```
+
+ใคร exec เข้า pod ไหน:
+```bash
+jq -r 'select(.objectRef.subresource=="exec")
+       | "\(.requestReceivedTimestamp) \(.user.username) → \(.objectRef.namespace)/\(.objectRef.name)"' \
+  /var/log/kubernetes/audit.log
+```
+**ควรเห็น:** ว่างเปล่าในระบบที่ปกติ — ทุกบรรทัดที่โผล่ต้องอธิบายได้ว่าใครทำและทำไม
 
 ---
 
@@ -384,17 +832,221 @@ credential ที่รั่วในคู่มือชุดเดิม **
 | cluster-admin token ของ cluster เดิม | [ ] เพิกถอนแล้ว |
 | client key ใน `admin.conf` เดิม | [ ] เพิกถอนแล้ว |
 
-**สำหรับ registry — สร้าง 2 account แยกกัน:**
+**สำหรับ registry — สร้าง 2 account แยกกัน:** account สำหรับ push (คนหรือ CI ที่สร้าง image)
+กับ account ที่ **pull ได้อย่างเดียว** สำหรับ cluster
+
+cluster ต้องใช้ตัวหลังเท่านั้น วิธีเอาเข้า cluster อยู่ที่ **หัวข้อ 7** ข้างล่าง
+
+---
+
+## 7 · imagePullSecret — ให้ cluster ดึง image จาก private registry
+
+`registry.myhr.co.th` เป็น registry ส่วนตัว ยิง `/v2/` เปล่า ๆ จะได้ `401` เสมอ
+**kubelet บนทุก node จึงต้องมี credential ก่อน ไม่งั้น pod ทุกตัวจะค้างที่ `ImagePullBackOff`**
+
+วิธีที่ใช้คือแบบเดิมที่เคยทำมา 2 ขั้น: **สร้าง Secret ชนิด `dockerconfigjson` ชื่อ `regcred`**
+แล้ว **อ้างถึงมันใน Deployment ด้วย `imagePullSecrets`**
+
+> 🔴 **Secret ผูกกับ namespace** — ต้องสร้างทุก namespace ที่มี pod ดึง image
+> จาก registry ส่วนตัว (ตอนนี้คือ `myhr-prod` และ `myhr-uat`)
+> คู่มือชุดเดิมสร้างแค่ใน `default` แล้วงงว่าทำไม namespace อื่น pull ไม่ได้
+> · Kubernetes ไม่มี imagePullSecret ระดับ cluster ให้ใช้ ทำซ้ำต่อ namespace คือทางที่ถูกแล้ว
+>
+> ไฟล์ Secret **ไม่มีอยู่ในrepo โดยตั้งใจ** เพราะมีรหัสจริงอยู่ข้างใน — เก็บได้แค่วิธีสร้าง
+
+---
+
+### 7.1 เช็กก่อนว่าเป็นปัญหารหัสจริงไหม
+
+`ImagePullBackOff` ไม่ได้แปลว่าเรื่อง credential เสมอไป ถามตัว registry ก่อน —
+บรรทัดแรกเอาค่า `REGISTRY_HOST` เข้า shell **ต้องรันใหม่ทุกครั้งที่ ssh เข้ามา**
+ไม่งั้น URL จะกลายเป็น `https:///v2/` แล้วอ่านผลไม่ได้ความ:
+
 ```bash
-# บน cluster ใหม่ ใช้ account ที่ pull ได้อย่างเดียว
-kubectl -n myhr-prod create secret docker-registry regcred \
-  --docker-server="${REGISTRY_HOST}" \
-  --docker-username='<PULL_ONLY_USER>' \
-  --docker-password='<PULL_ONLY_PASSWORD>'
+set -a && . <(tr -d '\r' < /root/k8s/versions.env) && set +a
+curl -sS -o /dev/null -w "HTTP %{http_code}\n" "https://${REGISTRY_HOST}/v2/"
 ```
 
-> **secret ไม่ข้าม namespace** ต้องสร้างทุก namespace ที่ต้อง pull image
-> คู่มือเดิมสร้างแค่ `default` แล้วงงว่าทำไม namespace อื่น pull ไม่ได้
+| ผลที่ได้ | แปลว่า |
+|---|---|
+| `HTTP 401` | ✅ เครือข่ายถึง · TLS ผ่าน · เหลือแค่ยังไม่ได้ล็อกอิน → ทำข้อ 7.2 ต่อ |
+| `certificate ...` · `unknown authority` | cert/CA ของ registry — **สร้าง secret กี่รอบก็ไม่หาย** ([บทที่ 02 หัวข้อ 4](02-container-runtime.md)) |
+| `could not resolve host` | DNS หรือ `/etc/hosts` ([บทที่ 01](01-prepare-os.md)) |
+| `connection refused` · timeout | ไปไม่ถึงเครื่อง registry — ทีม network |
+
+---
+
+### 7.2 สร้าง Secret
+
+**👑 บน master01** — เอาค่า `REGISTRY_HOST` เข้า shell ก่อน (shell ใหม่ทุกครั้งที่ ssh เข้ามา
+ไม่มีค่านี้ติดมาเอง):
+
+```bash
+set -a && . <(tr -d '\r' < /root/k8s/versions.env) && set +a
+echo "REGISTRY_HOST=[$REGISTRY_HOST]"
+```
+**ควรเห็น:** `REGISTRY_HOST=[registry.myhr.co.th]` — ถ้าได้ `[]` อย่าเพิ่งไปต่อ
+
+รับรหัสทางแป้นพิมพ์ ไม่พิมพ์ต่อท้ายคำสั่ง (ไม่งั้นรหัสค้างใน `~/.bash_history`
+และเห็นได้จาก `ps aux` ของทุกคนบนเครื่อง) แล้ว**ตรวจว่าครบทั้งสามค่าก่อนยิงจริง**:
+
+```bash
+read -rp  'registry user: ' PULL_USER
+read -rsp 'registry password: ' PULL_PASS && echo
+
+if [ -n "$REGISTRY_HOST" ] && [ -n "$PULL_USER" ] && [ -n "$PULL_PASS" ]; then
+    echo "ครบ: host=$REGISTRY_HOST user=$PULL_USER pass=${#PULL_PASS} ตัวอักษร"
+else
+    echo "❌ ยังมีตัวที่ว่างอยู่ อย่าเพิ่งไปต่อ"
+fi
+```
+**ควรเห็น:** `ครบ: host=... user=... pass=N ตัวอักษร`
+
+> ⚠️ **ด่านนี้มีไว้เพราะตัวแปรว่างไม่ได้ทำให้คำสั่งเงียบ ๆ ผ่านไป** — `kubectl` จะขึ้น
+> `error: either --from-file or the combination of --docker-username, --docker-password
+> and --docker-server is required` ตามด้วย `no objects passed to apply`
+> ซึ่งอ่านแล้วเหมือนพิมพ์คำสั่งผิด ทั้งที่จริงคือลืม source `versions.env`
+
+```bash
+for ns in myhr-prod myhr-uat; do
+  kubectl -n "$ns" create secret docker-registry regcred \
+    --docker-server="${REGISTRY_HOST}" \
+    --docker-username="$PULL_USER" \
+    --docker-password="$PULL_PASS" \
+    --dry-run=client -o yaml | kubectl apply -f -
+done
+unset PULL_PASS
+```
+**ควรเห็น:** `secret/regcred created` (หรือ `configured` ถ้าเคยสร้างไว้แล้ว) namespace ละบรรทัด
+
+> 🔴 **เพิ่ม namespace ใหม่เมื่อไหร่ ต้องกลับมารันบล็อกนี้ใหม่โดยใส่ชื่อมันเข้าไปด้วย**
+> ไม่มีอะไรเตือนเลยจนกว่าจะ deploy แล้ว pod ค้าง `ImagePullBackOff` อยู่ namespace เดียว
+> ทั้งที่ namespace อื่นใช้ได้ปกติ · เกณฑ์คือ **namespace ไหนมี pod ที่ดึง image
+> จาก `registry.myhr.co.th` namespace นั้นต้องมี `regcred`** — namespace ที่ใช้ image
+> จาก public registry ล้วน ๆ ไม่ต้องมี
+
+**ตรวจว่าครบทุก namespace ที่ต้องมี:**
+```bash
+for ns in myhr-prod myhr-uat; do
+  printf '%-12s ' "$ns"
+  kubectl -n "$ns" get secret regcred -o name 2>/dev/null || echo "❌ ยังไม่มี"
+done
+```
+**ควรเห็น:** `secret/regcred` ครบทุกบรรทัด
+
+ใช้ `--dry-run=client | kubectl apply` แทน `create` เฉย ๆ เพื่อให้**รันซ้ำได้**
+ตอนหมุนรหัส `create` ธรรมดาจะขึ้น `already exists` แล้วรหัสเก่าค้างอยู่โดยไม่มีใครรู้
+
+**สามข้อที่พลาดกันบ่อยที่สุด:**
+
+| พลาด | ผลที่ได้ |
+|---|---|
+| `--docker-server` ใส่เป็น `https://...` หรือมี path ต่อท้าย | ได้ `401` เหมือนไม่มี secret เลย — ต้องเป็น **host เปล่า ๆ** ตรงกับที่เขียนใน `image:` |
+| สร้างแค่ namespace เดียว | namespace อื่น pull ไม่ได้ และไม่มีอะไรเตือนจนกว่าจะ deploy |
+| ใช้ account เดียวกับที่ push ได้ | รหัสที่ push ได้กระจายไปอยู่ทุก node — ใช้ account ที่ **pull อย่างเดียว** (ข้อ 6) |
+
+---
+
+### 7.3 อ้างถึงใน Deployment
+
+`imagePullSecrets` อยู่ใต้ `spec.template.spec` **ระดับเดียวกับ `containers`** ไม่ใช่ข้างใน container:
+
+```yaml
+spec:
+  template:
+    spec:
+      imagePullSecrets:
+        - name: regcred          # ชื่อ Secret ใน namespace เดียวกับ Deployment
+      containers:
+        - name: zeeme-ads
+          image: registry.myhr.co.th/myhr/zeeme-ads:1.0.0
+```
+
+ใส่ไว้ให้แล้วทั้งใน [`deployments/zeeme-ads/deployment.yaml`](../deployments/zeeme-ads/deployment.yaml)
+และแม่แบบ [`config/app/deployment-template.yaml`](../config/app/deployment-template.yaml)
+— แอปใหม่ก็อปจากแม่แบบจะมีติดมาเอง
+
+> **host ใน `image:` ต้องตรงกับ `--docker-server` เป๊ะ** — `registry.myhr.co.th/myhr/app`
+> จะไปหา secret ที่ผูกกับ host `registry.myhr.co.th` เท่านั้น ถ้าตัวใดตัวหนึ่งเขียนเป็น IP
+> หรือมี `:443` ต่อท้าย จะไม่ match กันแล้วได้ `401` ทั้งที่ secret ถูกต้องทุกอย่าง
+
+---
+
+### 7.4 ตรวจว่าใช้ได้จริง
+
+**อ่าน host ที่อยู่ในตัว secret จริง ๆ ไม่ใช่แค่ดูว่ามี secret อยู่:**
+```bash
+kubectl -n myhr-prod get secret regcred -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d
+```
+**ควรเห็น:** `{"auths":{"registry.myhr.co.th":{"auth":"..."}}}` — host ต้องตรงกับใน `image:`
+· ผลลัพธ์มี credential อยู่ข้างใน **อย่าวางต่อลงแชตหรือ ticket**
+
+**Deployment เห็น secret จริงไหม:**
+```bash
+kubectl -n myhr-prod get deploy zeeme-ads -o jsonpath='{.spec.template.spec.imagePullSecrets[*].name}{"\n"}'
+```
+**ควรเห็น:** `regcred`
+
+**pod ที่ค้างอยู่ต้องสั่งให้ลองใหม่** — `ImagePullBackOff` retry เองแต่ backoff ถอยไปถึง 5 นาที:
+```bash
+kubectl -n myhr-prod rollout restart deploy/zeeme-ads
+```
+
+**ถ้ายังไม่ผ่าน แยกชั้นด้วยการ pull จาก node ตรง ๆ:**
+```bash
+crictl pull --creds '<PULL_ONLY_USER>:<PULL_ONLY_PASSWORD>' "${REGISTRY_HOST}/myhr/zeeme-ads:1.0.0"
+```
+- node pull ได้ แต่ pod ไม่ได้ → เรื่อง secret · namespace · หรือชื่อ host (ข้อ 7.2/7.3)
+- node ก็ pull ไม่ได้ → เรื่อง containerd · cert · network ([บทที่ 02 หัวข้อ 4](02-container-runtime.md))
+
+---
+
+### 7.5 ตอนหมุนรหัส registry
+
+รันบล็อกในข้อ 7.2 ซ้ำได้เลย — `apply` เขียนทับให้
+
+> ⚠️ **pod ที่รันอยู่แล้วจะไม่รู้ว่ารหัสเปลี่ยน** เพราะมันไม่ pull ใหม่ ปัญหาจะโผล่ตอน
+> pod ถัดไปเกิด ซึ่งอาจเป็นตอน drain กลางดึกที่ไม่มีใครนั่งดู — หมุนรหัสเมื่อไหร่
+> ให้ `rollout restart` ทุก Deployment ที่ใช้ registry นี้ในเวลาทำการเลย
+
+---
+
+## 8 · ตรวจทั้งบทด้วยสคริปต์เดียว
+
+ทุกด่านในบทนี้ผ่านได้ทั้งที่ระบบยังไม่ปลอดภัย — เปิด encryption แค่ master01
+แล้วทดสอบผ่าน VIP ก็ยังผ่าน 2 ใน 3 ครั้ง · ติด label PSA แล้วแต่ไม่มีผลจะรู้ตอนบทที่ 11 ·
+apply NetworkPolicy สำเร็จไม่ได้แปลว่า Cilium บังคับใช้จริง
+
+[`verify-security.sh`](../config/security/verify-security.sh) ยิงของจริงทุกข้อแล้วสรุปเป็น ผ่าน/ตก:
+
+```bash
+scp config/security/verify-security.sh root@192.168.50.101:/root/k8s/config/security/
+```
+
+**👑 บน master01:**
+```bash
+bash /root/k8s/config/security/verify-security.sh
+```
+
+**ควรเห็น:** `ผ่าน N · ตก 0 · ระวัง 0` แล้วปิดท้ายด้วย `✅ บทที่ 10 ใช้งานได้จริง`
+(คืน exit code 0 เมื่อไม่มีข้อไหนตก — เอาไปต่อกับ CI ได้)
+
+สคริปต์ตรวจ 5 เรื่อง:
+
+| ตรวจ | วิธี |
+|---|---|
+| etcd encryption | เขียน Secret ใหม่จริง แล้วอ่าน byte ตรงจาก etcd · เทียบว่าค่าที่เขียนไม่โผล่เป็น plaintext |
+| key ตรงกันทั้ง 3 master | ยิงตรงเข้า `:6443` ทีละเครื่อง ไม่ผ่าน VIP |
+| PSA | ขอสร้าง privileged pod ด้วย `--dry-run=server` ต้องโดนปฏิเสธ |
+| NetworkPolicy | `default-deny-all` กับ `allow-dns-egress` ต้องมาคู่กัน + Cilium โหลด policy แล้ว |
+| audit log | flag ครบทั้ง 3 apiserver + ไฟล์ถูกเขียนภายใน 5 นาทีที่ผ่านมา |
+
+> สคริปต์แตะของจริงอย่างเดียวคือสร้าง Secret ชั่วคราว `enc-verify-*` ใน `default`
+> แล้วลบทิ้งเมื่อจบ — ต้องเขียนของใหม่ถึงจะรู้ว่า**ตอนนี้**ยังเข้ารหัสอยู่จริง
+> ที่เหลืออ่านอย่างเดียว รันซ้ำได้ตลอด และควรรันซ้ำหลังทุกครั้งที่แตะ apiserver
+
+**สองข้อที่สคริปต์ตรวจแทนไม่ได้** ต้องยืนยันด้วยคน — การหมุน credential เก่า (หัวข้อ 6)
+และ encryption key ต้องอยู่ในที่เก็บ secret ขององค์กร ไม่ใช่ในเครื่องใครเครื่องมัน
 
 ---
 
@@ -403,11 +1055,14 @@ kubectl -n myhr-prod create secret docker-registry regcred \
 - [ ] 🔴 อ่าน Secret ตรงจาก etcd แล้ว **เห็นเป็นข้อมูลเข้ารหัส** ไม่ใช่ plaintext
 - [ ] encryption key เก็บในที่เก็บ secret แล้ว **และไม่ได้อยู่ใน git**
 - [ ] Secret เก่าถูกเขียนทับให้เข้ารหัสครบแล้ว
+- [ ] 🔴 **apiserver ทั้ง 3 เครื่องถอดรหัส Secret ตัวเดียวกันได้** — ยิงตรงที่ `--server=https://192.168.50.101|102|103:6443` ไม่ผ่าน VIP
 - [ ] namespace ของ application เป็น PSA `restricted`
-- [ ] 🔴 NetworkPolicy default-deny ทำงาน — curl ออกนอกไม่ได้ แต่ DNS ยังใช้ได้
+- [ ] 🔴 NetworkPolicy default-deny ทำงาน — **เทียบก่อน/หลัง apply ด้วยคำสั่งเดียวกัน** ผลต้องเปลี่ยนจาก `http=403` เป็น `exit=28` และ DNS ยังใช้ได้เหมือนเดิม
 - [ ] RBAC role ครบ 3 ระดับ · `cluster-admin` ไม่เกิน 2 คน · จดรายชื่อไว้แล้ว
 - [ ] audit log เขียนไฟล์จริงและอ่านได้
 - [ ] 🔴 **credential ที่รั่วในเอกสารเดิม หมุนครบทุกตัวแล้ว**
 - [ ] `regcred` เป็น account ที่ pull ได้อย่างเดียว ไม่ใช่รหัสเดียวกับ root
+- [ ] 🔴 `regcred` มีครบ **ทุก namespace** ที่ต้อง pull image · host ในตัว secret ตรงกับที่เขียนใน `image:`
+- [ ] `bash config/security/verify-security.sh` ขึ้น **ตก 0** บน master01
 
 **➡️ ต่อที่ [บทที่ 11 — Deploy Application](11-deploy-app.md)**
