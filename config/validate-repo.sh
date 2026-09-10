@@ -234,6 +234,23 @@ for pat in 'auth_pass' 'adminPassword' 'docker-password'; do
 done
 [ $LEAK -eq 0 ] && ok "placeholder ยังเป็น placeholder ครบ"
 
+echo "8 · โครงสร้าง markdown ที่ทำให้ html เพี้ยน"
+MD=0
+for f in docs/*.md; do
+    # ``` ต้องเป็นเลขคู่ ไม่งั้นโค้ดบล็อกไม่ปิด แล้วเนื้อหาที่เหลือถูกกลืนเข้าไปทั้งดุ้น
+    n=$(grep -c '^```' "$f")
+    if [ $((n % 2)) -ne 0 ]; then
+        fail "$f มี \`\`\` $n ตัว (ต้องเป็นเลขคู่) — โค้ดบล็อกไม่ปิด"
+        MD=1
+    fi
+    # หลัง </figure> ต้องมีบรรทัดว่าง ไม่งั้น markdown กลืนบรรทัดถัดไปเข้าไปใน html block
+    if ! awk '/^<\/figure>$/{getline nxt; if (nxt != "") bad=1} END{exit bad?1:0}' "$f"; then
+        fail "$f — บรรทัดหลัง </figure> ต้องเป็นบรรทัดว่าง"
+        MD=1
+    fi
+done
+[ $MD -eq 0 ] && ok "โค้ดบล็อกปิดครบ และภาพประกอบเว้นบรรทัดถูกต้อง"
+
 echo
 if [ $FAILED -eq 0 ]; then
     echo "ผ่านหมด — commit ได้"
