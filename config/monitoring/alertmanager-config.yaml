@@ -1,0 +1,137 @@
+# =============================================================================
+#  alertmanager-config.yaml — ปลายทางของ alert
+# =============================================================================
+#  🔴 ไฟล์นี้คือ values ชิ้นที่สองของ chart เดียวกัน ต้องส่งให้ helm คู่กันทุกครั้ง:
+#
+#      helm upgrade monitoring prometheus-community/kube-prometheus-stack \
+#        -n monitoring \
+#        -f /root/k8s/config/monitoring/kube-prometheus-values.yaml \
+#        -f /root/k8s/config/monitoring/alertmanager-config.yaml
+#
+#  ลืม -f ไฟล์ไหน ค่าของไฟล์นั้นจะกลับไปเป็น default ของ chart แบบเงียบ ๆ
+#  — ปลายทาง alert หายไปโดยที่ทุก pod ยัง Running และไม่มีอะไรฟ้อง
+#
+#  ทำไมไม่ใช้ `kubectl -n monitoring edit secret alertmanager-...`:
+#    แก้แบบนั้นมีผลทันทีจริง แต่ helm upgrade รอบถัดไปเขียนทับ secret ทั้งก้อน
+#    ใช้ได้เฉพาะตอนฉุกเฉินกลางดึก แล้วต้องย้ายกลับมาใส่ไฟล์นี้ให้เสร็จในวันรุ่งขึ้น
+#
+#  ไฟล์นี้ไม่มีค่าที่ต้องแทนแล้ว — ปลายทางเมลทั้งหมดย้ายไปตั้งที่
+#  deployments/alert-mail-relay/alert-mail-relay.yaml และ Secret `alert-mail`
+#  (ที่อยู่ผู้รับอยู่ใน Deployment · user/รหัสอยู่ใน Secret) — บท 09 ข้อ 5.4
+# =============================================================================
+
+alertmanager:
+  config:
+
+    global:
+      resolve_timeout: 5m
+
+      # --- ส่งเมลตรงจาก Alertmanager: ปิดไว้โดยเจตนา -------------------------
+      #  relay ขององค์กรบังคับ AUTH และเปิดแค่พอร์ต 25 ที่ไม่มี STARTTLS
+      #  Alertmanager ปฏิเสธการส่งรหัสผ่านบนช่องไม่เข้ารหัส จึงส่งตรงไม่ได้
+      #  ตอนนี้ส่งผ่าน alert-mail-relay แทน (deployments/alert-mail-relay/)
+      #  วันที่ได้พอร์ต 587 หรือได้ allow-list ให้เปิดสามบรรทัดนี้กลับ
+      #  แล้วสลับ webhook_configs ข้างล่างกลับเป็น email_configs — ดูบท 09 ข้อ 5.4
+      # smtp_smarthost: "mail.myhr.in.th:587"
+      # smtp_from: "myhr-notification@myhr.in.th"
+      # smtp_require_tls: true
+
+      #  รหัสผ่านไม่ได้อยู่ในไฟล์นี้อีกแล้ว — ย้ายไป Secret `alert-mail`
+      #  ที่ alert-mail-relay ใช้ ทำให้รหัสไม่ไหลเข้า secret ของ helm release ด้วย
+      # smtp_auth_username: "<SMTP_USER>"
+      # smtp_auth_password: "<SMTP_PASSWORD>"
+
+    # -------------------------------------------------------------------------
+    #  เส้นทางของ alert
+    # -------------------------------------------------------------------------
+    route:
+      # จัดกลุ่มตามชื่อ alert + namespace — node ดับทีเดียวจึงได้เมลก้อนเดียว
+      # ไม่ใช่ 5 ฉบับจาก 5 rule
+      group_by: ["alertname", "namespace"]
+
+      group_wait: 30s        # รอ alert พี่น้องที่จะตามมาในกลุ่มเดียวกันก่อนส่ง
+      group_interval: 5m     # กลุ่มเดิมมีสมาชิกใหม่ ส่งซ้ำได้เร็วสุดทุก 5 นาที
+      repeat_interval: 4h    # ของเดิมที่ยังไม่หาย ย้ำทุก 4 ชม.
+
+      receiver: myhr-default
+
+      routes:
+        # Watchdog ดังตลอดเวลาโดยตั้งใจ (มันคือเครื่องพิสูจน์ว่า Alertmanager ยังส่งได้)
+        # ถ้าปล่อยเข้าเมลจะกลายเป็น noise ที่ทำให้คนเลิกอ่านทั้งกล่อง
+        - receiver: "null"
+          matchers:
+            - 'alertname = "Watchdog"'
+
+        # critical ย้ำถี่กว่า และแยกปลายทางได้ถ้าทีมมีกลุ่ม on-call
+        - receiver: myhr-critical
+          matchers:
+            - 'severity = "critical"'
+          repeat_interval: 1h
+
+    # -------------------------------------------------------------------------
+    #  ปลายทาง
+    # -------------------------------------------------------------------------
+    receivers:
+
+      - name: "null"
+
+      # ปลายทางจริงของทั้งสองอันนี้คือเมล แต่ยิงผ่าน alert-mail-relay ในคลัสเตอร์
+      # เพราะ Alertmanager ส่งตรงไม่ได้ (เหตุผลอยู่ในหัวคอมเมนต์ของ global ข้างบน)
+      # ตัว relay อ่าน ?to= เพื่อเลือกว่าใช้ MAIL_TO หรือ MAIL_TO_CRITICAL
+      - name: myhr-default
+        webhook_configs:
+          - url: "http://alert-mail-relay.monitoring.svc.cluster.local:8080/alert?to=default"
+            send_resolved: true
+        # เปิดกลับเมื่อส่งเมลตรงได้แล้ว แล้วลบ webhook_configs ข้างบนทิ้ง:
+        # email_configs:
+        #   - to: "<ALERT_TO>"
+        #     send_resolved: true
+        #     headers:
+        #       Subject: '[k8s] {{ .Status | toUpper }} · {{ .CommonLabels.alertname }}'
+
+      - name: myhr-critical
+        webhook_configs:
+          - url: "http://alert-mail-relay.monitoring.svc.cluster.local:8080/alert?to=critical"
+            send_resolved: true
+        # email_configs:
+        #   - to: "<ALERT_TO_CRITICAL>"
+        #     send_resolved: true
+        #     headers:
+        #       Subject: '[k8s 🔴 CRITICAL] {{ .CommonLabels.alertname }}'
+
+        # --- Microsoft Teams ---------------------------------------------------
+        # 🔴 เช็คก่อนว่าองค์กรใช้แบบไหน แล้วเปิดอันเดียวเท่านั้น:
+        #   · Office 365 connector (URL ...webhook.office.com...) → msteams_configs
+        #     แบบนี้ Microsoft ประกาศเลิกใช้แล้ว ถ้าเพิ่งจะทำใหม่อย่าเลือกทางนี้
+        #   · Power Automate workflow (URL ...logic.azure.com...) → msteamsv2_configs
+        #     ต้องมี Alertmanager 0.28 ขึ้นไป ตรวจด้วย:
+        #       kubectl -n monitoring exec sts/alertmanager-monitoring-kube-prometheus-alertmanager \
+        #         -c alertmanager -- alertmanager --version
+        # - msteamsv2_configs:
+        #     - webhook_url: "<TEAMS_WEBHOOK_URL>"
+        #       send_resolved: true
+
+    # -------------------------------------------------------------------------
+    #  กันเมลซ้ำเรื่องเดียวกัน
+    # -------------------------------------------------------------------------
+    inhibit_rules:
+
+      # ของมาตรฐาน: เรื่องเดียวกันที่ critical ดังแล้ว ไม่ต้องส่ง warning ซ้ำ
+      - source_matchers: ['severity = "critical"']
+        target_matchers: ['severity = "warning"']
+        equal: ["alertname", "namespace"]
+
+      # เฉพาะ cluster นี้: node ดับหนึ่งเครื่องทำให้ดังพร้อมกันอย่างน้อย 5 ข้อ
+      # (CiliumAgentDown · TargetDown · KubeletDown · AlloyDaemonSetIncomplete ·
+      #  LokiNotReceivingLogs ถ้า Loki อยู่เครื่องนั้น)
+      # ทั้งหมดเป็น "อาการ" ตัวที่บอก "สาเหตุ" คือ alert เรื่อง node
+      # ไม่ใส่ equal: เพราะ alert เรื่อง node ไม่มี label namespace ให้จับคู่
+      # — ผลคือระหว่างที่ node ยังหาย อาการพวกนี้จะถูกกลบทั้ง cluster ซึ่งตั้งใจ
+      - source_matchers:
+          - 'alertname =~ "NodeCountBelowExpected|KubeNodeNotReady|KubeNodeUnreachable"'
+        target_matchers:
+          - 'alertname =~ "CiliumAgentDown|AlloyDaemonSetIncomplete|LokiNotReceivingLogs|TargetDown|KubeletDown"'
+
+      # หมายเหตุ: การกลบมีผลกับ "รอบส่งถัดไป" เท่านั้น
+      # CiliumAgentDown (for: 5m) จึงยังส่งถึงก่อน KubeNodeNotReady (for: 15m) อยู่ดี
+      # ซึ่งดีแล้ว — ฉบับแรกทำหน้าที่ปลุก ส่วนการกลบทำหน้าที่ไม่ให้ย้ำซ้ำอีก 4 ชม.

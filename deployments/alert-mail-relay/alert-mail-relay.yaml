@@ -1,0 +1,328 @@
+# =============================================================================
+#  alert-mail-relay — ตัวกลางแปลง webhook ของ Alertmanager เป็นเมล
+# =============================================================================
+#  ทำไมต้องมีตัวนี้ (หลักฐานเต็มอยู่ในบท 09 ข้อ 5.4):
+#    · relay ขององค์กรบังคับ AUTH และเปิดแค่พอร์ต 25 ซึ่งไม่มี STARTTLS
+#    · Alertmanager ปฏิเสธการส่งรหัสผ่านบนช่องที่ไม่เข้ารหัสแบบฮาร์ดโค้ด
+#      (ถูกต้องแล้ว — รหัสผ่านไม่ควรวิ่ง plaintext) จึงส่งเมลตรงไม่ได้เลย
+#    · smtplib ของ Python ยอมทำ AUTH LOGIN บน plaintext ให้ได้
+#      ตัวนี้จึงรับ webhook จาก Alertmanager แล้วส่งเมลแทน
+#
+#  🔴 นี่คือ "ทางอ้อมที่รู้ตัว" ไม่ใช่ของถาวร — วันที่ได้พอร์ตที่มี STARTTLS
+#     หรือได้ allow-list ให้ส่งโดยไม่ต้อง auth ให้กลับไปใช้ email_configs ตรง ๆ
+#     แล้วลบไฟล์นี้ทิ้ง วิธีถอดอยู่ที่ข้อ 5.4.5
+#
+#  ของสามชิ้นที่แยกกันชัดเจน:
+#    1. relay.py    — โค้ด อยู่ใน ConfigMap `alert-mail-relay-src`
+#    2. relay.conf  — ค่าที่ปรับบ่อย (smtp/ปลายทาง/รูปแบบข้อความ)
+#                     อยู่ใน ConfigMap `alert-mail-relay-conf`
+#                     🔴 อ่านใหม่ทุกครั้งที่มี alert เข้ามา → แก้แล้วไม่ต้อง restart
+#                     (kubelet ใช้เวลาอัปเดตไฟล์ที่ mount ไว้ราว ๆ 1 นาที)
+#    3. user/รหัส   — อยู่ใน Secret `alert-mail` เท่านั้น ไม่อยู่ในไฟล์นี้:
+#         kubectl -n monitoring create secret generic alert-mail \
+#           --from-literal=SMTP_USER=... --from-literal=SMTP_PASS=...
+#
+#  apply:  kubectl apply -f deployments/alert-mail-relay/alert-mail-relay.yaml
+# =============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alert-mail-relay-conf
+  namespace: monitoring
+data:
+  relay.conf: |
+    # -------------------------------------------------------------------------
+    #  ค่าทั้งหมดของตัวกลาง — แก้ไฟล์นี้แล้ว kubectl apply ใหม่ ไม่ต้อง restart pod
+    #  ตรวจว่าค่าใหม่มีผลแล้วด้วย: kubectl -n monitoring logs deploy/alert-mail-relay
+    #  บรรทัด "ส่งแล้ว" จะบอกปลายทางที่ใช้จริงของฉบับนั้น
+    # -------------------------------------------------------------------------
+
+    # --- ปลายทาง SMTP ---------------------------------------------------------
+    smtp_host = mail.example.co.th
+    smtp_port = 25
+
+    # true เมื่อ relay ประกาศ STARTTLS บนพอร์ตนี้ (ตรวจตามข้อ 5.3.1)
+    # ถ้าเปิดได้ให้เปิด — ถึงตอนนั้นควรเลิกใช้ตัวกลางนี้แล้วส่งตรงจาก Alertmanager เลย
+    smtp_starttls = false
+
+    mail_from = <ALERT_FROM>
+
+    # --- ผู้รับ ---------------------------------------------------------------
+    #  Alertmanager เรียกมาที่ /alert?to=<key> · ตัวกลางจะหาคีย์ to_<key> ในไฟล์นี้
+    #  ไม่เจอก็ตกมาที่ to_default · ใส่หลายคนได้ คั่นด้วยจุลภาค
+    to_default  = <ALERT_TO>
+    to_critical = <ALERT_TO_CRITICAL>
+
+    # ผู้รับกลาง — ได้ทุกฉบับไม่ว่ามาทางไหน (กล่องรวมของทีม / ที่เก็บไว้ย้อนดู)
+    # ปล่อยว่างไว้ได้ถ้ายังไม่มี
+    to_always =
+
+    # เพิ่มเส้นทางใหม่ได้เองโดยไม่ต้องแก้โค้ด — ใส่ to_<ชื่อ> ตรงนี้
+    # แล้วชี้ webhook ใน alertmanager-config.yaml ไปที่ /alert?to=<ชื่อ>
+    # ตัวอย่าง: to_dba = dba-team@example.co.th
+
+    # --- รูปแบบข้อความ ---------------------------------------------------------
+    # format: text (อ่านง่ายในทุก client · ค่าเริ่มต้น) หรือ html (มีตาราง อ่านบนมือถือดีกว่า)
+    format = text
+
+    # หัวเรื่อง — ตัวแปรที่ใช้ได้: {status} {sev} {alertname} {count} {namespace}
+    # {sev} จะว่างเปล่าถ้า alert กลุ่มนั้นไม่มี severity ร่วมกัน
+    # {count} จะว่างเปล่าถ้ามี alert เดียว
+    subject = [k8s {status}{sev}] {alertname}{count}
+
+    # ฟิลด์ที่จะแสดงในเนื้อความ ตามลำดับนี้ · ตัดตัวที่ทีมไม่ได้ใช้ออกได้
+    # เลือกจาก: severity namespace instance pod node summary description startsAt generatorURL
+    fields = severity,namespace,instance,summary,description,startsAt,generatorURL
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alert-mail-relay-src
+  namespace: monitoring
+data:
+  relay.py: |
+    # แปลง webhook JSON ของ Alertmanager เป็นเมลหนึ่งฉบับต่อหนึ่งกลุ่ม
+    # ใช้เฉพาะ stdlib — ไม่ต้อง pip install จึงไม่ต้องพึ่งขาออกอินเทอร์เน็ตตอนรัน
+    import html as htmlmod
+    import json, os, smtplib, time
+    from email.message import EmailMessage
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    from urllib.parse import urlparse, parse_qs
+
+    CONF_PATH = os.environ.get("RELAY_CONF", "/etc/relay/relay.conf")
+    DEFAULTS = {
+        "smtp_host": "localhost", "smtp_port": "25", "smtp_starttls": "false",
+        "mail_from": "", "to_default": "", "to_always": "", "format": "text",
+        "subject": "[k8s {status}{sev}] {alertname}{count}",
+        "fields": "severity,namespace,instance,summary,description,startsAt,generatorURL",
+    }
+
+    def log(*a):
+        print(time.strftime("%Y-%m-%dT%H:%M:%S"), *a, flush=True)
+
+    def load_conf():
+        # อ่านใหม่ทุกครั้งที่มี request — แก้ ConfigMap แล้วมีผลเองโดยไม่ต้อง restart
+        conf = dict(DEFAULTS)
+        try:
+            with open(CONF_PATH, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    k, v = line.split("=", 1)
+                    conf[k.strip().lower()] = v.strip()
+        except FileNotFoundError:
+            log("ไม่พบ", CONF_PATH, "— ใช้ค่าเริ่มต้นและ env แทน")
+        for k in list(conf):                      # env มาก่อนไฟล์เสมอ (ไว้ทดสอบ/แก้ฉุกเฉิน)
+            conf[k] = os.environ.get(k.upper(), conf[k])
+        return conf
+
+    def recipients(conf, key):
+        chosen = conf.get("to_" + key.lower(), "") or conf.get("to_default", "")
+        out = []
+        for part in (chosen + "," + conf.get("to_always", "")).split(","):
+            part = part.strip()
+            if part and part not in out:
+                out.append(part)
+        return out
+
+    def fill(tpl, values):
+        for k, v in values.items():
+            tpl = tpl.replace("{" + k + "}", v)
+        return tpl
+
+    def field_rows(alert, fields):
+        lb, an = alert.get("labels", {}), alert.get("annotations", {})
+        rows = []
+        for f in fields:
+            v = an.get(f) or lb.get(f) or alert.get(f) or ""
+            if v:
+                rows.append((f, str(v)))
+        return rows
+
+    def render(payload, conf):
+        status = payload.get("status", "firing")
+        alerts = payload.get("alerts", [])
+        common = payload.get("commonLabels", {})
+        sev = common.get("severity", "")
+        fields = [f.strip() for f in conf["fields"].split(",") if f.strip()]
+        subject = fill(conf["subject"], {
+            "status": status.upper(),
+            "sev": (" " + sev.upper()) if sev else "",
+            "alertname": common.get("alertname", "alert"),
+            "count": (" (%d)" % len(alerts)) if len(alerts) > 1 else "",
+            "namespace": common.get("namespace", ""),
+        })
+        text_parts, html_parts = [], []
+        for a in alerts:
+            head = a.get("labels", {}).get("alertname", "?")
+            text_parts.append("- " + head + " [" + a.get("status", status) + "]")
+            html_parts.append("<h3>%s <small>%s</small></h3><table>"
+                              % (htmlmod.escape(head), htmlmod.escape(a.get("status", status))))
+            for f, v in field_rows(a, fields):
+                text_parts.append("    %-13s %s" % (f + ":", v))
+                html_parts.append("<tr><td><b>%s</b></td><td>%s</td></tr>"
+                                  % (htmlmod.escape(f), htmlmod.escape(v)))
+            text_parts.append("")
+            html_parts.append("</table>")
+        text = "\n".join(text_parts) or "(payload ไม่มี alert)"
+        html_body = ("<html><body style='font-family:sans-serif'>"
+                     + ("".join(html_parts) or "<p>(payload ไม่มี alert)</p>")
+                     + "</body></html>")
+        return subject, text, html_body
+
+    def send(conf, to_list, subject, text, html_body):
+        m = EmailMessage()
+        m["From"] = conf["mail_from"]
+        m["To"] = ", ".join(to_list)
+        m["Subject"] = subject
+        m.set_content(text)
+        if conf["format"].lower() == "html":
+            m.add_alternative(html_body, subtype="html")
+        s = smtplib.SMTP(conf["smtp_host"], int(conf["smtp_port"]), timeout=20)
+        try:
+            s.ehlo()
+            if conf["smtp_starttls"].lower() == "true":
+                s.starttls(); s.ehlo()
+            user, pw = os.environ.get("SMTP_USER", ""), os.environ.get("SMTP_PASS", "")
+            if user and pw:
+                s.login(user, pw)      # relay ตัวนี้รับ AUTH LOGIN บน plaintext
+            s.send_message(m, from_addr=conf["mail_from"], to_addrs=to_list)
+        finally:
+            try:
+                s.quit()
+            except Exception:
+                pass
+
+    class Handler(BaseHTTPRequestHandler):
+        def _reply(self, code, msg="ok"):
+            b = msg.encode()
+            self.send_response(code)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Content-Length", str(len(b)))
+            self.end_headers()
+            self.wfile.write(b)
+
+        def do_GET(self):
+            path = urlparse(self.path).path
+            if path == "/healthz":
+                return self._reply(200, "ok")
+            if path == "/config":          # ดูค่าที่ใช้อยู่จริง — ไม่มีรหัสผ่านในนี้
+                return self._reply(200, json.dumps(load_conf(), ensure_ascii=False, indent=2))
+            self._reply(404, "not found")
+
+        def do_POST(self):
+            u = urlparse(self.path)
+            if u.path != "/alert":
+                return self._reply(404, "not found")
+            conf = load_conf()
+            key = (parse_qs(u.query).get("to") or ["default"])[0]
+            to_list = recipients(conf, key)
+            if not to_list:
+                log("ไม่มีผู้รับสำหรับ to=" + key + " — ตรวจ to_default ใน relay.conf")
+                return self._reply(500, "no recipient")
+            try:
+                n = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(n) or b"{}")
+            except Exception as e:
+                log("payload อ่านไม่ได้:", type(e).__name__, e)
+                return self._reply(400, "bad payload")
+            subject, text, html_body = render(payload, conf)
+            try:
+                send(conf, to_list, subject, text, html_body)
+                log("ส่งแล้ว:", subject, "-> to=" + key, ",".join(to_list))
+                self._reply(200, "sent")
+            except Exception as e:
+                # ตอบไม่ใช่ 2xx เพื่อให้ Alertmanager retry ให้เอง ไม่กลืนหาย
+                log("ส่งไม่ผ่าน:", type(e).__name__, e)
+                self._reply(502, "send failed")
+
+        def log_message(self, *a):
+            pass                          # ปิด access log ของ http.server
+
+    c = load_conf()
+    log("alert-mail-relay ฟังที่ :8080 · smarthost %s:%s · format=%s"
+        % (c["smtp_host"], c["smtp_port"], c["format"]))
+    ThreadingHTTPServer(("", 8080), Handler).serve_forever()
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert-mail-relay
+  namespace: monitoring
+  labels: {app: alert-mail-relay}
+spec:
+  replicas: 2                      # ตัวกลางของ alert ห้ามดับตอน drain node
+  selector:
+    matchLabels: {app: alert-mail-relay}
+  template:
+    metadata:
+      labels: {app: alert-mail-relay}
+    spec:
+      # ต้องอยู่คนละเครื่อง ไม่งั้น drain ทีเดียวเงียบทั้งระบบแจ้งเตือน
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels: {app: alert-mail-relay}
+              topologyKey: kubernetes.io/hostname
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: relay
+          image: python:3.12-alpine
+          command: ["python3", "/app/relay.py"]
+          envFrom:
+            - secretRef: {name: alert-mail}     # SMTP_USER · SMTP_PASS เท่านั้น
+          ports:
+            - {name: http, containerPort: 8080}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 3
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 10
+          volumeMounts:
+            - {name: src,  mountPath: /app,        readOnly: true}
+            - {name: conf, mountPath: /etc/relay,  readOnly: true}
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits:   {memory: 128Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+      volumes:
+        - name: src
+          configMap: {name: alert-mail-relay-src}
+        - name: conf
+          configMap: {name: alert-mail-relay-conf}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alert-mail-relay
+  namespace: monitoring
+spec:
+  selector: {app: alert-mail-relay}
+  ports:
+    - {name: http, port: 8080, targetPort: http}
+
+---
+# PDB — บทนี้ทั้งบทตั้งอยู่บนกติกาว่าทุกอย่างที่มีหลาย replica ต้องมี PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: alert-mail-relay
+  namespace: monitoring
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app: alert-mail-relay}

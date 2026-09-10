@@ -11,6 +11,7 @@
   --accent:#2d6ae0; --accent-soft:#eaf1fe;
   --done-bg:#eaf7ee; --done-line:#8fd3a8; --done-ink:#1c6b3c;
   --code-bg:#1e2530; --code-ink:#e6edf3; --warn:#b4530a;
+  --f1:#d1372b; --f1-bg:#fdeceb;
   --radius:10px;
   --font:"Segoe UI","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;
   --mono:"Cascadia Mono",Consolas,"Noto Sans Thai Mono",monospace;
@@ -21,6 +22,7 @@
     --accent:#6ea3ff; --accent-soft:#1b2740;
     --done-bg:#152a1e; --done-line:#2f6b47; --done-ink:#7fd9a3;
     --code-bg:#0d1117; --code-ink:#e6edf3; --warn:#e0913f;
+    --f1:#ff8b80; --f1-bg:#331b19;
   }
 }
 html{scroll-behavior:smooth;scroll-padding-top:84px}
@@ -44,7 +46,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
 
 /* ---------- layout ---------- */
 .wrap{margin-left:260px;min-height:100vh}
-.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;
+.stick{position:sticky;top:0;z-index:30}
+.top{display:flex;align-items:center;gap:16px;
   padding:12px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
 .top-t{flex:1;min-width:0}
 .top h1{margin:0;font-size:19px;line-height:1.3}
@@ -58,6 +61,19 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
 .reset:hover{border-color:var(--accent);color:var(--accent)}
 .burger{display:none;border:0;background:transparent;color:var(--ink);font-size:20px;cursor:pointer}
 main{max-width:920px;padding:24px 30px 120px}
+
+/* ---------- แถบทางลัดไปแต่ละขั้น ---------- */
+/* dropdown ตัวเดียว สูงบรรทัดเดียวเท่ากันทุกบท ไม่ว่าบทนั้นจะมีกี่ขั้น
+   และตัวที่โชว์อยู่คือขั้นที่กำลังอ่าน จึงบอกตำแหน่งตัวเองไปในตัว */
+.jump{display:flex;gap:9px;align-items:center;
+  padding:7px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
+.jump-l{color:var(--dim);font-size:12.5px;flex-shrink:0}
+.jump-s{flex:1;min-width:0;max-width:520px;font:inherit;font-size:13px;
+  color:var(--ink);background:var(--panel);border:1px solid var(--line);
+  border-radius:7px;padding:4px 9px;cursor:pointer}
+.jump-s:hover,.jump-s:focus{border-color:var(--accent);outline:none}
+/* ขั้นที่ทำแล้วขึ้น ✓ นำหน้าในลิสต์ — กวาดตาเห็นว่าค้างตรงไหน */
+.jump-s option{color:var(--ink);background:var(--panel)}
 
 /* ---------- steps ---------- */
 .intro{padding:0 2px 6px}
@@ -105,6 +121,30 @@ th{background:var(--accent-soft);font-weight:600}
 tbody tr:nth-child(even){background:rgba(128,128,128,.045)}
 hr{border:0;border-top:1px solid var(--line);margin:22px 0}
 img{max-width:100%}
+
+/* ---------- ภาพประกอบ (SVG ฝังในเนื้อ markdown) ---------- */
+.fig{margin:18px 0;padding:14px 14px 10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto}
+.fig svg{display:block;width:100%;height:auto;min-width:560px}
+.fig figcaption{margin-top:9px;font-size:12.5px;color:var(--dim);text-align:center;line-height:1.6}
+.fig text{font-family:var(--font);font-size:13px;fill:var(--ink)}
+.fig text.t-mono{font-family:var(--mono);font-size:11.5px}
+.fig text.t-dim{fill:var(--dim);font-size:11.5px}
+.fig text.t-ok{fill:var(--done-ink);font-size:12px}
+.fig text.t-bad{fill:var(--f1);font-size:12px}
+.fig text.t-sm{font-size:12px}
+.fig text.t-hd{font-size:13.5px;font-weight:700}
+.fig .box{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+.fig .box-p{fill:var(--panel);stroke:var(--line);stroke-width:1.5}
+.fig .box-bad{fill:var(--f1-bg);stroke:var(--f1);stroke-width:1.5}
+.fig .box-ok{fill:var(--done-bg);stroke:var(--done-line);stroke-width:1.5}
+.fig .zone{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:6 4}
+.fig .wall{fill:none;stroke:var(--f1);stroke-width:2;stroke-dasharray:7 5}
+.fig .ln{stroke:var(--dim);stroke-width:1.6;fill:none}
+.fig .ln-a{stroke:var(--accent);stroke-width:2;fill:none}
+.fig .ln-ok{stroke:var(--done-line);stroke-width:2;fill:none}
+.fig .ln-bad{stroke:var(--f1);stroke-width:2;fill:none}
+.fig .ln-d{stroke-dasharray:5 4}
 
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
@@ -161,13 +201,14 @@ img{max-width:100%}
   .burger{display:block}
   main{padding:18px 16px 120px}
   .top{padding:10px 14px}
+  .jump{padding:6px 12px}
   .top h1{font-size:16px}
   .top-p .bar{display:none}
   .fab-txt{display:none}
   .fab{padding:15px;border-radius:50%}
 }
 @media print{
-  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
+  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger,.jump{display:none}
   .wrap{margin-left:0}
 }
 
@@ -189,35 +230,38 @@ img{max-width:100%}
 
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
-  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="14"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="12"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item cur" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="17"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="14"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="12"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item cur" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="11"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="18"></span></a><a href="14-grafana-logs.html" class="nav-item" data-chapter="14-grafana-logs.md"><span class="nav-num">14</span><span class="nav-t">ดู log ใน Grafana</span><span class="nav-p" data-progress-for="14-grafana-logs.md" data-total="15"></span></a><a href="15-headlamp.html" class="nav-item" data-chapter="15-headlamp.md"><span class="nav-num">15</span><span class="nav-t">Headlamp — เว็บ UI</span><span class="nav-p" data-progress-for="15-headlamp.md" data-total="10"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a><a href="deploy-zeeme-ads.html" class="nav-item" data-chapter="deploy-zeeme-ads.md"><span class="nav-num">✓</span><span class="nav-t">Deploy zeeme-ads</span><span class="nav-p" data-progress-for="deploy-zeeme-ads.md" data-total="20"></span></a><a href="deploy-demo.html" class="nav-item" data-chapter="deploy-demo.md"><span class="nav-num">✓</span><span class="nav-t">Demo — auth ที่ Gateway</span><span class="nav-p" data-progress-for="deploy-demo.md" data-total="12"></span></a></nav>
 </aside>
 
 <div class="wrap">
-  <header class="top">
-    <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
-    <div class="top-t">
-      <h1>บทที่ 09 — Observability</h1>
-      <p class="sub">รันที่: 👑 master01 · เวลาที่ใช้: ~45 นาที · ต้องผ่านบทที่ 08 — PV ทั้ง 3 ตัวต้องเป็น Available</p>
-    </div>
-    <div class="top-p">
-      <span id="pcount">0/10</span>
-      <div class="bar"><i id="pbar"></i></div>
-      <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
-    </div>
-  </header>
+  <div class="stick">
+    <header class="top">
+      <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
+      <div class="top-t">
+        <h1>บทที่ 09 — Observability</h1>
+        <p class="sub">รันที่: 👑 master01 · เวลาที่ใช้: ~45 นาที · ต้องผ่านบทที่ 08 — PV ทั้ง 3 ตัวต้องเป็น Available</p>
+      </div>
+      <div class="top-p">
+        <span id="pcount">0/10</span>
+        <div class="bar"><i id="pbar"></i></div>
+        <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
+      </div>
+    </header>
+    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="ทำไมบทนี้จำเป็น ไม่ใช่ของฟุ่มเฟือย">ทำไมบทนี้จำเป็น ไม่ใช่ของฟุ่มเฟือย</option><option value="2" data-t="1 · metrics-server">1 · metrics-server</option><option value="3" data-t="2 · kube-prometheus-stack">2 · kube-prometheus-stack</option><option value="4" data-t="3 · Loki + Alloy (รวม log)">3 · Loki + Alloy (รวม log)</option><option value="5" data-t="4 · เข้า Grafana">4 · เข้า Grafana</option><option value="6" data-t="5 · 🔴 ตั้งปลายทางของ alert — ทำก่อนเขียน rule">5 · 🔴 ตั้งปลายทางของ alert — ทำก่อนเขียน rule</option><option value="7" data-t="6 · 🔴 Alert ขั้นต่ำที่ต้องมี">6 · 🔴 Alert ขั้นต่ำที่ต้องมี</option><option value="8" data-t="7 · กันไม่ให้ monitoring กิน disk จนเต็ม">7 · กันไม่ให้ monitoring กิน disk จนเต็ม</option><option value="9" data-t="8 · log ของ application — ใช้ยังไง และต้องบอกทีม dev ว่าอะไร">8 · log ของ application — ใช้ยังไง และต้องบอกทีม dev ว่าอะไร</option><option value="10" data-t="✅ เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</option></select></div>
+  </div>
 
   <main>
     <div class="intro"><hr />
 </div>
     
-    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2>ทำไมบทนี้จำเป็น ไม่ใช่ของฟุ่มเฟือย</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2 id="ทำไมบทนี้จำเป็น-ไม่ใช่ของฟุ่มเฟือย">ทำไมบทนี้จำเป็น ไม่ใช่ของฟุ่มเฟือย</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>cluster เดิมไม่มี metric ย้อนหลังเลย ทำให้ตอบคำถาม <strong>&quot;เมื่อคืนตอนตีสามเกิดอะไรขึ้น&quot;</strong>
 ไม่ได้ และเมื่อตอบไม่ได้ก็แก้ที่ต้นเหตุไม่ได้ — วนกลับมาเจอปัญหาเดิมซ้ำ</p>
 <p><strong>และสำหรับ cluster ชุดนี้มีเหตุผลเพิ่มอีกข้อ:</strong> เราไม่มี Ksplice จึงต้อง drain node
 ทุก 1-2 เดือน ถ้าไม่มี alert เตือนว่า Deployment ไหนไม่มี PDB หรือ capacity ใกล้เต็ม
 วันที่ patch จริงจะกลายเป็นวันที่ service ล่ม</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2>1 · metrics-server</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2 id="1--metrics-server">1 · metrics-server</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>ตัวนี้ไม่เก็บข้อมูลย้อนหลัง แค่ป้อนตัวเลขปัจจุบันให้ <code>kubectl top</code> และ HPA
 <strong>ไม่ต้องใช้ storage</strong></p>
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
@@ -249,16 +293,52 @@ kubectl top pods -A | head
 เป็นหนี้ที่ตั้งใจก่อ บันทึกพร้อมทางปลดไว้ที่ <a href="CHECKLIST.html">CHECKLIST หัวข้อ C2</a> แล้ว</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>2 · kube-prometheus-stack</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="2--kube-prometheus-stack">2 · kube-prometheus-stack</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>ชุดนี้รวม Prometheus + Alertmanager + Grafana + node-exporter + kube-state-metrics
 มาให้ในครั้งเดียว</p>
-<p><strong>🔴 แทนค่า <code>&lt;GRAFANA_ADMIN_PASSWORD&gt;</code> ก่อน ไม่งั้นรหัส admin จะเป็นข้อความนั้นตรงตัว</strong>
-(รหัสจริง 24 ตัวอยู่ในที่เก็บ secret ตาม <a href="CHECKLIST.html">CHECKLIST ข้อ B</a>)</p>
-<div class="cb"><pre><code class="language-bash">read -rsp 'Grafana admin password: ' GFPW; echo
-sed -i "s|&lt;GRAFANA_ADMIN_PASSWORD&gt;|${GFPW}|" /root/k8s/config/monitoring/kube-prometheus-values.yaml
-grep -c 'GRAFANA_ADMIN_PASSWORD' /root/k8s/config/monitoring/kube-prometheus-values.yaml
+<p><strong>🔴 แทนค่า <code>&lt;GRAFANA_ADMIN_PASSWORD&gt;</code> ก่อน ไม่งั้นรหัส admin จะเป็นข้อความนั้นตรงตัว</strong></p>
+<p>รหัสจริง 24 ตัวอยู่ที่ <strong><code>secrets.env</code> บนเครื่องของคุณ</strong> คีย์ <code>GRAFANA_ADMIN_PASSWORD</code>
+(และในที่เก็บ secret ขององค์กรตาม <a href="CHECKLIST.html">CHECKLIST ข้อ B</a>)</p>
+<blockquote>
+<p><strong><code>secrets.env</code> ไม่เคยถูก <code>scp</code> ขึ้น cluster และห้ามส่งขึ้นไป</strong> — ในไฟล์เดียวกันนั้นมี
+<code>ENCRYPTION_KEY_BASE64</code> ซึ่งหลุดเมื่อไรเท่ากับ etcd backup ทุกก้อนถูกถอดได้ตลอดกาล
+ค่าที่ต้องใช้บน master01 จึงส่งเป็นราย ๆ ไป ไม่ใช่ส่งทั้งไฟล์ — เหมือนบท 03 และ 10</p>
+</blockquote>
+<p><strong>ทางที่ 1 · พิมพ์มือบน master01</strong> — พิมพ์แล้วกด Enter บรรทัดที่เหลือรันต่อเอง</p>
+<div class="cb"><pre><code class="language-bash">read -rsp 'Grafana admin password: ' GFPW &amp;&amp; echo "รับมา ${#GFPW} ตัวอักษร"
+
+if [ -z "$GFPW" ]; then
+    echo "❌ ไม่ได้พิมพ์อะไรเลย — ไม่แตะไฟล์ ให้รันบล็อกนี้ใหม่"
+else
+    sed -i "s|&lt;GRAFANA_ADMIN_PASSWORD&gt;|${GFPW}|" /root/k8s/config/monitoring/kube-prometheus-values.yaml
+fi
+unset GFPW
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>0</code> — ถ้าได้ <code>1</code> แปลว่ายังไม่ถูกแทน (รหัสมีอักขระ <code>|</code> ให้แก้ด้วย editor แทน)</p>
+<p><strong>ควรเห็น:</strong> <code>รับมา 24 ตัวอักษร</code> — ถ้าได้ <code>0</code> ให้รันบล็อกใหม่ ไฟล์ยังไม่ถูกแตะ</p>
+<p><strong>ทางที่ 2 · ส่งจากเครื่องของคุณ ไม่ต้องพิมพ์</strong> — รันที่ root ของ repo <strong>บนเครื่องของคุณ</strong>
+(PowerShell · ไม่ใช่บน master01) รหัสไปทาง stdin จึงไม่โผล่ใน <code>ps</code> และไม่ตกค้างใน history ของ master01</p>
+<div class="cb"><pre><code class="language-bash">$pw = (Select-String -Path secrets.env -Pattern '^GRAFANA_ADMIN_PASSWORD=').Line -replace '^GRAFANA_ADMIN_PASSWORD=',''
+$pw | ssh root@192.168.50.101 'read -r P; P=${P%$''\r''}; if [ -z "$P" ]; then echo "❌ ไม่ได้ค่ามา ไม่แตะไฟล์"; exit 1; fi; sed -i "s|&lt;GRAFANA_ADMIN_PASSWORD&gt;|${P}|" /root/k8s/config/monitoring/kube-prometheus-values.yaml; echo "แทนค่าแล้ว ${#P} ตัวอักษร"'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>แทนค่าแล้ว 24 ตัวอักษร</code></p>
+<blockquote>
+<p><code>P=${P%$'\r'}</code> ตัด CR ท้ายบรรทัดที่ Windows แถมมาให้ตอน pipe — ถ้าไม่ตัด รหัสจะยาว 25 ตัว
+โดยมีอักขระที่มองไม่เห็นต่อท้าย แล้วจะเข้า Grafana ไม่ได้ทั้งที่ตัวเลขความยาวดูเกือบถูก
+· ใช้ Git Bash แทนได้: <code>set -a; source secrets.env; set +a</code> แล้ว
+<code>printf '%s' &quot;$GRAFANA_ADMIN_PASSWORD&quot; | ssh ...</code> ท่อนหลังเหมือนกัน</p>
+</blockquote>
+<p><strong>ตรวจค่าที่ลงไปจริง — ไม่ใช่แค่ดูว่า placeholder หายแล้ว</strong> (บน master01 ทั้งสองทาง)</p>
+<div class="cb"><pre><code class="language-bash">awk -F'"' '/adminPassword:/{print "adminPassword ยาว " length($2) " ตัว"}' /root/k8s/config/monitoring/kube-prometheus-values.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>adminPassword ยาว 24 ตัว</code></p>
+<blockquote>
+<p>⚠️ <strong>ห้ามเช็กด้วย <code>grep -c 'GRAFANA_ADMIN_PASSWORD'</code> อย่างเดียว</strong> — ถ้ารหัสที่รับมาเป็นค่าว่าง
+<code>sed</code> จะเขียนค่าว่างทับ placeholder ผลคือ placeholder หายไปเหมือนตอนสำเร็จทุกประการ
+แต่ค่าที่ได้คือ <code>adminPassword: &quot;&quot;</code> ซึ่งเข้า Grafana ไม่ได้ และ<strong>แก้ซ้ำไม่ได้เพราะไม่มี
+placeholder เหลือให้แทนแล้ว</strong> ต้องเอาไฟล์ต้นฉบับมาทับก่อนแล้วทำข้อนี้ใหม่:
+<code>scp config/monitoring/kube-prometheus-values.yaml root@192.168.50.101:/root/k8s/config/monitoring/</code></p>
+<p>ถ้ารหัสมีอักขระ <code>|</code> ให้แก้ด้วย editor แทน — <code>sed</code> ใช้ <code>|</code> เป็นตัวคั่นในคำสั่งข้างบน</p>
+</blockquote>
 <blockquote>
 <p>เปลี่ยนผ่านหน้าเว็บ Grafana ทีหลังไม่พอ — chart ส่งค่านี้เป็น <code>GF_SECURITY_ADMIN_PASSWORD</code>
 ซึ่ง<strong>เขียนทับรหัสใน DB ทุกครั้งที่ pod start</strong> ต้องแก้ที่ values เท่านั้นถึงจะอยู่ถาวร</p>
@@ -321,7 +401,7 @@ kill %1
 เพราะการแก้ <code>etcd.yaml</code> ทำให้ etcd ของเครื่องนั้น restart — พร้อมกัน 3 เครื่องคือเสีย quorum</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>3 · Loki + Alloy (รวม log)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="3--loki--alloy-รวม-log">3 · Loki + Alloy (รวม log)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>pod ตายแล้ว log หายไปด้วยถ้าไม่มีที่รวม</p>
 <div class="cb"><pre><code class="language-bash">helm repo add grafana https://grafana.github.io/helm-charts &amp;&amp; helm repo update
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -339,7 +419,7 @@ kubectl -n monitoring get pods -l app.kubernetes.io/name=loki
 kubectl -n monitoring get ds -l app.kubernetes.io/name=alloy
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> Loki <code>Running</code> และ Alloy DaemonSet <code>6/6</code></p>
-</div><div class="sub" data-machine="all"><h3>🔴 ตรวจว่า Alloy ไม่ได้เก็บ log ซ้ำ — ห้ามข้ามข้อนี้</h3>
+</div><div class="sub" data-machine="all"><h3 id="-ตรวจว่า-alloy-ไม่ได้เก็บ-log-ซ้ำ--ห้ามข้ามข้อนี้">🔴 ตรวจว่า Alloy ไม่ได้เก็บ log ซ้ำ — ห้ามข้ามข้อนี้</h3>
 <p>Alloy รันเป็น DaemonSet 6 ตัว ถ้า <code>discovery.kubernetes</code> ไม่กรอง node <strong>ทุกตัวจะเก็บ log
 ของ pod ทั้ง cluster เหมือนกันหมด</strong> ผลคือทุกบรรทัดเข้า Loki 6 ครั้ง — PV หมดเร็วกว่าที่
 คำนวณไว้ 6 เท่า ชนเพดาน ingestion เร็วกว่า 6 เท่า และหน้าจอ log อ่านไม่รู้เรื่อง</p>
@@ -349,7 +429,7 @@ kubectl -n monitoring get ds -l app.kubernetes.io/name=alloy
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> JSON ที่มี <code>fieldPath: spec.nodeName</code> — ถ้าได้ค่าว่าง แปลว่า <code>extraEnv</code> ไม่ได้ถูก
 apply แล้ว <code>selectors</code> จะกลายเป็น <code>spec.nodeName=</code> ซึ่งไม่ match อะไรเลย → <strong>ไม่มี log เข้า Loki
-แม้แต่บรรทัดเดียว</strong> (จะดังผ่าน alert <code>LokiNotReceivingLogs</code> ในหัวข้อถัดไป)</p>
+แม้แต่บรรทัดเดียว</strong> (จะดังผ่าน alert <code>LokiNotReceivingLogs</code> ในข้อ 6)</p>
 <p><strong>แล้วยืนยันจากข้อมูลที่เข้า Loki จริง</strong> — ขั้นเข้า Grafana อยู่ข้อ 4 ซึ่งยังมาไม่ถึง
 จึงถาม Loki ตรง ๆ ว่ามีบรรทัดไหนซ้ำไหม (<code>auth_enabled: false</code> จึงไม่ต้องใส่ header):</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/loki 3100:3100 &amp;
@@ -365,14 +445,16 @@ kill %1
 ให้กลับไปดู <code>NODE_NAME</code> ข้างบน · ถ้าไม่มีอะไรออกมา<strong>เลยแม้แต่ผลว่าง</strong> แปลว่ายังไม่มี log
 เข้า Loki สักบรรทัด ซึ่งเป็นคนละปัญหา — ดู <code>kubectl -n monitoring logs ds/alloy</code></p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>4 · เข้า Grafana</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2 id="4--เข้า-grafana">4 · เข้า Grafana</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>รหัส admin</strong> — ตัวที่ใส่ไว้ตั้งแต่ข้อ 2:</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring get secret monitoring-grafana \
   -o jsonpath='{.data.admin-password}' | base64 -d; echo
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p>🔴 <strong>ถ้าได้ <code>&lt;GRAFANA_ADMIN_PASSWORD&gt;</code> ออกมาตรง ๆ</strong> แปลว่าข้ามขั้นแทนค่าในข้อ 2 ไป
-<strong>รหัส admin ของ Grafana คือข้อความนั้นจริง ๆ</strong> ย้อนไปทำแล้ว <code>helm upgrade</code>
+<strong>รหัส admin ของ Grafana คือข้อความนั้นจริง ๆ</strong> ย้อนไปทำแล้ว <code>helm upgrade</code></p>
+<p><strong>ถ้าได้บรรทัดว่าง</strong> แปลว่าตอนแทนค่าในข้อ 2 รับค่าว่างมา (<code>adminPassword: &quot;&quot;</code>)
+ต้อง <code>scp</code> ไฟล์ values ต้นฉบับมาทับ ทำข้อ 2 ใหม่ แล้ว <code>helm upgrade</code> — วิธีเดียวกัน
 เปลี่ยนผ่านหน้าเว็บอย่างเดียวไม่พอ — chart ส่งค่านี้เป็น <code>GF_SECURITY_ADMIN_PASSWORD</code>
 ซึ่งเขียนทับรหัสใน DB ทุกครั้งที่ pod start</p>
 </blockquote>
@@ -390,7 +472,7 @@ curl -I --resolve "grafana.myhr.co.th:443:${GW_IP}" https://grafana.myhr.co.th
 <p>ถ้า cert มาจาก internal CA (บทที่ 07 ทาง B) เพิ่ม <code>--cacert /root/k8s/myhr-root-ca.crt</code></p>
 </blockquote>
 <hr />
-</div><div class="sub" data-machine="all"><h3>เปิดจริงในเบราว์เซอร์ — ทำบนเครื่องของคุณ ไม่ใช่ master01</h3>
+</div><div class="sub" data-machine="all"><h3 id="เปิดจริงในเบราว์เซอร์--ทำบนเครื่องของคุณ-ไม่ใช่-master01">เปิดจริงในเบราว์เซอร์ — ทำบนเครื่องของคุณ ไม่ใช่ master01</h3>
 <p><strong>1 · ให้ชื่อแปลงเป็น IP ได้</strong> — ให้ DNS ขององค์กรชี้ <code>grafana.myhr.co.th</code> ไปที่ <code>GW_IP</code>
 หรือใส่ hosts เองก่อนระหว่างทดสอบ (Windows: เปิด Notepad แบบ <strong>Run as administrator</strong>
 แล้วแก้ <code>C:\Windows\System32\drivers\etc\hosts</code>)</p>
@@ -421,82 +503,203 @@ curl -I --resolve "grafana.myhr.co.th:443:${GW_IP}" https://grafana.myhr.co.th
 <div class="cb"><pre><code class="language-text">{namespace="kube-system"} |= "error"
 </code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2>5 · 🔴 Alert ขั้นต่ำที่ต้องมี</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p>chart มาพร้อม alert ของ Kubernetes พื้นฐานแล้ว แต่ <strong>ขาดอีก 10 ข้อที่เฉพาะกับ cluster ชุดนี้</strong>
-ซึ่งมาจากข้อจำกัดที่เราเลือกไว้เอง</p>
-<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/monitoring/myhr-alerts.yaml
-kubectl -n monitoring get prometheusrule
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2 id="5---ตั้งปลายทางของ-alert--ทำก่อนเขียน-rule">5 · 🔴 ตั้งปลายทางของ alert — ทำก่อนเขียน rule</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>alert ที่ไม่มีใครเห็น = ไม่มี alert</strong> — ข้อนี้ห้ามข้าม และต้องทำ<strong>ก่อน</strong>ข้อ 6
+เพราะ rule ที่ apply ตอนที่ยังไม่มีปลายทาง คือ rule ที่ดังลงที่ที่ไม่มีใครอยู่</p>
+<p>ข้อนี้ไม่ต้องรอ rule ของเราสักข้อ — Alertmanager มาพร้อม chart ตั้งแต่ข้อ 2 แล้ว
+และการทดสอบท้ายข้อก็ยิง alert ปลอมเข้าไปตรง ๆ ไม่ต้องรอให้มีอะไรพังจริง</p>
+</div><div class="sub" data-machine="all"><h3 id="51-แทนค่าในไฟล์ปลายทาง">5.1 แทนค่าในไฟล์ปลายทาง</h3>
+<p>ค่าที่ต้องเตรียมก่อน — ถามทีม infra/mail ไว้ล่วงหน้า ไม่ใช่มานั่งหาตอนทำ:</p>
 <table>
 <thead>
 <tr>
-<th>Alert</th>
-<th>ทำไมต้องมี</th>
+<th>ค่าที่ต้องแทน</th>
+<th>คืออะไร</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong><code>DeploymentWithoutPDB</code></strong></td>
-<td>ไม่มี GitOps มาบังคับมาตรฐาน · Deployment ที่ไม่มี PDB จะทำ drain ล่ม</td>
+<td><code>&lt;SMTP_HOST&gt;</code> · <code>&lt;SMTP_PORT&gt;</code></td>
+<td>mail relay ภายในองค์กร · พอร์ต 25 มักไม่ต้องล็อกอิน · 587 เกือบทุกครั้งต้อง</td>
 </tr>
 <tr>
-<td><strong><code>DeploymentSingleReplica</code></strong></td>
-<td>PDB ช่วยไม่ได้ถ้ามี replica เดียว</td>
+<td><code>&lt;ALERT_FROM&gt;</code></td>
+<td>ที่อยู่ผู้ส่ง เช่น <code>k8s-alert@บริษัท</code> — ต้องเป็นที่อยู่ที่ relay ยอมให้ส่ง</td>
 </tr>
 <tr>
-<td><strong><code>ClusterCapacityNearNPlusOneLimit</code></strong></td>
-<td>requests รวมเกิน 90% ของ 32 vCPU / 96 GB → patch kernel ไม่ได้</td>
+<td><code>&lt;ALERT_TO&gt;</code></td>
+<td>ปลายทางของ alert ทั่วไป — ควรเป็น distribution list ไม่ใช่เมลคนเดียว</td>
 </tr>
 <tr>
-<td><strong><code>NodeKernelVersionMismatch</code></strong></td>
-<td>node บูตคนละ kernel = บั๊ก network ที่หาสาเหตุยากที่สุด</td>
+<td><code>&lt;ALERT_TO_CRITICAL&gt;</code></td>
+<td>ปลายทางของ critical · ถ้ายังไม่มีกลุ่ม on-call ใส่ค่าเดียวกับข้างบนไปก่อน</td>
 </tr>
 <tr>
-<td><strong><code>KubeCertificateExpiringSoon</code></strong></td>
-<td>cert หมดอายุคือสาเหตุที่ cluster เดิมเดินต่อไม่ได้</td>
-</tr>
-<tr>
-<td><strong><code>CiliumAgentDown</code></strong></td>
-<td>Cilium ทำทั้ง CNI + kube-proxy + LB-IPAM และไม่มีตัวสำรอง</td>
-</tr>
-<tr>
-<td><strong><code>MonitoringDiskFillingUp</code></strong></td>
-<td><code>/var/lib/monitoring</code> อยู่บน root ของ worker03 · เต็ม = node ตายทั้งเครื่อง</td>
-</tr>
-<tr>
-<td>🔴 <strong><code>LokiDiscardingLogs</code></strong></td>
-<td>เพดาน ingestion ทำงานแล้ว log จะหาย<strong>เงียบ ๆ</strong> ถ้าไม่มีข้อนี้ไม่มีใครรู้</td>
-</tr>
-<tr>
-<td>🔴 <strong><code>LokiNotReceivingLogs</code></strong></td>
-<td>ระบบเก็บ log ตายจะดู &quot;เงียบสงบ&quot; เหมือนไม่มีอะไรผิด</td>
-</tr>
-<tr>
-<td>🔴 <strong><code>AlloyDaemonSetIncomplete</code></strong></td>
-<td>node ที่ไม่มี Alloy = log ของเครื่องนั้นหายโดย Loki ยังดูปกติ</td>
+<td><code>&lt;SMTP_USER&gt;</code> · <code>&lt;SMTP_PASSWORD&gt;</code></td>
+<td><strong>เฉพาะเมื่อ relay ต้องล็อกอิน</strong> — ตัดสินใจที่ขั้น A ข้างล่าง</td>
 </tr>
 </tbody>
 </table>
+<p><strong>ขั้น A — ตัดสินก่อนว่า relay ต้องล็อกอินไหม</strong> ไม่แน่ใจให้ถามทีม mail
+หรือดูว่า relay ประกาศ <code>AUTH</code> ไว้หรือเปล่า (ประกาศ ≠ บังคับ แต่ถ้าไม่ประกาศเลยแปลว่าไม่ต้องแน่ ๆ):</p>
+<div class="cb"><pre><code class="language-bash">H=mail.example.co.th; P=25
+exec 3&lt;&gt;/dev/tcp/${H}/${P} &amp;&amp; printf 'EHLO myhr\r\nQUIT\r\n' &gt;&amp;3 &amp;&amp; timeout 5 grep -iE '250[ -](AUTH|STARTTLS)' &lt;&amp;3; exec 3&lt;&amp;-
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>A-ก · relay ไม่ต้องล็อกอิน</strong> — ปิดสองบรรทัด auth ทิ้งไปเลย</p>
+<div class="cb"><pre><code class="language-bash">cd /root/k8s/config/monitoring
+sed -i -E 's|^([[:space:]]*)(smtp_auth_)|\1# \2|' alertmanager-config.yaml
+grep -cE '^[[:space:]]*smtp_auth_' alertmanager-config.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>0</code></p>
 <blockquote>
-<p><strong>3 ข้อล่างมาจากธรรมชาติของระบบ log:</strong> ความผิดพลาดของมันไม่ทำให้อะไรพัง
-มันแค่ทำให้ข้อมูล<strong>หายไปเฉย ๆ</strong> ซึ่งจะรู้ตัวก็ตอนที่ต้องใช้ — คือตอน incident พอดี</p>
+<p>🔴 <strong>ห้ามปล่อยสองบรรทัดนั้นเปิดไว้ทั้งที่ยังเป็น <code>&lt;SMTP_USER&gt;</code></strong> — Alertmanager จะโหลด
+config ไม่ผ่าน แล้ว<strong>ถอยไปใช้ config เดิมของ chart</strong> ผลคือหน้า <code>/api/v2/receivers</code>
+ตอบ <code>null</code> มาตัวเดียว ทั้งที่ <code>helm upgrade</code> สำเร็จและ pod ยัง <code>Running</code> ทุกตัว</p>
 </blockquote>
-<p>พร้อมของมาตรฐานที่ต้องเปิดด้วย: <code>KubeNodeNotReady</code>, <code>KubePodCrashLooping</code>,
-<code>etcdInsufficientMembers</code>, <code>NodeFilesystemAlmostOutOfSpace</code>, <code>CiliumAgentDown</code></p>
-<p><strong>ตรวจว่า rule โหลดแล้ว:</strong></p>
-<div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &amp;
-sleep 3
-curl -s 'http://localhost:9090/api/v1/rules' | jq -r '.data.groups[].name' | sort -u
+<p><strong>A-ข · relay ต้องล็อกอิน</strong> — เปิด auth แล้วบังคับ TLS กับพอร์ตให้ถูกในทีเดียว</p>
+<div class="cb"><pre><code class="language-bash">cd /root/k8s/config/monitoring
+read -rp 'พอร์ตที่ใช้กับ auth [587]: ' SPORT; SPORT=${SPORT:-587}
+sed -i -E "s|^([[:space:]]*)#[[:space:]]*(smtp_auth_)|\1\2|" alertmanager-config.yaml
+sed -i -E -e "s|(smtp_smarthost: \"[^\"]*):[0-9]+\"|\1:${SPORT}\"|" \
+          -e 's|smtp_require_tls: false|smtp_require_tls: true|' alertmanager-config.yaml
+grep -E 'smtp_(smarthost|require_tls)' alertmanager-config.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> พอร์ตเป็นเลขที่กรอก และ <code>smtp_require_tls: true</code></p>
+<blockquote>
+<p>🔴 <strong>เปิด auth แล้วต้องเปิด TLS เสมอ</strong> — ไลบรารีที่ Alertmanager ใช้ปฏิเสธการส่งรหัสผ่าน
+บนช่องที่ไม่เข้ารหัส ถ้าทิ้ง <code>smtp_require_tls: false</code> ไว้จะได้ error ทำนอง
+<code>unencrypted connection</code> แล้วเมลไม่ออกเลย</p>
+<p><strong>แต่ TLS ไม่ได้ผูกกับพอร์ต 587</strong> — <code>require_tls</code> คือ STARTTLS ซึ่ง relay หลายเจ้าก็ให้บน 25
+ตัวตัดสินคือ relay ประกาศ <code>STARTTLS</code> บนพอร์ตนั้นหรือเปล่า ไม่ใช่เลขพอร์ต
+ถ้าองค์กรบล็อก 587 ขาออก (เจอบ่อยเมื่อ relay อยู่นอกวง) ให้ลอง 25 ที่มี STARTTLS ก่อน</p>
+</blockquote>
+<p><strong>ขั้น B — แทนค่าทุกช่องที่เหลือ</strong> บล็อกนี้ <strong>รันซ้ำได้ไม่จำกัด</strong> ถามเฉพาะช่องที่ยังว่างจริง
+ช่องที่เต็มแล้วจะขึ้น <code>✓ ... ไม่ถาม</code> และไม่แตะไฟล์ (ถ้าเลือก A-ก มันจะไม่ถาม user/password ให้เอง)</p>
+<div class="cb"><pre><code class="language-bash">cd /root/k8s/config/monitoring
+for V in SMTP_HOST SMTP_PORT ALERT_FROM ALERT_TO ALERT_TO_CRITICAL SMTP_USER SMTP_PASSWORD; do
+    if grep -v '^[[:space:]]*#' alertmanager-config.yaml | grep -q "&lt;${V}&gt;"; then
+        if [ "$V" = SMTP_PASSWORD ]; then
+            read -rsp "ค่าของ ${V}: " NEW; echo " (รับมา ${#NEW} ตัว)"
+        else
+            read -rp "ค่าของ ${V}: " NEW
+        fi
+        if [ -n "$NEW" ]; then
+            sed -i "s|&lt;${V}&gt;|${NEW}|" alertmanager-config.yaml; echo "  ✓ แทน ${V} แล้ว"
+        else
+            echo "  ⚠ ข้าม ${V} — ค่าว่าง ยังต้องกลับมาทำ"
+        fi
+    else
+        echo "✓ ${V} แทนไปแล้ว ไม่ถาม"
+    fi
+done
+unset NEW
+chmod 600 alertmanager-config.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p><strong>ทำไมต้องเป็น loop ไม่ใช่ <code>read</code> เรียงกันแล้ว <code>sed</code> ทีเดียว</strong> — แบบเรียงกันจะถามครบทุกช่อง
+ทุกครั้งที่รัน แล้ว <code>sed</code> ไปไม่เจอ placeholder ที่รอบก่อนกินไปแล้ว
+กลายเป็น &quot;พิมพ์แล้วไม่มีอะไรเปลี่ยน&quot; ซึ่งชวนให้เข้าใจว่าคำสั่งพัง
+ขั้นตอนที่คนต้องรันซ้ำตอนตีสอง ต้องรันซ้ำได้จริง</p>
+</blockquote>
+<p><strong>ตรวจผลก่อนไปข้อ 5.2:</strong></p>
+<div class="cb"><pre><code class="language-bash">cd /root/k8s/config/monitoring
+grep -v '^[[:space:]]*#' alertmanager-config.yaml | grep -c '&lt;[A-Z_]*&gt;'
+grep -E '^[[:space:]]*smtp_(smarthost|from|require_tls|auth_username)' alertmanager-config.yaml
+awk -F'"' '/^[[:space:]]*smtp_auth_password:/{print "smtp_auth_password ยาว " length($2) " ตัว"}' alertmanager-config.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> บรรทัดแรกเป็น <code>0</code> · ค่าที่ตั้งไว้ตรงกับที่ทีม mail ให้มา ·
+ถ้าเลือก A-ข ต้องเห็น <code>smtp_require_tls: true</code> และ <code>smtp_auth_password ยาว N ตัว</code> (N ตรงกับที่พิมพ์)
+· ถ้าเลือก A-ก สองบรรทัดสุดท้ายต้องไม่มีอะไรออกมาเลย</p>
+<blockquote>
+<p>ที่ต้องตัดบรรทัดคอมเมนต์ออกก่อนนับ <code>&lt;...&gt;</code> เพราะในไฟล์ยังมี <code>&lt;TEAMS_WEBHOOK_URL&gt;</code>
+ค้างอยู่ในคอมเมนต์ของทางเลือก Teams ที่ยังไม่ได้เปิดใช้ — ปกติ ไม่ต้องแทน</p>
+<p><strong>รหัส SMTP จะไปอยู่ในไฟล์บน master01 และใน secret ของ helm release</strong> — ห้ามแทนค่าลงไฟล์
+ชุดที่อยู่ใน repo บนเครื่องคุณ เพราะไฟล์นั้นถูก commit · จดไว้ที่ <code>secrets.env</code>
+คีย์ <code>SMTP_PASSWORD</code> ด้วย จะได้ไม่ต้องไปขอใหม่ตอนสร้าง cluster รอบหน้า</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3 id="52-ส่งค่าให้-chart">5.2 ส่งค่าให้ chart</h3>
+<p>🔴 <strong>ไฟล์ values มีสองชิ้นแล้ว ต้องใส่ <code>-f</code> ทั้งคู่ทุกครั้งที่ <code>helm upgrade</code> นับจากนี้</strong>
+ถ้าลืมชิ้นใดชิ้นหนึ่ง ค่าของไฟล์นั้นจะกลับไปเป็น default ของ chart แบบเงียบ ๆ —
+ปลายทาง alert หายไปโดยที่ทุก pod ยัง <code>Running</code> และไม่มีอะไรฟ้อง</p>
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+helm upgrade monitoring prometheus-community/kube-prometheus-stack \
+  -n monitoring \
+  --version "${KUBE_PROM_STACK_CHART}" \
+  -f /root/k8s/config/monitoring/kube-prometheus-values.yaml \
+  -f /root/k8s/config/monitoring/alertmanager-config.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>🔴 <strong><code>--version</code> ต้องมีทุกครั้ง</strong> — <code>helm upgrade</code> ที่ไม่ระบุเวอร์ชันจะคว้า chart
+<strong>รุ่นล่าสุดใน repo</strong> มาใช้ กลายเป็นอัป chart ทั้งชุดพ่วงไปกับการแก้ค่าเล็ก ๆ
+โดยที่คำสั่งหน้าตาเหมือนเดิมทุกประการ · ตรวจว่ารุ่นที่ใช้อยู่ตรงกับที่ตรึงไว้ไหม
+ด้วย <code>helm -n monitoring list</code> เทียบกับ <code>grep KUBE_PROM_STACK /root/k8s/versions.env</code>
+— namespace นี้มีหลาย release (loki · alloy · monitoring) เวลา parse json ต้องเลือกด้วยชื่อ
+ไม่ใช่ <code>.[0]</code> ไม่งั้นจะได้เวอร์ชันของ chart ตัวอื่นมาแล้ว helm จะฟ้องว่า <code>improper constraint</code></p>
+</blockquote>
+<blockquote>
+<p><strong><code>helm upgrade</code> ดาวน์โหลด chart ใหม่ทุกครั้ง</strong> ไม่ได้ใช้ของที่ติดตั้งไปแล้ว จึงล้มได้
+เพราะเน็ตหรือ DNS สะดุด — อาการที่เจอจริงคือ
+<code>Error: Get &quot;https://release-assets.githubusercontent.com/...&quot;: no such host</code>
+ซึ่ง <strong>ไม่เกี่ยวกับ config ที่กำลังจะ apply เลย</strong> ลองใหม่อีกรอบก่อน
+ถ้ายังไม่ได้ ให้ดึง chart เก็บไว้ตอนเน็ตดี:</p>
+<div class="cb"><pre><code class="language-bash">helm pull prometheus-community/kube-prometheus-stack --version "${KUBE_PROM_STACK_CHART}" -d /root/k8s/dl
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>แล้วชี้ helm ไปที่ไฟล์นั้นแทน repo:</p>
+<div class="cb"><pre><code class="language-bash">helm upgrade monitoring /root/k8s/dl/kube-prometheus-stack-${KUBE_PROM_STACK_CHART}.tgz -n monitoring -f /root/k8s/config/monitoring/kube-prometheus-values.yaml -f /root/k8s/config/monitoring/alertmanager-config.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+</blockquote>
+<p><strong>ตรวจว่า Alertmanager รับ config ใหม่ไปจริง</strong> (ไม่ใช่แค่ helm บอกว่า upgraded)
+— 🔴 <strong>ต้องรออย่างน้อย ~45 วินาที</strong> ก่อนเช็ค · secret ที่ helm เขียนต้องรอ kubelet
+sync เข้า pod ก่อน config-reloader ถึงจะเห็น เช็คเร็วกว่านั้นจะได้ผลของ config เดิม:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 &amp;
+sleep 45
+curl -s localhost:9093/api/v2/receivers | jq -r '.[].name'
 kill %1
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2>6 · ตั้งปลายทางของ alert</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p><strong>alert ที่ไม่มีใครเห็น = ไม่มี alert</strong> — ข้อนี้ห้ามข้าม</p>
-<div class="cb"><pre><code class="language-bash">kubectl -n monitoring edit secret alertmanager-monitoring-kube-prometheus-alertmanager
+<p><strong>ควรเห็น:</strong> <code>null</code> · <code>myhr-default</code> · <code>myhr-critical</code></p>
+<p><strong>ถ้าได้ <code>null</code> มาตัวเดียว</strong> อย่าเพิ่งไปแก้บรรทัด <code>-f</code> — มันเป็นได้สองเรื่องคนละเรื่อง
+แยกด้วยคำสั่งนี้ก่อน (ดูว่า release ถือค่าอะไรอยู่จริง):</p>
+<div class="cb"><pre><code class="language-bash">helm -n monitoring get values monitoring | sed -n '/^alertmanager:/,/^[a-z]/p' | head -40
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>หรือแก้ที่ <code>config/monitoring/alertmanager-config.yaml</code> แล้ว apply
-ตั้งปลายทางเป็น email / Line Notify / Teams ตามที่ทีมใช้จริง</p>
-<p><strong>ทดสอบว่าส่งถึงจริง:</strong></p>
+<table>
+<thead>
+<tr>
+<th>ที่เห็นจาก <code>get values</code></th>
+<th>แปลว่า</th>
+<th>ทำอะไรต่อ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ไม่มี <code>myhr-default</code> เลย</td>
+<td>helm ไม่ได้กินไฟล์ที่สองจริง</td>
+<td>ย้อนไปดูบรรทัด <code>-f</code> แล้ว upgrade ใหม่</td>
+</tr>
+<tr>
+<td>มีครบ แต่ยังเห็น <code>&lt;SMTP_USER&gt;</code> / <code>&lt;ALERT_TO&gt;</code></td>
+<td>ข้อ 5.1 ยังไม่จบ · Alertmanager โหลด config ไม่ผ่านแล้ว<strong>ถอยไปใช้ของ chart</strong></td>
+<td>กลับไปทำ 5.1 ให้ครบ แล้ว upgrade ใหม่</td>
+</tr>
+<tr>
+<td>มีครบ ค่าจริงครบ แต่ยัง <code>null</code></td>
+<td>config ถูกปฏิเสธด้วยเหตุอื่น</td>
+<td>ดู log ของ operator ข้างล่าง</td>
+</tr>
+</tbody>
+</table>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring logs deploy/monitoring-kube-prometheus-operator --tail=80 | grep -iE 'alertmanager|invalid|error'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p><strong><code>null</code> ไม่ได้แปลว่า &quot;ไม่มี config&quot;</strong> — มันคือชื่อ receiver ใน config <strong>ตั้งต้นของ chart</strong>
+เห็นชื่อนี้ตัวเดียวเมื่อไร แปลว่า Alertmanager กำลังใช้ของตั้งต้นอยู่ ไม่ว่าจะเพราะ
+ไฟล์ไม่ถึง หรือถึงแล้วแต่โหลดไม่ผ่าน — สองอย่างนี้หน้าตาเหมือนกันเป๊ะจากด่านตรวจนี้</p>
+</blockquote>
+<blockquote>
+<p><strong>ทำไมไม่ <code>kubectl -n monitoring edit secret alertmanager-...</code></strong> วิธีนั้นมีผลทันทีจริง
+แต่ <code>helm upgrade</code> รอบถัดไปจะเขียนทับ secret ทั้งก้อน ปลายทางที่แก้ไว้จะหายโดยไม่มีใครรู้
+ใช้ได้เฉพาะตอนฉุกเฉินกลางดึก แล้วต้องย้ายกลับมาใส่ <code>alertmanager-config.yaml</code> ให้เสร็จวันรุ่งขึ้น</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3 id="53-ยิงของปลอมหนึ่งครั้ง--ห้ามข้าม">5.3 ยิงของปลอมหนึ่งครั้ง — ห้ามข้าม</h3>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 &amp;
 sleep 3
 curl -s -XPOST http://localhost:9093/api/v2/alerts -H 'Content-Type: application/json' -d '[{
@@ -505,9 +708,659 @@ curl -s -XPOST http://localhost:9093/api/v2/alerts -H 'Content-Type: application
 }]'
 kill %1
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ต้องเห็นข้อความจริงเข้ามาที่ปลายทาง</strong> ถ้าไม่เข้าให้แก้จนกว่าจะเข้า</p>
+<p>ทดสอบเส้นทาง critical อีกหนึ่งฉบับ (คนละปลายทางกัน ถ้าทีมแยกกลุ่ม on-call ไว้):</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 &amp;
+sleep 3
+curl -s -XPOST http://localhost:9093/api/v2/alerts -H 'Content-Type: application/json' -d '[{
+  "labels": {"alertname":"TestAlert","severity":"critical"},
+  "annotations": {"summary":"ทดสอบเส้นทาง critical"}
+}]'
+kill %1
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ต้องเห็นข้อความจริงเข้ามาที่ปลายทางทั้งสองฉบับ</strong> ถ้าไม่เข้าให้แก้จนกว่าจะเข้า —
+ห้ามเดินไปข้อ 6 ก่อนที่เมลจะถึงมือคน · ของปลอมจะหายเองใน ~5 นาที (<code>resolve_timeout</code>)
+ไม่ต้องไปลบ</p>
+<p><strong>ถ้าเมลไม่เข้า ดูสาเหตุที่ log ของ Alertmanager</strong> — มันบอกตรง ๆ ว่าติดตรงไหน:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring logs sts/alertmanager-monitoring-kube-prometheus-alertmanager \
+  -c alertmanager --tail=50 | grep -iE 'notify|smtp|error'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<table>
+<thead>
+<tr>
+<th>ข้อความที่เจอ</th>
+<th>แปลว่า</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unencrypted connection</code></td>
+<td>เปิด auth ไว้แต่ <code>smtp_require_tls: false</code> — กลับไปทำข้อ 5.1 ขั้น A-ข</td>
+</tr>
+<tr>
+<td><code>does not advertise the STARTTLS extension</code></td>
+<td>relay ไม่ให้ STARTTLS บนพอร์ตที่ตั้งไว้ (มักเจอบน 25) · ไปต่อที่ 5.3.1</td>
+</tr>
+<tr>
+<td><code>535</code> · <code>authentication failed</code></td>
+<td>user/รหัสผิด หรือ relay ไม่ยอมให้บัญชีนี้ส่งจากที่อยู่ผู้ส่งที่ตั้งไว้</td>
+</tr>
+<tr>
+<td><code>550</code> · <code>relay access denied</code></td>
+<td>relay ไม่รับเมลจาก IP ขาออกของ cluster — ให้ทีม mail เปิด allow-list</td>
+</tr>
+<tr>
+<td><code>connection refused</code> · <code>i/o timeout</code></td>
+<td>ต่อพอร์ตนั้นไม่ได้ · <strong>อย่าเพิ่งสรุปว่าไฟร์วอลล์บล็อก</strong> ดู 5.3.3</td>
+</tr>
+<tr>
+<td>ไม่มี error แต่เมลไม่เข้า</td>
+<td>relay รับแล้วแต่ปลายทางกรองทิ้ง — ตามที่ทีม mail ไม่ใช่ที่ cluster</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>ถ้ายังไม่ได้ปลายทางจริงในวันนี้</strong> ให้ใส่เมลของตัวเองไปก่อนแล้วเดินต่อได้
+<strong>แต่ห้ามย้าย workload เข้ามา</strong> จนกว่าปลายทางจริงจะส่งถึงคนที่รับผิดชอบ</p>
+</blockquote>
+<h4 id="531-ถ้า-log-บอกว่า-relay-ไม่ประกาศ-starttls">5.3.1 ถ้า log บอกว่า relay ไม่ประกาศ STARTTLS</h4>
+<p>ดูว่า relay ประกาศอะไรบ้างบนพอร์ตที่ต่อได้จริง — <strong>รันจาก pod</strong> เพราะนั่นคือเส้นทางที่
+Alertmanager ใช้ และ <strong>ห้ามใส่ <code>-it</code></strong> เพราะ TTY จะกลืน output ของ pipe จนเห็นแต่บรรทัด <code>220</code>:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
+  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 mail.example.co.th 25'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<table>
+<thead>
+<tr>
+<th>relay ประกาศ</th>
+<th>แปลว่า</th>
+<th>ทางแก้</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>มี <code>STARTTLS</code></td>
+<td>ใช้พอร์ตนั้นได้เลย</td>
+<td>ตั้ง <code>smtp_smarthost</code> เป็นพอร์ตนั้น + <code>require_tls: true</code></td>
+</tr>
+<tr>
+<td>ไม่มีทั้ง <code>STARTTLS</code> และ <code>AUTH</code></td>
+<td>relay รับจาก IP ที่อนุญาตโดยไม่ต้องล็อกอิน</td>
+<td>ปิด auth ตามคำสั่งข้างล่าง แล้ว <code>helm upgrade</code> ซ้ำ</td>
+</tr>
+<tr>
+<td>มี <code>AUTH</code> แต่ไม่มี <code>STARTTLS</code></td>
+<td><strong>ยังไม่สรุป</strong> — ประกาศ AUTH ไม่ได้แปลว่าบังคับ</td>
+<td>ทดสอบต่อด้วยบล็อกถัดไปก่อนไปขอใคร</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ทดสอบว่า relay บังคับ auth จริงไหม</strong> — คุยถึงขั้น <code>RCPT TO</code> แต่ไม่ส่ง <code>DATA</code>
+จึงไม่มีเมลออกไปจริงสักฉบับ (แทน <code>&lt;...&gt;</code> ด้วยที่อยู่จริงก่อนรัน):</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
+  sh -c '(printf "EHLO myhr\r\n"; sleep 2; printf "MAIL FROM:&lt;ผู้ส่ง&gt;\r\n"; sleep 2; printf "RCPT TO:&lt;ปลายทาง&gt;\r\n"; sleep 3; printf "QUIT\r\n"; sleep 1) | nc -w 15 mail.example.co.th 25'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<table>
+<thead>
+<tr>
+<th>บรรทัดหลัง <code>RCPT TO</code></th>
+<th>แปลว่า</th>
+<th>ทางแก้</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>250 ... Ok</code></td>
+<td>ไม่บังคับ auth</td>
+<td>ปิด auth ตามคำสั่งข้างล่าง แล้ว <code>helm upgrade</code> ซ้ำ — จบ</td>
+</tr>
+<tr>
+<td><code>530 SMTP authentication is required</code></td>
+<td>บังคับ auth และไม่มี STARTTLS บนพอร์ตนี้</td>
+<td>ส่งตรงไม่ได้ → ไปที่ 5.3.2</td>
+</tr>
+<tr>
+<td><code>554</code> · <code>relay access denied</code></td>
+<td>relay ไม่ยอมส่งต่อออกนอกโดเมนให้ IP นี้</td>
+<td>ขอทีม mail ใส่ IP ขาออกของ cluster ใน allow-list</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ปิด auth ทั้งชุด</strong> (สำหรับสองแถวที่บอกว่าไม่ต้องล็อกอิน):</p>
+<div class="cb"><pre><code class="language-bash">cd /root/k8s/config/monitoring
+sed -i -E -e 's|^([[:space:]]*)(smtp_auth_)|\1# \2|' \
+          -e 's|smtp_require_tls: true|smtp_require_tls: false|' alertmanager-config.yaml
+grep -E '^[[:space:]]*smtp_' alertmanager-config.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> เหลือแค่ <code>smtp_smarthost</code> · <code>smtp_from</code> · <code>smtp_require_tls: false</code>
+แล้วกลับไปรัน <code>helm upgrade</code> ในข้อ 5.2 ซ้ำ · เมลที่ค้างคิว retry อยู่จะถูกส่งเองไม่ต้องยิงใหม่</p>
+<h4 id="532-relay-บังคับ-auth-แต่พอร์ตที่ออกได้ไม่มี-starttls">5.3.2 relay บังคับ auth แต่พอร์ตที่ออกได้ไม่มี STARTTLS</h4>
+<p>Alertmanager ส่งตรงไม่ได้แน่นอนในสภาพนี้ — มันปฏิเสธการส่งรหัสผ่านบนช่องที่ไม่เข้ารหัส
+แบบฮาร์ดโค้ด และนั่นถูกต้องแล้ว <strong>มีสามทางออก เลือกได้ทันทีตามว่าอันไหนเป็นไปได้ก่อน</strong></p>
+<table>
+<thead>
+<tr>
+<th>ทางออก</th>
+<th>ต้องพึ่งใคร</th>
+<th>ได้เมื่อไร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ขอเปิดพอร์ตที่มี STARTTLS (มัก 587)</td>
+<td>ทีม network <strong>และ</strong> relay ต้องเปิด 587 จริง</td>
+<td>ต้องรอ</td>
+</tr>
+<tr>
+<td>ขอ allow-list ให้ส่งจาก IP ของ cluster โดยไม่ต้อง auth</td>
+<td>ทีม mail</td>
+<td>ต้องรอ</td>
+</tr>
+<tr>
+<td><strong>ตัวกลางในคลัสเตอร์ที่ยอมทำ auth บนพอร์ต 25 แทน</strong></td>
+<td>ไม่ต้องพึ่งใคร</td>
+<td>ทำเองได้วันนี้ → ข้อ 5.4</td>
+</tr>
+</tbody>
+</table>
+<p><strong>พอได้ 587 มาแล้ว อย่าเพิ่งเชื่อว่ามี STARTTLS</strong> ตรวจก่อนหนึ่งครั้ง:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
+  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 mail.example.co.th 587'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>เห็น <code>250-STARTTLS</code> แล้วค่อยกลับไปทำ 5.1 ขั้น A-ข ด้วยพอร์ต 587</p>
+<h4 id="533-ต่อพอร์ตไม่ได้--แยกก่อนว่าใครดรอป">5.3.3 ต่อพอร์ตไม่ได้ — แยกก่อนว่าใครดรอป</h4>
+<p><code>timeout</code> แปลว่า &quot;ไม่มีใครตอบ&quot; เท่านั้น <strong>ไม่ได้แปลว่าไฟร์วอลล์ขององค์กรบล็อก</strong> —
+ตัว relay เองไม่ได้เปิดพอร์ตนั้นแล้วดรอปทิ้งก็ให้อาการเดียวกันเป๊ะ ชนิดของ error
+ต่างหากที่บอกได้ และ <strong>ห้ามใช้ <code>/dev/tcp</code> ของ bash ทดสอบ</strong> — บนเครื่องที่ปิดฟีเจอร์นี้
+มันจะรายงานว่าทุกพอร์ตตัน รวมพอร์ตที่เปิดอยู่จริง (เจอมาแล้วกับ cluster ชุดนี้)</p>
+<p><strong>จาก node:</strong></p>
+<div class="cb"><pre><code class="language-bash">python3 - &lt;&lt;'EOF'
+import socket
+for p in (25, 465, 587, 2525):
+    try:
+        s = socket.create_connection(('&lt;IP ของ relay&gt;', p), 5); print(p, 'เปิด'); s.close()
+    except Exception as e:
+        print(p, 'ไม่ได้ —', type(e).__name__, e)
+EOF
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>จากเครื่องของคุณ</strong> (คนละต้นทาง คนละกฎ — PowerShell):</p>
+<div class="cb"><pre><code class="language-bash">foreach ($p in 25,465,587,2525) { $r = Test-NetConnection &lt;IP ของ relay&gt; -Port $p -WarningAction SilentlyContinue; "$p : $($r.TcpTestSucceeded)" }
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<table>
+<thead>
+<tr>
+<th>ที่เจอ</th>
+<th>สรุปได้ว่า</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ConnectionRefusedError</code> (RST)</td>
+<td>server ไม่ได้เปิดพอร์ตนั้น — ไม่เกี่ยวกับ network ขององค์กร ต้องคุยกับทีม mail</td>
+</tr>
+<tr>
+<td><code>TimeoutError</code> ทั้งจาก cluster และจากเครื่องคุณ</td>
+<td>ผลเหมือนกันสองต้นทาง → น่าจะเป็นฝั่ง relay/ผู้ให้บริการ ไม่ใช่กฎเฉพาะ cluster</td>
+</tr>
+<tr>
+<td>cluster timeout แต่เครื่องคุณต่อได้</td>
+<td>ตรงนี้ถึงจะเป็นกฎฝั่ง network จริง และมีหลักฐานให้ไปคุย</td>
+</tr>
+</tbody>
+</table>
+</div><div class="sub" data-machine="all"><h3 id="54-ทางอ้อมที่ใช้ได้จริง--ตัวกลางในคลัสเตอร์">5.4 ทางอ้อมที่ใช้ได้จริง — ตัวกลางในคลัสเตอร์</h3>
+<p>ใช้ข้อนี้เมื่อ 5.3.2 สรุปว่า relay บังคับ auth และพอร์ตที่ออกได้ไม่มี STARTTLS
+กุญแจของทางนี้คือ <strong><code>smtplib</code> ของ Python ยอมทำ AUTH LOGIN บน plaintext</strong> —
+สิ่งที่ Alertmanager ปฏิเสธ เราจึงเอา pod เล็ก ๆ มารับ webhook แล้วส่งเมลแทน</p>
+<p>ของทั้งชุดอยู่ที่ <a href="../deployments/alert-mail-relay"><code>deployments/alert-mail-relay/</code></a>
+แยกกันสามชิ้นโดยตั้งใจ:</p>
+<table>
+<thead>
+<tr>
+<th>ชิ้น</th>
+<th>อยู่ที่ไหน</th>
+<th>แก้บ่อยแค่ไหน</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>โค้ด <code>relay.py</code></td>
+<td>ConfigMap <code>alert-mail-relay-src</code></td>
+<td>แทบไม่แก้</td>
+</tr>
+<tr>
+<td>ค่า <code>relay.conf</code> — smtp · ผู้รับ · รูปแบบข้อความ</td>
+<td>ConfigMap <code>alert-mail-relay-conf</code></td>
+<td><strong>แก้ได้ตลอด ไม่ต้อง restart</strong></td>
+</tr>
+<tr>
+<td>user / รหัสผ่าน</td>
+<td>Secret <code>alert-mail</code></td>
+<td>ตอนเปลี่ยนรหัส</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>🔴 <strong>นี่คือทางอ้อมที่รู้ตัว ไม่ใช่ของถาวร</strong> รหัสผ่านยังวิ่ง plaintext จากในคลัสเตอร์
+ไปหา relay อยู่ดี (แค่ไม่ได้วิ่งจาก Alertmanager) ถ้าองค์กรรับความเสี่ยงนี้ไม่ได้
+ต้องไปทางขอพอร์ตที่มี STARTTLS อย่างเดียว · วันที่ได้มาแล้วให้ถอดตามข้อ 5.4.6</p>
+</blockquote>
+<p><strong>5.4.1 พิสูจน์ก่อนว่าส่งผ่านพอร์ต 25 ได้จริง</strong> — ถ้าข้อนี้ไม่ผ่าน เขียน pod ไปก็เท่านั้น</p>
+<div class="cb"><pre><code class="language-bash">cat &gt; /root/smtp25-test.py &lt;&lt;'EOF'
+import os, smtplib
+host, port = os.environ["SMTP_HOST"], int(os.environ.get("SMTP_PORT", "25"))
+user, pw, to = os.environ["SMTP_USER"], os.environ["SMTP_PASS"], os.environ["SMTP_TO"]
+s = smtplib.SMTP(host, port, timeout=15)
+s.ehlo(); s.login(user, pw)
+msg = (f"From: {user}\r\nTo: {to}\r\nSubject: k8s smtp port25 test\r\n"
+       "Content-Type: text/plain; charset=utf-8\r\n\r\ntest send via port 25\r\n")
+s.sendmail(user, [to], msg.encode("utf-8")); s.quit()
+print("=== SENT OK")
+EOF
+read -rp 'SMTP user: ' SU; read -rsp 'SMTP password: ' SP; echo; read -rp 'send to: ' TO
+SMTP_HOST=mail.example.co.th SMTP_USER="$SU" SMTP_PASS="$SP" SMTP_TO="$TO" python3 /root/smtp25-test.py
+unset SU SP TO; rm -f /root/smtp25-test.py
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>🔴 <strong>อย่าใส่ <code>s.set_debuglevel(1)</code></strong> ถ้าไม่จำเป็น — มันพิมพ์บรรทัด <code>AUTH LOGIN</code> ซึ่งมี
+user กับรหัสผ่านเป็น base64 ออกมาบนจอ · base64 ไม่ใช่การเข้ารหัส ถอดได้ทันที
+ถ้าเผลอเปิดไปแล้วให้ถือว่ารหัสรั่ว (ค้างใน scrollback / ภาพหน้าจอ) แล้วเปลี่ยนรหัส</p>
+<p>และใช้ env แทน <code>input()</code> เพราะ <code>input()</code> ถอดรหัส stdin ตาม locale ของ session
+ถ้า locale ไม่ใช่ UTF-8 จะได้ <code>UnicodeDecodeError</code> ทั้งที่ไม่เกี่ยวกับ SMTP เลย</p>
+</blockquote>
+<p><strong>5.4.2 เก็บ user/รหัสลง Secret</strong> — ไม่ผ่าน helm values จึงไม่ไปโผล่ใน secret ของ release</p>
+<div class="cb"><pre><code class="language-bash">read -rp 'SMTP user: ' SU; read -rsp 'SMTP password: ' SP; echo
+kubectl -n monitoring create secret generic alert-mail \
+  --from-literal=SMTP_USER="$SU" --from-literal=SMTP_PASS="$SP" \
+  --dry-run=client -o yaml | kubectl apply -f -
+unset SU SP
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>5.4.3 ตั้งค่าใน <code>relay.conf</code> แล้ว apply</strong></p>
+<p>เปิด <code>deployments/alert-mail-relay/alert-mail-relay.yaml</code> แล้วแก้ในบล็อก <code>relay.conf</code>
+ค่าที่ต้องดูมีเท่านี้:</p>
+<table>
+<thead>
+<tr>
+<th>คีย์</th>
+<th>ใส่อะไร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>smtp_host</code> · <code>smtp_port</code></td>
+<td>relay ที่ทดสอบผ่านใน 5.4.1</td>
+</tr>
+<tr>
+<td><code>smtp_starttls</code></td>
+<td><code>false</code> ตามสภาพที่เจอ · เปลี่ยนเป็น <code>true</code> เมื่อได้พอร์ตที่มี STARTTLS</td>
+</tr>
+<tr>
+<td><code>mail_from</code></td>
+<td>ที่อยู่ผู้ส่ง — ต้องเป็นที่อยู่ที่บัญชีนี้ได้รับอนุญาตให้ส่ง</td>
+</tr>
+<tr>
+<td><code>to_default</code> · <code>to_critical</code></td>
+<td>ผู้รับของแต่ละเส้นทาง · ใส่หลายคนได้ คั่นด้วยจุลภาค</td>
+</tr>
+<tr>
+<td><strong><code>to_always</code></strong></td>
+<td><strong>ผู้รับกลาง — ได้ทุกฉบับไม่ว่ามาทางไหน</strong> เช่นกล่องรวมของทีมไว้ย้อนดู · ปล่อยว่างได้</td>
+</tr>
+<tr>
+<td><code>format</code></td>
+<td><code>text</code> (ค่าเริ่มต้น) หรือ <code>html</code> (มีตาราง อ่านบนมือถือดีกว่า)</td>
+</tr>
+<tr>
+<td><code>subject</code></td>
+<td>หัวเรื่อง ใช้ตัวแปร <code>{status}</code> <code>{sev}</code> <code>{alertname}</code> <code>{count}</code> <code>{namespace}</code></td>
+</tr>
+<tr>
+<td><code>fields</code></td>
+<td>ฟิลด์ที่จะแสดงและลำดับของมัน — ตัดตัวที่ทีมไม่ได้ใช้ออกได้</td>
+</tr>
+</tbody>
+</table>
+<p><strong>เพิ่มเส้นทางใหม่ไม่ต้องแก้โค้ด</strong> — ใส่คีย์ <code>to_&lt;ชื่อ&gt;</code> ลงไฟล์ แล้วชี้ webhook ไปที่
+<code>/alert?to=&lt;ชื่อ&gt;</code> ตัวกลางจะหาคีย์นั้นเอง ไม่เจอก็ตกมาที่ <code>to_default</code></p>
+<div class="cb"><pre><code class="language-bash">cd /root/k8s/deployments/alert-mail-relay
+grep -n '&lt;[A-Z_]*&gt;' alert-mail-relay.yaml          # ดูว่าเหลือช่องไหนยังไม่ได้แทน
+kubectl apply -f alert-mail-relay.yaml
+kubectl -n monitoring rollout status deploy/alert-mail-relay --timeout=180s
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>deployment &quot;alert-mail-relay&quot; successfully rolled out</code>
+· ถ้าค้างที่ <code>ContainerCreating</code> นาน คือกำลังดึง image <code>python:3.12-alpine</code> รอบแรก</p>
+<p><strong>ตรวจว่ามันอ่านค่าไปแบบไหน</strong> — endpoint นี้คืนค่าที่ใช้อยู่จริง และ<strong>ไม่มีรหัสผ่านอยู่ในนั้น</strong>
+เพราะรหัสอยู่ใน env ไม่ใช่ในไฟล์ config:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring run conf-check --rm --attach --restart=Never --image=busybox:1.36 -- \
+  wget -qO- http://alert-mail-relay.monitoring.svc.cluster.local:8080/config
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>5.4.4 สลับ Alertmanager มาใช้ตัวกลาง</strong></p>
+<p>ไฟล์ <code>config/monitoring/alertmanager-config.yaml</code> ในรีโปเป็น <code>webhook_configs</code> ให้แล้ว
+(ของเดิมที่เป็น <code>email_configs</code> ถูกคอมเมนต์ไว้ข้าง ๆ พร้อมกลับมาใช้) — scp ทับแล้ว
+<code>helm upgrade</code> ตามข้อ 5.2 จากนั้นยิงของปลอมตามข้อ 5.3 ซ้ำ แล้วดูที่ตัวกลาง:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring logs deploy/alert-mail-relay --tail=20
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<table>
+<thead>
+<tr>
+<th>ที่เห็นใน log</th>
+<th>แปลว่า</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ส่งแล้ว: [k8s FIRING ...] -&gt; to=default ...</code></td>
+<td>ส่งออกแล้ว บรรทัดนี้บอกปลายทางที่ใช้จริงของฉบับนั้น</td>
+</tr>
+<tr>
+<td><code>ส่งไม่ผ่าน: SMTPAuthenticationError</code></td>
+<td>user/รหัสใน Secret ไม่ตรง</td>
+</tr>
+<tr>
+<td><code>ส่งไม่ผ่าน: TimeoutError</code></td>
+<td>จาก pod ต่อ relay ไม่ได้ — ทดสอบเส้นทางตาม 5.3.3</td>
+</tr>
+<tr>
+<td><code>ไม่มีผู้รับสำหรับ to=...</code></td>
+<td><code>to_default</code> ว่างใน <code>relay.conf</code></td>
+</tr>
+</tbody>
+</table>
+<p>ตอบไม่ใช่ 2xx ทุกครั้งที่ส่งไม่ผ่าน <strong>โดยตั้งใจ</strong> — Alertmanager จะ retry ให้เอง
+ไม่ใช่กลืนหายแล้วบอกว่าสำเร็จ</p>
+<p><strong>5.4.5 แก้ค่าทีหลัง — ไม่ต้อง restart</strong></p>
+<p><code>relay.conf</code> ถูกอ่านใหม่ทุกครั้งที่มี alert เข้ามา แก้แล้ว apply ก็พอ:</p>
+<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/deployments/alert-mail-relay/alert-mail-relay.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>kubelet ใช้เวลาอัปเดตไฟล์ที่ mount ไว้ราว ๆ 1 นาที ยืนยันด้วย <code>/config</code> ข้างบนอีกครั้ง
+· ถ้าแก้ <code>relay.py</code> (ตัวโค้ด) ต้อง <code>kubectl -n monitoring rollout restart deploy/alert-mail-relay</code></p>
+<p><strong>5.4.6 วิธีถอดออกเมื่อได้พอร์ตที่มี STARTTLS แล้ว</strong></p>
+<ol>
+<li>เปิด <code>email_configs</code> และ <code>smtp_*</code> ที่คอมเมนต์ไว้ใน <code>alertmanager-config.yaml</code> กลับ
+แล้วลบ <code>webhook_configs</code> ออก</li>
+<li><code>helm upgrade</code> ตามข้อ 5.2 · ยิงของปลอมตามข้อ 5.3 · <strong>ยืนยันว่าเมลเข้าจริง</strong></li>
+<li>เมื่อยืนยันแล้วเท่านั้นค่อยลบตัวกลาง:</li>
+</ol>
+<div class="cb"><pre><code class="language-bash">kubectl delete -f /root/k8s/deployments/alert-mail-relay/alert-mail-relay.yaml
+kubectl -n monitoring delete secret alert-mail
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ลำดับสำคัญ</strong> — อย่าลบตัวกลางก่อนพิสูจน์ว่าทางตรงส่งได้จริง ไม่งั้นจะเหลือช่วงที่
+ไม่มีใครได้รับ alert เลยโดยไม่มีอะไรฟ้อง</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2>7 · กันไม่ให้ monitoring กิน disk จนเต็ม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2 id="6---alert-ขั้นต่ำที่ต้องมี">6 · 🔴 Alert ขั้นต่ำที่ต้องมี</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>chart มาพร้อม alert ของ Kubernetes พื้นฐานแล้ว แต่ <strong>ขาดอีก 11 ข้อที่เฉพาะกับ cluster ชุดนี้</strong>
+ซึ่งมาจากข้อจำกัดที่เราเลือกไว้เอง</p>
+<blockquote>
+<p><strong>ต้องผ่านข้อ 5 มาก่อน</strong> — rule 11 ข้อนี้มีค่าเท่ากับปลายทางที่มันไปถึง
+ถ้าปลายทางยังไม่ทำงาน สิ่งที่ได้จากข้อนี้คือแถบสีแดงในหน้าเว็บที่ไม่มีใครเปิดดู</p>
+</blockquote>
+<div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/monitoring/myhr-alerts.yaml
+kubectl -n monitoring get prometheusrule
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<table>
+<thead>
+<tr>
+<th>Alert</th>
+<th>severity · <code>for</code></th>
+<th>ทำไมต้องมี</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🔴 <strong><code>NodeCountBelowExpected</code></strong></td>
+<td>critical · 10m</td>
+<td>node ที่ถูก<strong>ถอนออกจากทะเบียน</strong> ไม่มี alert มาตรฐานตัวไหนจับได้เลย</td>
+</tr>
+<tr>
+<td><strong><code>DeploymentWithoutPDB</code></strong></td>
+<td>warning · 30m</td>
+<td>ไม่มี GitOps มาบังคับมาตรฐาน · Deployment ที่ไม่มี PDB จะทำ drain ล่ม</td>
+</tr>
+<tr>
+<td><strong><code>DeploymentSingleReplica</code></strong></td>
+<td>warning · 1h</td>
+<td>PDB ช่วยไม่ได้ถ้ามี replica เดียว</td>
+</tr>
+<tr>
+<td><strong><code>ClusterCapacityNearNPlusOneLimit</code></strong></td>
+<td>critical · 15m</td>
+<td>requests รวมเกิน 90% ของ 32 vCPU / 96 GB → patch kernel ไม่ได้</td>
+</tr>
+<tr>
+<td><strong><code>NodeKernelVersionMismatch</code></strong></td>
+<td>critical · 10m</td>
+<td>node บูตคนละ kernel = บั๊ก network ที่หาสาเหตุยากที่สุด</td>
+</tr>
+<tr>
+<td><strong><code>KubeCertificateExpiringSoon</code></strong></td>
+<td>critical · 1h</td>
+<td>cert หมดอายุคือสาเหตุที่ cluster เดิมเดินต่อไม่ได้</td>
+</tr>
+<tr>
+<td><strong><code>CiliumAgentDown</code></strong></td>
+<td>critical · 5m</td>
+<td>Cilium ทำทั้ง CNI + kube-proxy + LB-IPAM และไม่มีตัวสำรอง</td>
+</tr>
+<tr>
+<td><strong><code>MonitoringDiskFillingUp</code></strong></td>
+<td>critical · 30m</td>
+<td><code>/var/lib/monitoring</code> อยู่บน root ของ worker03 · เต็ม = node ตายทั้งเครื่อง</td>
+</tr>
+<tr>
+<td>🔴 <strong><code>LokiDiscardingLogs</code></strong></td>
+<td>warning · 15m</td>
+<td>เพดาน ingestion ทำงานแล้ว log จะหาย<strong>เงียบ ๆ</strong> ถ้าไม่มีข้อนี้ไม่มีใครรู้</td>
+</tr>
+<tr>
+<td>🔴 <strong><code>LokiNotReceivingLogs</code></strong></td>
+<td>critical · 20m</td>
+<td>ระบบเก็บ log ตายจะดู &quot;เงียบสงบ&quot; เหมือนไม่มีอะไรผิด</td>
+</tr>
+<tr>
+<td>🔴 <strong><code>AlloyDaemonSetIncomplete</code></strong></td>
+<td>warning · 15m</td>
+<td>node ที่ไม่มี Alloy = log ของเครื่องนั้นหายโดย Loki ยังดูปกติ</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>3 ข้อล่างมาจากธรรมชาติของระบบ log:</strong> ความผิดพลาดของมันไม่ทำให้อะไรพัง
+มันแค่ทำให้ข้อมูล<strong>หายไปเฉย ๆ</strong> ซึ่งจะรู้ตัวก็ตอนที่ต้องใช้ — คือตอน incident พอดี</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3 id="อธิบายทีละข้อ--ดังแล้วต้องทำอะไร">อธิบายทีละข้อ — ดังแล้วต้องทำอะไร</h3>
+<p><strong>🔴 <code>NodeCountBelowExpected</code></strong> — critical · <code>for: 10m</code></p>
+<ul>
+<li><strong>จับอะไร</strong> <code>count(kube_node_info) &lt; 6</code> — นับจำนวน node ที่ยังอยู่ในทะเบียนของ cluster
+เทียบกับ 6 เครื่องใน <code>ansible/inventory.ini</code> (master 3 + worker 3)
+และมี arm ที่สอง <code>absent(kube_node_info)</code> ไว้ดักตอน <strong>นับไม่ได้เลย</strong></li>
+<li><strong>ทำไมต้องมี</strong> alert มาตรฐานทุกตัวจับได้แค่ &quot;node ที่ยังอยู่แต่ป่วย&quot; ถ้า node object
+หายไปจริง ๆ (<code>kubectl delete node</code>, ถอนเครื่องหลัง drain แล้วลืมใส่คืน, VM ถูกลบที่ vCenter)
+series ของเครื่องนั้นหายทั้งชุด → <code>KubeNodeNotReady</code> ไม่เหลืออะไรให้ประเมินจึง<strong>หยุดดัง</strong>
+และ <code>desired</code> ของ DaemonSet ลดลงตามจำนวน node ที่เหลือ →
+<code>CiliumAgentDown</code> กับ <code>AlloyDaemonSetIncomplete</code> ก็เงียบตาม
+ผลคือ cluster เล็กลงหนึ่งเครื่องโดยที่ทุกหน้าจอเขียวหมด</li>
+<li><strong>ดังแล้วทำอะไร</strong> <code>kubectl get nodes</code> เทียบกับ inventory ว่าเครื่องไหนหาย → ถ้าไม่มีใครถอนออก
+ดูที่ vCenter ว่า VM ยังอยู่ไหม แล้วค่อยไล่ kubelet บนเครื่องนั้น</li>
+<li><strong>ดังหลอกเมื่อ</strong> เพิ่มหรือถอน node ถาวรแล้วลืมแก้เลข <code>6</code> ในไฟล์ · หรือ kube-state-metrics
+ไม่ถูก scrape (กรณีนี้ <code>kubectl get nodes</code> จะครบ 6 — ให้ไปตรวจ target ที่ Prometheus ก่อน)</li>
+</ul>
+<p><strong><code>DeploymentWithoutPDB</code></strong> — warning · <code>for: 30m</code></p>
+<ul>
+<li><strong>จับอะไร</strong> Deployment ใน namespace ของแอป (ตัด <code>kube-system</code> / <code>monitoring</code> / <code>cert-manager</code> /
+<code>envoy-gateway-system</code> ออก) ที่ไม่มี PodDisruptionBudget อยู่ใน namespace เดียวกัน</li>
+<li><strong>ทำไมต้องมี</strong> cluster นี้ไม่มี Ksplice จึงต้อง drain ทุกเครื่องทุก 1-2 เดือน
+และไม่มี GitOps คอยบังคับว่า manifest ต้องมี PDB — ของที่ขาดจึงหลุดเข้ามาได้เรื่อย ๆ</li>
+<li><strong>ดังแล้วทำอะไร</strong> เพิ่ม PDB <code>minAvailable: 1</code> และตั้ง replica ≥ 2 ให้ Deployment นั้น
+<strong>ก่อน</strong>ถึงรอบ patch ถัดไป</li>
+<li><strong>ดังหลอกเมื่อ</strong> ตั้งใจให้เป็นงาน batch ที่ดับได้ — ถ้าใช่ ให้ silence ไว้ อย่าลบ rule ทิ้ง</li>
+</ul>
+<p><strong><code>DeploymentSingleReplica</code></strong> — warning · <code>for: 1h</code></p>
+<ul>
+<li><strong>จับอะไร</strong> <code>kube_deployment_spec_replicas == 1</code> ใน namespace ของแอป</li>
+<li><strong>ทำไมต้องมี</strong> PDB ไม่ช่วยอะไรถ้ามี pod เดียว — <code>minAvailable: 1</code> กับ replica 1
+ทำให้ drain <strong>ค้าง</strong>แทนที่จะทำให้ service รอด กลายเป็นปัญหาคนละแบบที่แย่พอกัน</li>
+<li><strong>ดังแล้วทำอะไร</strong> ขยายเป็น 2 replica ถ้าแอป stateless · ถ้าเป็น singleton จริง ๆ
+(เช่นตัวรัน migration) ให้ย้ายไปเป็น Job แทน Deployment</li>
+<li><strong>ดังหลอกเมื่อ</strong> ช่วง scale ลงชั่วคราวตอนทดสอบ — <code>for: 1h</code> เผื่อไว้ให้แล้ว</li>
+</ul>
+<p><strong><code>ClusterCapacityNearNPlusOneLimit</code></strong> — critical · <code>for: 15m</code></p>
+<ul>
+<li><strong>จับอะไร</strong> ผลรวม <code>requests</code> ของ pod บน worker เกิน 90% ของ <strong>32 vCPU / 96 GB</strong>
+ซึ่งคือ capacity ตอนเหลือ worker 2 เครื่อง ไม่ใช่ 48 vCPU / 144 GB ที่มีอยู่จริง</li>
+<li><strong>ทำไมต้องมี</strong> เพดานที่ใช้วางแผนคือเพดาน<strong>ตอน drain</strong> ถ้าคิดจากของที่มีทั้งหมด
+วันที่ patch kernel จะเพิ่งรู้ว่า pod ลงไม่หมด แล้ว drain ค้างกลางคัน</li>
+<li><strong>ดังแล้วทำอะไร</strong> ลด requests ที่ตั้งเผื่อไว้เกินจริง หรือขอ worker เพิ่ม
+<strong>ก่อน</strong>รอบ patch ถัดไป — ห้ามปล่อยไปเจอตอนกลางดึก</li>
+<li><strong>ดังหลอกเมื่อ</strong> ไม่ค่อยหลอก แต่ถ้าเพิ่ม worker ต้องกลับมาแก้เลข 32 / 96 ในไฟล์ด้วย</li>
+</ul>
+<p><strong><code>NodeKernelVersionMismatch</code></strong> — critical · <code>for: 10m</code></p>
+<ul>
+<li><strong>จับอะไร</strong> <code>count(count by (release) (node_uname_info)) &gt; 1</code> — มี kernel มากกว่าหนึ่งเวอร์ชันในวง</li>
+<li><strong>ทำไมต้องมี</strong> Oracle Linux ให้ kernel มาสองตัว (UEK และ RHCK) ถ้า node บูตคนละตัว
+จะได้พฤติกรรม network ที่ต่างกันเป็นราย node ซึ่งเป็นบั๊กที่หาต้นเหตุยากที่สุดชนิดหนึ่ง</li>
+<li><strong>ดังแล้วทำอะไร</strong> <code>uname -r</code> ทุกเครื่อง แล้วยืนยันว่า <code>dnf versionlock</code> ยังอยู่</li>
+<li><strong>ดังหลอกเมื่อ</strong> ระหว่าง rolling reboot จะดังเป็นเรื่องปกติ — ดังค้าง<strong>หลังจบรอบ</strong>ถึงจะผิด</li>
+</ul>
+<p><strong><code>KubeCertificateExpiringSoon</code></strong> — critical · <code>for: 1h</code></p>
+<ul>
+<li><strong>จับอะไร</strong> cert ที่ apiserver เห็น เหลืออายุน้อยกว่า <strong>60 วัน</strong></li>
+<li><strong>ทำไมต้องมี</strong> นี่คือสาเหตุที่ cluster เดิมเดินต่อไม่ได้ · cert ของ kubeadm อายุ 1 ปี
+และไม่มีอะไรเตือนล่วงหน้าถ้าไม่ตั้งเอง</li>
+<li><strong>ดังแล้วทำอะไร</strong> <code>kubeadm certs check-expiration</code> บน master ทั้ง 3 →
+ต่ออายุด้วย <code>kubeadm certs renew all</code> (ขั้นตอนเต็มอยู่ในบทที่ 12)</li>
+<li><strong>ดังหลอกเมื่อ</strong> metric นี้เป็น histogram ของ <strong>client cert</strong> ที่วิ่งเข้ามา
+ถ้ามี client ถือ cert ใกล้หมดอายุก็ดังได้ — ยืนยันด้วย <code>check-expiration</code> เสมอก่อนสรุป</li>
+</ul>
+<p><strong><code>CiliumAgentDown</code></strong> — critical · <code>for: 5m</code></p>
+<ul>
+<li><strong>จับอะไร</strong> DaemonSet <code>cilium</code> มี <code>number_ready</code> น้อยกว่า <code>desired_number_scheduled</code></li>
+<li><strong>ทำไมต้องมี</strong> Cilium ทำทั้ง CNI + kube-proxy replacement + LB-IPAM
+node ที่ไม่มี agent จะไม่มี pod network และ Service ใช้ไม่ได้
+และ<strong>ไม่มี kube-proxy ให้ถอยกลับ</strong> เพราะไม่ได้ติดตั้งไว้ตั้งแต่แรก</li>
+<li><strong>ดังแล้วทำอะไร</strong> <code>kubectl -n kube-system get pod -l k8s-app=cilium -o wide</code> หาว่าเครื่องไหนขาด
+แล้วดู <code>cilium status</code> บนเครื่องนั้น</li>
+<li><strong>ดังหลอกเมื่อ</strong> node reboot ตามแผน · <code>for: 5m</code> สั้นที่สุดในไฟล์นี้โดยตั้งใจ
+เพราะผลของมันรุนแรงกว่าความรำคาญจากการดังตอน reboot</li>
+</ul>
+<p><strong><code>MonitoringDiskFillingUp</code></strong> — critical · <code>for: 30m</code></p>
+<ul>
+<li><strong>จับอะไร</strong> root partition ของ <strong>worker03</strong> (<code>.106</code>) เหลือว่างน้อยกว่า 20%</li>
+<li><strong>ทำไมต้องมี</strong> ไม่มี CSI จึงใช้ local PV ที่ผูกกับ worker03 และ <code>/var/lib/monitoring</code>
+อยู่บน root ร่วมกับ OS — เต็มเมื่อไรคือ node ตายทั้งเครื่อง ไม่ใช่แค่ Prometheus ตาย</li>
+<li><strong>ดังแล้วทำอะไร</strong> ลด <code>retention</code> / <code>retentionSize</code> ของ Prometheus หรือเพดานของ Loki
+หรือย้าย <code>/var/lib/monitoring</code> ไป disk แยก</li>
+<li><strong>ดังหลอกเมื่อ</strong> ไม่หลอก — เหลือ 20% บน partition ที่โตทางเดียวคือเรื่องจริงเสมอ</li>
+</ul>
+<p><strong>🔴 <code>LokiDiscardingLogs</code></strong> — warning · <code>for: 15m</code></p>
+<ul>
+<li><strong>จับอะไร</strong> <code>rate(loki_discarded_samples_total) &gt; 0</code> แยกตาม <code>reason</code></li>
+<li><strong>ทำไมต้องมี</strong> เพดาน ingestion (10 MB/s · per-stream 3 MB) จำเป็นต้องมี ไม่งั้นแอปที่ log รัว
+จะกิน root ของ worker03 จนเต็ม — แต่เวลาเพดานทำงาน Loki ตอบ 429 แล้ว Alloy retry จนยอมแพ้
+แล้วทิ้ง log แบบเงียบ ทีม dev จะเห็นแค่ &quot;log บางช่วงหาย&quot;</li>
+<li><strong>ดังแล้วทำอะไร</strong> ดู <code>reason</code> ก่อน · ถ้าเป็น <code>rate_limited</code> / <code>per_stream_rate_limit</code>
+ให้หาตัวต้นเหตุด้วย <code>topk(5, sum by (namespace, app) (rate({namespace=~&quot;.+&quot;}[5m])))</code>
+แล้วแก้ที่แอปก่อน ค่อยพิจารณาขยายเพดาน</li>
+<li><strong>ดังหลอกเมื่อ</strong> ช่วง deploy ที่แอปพ่น stack trace รัวสั้น ๆ — ถ้าหายเองใน 15 นาทีถือว่าปกติ</li>
+</ul>
+<p><strong>🔴 <code>LokiNotReceivingLogs</code></strong> — critical · <code>for: 20m</code></p>
+<ul>
+<li><strong>จับอะไร</strong> <code>rate(loki_distributor_lines_received_total) == 0</code> ตลอด 15 นาที</li>
+<li><strong>ทำไมต้องมี</strong> Alloy พัง / <code>NODE_NAME</code> ไม่ถูกส่งเข้าไปจน selector ไม่ match อะไรเลย / Loki ไม่รับ
+— ทั้งสามอย่างให้ผลหน้าจอเหมือนกันคือ <strong>ว่างเปล่า</strong> ซึ่งดูเหมือนระบบเงียบสงบ</li>
+<li><strong>ดังแล้วทำอะไร</strong> ไล่ตามลำดับ 1) <code>kubectl -n monitoring get ds alloy</code> ครบ 6/6 ไหม
+2) <code>kubectl -n monitoring logs ds/alloy</code> มี error เรื่อง <code>NODE_NAME</code> หรือ 429 ไหม
+3) Loki pod ขึ้นหรือเปล่า</li>
+<li><strong>ดังหลอกเมื่อ</strong> worker03 กำลัง reboot (Loki อยู่เครื่องนั้น) — ถือว่าปกติ
+แต่ต้องหายเองหลัง node กลับมา ถ้าไม่หายคือของจริง</li>
+</ul>
+<p><strong>🔴 <code>AlloyDaemonSetIncomplete</code></strong> — warning · <code>for: 15m</code></p>
+<ul>
+<li><strong>จับอะไร</strong> DaemonSet <code>alloy</code> มี <code>number_ready</code> น้อยกว่า <code>desired</code> (ต้องได้ครบ <strong>6/6</strong> รวม master)</li>
+<li><strong>ทำไมต้องมี</strong> node ที่ไม่มี Alloy = log ของเครื่องนั้นหายไปทั้งเครื่อง โดยที่ Loki
+ยังตอบ query ปกติและกราฟยังเขียว — ความผิดพลาดชนิด &quot;ไม่มีอะไรพัง แต่ข้อมูลหาย&quot;</li>
+<li><strong>ดังแล้วทำอะไร</strong> ถ้าขาดเฉพาะ master ให้ตรวจ <code>tolerations</code> ใน <code>alloy-values.yaml</code></li>
+<li><strong>ดังหลอกเมื่อ</strong> ระหว่าง rolling reboot — และ<strong>สังเกตว่าข้อนี้จะเงียบ</strong>ถ้า node
+ถูกถอนออกจากทะเบียนไปเลย เพราะ <code>desired</code> ลดตาม (นั่นคือหน้าที่ของ <code>NodeCountBelowExpected</code>)</li>
+</ul>
+</div><div class="sub" data-machine="all"><h3 id="node-หายไปหนึ่งเครื่อง--อะไรดังบ้าง-เรียงตามเวลา">node หายไปหนึ่งเครื่อง — อะไรดังบ้าง เรียงตามเวลา</h3>
+<p>กรณี <strong>เครื่องดับแต่ node object ยังอยู่</strong> (ไฟดับ · NIC ตาย · kernel panic):</p>
+<table>
+<thead>
+<tr>
+<th>หลัง node ดับ</th>
+<th>alert</th>
+<th>มาจาก</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>~5 นาที</td>
+<td><code>CiliumAgentDown</code></td>
+<td>ไฟล์นี้ — <strong>ตัวที่ดังเร็วที่สุด</strong></td>
+</tr>
+<tr>
+<td>~10 นาที</td>
+<td><code>TargetDown</code> (kubelet / node-exporter หาย 1 ใน 6 = 16%)</td>
+<td>chart</td>
+</tr>
+<tr>
+<td>~15 นาที</td>
+<td><code>KubeNodeNotReady</code> · <code>KubeNodeUnreachable</code> · <code>KubeletDown</code></td>
+<td>chart</td>
+</tr>
+<tr>
+<td>~15 นาที</td>
+<td><code>AlloyDaemonSetIncomplete</code></td>
+<td>ไฟล์นี้</td>
+</tr>
+</tbody>
+</table>
+<p>กรณี <strong>node object ถูกลบออกจากทะเบียน</strong> (<code>kubectl delete node</code> · ถอนเครื่องหลัง drain แล้วลืมใส่คืน):</p>
+<table>
+<thead>
+<tr>
+<th>หลังถูกลบ</th>
+<th>alert</th>
+<th>มาจาก</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>~10 นาที</td>
+<td><code>NodeCountBelowExpected</code></td>
+<td>ไฟล์นี้ — <strong>ตัวเดียวที่ดัง</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>ตารางที่สองคือเหตุผลทั้งหมดที่ <code>NodeCountBelowExpected</code> มีอยู่ — ของมาตรฐานทุกตัวประเมินจาก
+series ของ node ที่ยังอยู่ พอ node หายทั้งก้อน alert ก็หายตามไปด้วย</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3 id="ของมาตรฐานจาก-chart-ที่ต้องรู้ว่ามีอยู่แล้ว">ของมาตรฐานจาก chart ที่ต้องรู้ว่ามีอยู่แล้ว</h3>
+<p><code>KubeNodeNotReady</code> · <code>KubeNodeUnreachable</code> · <code>KubeletDown</code> · <code>TargetDown</code> ·
+<code>KubePodCrashLooping</code> · <code>etcdInsufficientMembers</code> · <code>NodeFilesystemAlmostOutOfSpace</code></p>
+<p>ของพวกนี้มากับ chart และ <strong>เปิดอยู่แล้ว</strong> เพราะ <code>kube-prometheus-values.yaml</code>
+ไม่ได้ตั้ง <code>defaultRules.create: false</code> ไว้ — ไม่ต้อง apply อะไรเพิ่ม แต่ต้องรู้ว่ามันช้า
+(<code>for: 15m</code> เกือบทั้งหมด) จึงต้องมีของในไฟล์นี้มาช่วยดักให้เร็วขึ้น</p>
+<p><strong>ตรวจว่า rule โหลดแล้ว:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &amp;
+sleep 3
+curl -s 'http://localhost:9090/api/v1/rules' | jq -r '.data.groups[].name' | sort -u
+kill %1
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ดูว่า alert เรื่อง node ตัวไหนโหลดอยู่จริง และตั้ง <code>for:</code> ไว้กี่วินาที:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &amp;
+sleep 3
+curl -s 'http://localhost:9090/api/v1/rules' \
+  | jq -r '.data.groups[].rules[]? | select(.type=="alerting") | "\(.duration)s\t\(.name)"' \
+  | grep -iE 'node|kubelet|target|cilium|alloy' | sort -n
+kill %1
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ซ้อมของจริงหนึ่งรอบ ตอนที่ยังไม่มี workload:</strong> ปิด worker01 ทิ้งไว้ ~20 นาที
+แล้วดูว่า alert ดังตามตารางข้างบนจริงไหม ถ้ามีตัวไหนไม่ดังแปลว่า rule นั้นไม่ได้โหลด
+— รู้ตอนนี้ดีกว่ารู้ตอนของจริง · ปลายทางพร้อมตั้งแต่ข้อ 5 แล้ว การซ้อมรอบนี้จึงวัดได้ทั้งเส้น
+ตั้งแต่ node ดับจนถึงข้อความที่เข้ามือคน</p>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2 id="7--กันไม่ให้-monitoring-กิน-disk-จนเต็ม">7 · กันไม่ให้ monitoring กิน disk จนเต็ม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><code>/var/lib/monitoring</code> อยู่บน <strong>root partition</strong> ร่วมกับ log และ OS
 ถ้า Prometheus โตจนเต็ม node จะกลายเป็น <code>NotReady</code> ทั้งเครื่อง</p>
 <p>ค่า retention ที่ตั้งไว้ใน values:</p>
@@ -539,7 +1392,7 @@ kill %1
 <div class="cb"><pre><code class="language-bash">ssh root@192.168.50.106 'du -sh /var/lib/monitoring/* &amp;&amp; df -h /'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2>8 · log ของ application — ใช้ยังไง และต้องบอกทีม dev ว่าอะไร</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3>เส้นทางของ log</h3>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2 id="8--log-ของ-application--ใช้ยังไง-และต้องบอกทีม-dev-ว่าอะไร">8 · log ของ application — ใช้ยังไง และต้องบอกทีม dev ว่าอะไร</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3 id="เส้นทางของ-log">เส้นทางของ log</h3>
 <div class="cb"><pre><code class="language-text">  app เขียน stdout/stderr
         ▼
   containerd เขียนไฟล์ /var/log/pods/&lt;ns&gt;_&lt;pod&gt;_&lt;uid&gt;/&lt;container&gt;/0.log
@@ -552,7 +1405,7 @@ kill %1
         ▼
   Grafana
 </code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-</div><div class="sub" data-machine="all"><h3>ดู log ที่ไหน</h3>
+</div><div class="sub" data-machine="all"><h3 id="ดู-log-ที่ไหน">ดู log ที่ไหน</h3>
 <table>
 <thead>
 <tr>
@@ -575,7 +1428,12 @@ kill %1
 </tr>
 </tbody>
 </table>
-</div><div class="sub" data-machine="all"><h3>ตรวจว่าตัวกรอง noise ไม่ได้ตัดของดีทิ้ง</h3>
+<blockquote>
+<p>📖 <strong>บทนี้บอกว่า log เดินทางยังไงและต้องตั้งค่าอะไร ส่วน &quot;pod พังแบบนี้ ต้องพิมพ์ query ไหน&quot;</strong>
+อยู่ใน <a href="14-grafana-logs.html">บทที่ 14 — ดู log ใน Grafana ตามอาการของ pod</a> แยกเป็นเคส ๆ ไป
+พร้อมกับดักที่ทำให้ค้นแล้วไม่เจอทั้งที่ log มีอยู่</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3 id="ตรวจว่าตัวกรอง-noise-ไม่ได้ตัดของดีทิ้ง">ตรวจว่าตัวกรอง noise ไม่ได้ตัดของดีทิ้ง</h3>
 <p><code>alloy-values.yaml</code> มี <code>stage.drop</code> ที่ทิ้ง log ของ healthcheck ที่สำเร็จ — <strong>ของที่ทิ้งแล้ว
 หายถาวร ไม่มีทางกู้</strong> จึงต้องดูเป็นระยะว่ามันทิ้งเยอะผิดปกติหรือเปล่า</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward ds/alloy 12345:12345 &amp;
@@ -590,7 +1448,7 @@ healthcheck ที่ควรจะมี แปลว่า regex กว้า
 ติดหลัง request · และไม่รับคำว่า <code>OK</code> เป็นตัวชี้วัด ทั้งหมดนี้เพื่อกันไม่ให้บรรทัด error
 อย่าง <code>payment health degraded, retry in 200ms</code> โดนทิ้งไปโดยไม่มีใครรู้</p>
 </blockquote>
-</div><div class="sub" data-machine="all"><h3>🔴 Loki ไม่ใช่ Elasticsearch — ข้อนี้ต้องเข้าใจก่อนใช้</h3>
+</div><div class="sub" data-machine="all"><h3 id="-loki-ไม่ใช่-elasticsearch--ข้อนี้ต้องเข้าใจก่อนใช้">🔴 Loki ไม่ใช่ Elasticsearch — ข้อนี้ต้องเข้าใจก่อนใช้</h3>
 <p><strong>Loki index เฉพาะ label ไม่ได้ index เนื้อหา</strong> จึง<strong>ค้นคำมั่ว ๆ ทั้งระบบไม่ได้</strong>
 ต้องระบุ label ก่อนเสมอ แล้วมันจะไปไล่อ่านเนื้อหาให้ทีหลัง</p>
 <p>label ที่มีในระบบนี้: <code>namespace</code> <code>pod</code> <code>container</code> <code>app</code> <code>node</code></p>
@@ -636,7 +1494,7 @@ healthcheck ที่ควรจะมี แปลว่า regex กว้า
 <p><strong>ถ้าอยากให้ dev ไม่ต้องเรียน LogQL เลย</strong> — ทำ dashboard 1 หน้าที่มี dropdown เลือก
 <code>namespace</code> / <code>app</code> แล้วมี panel เดียวเป็น Logs ใช้เวลาราว 30 นาที และได้ผลกับทีม
 มากกว่าการสอน LogQL ทั้งทีม</p>
-</div><div class="sub" data-machine="all"><h3>🔴 กฎ 3 ข้อที่ต้องประกาศให้ทีม dev รู้ตั้งแต่วันแรก</h3>
+</div><div class="sub" data-machine="all"><h3 id="-กฎ-3-ข้อที่ต้องประกาศให้ทีม-dev-รู้ตั้งแต่วันแรก">🔴 กฎ 3 ข้อที่ต้องประกาศให้ทีม dev รู้ตั้งแต่วันแรก</h3>
 <p>เหมือนเรื่อง &quot;ไม่มี dynamic storage&quot; ในบทที่ 08 — ต้องเป็นบทสนทนาที่วางแผนไว้
 ไม่ใช่เซอร์ไพรส์ตอนใกล้ deadline</p>
 <p><strong>1 · log ต้องออก <code>stdout</code>/<code>stderr</code> เท่านั้น ห้ามเขียนลงไฟล์ในคอนเทนเนอร์</strong>
@@ -648,7 +1506,7 @@ healthcheck ที่ควรจะมี แปลว่า regex กว้า
 <p><strong>3 · มีเพดาน 10 MB/s ทั้ง cluster และ 3 MB/s ต่อ stream</strong>
 app ที่ log ทุก request จะกินโควตาของทีมอื่นจนหมด แล้ว <strong>log ของทุกคนจะเริ่มหาย</strong>
 เพดานนี้อยู่ใน <code>loki-values.yaml</code> และเวลามันทำงานจะดังผ่าน <code>LokiDiscardingLogs</code></p>
-</div><div class="sub" data-machine="all"><h3>ทางเลือก: เปลี่ยนไปเก็บ log แบบอ่านไฟล์</h3>
+</div><div class="sub" data-machine="all"><h3 id="ทางเลือก-เปลี่ยนไปเก็บ-log-แบบอ่านไฟล์">ทางเลือก: เปลี่ยนไปเก็บ log แบบอ่านไฟล์</h3>
 <p>ตอนนี้ใช้ <code>loki.source.kubernetes</code> ซึ่งดึง log <strong>ผ่าน Kubernetes API</strong> — ตั้งค่าง่ายและ
 พอสำหรับขนาดนี้ แต่ทุก stream วิ่งผ่าน apiserver</p>
 <p>ถ้าวันหนึ่ง pod เยอะขึ้นมากจน apiserver เริ่มหนัก ให้เปลี่ยนไปเป็น <code>local.file_match</code> +
@@ -656,7 +1514,7 @@ app ที่ log ทุก request จะกินโควตาของท�
 พร้อมใส่ <code>stage.cri</code> มาแกะ format — ไม่กวน apiserver เลย
 <strong>อย่าเปลี่ยนบน production โดยไม่ทดสอบก่อน</strong> เพราะถ้า path pattern ผิด log จะหายเงียบ ๆ</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2 id="-เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>[ ] <code>kubectl top nodes</code> ขึ้นตัวเลขครบ 6 เครื่อง</li>
 <li>[ ] PV <code>prometheus-data</code>, <code>grafana-data</code>, <code>loki-data</code> เป็น <strong><code>Bound</code></strong></li>
@@ -666,12 +1524,21 @@ app ที่ log ทุก request จะกินโควตาของท�
 <li>[ ] Alloy DaemonSet <code>6/6</code> และค้น log ใน Grafana เจอ</li>
 <li>[ ] 🔴 <strong>log ไม่ซ้ำ</strong> — บรรทัดเดียวกันโผล่ครั้งเดียว ไม่ใช่ 6 ครั้ง</li>
 <li>[ ] เข้า Grafana ผ่าน <code>https://grafana.myhr.co.th</code> ได้และ<strong>เปลี่ยนรหัส admin แล้ว</strong></li>
-<li>[ ] PrometheusRule ของ MyHR โหลดแล้วครบ 10 ข้อ</li>
+<li>[ ] 🔴 <strong>ยิง test alert แล้วมีข้อความเข้าปลายทางจริง</strong> (ทั้ง warning และ critical)</li>
+<li>[ ] <code>curl .../api/v2/receivers</code> เห็น <code>myhr-default</code> กับ <code>myhr-critical</code> ไม่ใช่แค่ <code>null</code></li>
+<li>[ ] 🔴 <strong>จำได้ว่า <code>helm upgrade</code> ต้องใส่ <code>-f</code> ทั้งสองไฟล์ และ <code>--version</code> ทุกครั้ง</strong>
+ลืม <code>-f</code> = ปลายทางหาย · ลืม <code>--version</code> = อัป chart โดยไม่รู้ตัว</li>
+<li>[ ] ถ้าใช้ทางอ้อมตามข้อ 5.4: <code>alert-mail-relay</code> 2 pod อยู่คนละ node และ log ขึ้น <code>ส่งแล้ว</code></li>
+<li>[ ] จดไว้ว่าทางอ้อมนี้ต้องถอดออกวันที่ได้พอร์ตที่มี STARTTLS (ขั้นตอนอยู่ที่ 5.4.6)</li>
+<li>[ ] PrometheusRule ของ MyHR โหลดแล้วครบ 11 ข้อ</li>
+<li>[ ] <code>NodeCountBelowExpected</code> มีตัวเลข node ตรงกับจำนวนเครื่องจริง (ตอนนี้ 6)</li>
 <li>[ ] <strong>ประกาศกฎ log 3 ข้อให้ทีม dev รู้แล้ว</strong> (stdout เท่านั้น · JSON บรรทัดเดียว · มีเพดาน)</li>
-<li>[ ] 🔴 <strong>ยิง test alert แล้วมีข้อความเข้าปลายทางจริง</strong></li>
 <li>[ ] จด disk usage เริ่มต้นไว้เป็น baseline</li>
 </ul>
 <p><strong>➡️ ต่อที่ <a href="10-security.html">บทที่ 10 — Security Baseline</a></strong></p>
+<blockquote>
+<p>เก็บ <a href="14-grafana-logs.html">บทที่ 14</a> ไว้เปิดตอนของพัง — เป็นบทที่ใช้ตอนมี incident ไม่ใช่ตอนติดตั้ง</p>
+</blockquote>
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="08-storage.html">← Storage</a><a class="pn" href="10-security.html">Security →</a></div>
   </main>
@@ -694,6 +1561,7 @@ app ที่ log ทุก request จะกินโควตาของท�
   function mine(){ var a=load(); return (a[CH]||[]); }
   function setMine(list){ var a=load(); a[CH]=list; save(a); }
 
+  var jumpSel=document.getElementById('jumpsel'), stick;
   var toastEl=document.getElementById('toast'), toastT;
   function toast(msg){
     toastEl.textContent=msg; toastEl.classList.add('show');
@@ -709,6 +1577,12 @@ app ที่ log ทุก request จะกินโควตาของท�
       var b=s.querySelector('.done-btn');
       if(b) b.querySelector('.lbl').textContent = is ? 'ทำแล้ว' : 'ทำแล้ว';
     });
+    if(jumpSel){
+      [].forEach.call(jumpSel.options, function(o){
+        if(!o.value) return;
+        o.textContent=(done.indexOf(+o.value)>=0 ? '✓ ' : '')+o.dataset.t;
+      });
+    }
     var n=done.length;
     document.getElementById('pcount').textContent=n+'/'+TOTAL;
     document.getElementById('pbar').style.width=(TOTAL?100*n/TOTAL:0)+'%';
@@ -836,6 +1710,7 @@ app ที่ log ทุก request จะกินโควตาของท�
         var dm=d.dataset.machine||'all';
         d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
       });
+      syncJump(); spy();
       try{ localStorage.setItem(MKEY,m); }catch(e){}
       paintFab();
     };
@@ -848,11 +1723,60 @@ app ที่ log ทุก request จะกินโควตาของท�
     applyM(savedM);
   }
 
+  /* ---------- แถบทางลัด ---------- */
+  stick=document.querySelector('.stick');
+  function stickH(){ return stick ? stick.getBoundingClientRect().height : 0; }
+  function fitPad(){
+    /* หัวข้อต้องไม่โดนแถบที่ติดหนึบทับตอนกดทางลัด — ความสูงของแถบไม่เท่ากันระหว่าง
+       จอใหญ่กับจอเล็ก จึงวัดเอาจริงแทนที่จะ hardcode ตัวเลขไว้ใน css
+       แต่ถ้าวัดได้ตอนหน้ายังไม่วางเลย์เอาต์ ค่าที่ได้จะเพี้ยนจนดันหัวข้อไปกลางจอ */
+    var h=stickH();
+    if(!h || !window.innerHeight) return;
+    document.documentElement.style.scrollPaddingTop=Math.min(h+12, innerHeight*0.6)+'px';
+  }
+  function syncJump(){
+    if(!jumpSel) return;
+    /* ขั้นที่แถบกรองเครื่องซ่อนอยู่ ต้องหายจากลิสต์ด้วย
+       ไม่งั้นเลือกแล้ววิ่งไปจอดตรงส่วนที่มองไม่เห็น */
+    [].forEach.call(jumpSel.options, function(o){
+      if(!o.value) return;
+      var sec=document.getElementById('step-'+o.value);
+      o.hidden = !!(sec && sec.classList.contains('hide-m'));
+    });
+  }
+  function spy(){
+    if(!jumpSel) return;
+    var line=stickH()+16, cur='';
+    document.querySelectorAll('.step').forEach(function(s){
+      if(s.classList.contains('hide-m')) return;
+      if(s.getBoundingClientRect().top<=line) cur=s.dataset.step;
+    });
+    /* ตัวที่โชว์อยู่ = ขั้นที่กำลังอ่าน แต่ไม่แตะตอนลิสต์กำลังเปิด เดี๋ยวค่าเปลี่ยนใต้มือ */
+    if(document.activeElement!==jumpSel && jumpSel.value!==cur) jumpSel.value=cur;
+  }
+  if(jumpSel){
+    jumpSel.addEventListener('change', function(){
+      var sec=jumpSel.value && document.getElementById('step-'+jumpSel.value);
+      if(!sec) return;
+      sec.scrollIntoView();          /* ใช้ scroll-padding-top ที่ fitPad วัดไว้ */
+      jumpSel.blur();                /* คืน scroll ให้ล้อเมาส์ ไม่ค้างอยู่ที่ลิสต์ */
+    });
+    var spyQ=false;
+    window.addEventListener('scroll', function(){
+      if(spyQ) return;
+      spyQ=true;
+      requestAnimationFrame(function(){ spyQ=false; spy(); });
+    }, {passive:true});
+    window.addEventListener('resize', function(){ fitPad(); spy(); });
+    fitPad(); syncJump(); spy();
+  }
+
   /* ---------- เมนูบนจอเล็ก ---------- */
   var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');
   if(burger) burger.addEventListener('click', function(){ sb.classList.toggle('open'); });
 
   paint();
+  spy();
 })();
 </script>
 </body>

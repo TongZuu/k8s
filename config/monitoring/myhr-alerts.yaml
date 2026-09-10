@@ -1,11 +1,14 @@
 # =============================================================================
 #  PrometheusRule เฉพาะของ MyHR
 # =============================================================================
-#  4 ข้อนี้ไม่มีใน chart มาตรฐาน เพราะมันมาจากข้อจำกัดที่เราเลือกเอง:
+#  11 ข้อนี้ไม่มีใน chart มาตรฐาน เพราะมันมาจากข้อจำกัดที่เราเลือกเอง:
 #    - ไม่มี GitOps  → ไม่มีอะไรบังคับให้ manifest มี PDB
 #    - ไม่มี Ksplice → ต้อง drain ทุก 1-2 เดือน จึงต้องเผื่อ capacity N+1
 #    - Oracle Linux ให้ kernel สองตัว → node อาจบูตคนละตัวโดยไม่มีใครรู้
 #    - cluster เดิมตายเพราะ cert หมดอายุ → ต้องเตือนล่วงหน้าหลายเดือน
+#    - drain บ่อย → node อาจถูกถอนแล้วลืมใส่คืน โดยที่ทุกหน้าจอยังเขียว
+#    - ไม่มี CSI → monitoring ทั้งชุดฝากชีวิตไว้กับ root partition ของ worker03
+#    - Loki มีเพดาน ingestion → log หายได้เงียบ ๆ โดยไม่มีอะไรพัง
 # =============================================================================
 
 apiVersion: monitoring.coreos.com/v1
@@ -17,6 +20,39 @@ metadata:
     release: monitoring          # ต้องมี label นี้ Prometheus ถึงจะเก็บไป
 spec:
   groups:
+    # =========================================================================
+    - name: myhr.node-inventory
+      rules:
+
+        # --- node หายไปจากทะเบียนของ cluster ---------------------------------
+        # KubeNodeNotReady ของ chart จับได้เฉพาะ "node ที่ยังอยู่แต่ป่วย"
+        # ถ้า node object หายไปเลย (kubectl delete node, ถอนเครื่องหลัง drain แล้วลืมใส่คืน,
+        # หรือ VM ถูกลบทิ้งที่ vCenter) series ของเครื่องนั้นหายทั้งชุด
+        # → ไม่เหลืออะไรให้ KubeNodeNotReady ประเมิน มันจึงหยุดดังแทนที่จะดัง
+        # และ desired ของ DaemonSet ก็ลดตามจำนวน node ที่เหลือ
+        # → CiliumAgentDown กับ AlloyDaemonSetIncomplete ก็เงียบตามไปด้วย
+        # ผลคือ cluster เล็กลงหนึ่งเครื่องโดยที่ทุกหน้าจอเป็นสีเขียว
+        - alert: NodeCountBelowExpected
+          # 6 = master 3 + worker 3 ตรงกับ ansible/inventory.ini
+          # 🔴 ถ้าเพิ่มหรือถอน node ถาวร ต้องแก้เลขนี้ ไม่งั้น alert จะดังค้างตลอด
+          #
+          # arm ที่สอง (absent) ดักตอน kube-state-metrics ตาย ซึ่งทำให้ count()
+          # ไม่คืนอะไรเลย — ถ้ามีแต่ arm แรก ช่วงนั้นจะ "นับ node ไม่ได้" แบบเงียบ ๆ
+          # ซึ่งเป็นอาการเดียวกับที่ alert ข้อนี้ตั้งใจกำจัด
+          expr: |
+            count(kube_node_info) < 6
+            or
+            absent(kube_node_info)
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "cluster เหลือ node ไม่ครบ 6 เครื่อง (หรือนับไม่ได้)"
+            description: >-
+              ตรวจด้วย kubectl get nodes เทียบกับ ansible/inventory.ini ว่าเครื่องไหนหายไป
+              ถ้าไม่มีใครถอนออก ให้ดูที่ vCenter ว่า VM ยังอยู่ไหม แล้วดู kubelet บนเครื่องนั้น
+              ถ้า kubectl get nodes ครบ 6 แต่ alert ยังดัง แปลว่า kube-state-metrics
+              ไม่ได้ถูก scrape — ตรวจ target ที่ Prometheus ก่อน อย่าเพิ่งไปหา node
 
     # =========================================================================
     - name: myhr.rolling-reboot-readiness
@@ -42,9 +78,13 @@ spec:
               แก้โดยเพิ่ม PDB (minAvailable: 1) และตั้ง replica >= 2
 
         # --- replica เดียว = drain แล้วดับแน่นอน ----------------------------
+        # 🔴 รายการ namespace ที่ยกเว้นต้องตรงกับ DeploymentWithoutPDB ข้างบนเสมอ
+        #    ถ้าไม่ตรง จะได้ alert ที่ขัดกันเอง: เตือนว่า Deployment ของ envoy-gateway-system
+        #    มี replica เดียว แต่ไม่เตือนว่ามันไม่มี PDB ทั้งที่เป็นเรื่องเดียวกัน
+        #    (เจอจริงตอนต่อเมลได้ครั้งแรก — envoy-gateway-system ดังข้อเดียวโดด ๆ)
         - alert: DeploymentSingleReplica
           expr: |
-            kube_deployment_spec_replicas{namespace!~"kube-system|monitoring|cert-manager"} == 1
+            kube_deployment_spec_replicas{namespace!~"kube-system|monitoring|cert-manager|envoy-gateway-system"} == 1
           for: 1h
           labels:
             severity: warning
