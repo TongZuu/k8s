@@ -11,6 +11,7 @@
   --accent:#2d6ae0; --accent-soft:#eaf1fe;
   --done-bg:#eaf7ee; --done-line:#8fd3a8; --done-ink:#1c6b3c;
   --code-bg:#1e2530; --code-ink:#e6edf3; --warn:#b4530a;
+  --f1:#d1372b; --f1-bg:#fdeceb;
   --radius:10px;
   --font:"Segoe UI","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;
   --mono:"Cascadia Mono",Consolas,"Noto Sans Thai Mono",monospace;
@@ -21,6 +22,7 @@
     --accent:#6ea3ff; --accent-soft:#1b2740;
     --done-bg:#152a1e; --done-line:#2f6b47; --done-ink:#7fd9a3;
     --code-bg:#0d1117; --code-ink:#e6edf3; --warn:#e0913f;
+    --f1:#ff8b80; --f1-bg:#331b19;
   }
 }
 html{scroll-behavior:smooth;scroll-padding-top:84px}
@@ -44,7 +46,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
 
 /* ---------- layout ---------- */
 .wrap{margin-left:260px;min-height:100vh}
-.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;
+.stick{position:sticky;top:0;z-index:30}
+.top{display:flex;align-items:center;gap:16px;
   padding:12px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
 .top-t{flex:1;min-width:0}
 .top h1{margin:0;font-size:19px;line-height:1.3}
@@ -58,6 +61,19 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
 .reset:hover{border-color:var(--accent);color:var(--accent)}
 .burger{display:none;border:0;background:transparent;color:var(--ink);font-size:20px;cursor:pointer}
 main{max-width:920px;padding:24px 30px 120px}
+
+/* ---------- แถบทางลัดไปแต่ละขั้น ---------- */
+/* dropdown ตัวเดียว สูงบรรทัดเดียวเท่ากันทุกบท ไม่ว่าบทนั้นจะมีกี่ขั้น
+   และตัวที่โชว์อยู่คือขั้นที่กำลังอ่าน จึงบอกตำแหน่งตัวเองไปในตัว */
+.jump{display:flex;gap:9px;align-items:center;
+  padding:7px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
+.jump-l{color:var(--dim);font-size:12.5px;flex-shrink:0}
+.jump-s{flex:1;min-width:0;max-width:520px;font:inherit;font-size:13px;
+  color:var(--ink);background:var(--panel);border:1px solid var(--line);
+  border-radius:7px;padding:4px 9px;cursor:pointer}
+.jump-s:hover,.jump-s:focus{border-color:var(--accent);outline:none}
+/* ขั้นที่ทำแล้วขึ้น ✓ นำหน้าในลิสต์ — กวาดตาเห็นว่าค้างตรงไหน */
+.jump-s option{color:var(--ink);background:var(--panel)}
 
 /* ---------- steps ---------- */
 .intro{padding:0 2px 6px}
@@ -105,6 +121,30 @@ th{background:var(--accent-soft);font-weight:600}
 tbody tr:nth-child(even){background:rgba(128,128,128,.045)}
 hr{border:0;border-top:1px solid var(--line);margin:22px 0}
 img{max-width:100%}
+
+/* ---------- ภาพประกอบ (SVG ฝังในเนื้อ markdown) ---------- */
+.fig{margin:18px 0;padding:14px 14px 10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto}
+.fig svg{display:block;width:100%;height:auto;min-width:560px}
+.fig figcaption{margin-top:9px;font-size:12.5px;color:var(--dim);text-align:center;line-height:1.6}
+.fig text{font-family:var(--font);font-size:13px;fill:var(--ink)}
+.fig text.t-mono{font-family:var(--mono);font-size:11.5px}
+.fig text.t-dim{fill:var(--dim);font-size:11.5px}
+.fig text.t-ok{fill:var(--done-ink);font-size:12px}
+.fig text.t-bad{fill:var(--f1);font-size:12px}
+.fig text.t-sm{font-size:12px}
+.fig text.t-hd{font-size:13.5px;font-weight:700}
+.fig .box{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+.fig .box-p{fill:var(--panel);stroke:var(--line);stroke-width:1.5}
+.fig .box-bad{fill:var(--f1-bg);stroke:var(--f1);stroke-width:1.5}
+.fig .box-ok{fill:var(--done-bg);stroke:var(--done-line);stroke-width:1.5}
+.fig .zone{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:6 4}
+.fig .wall{fill:none;stroke:var(--f1);stroke-width:2;stroke-dasharray:7 5}
+.fig .ln{stroke:var(--dim);stroke-width:1.6;fill:none}
+.fig .ln-a{stroke:var(--accent);stroke-width:2;fill:none}
+.fig .ln-ok{stroke:var(--done-line);stroke-width:2;fill:none}
+.fig .ln-bad{stroke:var(--f1);stroke-width:2;fill:none}
+.fig .ln-d{stroke-dasharray:5 4}
 
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
@@ -161,13 +201,14 @@ img{max-width:100%}
   .burger{display:block}
   main{padding:18px 16px 120px}
   .top{padding:10px 14px}
+  .jump{padding:6px 12px}
   .top h1{font-size:16px}
   .top-p .bar{display:none}
   .fab-txt{display:none}
   .fab{padding:15px;border-radius:50%}
 }
 @media print{
-  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
+  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger,.jump{display:none}
   .wrap{margin-left:0}
 }
 
@@ -189,28 +230,31 @@ img{max-width:100%}
 
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
-  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="14"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item cur" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="12"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="17"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="14"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item cur" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="12"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="11"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="18"></span></a><a href="14-grafana-logs.html" class="nav-item" data-chapter="14-grafana-logs.md"><span class="nav-num">14</span><span class="nav-t">ดู log ใน Grafana</span><span class="nav-p" data-progress-for="14-grafana-logs.md" data-total="15"></span></a><a href="15-headlamp.html" class="nav-item" data-chapter="15-headlamp.md"><span class="nav-num">15</span><span class="nav-t">Headlamp — เว็บ UI</span><span class="nav-p" data-progress-for="15-headlamp.md" data-total="10"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a><a href="deploy-zeeme-ads.html" class="nav-item" data-chapter="deploy-zeeme-ads.md"><span class="nav-num">✓</span><span class="nav-t">Deploy zeeme-ads</span><span class="nav-p" data-progress-for="deploy-zeeme-ads.md" data-total="20"></span></a><a href="deploy-demo.html" class="nav-item" data-chapter="deploy-demo.md"><span class="nav-num">✓</span><span class="nav-t">Demo — auth ที่ Gateway</span><span class="nav-p" data-progress-for="deploy-demo.md" data-total="12"></span></a></nav>
 </aside>
 
 <div class="wrap">
-  <header class="top">
-    <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
-    <div class="top-t">
-      <h1>บทที่ 07 — Envoy Gateway และ TLS</h1>
-      <p class="sub">รันที่: 👑 master01 · เวลาที่ใช้: ~40 นาที · ต้องผ่านบทที่ 05-06 — โดยเฉพาะการ curl เข้า LoadBalancer IP จากเครื่องในวง 192.168.50.0/24 ที่ไม่ใช่ node ได้</p>
-    </div>
-    <div class="top-p">
-      <span id="pcount">0/12</span>
-      <div class="bar"><i id="pbar"></i></div>
-      <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
-    </div>
-  </header>
+  <div class="stick">
+    <header class="top">
+      <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
+      <div class="top-t">
+        <h1>บทที่ 07 — Envoy Gateway และ TLS</h1>
+        <p class="sub">รันที่: 👑 master01 · เวลาที่ใช้: ~40 นาที · ต้องผ่านบทที่ 05-06 — โดยเฉพาะการ curl เข้า LoadBalancer IP จากเครื่องในวง 192.168.50.0/24 ที่ไม่ใช่ node ได้</p>
+      </div>
+      <div class="top-p">
+        <span id="pcount">0/12</span>
+        <div class="bar"><i id="pbar"></i></div>
+        <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
+      </div>
+    </header>
+    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="ทำไมเป็น Gateway API ไม่ใช่ Ingress">ทำไมเป็น Gateway API ไม่ใช่ Ingress</option><option value="2" data-t="บันทึกการตัดสินใจ — cert ของโครงการนี้">บันทึกการตัดสินใจ — cert ของโครงการนี้</option><option value="3" data-t="0 · ตรวจว่าไฟล์ของบทนี้อยู่บนเครื่องแล้ว">0 · ตรวจว่าไฟล์ของบทนี้อยู่บนเครื่องแล้ว</option><option value="4" data-t="1 · ตรวจว่าเครื่องสะอาดก่อนเริ่ม">1 · ตรวจว่าเครื่องสะอาดก่อนเริ่ม</option><option value="5" data-t="2 · ติดตั้ง Envoy Gateway">2 · ติดตั้ง Envoy Gateway</option><option value="6" data-t="3 · ใส่ public cert">3 · ใส่ public cert</option><option value="7" data-t="4 · สร้าง Gateway">4 · สร้าง Gateway</option><option value="8" data-t="5 · ทดสอบด้วย HTTPRoute จริง">5 · ทดสอบด้วย HTTPRoute จริง</option><option value="9" data-t="6 · บังคับ HTTPS">6 · บังคับ HTTPS</option><option value="10" data-t="✅ เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</option><option value="11" data-t="ภาคผนวก ก · เริ่มบทนี้ใหม่ทั้งบท">ภาคผนวก ก · เริ่มบทนี้ใหม่ทั้งบท</option><option value="12" data-t="ภาคผนวก ข · ถ้าวันหนึ่งต้องใช้ internal CA">ภาคผนวก ข · ถ้าวันหนึ่งต้องใช้ internal CA</option></select></div>
+  </div>
 
   <main>
     <div class="intro"><hr />
 </div>
     
-    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2>ทำไมเป็น Gateway API ไม่ใช่ Ingress</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2 id="ทำไมเป็น-gateway-api-ไม่ใช่-ingress">ทำไมเป็น Gateway API ไม่ใช่ Ingress</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><code>ingress-nginx</code> <strong>ปิดโปรเจกต์ไปแล้วเมื่อ มี.ค. 2026</strong> ไม่มี security patch อีกและตัวที่ตั้งใจให้มาแทนก็ถูกยกเลิก
 ในเมื่อรอบนี้เขียนคู่มือใหม่หมดอยู่แล้ว การเริ่มที่ Gateway API เลยแทบไม่มีต้นทุนเพิ่ม
 และตัดปัญหาต้องย้ายสองรอบ</p>
@@ -222,7 +266,7 @@ api.myhr.co.th ─┘      LB IP เดียว    (แยกด้วย host)
 </code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>microservice ทุกตัวเป็น <code>ClusterIP</code> ธรรมดา <strong>ไม่กิน IP ของ LAN เลย</strong></p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2>บันทึกการตัดสินใจ — cert ของโครงการนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2 id="บันทึกการตัดสินใจ--cert-ของโครงการนี้">บันทึกการตัดสินใจ — cert ของโครงการนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>ใช้ public cert wildcard ที่องค์กรมีอยู่แล้ว</strong> (ตรวจแล้ว 4 ก.ย. 2026)</p>
 <table>
 <thead>
@@ -261,7 +305,7 @@ route ข้าม namespace) ให้เปิด <a href="../html/cilium-envo
 web app React/Angular (P02), หลาย service ใต้ host เดียว (P03), แบ่ง zone public/private (P06)</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>0 · ตรวจว่าไฟล์ของบทนี้อยู่บนเครื่องแล้ว</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="0--ตรวจว่าไฟล์ของบทนี้อยู่บนเครื่องแล้ว">0 · ตรวจว่าไฟล์ของบทนี้อยู่บนเครื่องแล้ว</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>บทนี้อ้างไฟล์ในrepo 9 ไฟล์ ถ้า <code>/root/k8s/</code> บนเครื่องยังเป็นชุดเก่า จะเจอ
 <code>does not exist</code> กระจายทีละขั้น และคำสั่งตรวจที่ตามมาจะตอบอะไรที่ดูเหมือนคำตอบแต่ไม่ใช่</p>
 <div class="cb"><pre><code class="language-bash">for f in config/gateway/gatewayclass.yaml \
@@ -288,7 +332,7 @@ done
 ที่ล้มมักตอบกลับมาเป็นข้อความที่ดูปกติ (<code>No resources found</code>) แทนที่จะเป็น error</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>1 · ตรวจว่าเครื่องสะอาดก่อนเริ่ม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="1--ตรวจว่าเครื่องสะอาดก่อนเริ่ม">1 · ตรวจว่าเครื่องสะอาดก่อนเริ่ม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <blockquote>
 <p>📖 <strong>แหล่งอ้างอิงของขั้นที่ 1-2:</strong> <a href="https://gateway.envoyproxy.io/docs/install/install-helm/">Install with Helm — Envoy Gateway</a>
 <strong>ถ้าคำสั่งในบทนี้ขัดกับเอกสารทางการ ให้เชื่อเอกสาร</strong> แล้วมาแก้บทนี้ตาม
@@ -342,7 +386,7 @@ annotation <code>meta.helm.sh/release-name</code>)</p>
 <p>ผลคือ cluster ค้างอยู่กับ CRD ชุดเก่าตลอดไป โดยที่ <code>helm install</code> รายงานว่าสำเร็จ
 ขั้นที่ 2 จึงมีคำสั่งตรวจว่าได้ CRD ชุดที่ chart ตั้งใจจริงหรือเปล่า</p>
 </blockquote>
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>2 · ติดตั้ง Envoy Gateway</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3>ค่าที่โครงการนี้ใช้ — ต่างจากตัวอย่างในเอกสาร</h3>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2 id="2--ติดตั้ง-envoy-gateway">2 · ติดตั้ง Envoy Gateway</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3 id="ค่าที่โครงการนี้ใช้--ต่างจากตัวอย่างในเอกสาร">ค่าที่โครงการนี้ใช้ — ต่างจากตัวอย่างในเอกสาร</h3>
 <table>
 <thead>
 <tr>
@@ -438,7 +482,7 @@ echo -n "bundle-version   : "; kubectl get crd gateways.gateway.networking.k8s.i
 </blockquote>
 <p><strong>เอา <code>bundle-version</code> ที่ได้ไปแก้ <code>GATEWAY_API_VERSION</code> ใน <code>docs/versions.env</code></strong> ให้ตรงกับของจริง</p>
 <hr />
-</div><div class="sub" data-machine="all"><h3>🔴 ให้ Envoy รันทุก worker ก่อน — ไม่ใช่ pod เดียว</h3>
+</div><div class="sub" data-machine="all"><h3 id="-ให้-envoy-รันทุก-worker-ก่อน--ไม่ใช่-pod-เดียว">🔴 ให้ Envoy รันทุก worker ก่อน — ไม่ใช่ pod เดียว</h3>
 <p>ค่าเริ่มต้นของ Envoy Gateway คือ <strong>Envoy 1 pod</strong> คู่กับ Service แบบ
 <strong><code>externalTrafficPolicy: Local</code></strong> ซึ่งแปลว่า <em>node ที่รับ traffic ต้องมี pod ปลายทาง
 อยู่บนเครื่องตัวเอง ห้ามส่งข้ามเครื่อง</em></p>
@@ -457,7 +501,7 @@ node ที่ตอบ ARP จะรับ packet มาแล้วทิ้�
 → log ระบุตัวคนไม่ได้ และ NetworkPolicy ที่กรองตาม source ในบทที่ 10 ใช้ไม่ได้ตามที่ตั้งใจ</p>
 </blockquote>
 <hr />
-</div><div class="sub" data-machine="all"><h3>สร้าง GatewayClass</h3>
+</div><div class="sub" data-machine="all"><h3 id="สร้าง-gatewayclass">สร้าง GatewayClass</h3>
 <p>chart <strong>ไม่สร้าง GatewayClass ให้</strong> — ในเอกสารทางการมันอยู่ใน <code>quickstart.yaml</code>
 ซึ่งเรารับมาทั้งไฟล์ไม่ได้เพราะมี Gateway กับ HTTPRoute ของ demo ติดมาด้วย</p>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/gateway/envoyproxy.yaml
@@ -495,7 +539,7 @@ helm get values envoy-gateway -n envoy-gateway-system -a | grep -i controllerNam
 จึงต้องทำก่อน ไม่ใช่หลัง</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2>3 · ใส่ public cert</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2 id="3--ใส่-public-cert">3 · ใส่ public cert</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>ต้องมี Secret <code>myhr-public-tls</code> ให้เสร็จก่อนสร้าง Gateway</strong> เพราะ listener HTTPS ที่อ้าง
 Secret ที่ยังไม่มี จะค้างที่ <code>Programmed=False</code> แล้วขั้นที่ 4 จะตรวจไม่ผ่าน
 โดยที่สาเหตุอยู่คนละที่กับที่กำลังมอง</p>
@@ -521,7 +565,7 @@ Secret ที่ยังไม่มี จะค้างที่ <code>Progr
 <div class="cb"><pre><code class="language-bash">mkdir -p /root/certs &amp;&amp; chmod 700 /root/certs
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div><div class="sub" data-machine="all"><h3>3.1 · แปลงไฟล์ให้เป็นสองไฟล์ข้างบน</h3>
+</div><div class="sub" data-machine="all"><h3 id="31--แปลงไฟล์ให้เป็นสองไฟล์ข้างบน">3.1 · แปลงไฟล์ให้เป็นสองไฟล์ข้างบน</h3>
 <p><strong>ดูก่อนว่าได้อะไรมา</strong> — นามสกุลไฟล์เชื่อไม่ได้ CA ตั้งชื่อกันคนละแบบ
 <code>.crt</code> อาจเป็น fullchain ทั้งชุดอยู่แล้ว หรืออาจเป็น leaf ใบเดียว หรือเป็นไบนารีก็ได้:</p>
 <div class="cb"><pre><code class="language-bash">for f in /root/certs/*; do
@@ -621,7 +665,7 @@ ls -l /root/certs
 <p>ใบที่ <code>subject</code> เป็นชื่อโดเมนของเรา (ไม่ใช่ชื่อ CA) ต้องอยู่บนสุด — ถ้าไม่ใช่ ให้ <code>cat</code> เรียงใหม่</p>
 </blockquote>
 <hr />
-</div><div class="sub" data-machine="all"><h3>3.2 · ตรวจแล้วเขียนลง cluster</h3>
+</div><div class="sub" data-machine="all"><h3 id="32--ตรวจแล้วเขียนลง-cluster">3.2 · ตรวจแล้วเขียนลง cluster</h3>
 <p><strong>ตรวจก่อน — ยังไม่แตะ cluster:</strong></p>
 <div class="cb"><pre><code class="language-bash">bash /root/k8s/config/gateway/import-public-cert.sh --dry-run \
      /root/certs/fullchain.pem /root/certs/privkey.pem
@@ -659,7 +703,7 @@ kubectl -n envoy-gateway-system get secret myhr-public-tls
 <strong>ไม่ต้อง restart อะไร</strong> — รายละเอียดรอบตรวจรายเดือนอยู่ที่ <a href="12-day2-operations.html">บท 12 หัวข้อ 3.1</a></p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2>4 · สร้าง Gateway</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2 id="4--สร้าง-gateway">4 · สร้าง Gateway</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/gateway/gateway.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>listener HTTPS ในไฟล์ชี้ไปที่ Secret <code>myhr-public-tls</code> ที่สร้างไว้ตอนขั้นที่ 3</p>
@@ -763,7 +807,7 @@ kubectl get ciliumloadbalancerippool default-pool -o yaml | grep -A5 status
   -o jsonpath='{.status.addresses[0].value}{"\n"}'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2>5 · ทดสอบด้วย HTTPRoute จริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2 id="5--ทดสอบด้วย-httproute-จริง">5 · ทดสอบด้วย HTTPRoute จริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>บน master01 — สร้าง service ทดสอบ:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl create ns demo
 kubectl -n demo create deployment echo --image=nginx:alpine --replicas=2
@@ -783,7 +827,7 @@ route ที่ผูกไม่ติดกับ Gateway หรือชี�
 <code>ResolvedRefs=False</code> คือตัวที่จับ backend ผิดชื่อได้ ซึ่งเป็นสาเหตุอันดับหนึ่งของ 404</p>
 </blockquote>
 <hr />
-</div><div class="sub" data-machine="all"><h3>⬇️ ตั้งแต่ตรงนี้ลงไป — ย้ายไปรันบนเครื่องทดสอบ</h3>
+</div><div class="sub" data-machine="all"><h3 id="️-ตั้งแต่ตรงนี้ลงไป--ย้ายไปรันบนเครื่องทดสอบ">⬇️ ตั้งแต่ตรงนี้ลงไป — ย้ายไปรันบนเครื่องทดสอบ</h3>
 <p><strong>ต้องเป็นเครื่องที่อยู่ในวง <code>192.168.50.0/24</code> และไม่ใช่ node ของ cluster</strong></p>
 <table>
 <thead>
@@ -842,7 +886,7 @@ L2 announcement มาแล้วที่ <a href="05-cilium.html">บทท�
 <code>connection refused</code> / timeout → ยังไม่ถึง Envoy เลย กลับไปดูเรื่อง ARP ที่บทที่ 05</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2>6 · บังคับ HTTPS</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2 id="6--บังคับ-https">6 · บังคับ HTTPS</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>ตอนนี้ listener HTTP ยังไม่มี route ผูกอยู่เลย ทุก request ที่เข้าทาง port 80 จึงได้ 404
 ขั้นนี้เปลี่ยนให้เป็น redirect แทน</p>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/gateway/https-redirect.yaml
@@ -857,7 +901,7 @@ L2 announcement มาแล้วที่ <a href="05-cilium.html">บทท�
 <div class="cb"><pre><code class="language-bash">kubectl delete ns demo
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2 id="-เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>
 <p>[ ] Gateway API CRD มาจาก chart — ช่อง <code>experimental</code> ไม่ใช่ <code>standard</code>
@@ -904,11 +948,11 @@ L2 announcement มาแล้วที่ <a href="05-cilium.html">บทท�
 public cert ใช้กับ IP วงในได้ปกติ เพราะ TLS ตรวจที่ชื่อ ไม่ใช่ที่ IP</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11" data-machines="all"><div class="step-head"><h2>ภาคผนวก ก · เริ่มบทนี้ใหม่ทั้งบท</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11" data-machines="all"><div class="step-head"><h2 id="ภาคผนวก-ก--เริ่มบทนี้ใหม่ทั้งบท">ภาคผนวก ก · เริ่มบทนี้ใหม่ทั้งบท</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>ใช้เมื่อ install ค้างสถานะ <code>failed</code> · CRD ได้ช่องผิด · หรือจะรื้อทำใหม่ให้สะอาด</p>
 <p><strong>ไม่แตะของจากบท 01-06 เลย</strong> — Cilium, LB IP pool, L2 announcement policy, node,
 etcd, control plane, <code>/etc/hosts</code>, resolver option ทั้งหมดอยู่ครบ</p>
-</div><div class="sub" data-machine="all"><h3>1 · ดูก่อนว่าจะลบอะไร (ยังไม่ลบ)</h3>
+</div><div class="sub" data-machine="all"><h3 id="1--ดูก่อนว่าจะลบอะไร-ยังไม่ลบ">1 · ดูก่อนว่าจะลบอะไร (ยังไม่ลบ)</h3>
 <div class="cb"><pre><code class="language-bash">echo "=== helm release ==="
 helm list -A | grep -Ei 'envoy|gateway|cert-manager' || echo "  ไม่มี"
 
@@ -926,7 +970,7 @@ kubectl get gateways,httproutes,grpcroutes -A 2&gt;/dev/null
 kubectl get clusterissuer,certificate -A 2&gt;/dev/null
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ถ้าท่อนสุดท้ายมี object ที่คุณไม่ได้สร้างเอง — หยุด</strong> อย่าเพิ่งลบ</p>
-</div><div class="sub" data-machine="all"><h3>2 · ลบ — เรียงลำดับนี้เท่านั้น</h3>
+</div><div class="sub" data-machine="all"><h3 id="2--ลบ--เรียงลำดับนี้เท่านั้น">2 · ลบ — เรียงลำดับนี้เท่านั้น</h3>
 <div class="cb"><pre><code class="language-bash">for r in envoy-gateway eg; do
   helm uninstall "$r" -n envoy-gateway-system 2&gt;/dev/null &amp;&amp; echo "ถอน $r แล้ว"
 done
@@ -944,7 +988,7 @@ helm uninstall cert-manager -n cert-manager 2&gt;/dev/null &amp;&amp; echo "ถ�
 namespace จะติด <code>Terminating</code> ค้าง เพราะ webhook ของ cert-manager ถูกลบไปแล้ว
 แต่ finalizer ยังรอคำตอบจากมันอยู่ ลบ CRD ก่อนตัดปัญหานี้ทิ้งเลย</p>
 </blockquote>
-</div><div class="sub" data-machine="all"><h3>3 · ยืนยันว่าสะอาด</h3>
+</div><div class="sub" data-machine="all"><h3 id="3--ยืนยันว่าสะอาด">3 · ยืนยันว่าสะอาด</h3>
 <div class="cb"><pre><code class="language-bash">echo -n "CRD ค้าง       : "; kubectl get crd -o name | grep -cE 'gateway\.networking\.k8s\.io|gateway\.envoyproxy\.io|cert-manager\.io'
 echo -n "release ค้าง   : "; helm list -A | grep -ciE 'envoy|gateway|cert-manager'
 echo -n "namespace ค้าง : "; kubectl get ns -o name | grep -cE 'envoy-gateway-system|cert-manager|demo'
@@ -955,7 +999,7 @@ echo -n "namespace ค้าง : "; kubectl get ns -o name | grep -cE 'envoy-ga
 ตอนทำขั้นที่ 3 รอบหน้า รันสคริปต์เดิมซ้ำได้เลย</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-12" data-step="12" data-machines="all"><div class="step-head"><h2>ภาคผนวก ข · ถ้าวันหนึ่งต้องใช้ internal CA</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-12" data-step="12" data-machines="all"><div class="step-head"><h2 id="ภาคผนวก-ข--ถ้าวันหนึ่งต้องใช้-internal-ca">ภาคผนวก ข · ถ้าวันหนึ่งต้องใช้ internal CA</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <blockquote>
 <p><strong>โครงการนี้ไม่ได้ใช้</strong> — public cert wildcard ครอบทุกชื่ออยู่แล้ว
 ภาคผนวกนี้เก็บไว้เผื่อวันที่ต้องเปิด service ด้วยชื่อที่ public cert ไม่ครอบ
@@ -970,7 +1014,7 @@ echo -n "namespace ค้าง : "; kubectl get ns -o name | grep -cE 'envoy-ga
 และ Gateway ยัง <code>Programmed=True</code> ครบ — มีตัวตรวจให้ที่ข้อ ข.3</p>
 </blockquote>
 <hr />
-</div><div class="sub" data-machine="all"><h3>ข.1 · ออก cert จาก internal CA</h3>
+</div><div class="sub" data-machine="all"><h3 id="ข1--ออก-cert-จาก-internal-ca">ข.1 · ออก cert จาก internal CA</h3>
 <blockquote>
 <p>📖 <strong>แหล่งอ้างอิง:</strong> <a href="https://cert-manager.io/docs/installation/helm/">Installing with Helm — cert-manager</a>
 เอกสารเปลี่ยนมาใช้ OCI จาก <code>quay.io</code> เป็นทางหลักแล้ว ส่วน <code>helm repo add jetstack</code>
@@ -1051,7 +1095,7 @@ openssl x509 -in /root/k8s/myhr-root-ca.crt -noout -subject -dates
 </blockquote>
 <hr />
 <hr />
-</div><div class="sub" data-machine="all"><h3>ข.2 · ผูก cert เข้ากับ listener</h3>
+</div><div class="sub" data-machine="all"><h3 id="ข2--ผูก-cert-เข้ากับ-listener">ข.2 · ผูก cert เข้ากับ listener</h3>
 <p><strong>ถ้าเลิกใช้ public cert ไปเลย</strong> — เปลี่ยนไปใช้ internal cert อย่างเดียว:</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system patch gateway myhr-gateway --type=json -p='[
   {"op":"test","path":"/spec/listeners/1/name","value":"https"},
@@ -1074,7 +1118,7 @@ openssl x509 -in /root/k8s/myhr-root-ca.crt -noout -subject -dates
 <p>ทั้งสองคำสั่งใช้ <code>replace</code> จึงรันซ้ำได้ ไม่สะสมค่าเดิม</p>
 </blockquote>
 <hr />
-</div><div class="sub" data-machine="all"><h3>ข.3 · ตรวจว่าชื่อใน cert ไม่ทับกัน</h3>
+</div><div class="sub" data-machine="all"><h3 id="ข3--ตรวจว่าชื่อใน-cert-ไม่ทับกัน">ข.3 · ตรวจว่าชื่อใน cert ไม่ทับกัน</h3>
 <div class="cb"><pre><code class="language-bash">bash /root/k8s/config/gateway/check-cert-overlap.sh
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>ผ่าน — ไม่มีชื่อไหนอยู่ในสองใบพร้อมกัน</code></p>
@@ -1109,6 +1153,7 @@ openssl x509 -in /root/k8s/myhr-root-ca.crt -noout -subject -dates
   function mine(){ var a=load(); return (a[CH]||[]); }
   function setMine(list){ var a=load(); a[CH]=list; save(a); }
 
+  var jumpSel=document.getElementById('jumpsel'), stick;
   var toastEl=document.getElementById('toast'), toastT;
   function toast(msg){
     toastEl.textContent=msg; toastEl.classList.add('show');
@@ -1124,6 +1169,12 @@ openssl x509 -in /root/k8s/myhr-root-ca.crt -noout -subject -dates
       var b=s.querySelector('.done-btn');
       if(b) b.querySelector('.lbl').textContent = is ? 'ทำแล้ว' : 'ทำแล้ว';
     });
+    if(jumpSel){
+      [].forEach.call(jumpSel.options, function(o){
+        if(!o.value) return;
+        o.textContent=(done.indexOf(+o.value)>=0 ? '✓ ' : '')+o.dataset.t;
+      });
+    }
     var n=done.length;
     document.getElementById('pcount').textContent=n+'/'+TOTAL;
     document.getElementById('pbar').style.width=(TOTAL?100*n/TOTAL:0)+'%';
@@ -1251,6 +1302,7 @@ openssl x509 -in /root/k8s/myhr-root-ca.crt -noout -subject -dates
         var dm=d.dataset.machine||'all';
         d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
       });
+      syncJump(); spy();
       try{ localStorage.setItem(MKEY,m); }catch(e){}
       paintFab();
     };
@@ -1263,11 +1315,60 @@ openssl x509 -in /root/k8s/myhr-root-ca.crt -noout -subject -dates
     applyM(savedM);
   }
 
+  /* ---------- แถบทางลัด ---------- */
+  stick=document.querySelector('.stick');
+  function stickH(){ return stick ? stick.getBoundingClientRect().height : 0; }
+  function fitPad(){
+    /* หัวข้อต้องไม่โดนแถบที่ติดหนึบทับตอนกดทางลัด — ความสูงของแถบไม่เท่ากันระหว่าง
+       จอใหญ่กับจอเล็ก จึงวัดเอาจริงแทนที่จะ hardcode ตัวเลขไว้ใน css
+       แต่ถ้าวัดได้ตอนหน้ายังไม่วางเลย์เอาต์ ค่าที่ได้จะเพี้ยนจนดันหัวข้อไปกลางจอ */
+    var h=stickH();
+    if(!h || !window.innerHeight) return;
+    document.documentElement.style.scrollPaddingTop=Math.min(h+12, innerHeight*0.6)+'px';
+  }
+  function syncJump(){
+    if(!jumpSel) return;
+    /* ขั้นที่แถบกรองเครื่องซ่อนอยู่ ต้องหายจากลิสต์ด้วย
+       ไม่งั้นเลือกแล้ววิ่งไปจอดตรงส่วนที่มองไม่เห็น */
+    [].forEach.call(jumpSel.options, function(o){
+      if(!o.value) return;
+      var sec=document.getElementById('step-'+o.value);
+      o.hidden = !!(sec && sec.classList.contains('hide-m'));
+    });
+  }
+  function spy(){
+    if(!jumpSel) return;
+    var line=stickH()+16, cur='';
+    document.querySelectorAll('.step').forEach(function(s){
+      if(s.classList.contains('hide-m')) return;
+      if(s.getBoundingClientRect().top<=line) cur=s.dataset.step;
+    });
+    /* ตัวที่โชว์อยู่ = ขั้นที่กำลังอ่าน แต่ไม่แตะตอนลิสต์กำลังเปิด เดี๋ยวค่าเปลี่ยนใต้มือ */
+    if(document.activeElement!==jumpSel && jumpSel.value!==cur) jumpSel.value=cur;
+  }
+  if(jumpSel){
+    jumpSel.addEventListener('change', function(){
+      var sec=jumpSel.value && document.getElementById('step-'+jumpSel.value);
+      if(!sec) return;
+      sec.scrollIntoView();          /* ใช้ scroll-padding-top ที่ fitPad วัดไว้ */
+      jumpSel.blur();                /* คืน scroll ให้ล้อเมาส์ ไม่ค้างอยู่ที่ลิสต์ */
+    });
+    var spyQ=false;
+    window.addEventListener('scroll', function(){
+      if(spyQ) return;
+      spyQ=true;
+      requestAnimationFrame(function(){ spyQ=false; spy(); });
+    }, {passive:true});
+    window.addEventListener('resize', function(){ fitPad(); spy(); });
+    fitPad(); syncJump(); spy();
+  }
+
   /* ---------- เมนูบนจอเล็ก ---------- */
   var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');
   if(burger) burger.addEventListener('click', function(){ sb.classList.toggle('open'); });
 
   paint();
+  spy();
 })();
 </script>
 </body>

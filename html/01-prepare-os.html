@@ -11,6 +11,7 @@
   --accent:#2d6ae0; --accent-soft:#eaf1fe;
   --done-bg:#eaf7ee; --done-line:#8fd3a8; --done-ink:#1c6b3c;
   --code-bg:#1e2530; --code-ink:#e6edf3; --warn:#b4530a;
+  --f1:#d1372b; --f1-bg:#fdeceb;
   --radius:10px;
   --font:"Segoe UI","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;
   --mono:"Cascadia Mono",Consolas,"Noto Sans Thai Mono",monospace;
@@ -21,6 +22,7 @@
     --accent:#6ea3ff; --accent-soft:#1b2740;
     --done-bg:#152a1e; --done-line:#2f6b47; --done-ink:#7fd9a3;
     --code-bg:#0d1117; --code-ink:#e6edf3; --warn:#e0913f;
+    --f1:#ff8b80; --f1-bg:#331b19;
   }
 }
 html{scroll-behavior:smooth;scroll-padding-top:84px}
@@ -44,7 +46,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
 
 /* ---------- layout ---------- */
 .wrap{margin-left:260px;min-height:100vh}
-.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;
+.stick{position:sticky;top:0;z-index:30}
+.top{display:flex;align-items:center;gap:16px;
   padding:12px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
 .top-t{flex:1;min-width:0}
 .top h1{margin:0;font-size:19px;line-height:1.3}
@@ -58,6 +61,19 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
 .reset:hover{border-color:var(--accent);color:var(--accent)}
 .burger{display:none;border:0;background:transparent;color:var(--ink);font-size:20px;cursor:pointer}
 main{max-width:920px;padding:24px 30px 120px}
+
+/* ---------- แถบทางลัดไปแต่ละขั้น ---------- */
+/* dropdown ตัวเดียว สูงบรรทัดเดียวเท่ากันทุกบท ไม่ว่าบทนั้นจะมีกี่ขั้น
+   และตัวที่โชว์อยู่คือขั้นที่กำลังอ่าน จึงบอกตำแหน่งตัวเองไปในตัว */
+.jump{display:flex;gap:9px;align-items:center;
+  padding:7px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
+.jump-l{color:var(--dim);font-size:12.5px;flex-shrink:0}
+.jump-s{flex:1;min-width:0;max-width:520px;font:inherit;font-size:13px;
+  color:var(--ink);background:var(--panel);border:1px solid var(--line);
+  border-radius:7px;padding:4px 9px;cursor:pointer}
+.jump-s:hover,.jump-s:focus{border-color:var(--accent);outline:none}
+/* ขั้นที่ทำแล้วขึ้น ✓ นำหน้าในลิสต์ — กวาดตาเห็นว่าค้างตรงไหน */
+.jump-s option{color:var(--ink);background:var(--panel)}
 
 /* ---------- steps ---------- */
 .intro{padding:0 2px 6px}
@@ -105,6 +121,30 @@ th{background:var(--accent-soft);font-weight:600}
 tbody tr:nth-child(even){background:rgba(128,128,128,.045)}
 hr{border:0;border-top:1px solid var(--line);margin:22px 0}
 img{max-width:100%}
+
+/* ---------- ภาพประกอบ (SVG ฝังในเนื้อ markdown) ---------- */
+.fig{margin:18px 0;padding:14px 14px 10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto}
+.fig svg{display:block;width:100%;height:auto;min-width:560px}
+.fig figcaption{margin-top:9px;font-size:12.5px;color:var(--dim);text-align:center;line-height:1.6}
+.fig text{font-family:var(--font);font-size:13px;fill:var(--ink)}
+.fig text.t-mono{font-family:var(--mono);font-size:11.5px}
+.fig text.t-dim{fill:var(--dim);font-size:11.5px}
+.fig text.t-ok{fill:var(--done-ink);font-size:12px}
+.fig text.t-bad{fill:var(--f1);font-size:12px}
+.fig text.t-sm{font-size:12px}
+.fig text.t-hd{font-size:13.5px;font-weight:700}
+.fig .box{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+.fig .box-p{fill:var(--panel);stroke:var(--line);stroke-width:1.5}
+.fig .box-bad{fill:var(--f1-bg);stroke:var(--f1);stroke-width:1.5}
+.fig .box-ok{fill:var(--done-bg);stroke:var(--done-line);stroke-width:1.5}
+.fig .zone{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:6 4}
+.fig .wall{fill:none;stroke:var(--f1);stroke-width:2;stroke-dasharray:7 5}
+.fig .ln{stroke:var(--dim);stroke-width:1.6;fill:none}
+.fig .ln-a{stroke:var(--accent);stroke-width:2;fill:none}
+.fig .ln-ok{stroke:var(--done-line);stroke-width:2;fill:none}
+.fig .ln-bad{stroke:var(--f1);stroke-width:2;fill:none}
+.fig .ln-d{stroke-dasharray:5 4}
 
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
@@ -161,13 +201,14 @@ img{max-width:100%}
   .burger{display:block}
   main{padding:18px 16px 120px}
   .top{padding:10px 14px}
+  .jump{padding:6px 12px}
   .top h1{font-size:16px}
   .top-p .bar{display:none}
   .fab-txt{display:none}
   .fab{padding:15px;border-radius:50%}
 }
 @media print{
-  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
+  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger,.jump{display:none}
   .wrap{margin-left:0}
 }
 
@@ -189,35 +230,38 @@ img{max-width:100%}
 
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="index.html">MyHR Kubernetes 1.36</a>
-  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item cur" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="14"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="12"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="8"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="17"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a></nav>
+  <nav><a href="00-overview.html" class="nav-item" data-chapter="00-overview.md"><span class="nav-num">00</span><span class="nav-t">ภาพรวมและลำดับงาน</span><span class="nav-p" data-progress-for="00-overview.md" data-total="8"></span></a><a href="01-prepare-os.html" class="nav-item cur" data-chapter="01-prepare-os.md"><span class="nav-num">01</span><span class="nav-t">เตรียม OS</span><span class="nav-p" data-progress-for="01-prepare-os.md" data-total="14"></span></a><a href="02-container-runtime.html" class="nav-item" data-chapter="02-container-runtime.md"><span class="nav-num">02</span><span class="nav-t">Container Runtime</span><span class="nav-p" data-progress-for="02-container-runtime.md" data-total="9"></span></a><a href="03-ha-layer.html" class="nav-item" data-chapter="03-ha-layer.md"><span class="nav-num">03</span><span class="nav-t">HA Layer</span><span class="nav-p" data-progress-for="03-ha-layer.md" data-total="9"></span></a><a href="04-create-cluster.html" class="nav-item" data-chapter="04-create-cluster.md"><span class="nav-num">04</span><span class="nav-t">สร้าง Cluster</span><span class="nav-p" data-progress-for="04-create-cluster.md" data-total="8"></span></a><a href="05-cilium.html" class="nav-item" data-chapter="05-cilium.md"><span class="nav-num">05</span><span class="nav-t">Cilium</span><span class="nav-p" data-progress-for="05-cilium.md" data-total="9"></span></a><a href="06-verify.html" class="nav-item" data-chapter="06-verify.md"><span class="nav-num">06</span><span class="nav-t">ตรวจรับระบบ</span><span class="nav-p" data-progress-for="06-verify.md" data-total="9"></span></a><a href="07-gateway-tls.html" class="nav-item" data-chapter="07-gateway-tls.md"><span class="nav-num">07</span><span class="nav-t">Gateway + TLS</span><span class="nav-p" data-progress-for="07-gateway-tls.md" data-total="12"></span></a><a href="08-storage.html" class="nav-item" data-chapter="08-storage.md"><span class="nav-num">08</span><span class="nav-t">Storage</span><span class="nav-p" data-progress-for="08-storage.md" data-total="7"></span></a><a href="09-observability.html" class="nav-item" data-chapter="09-observability.md"><span class="nav-num">09</span><span class="nav-t">Observability</span><span class="nav-p" data-progress-for="09-observability.md" data-total="10"></span></a><a href="10-security.html" class="nav-item" data-chapter="10-security.md"><span class="nav-num">10</span><span class="nav-t">Security</span><span class="nav-p" data-progress-for="10-security.md" data-total="11"></span></a><a href="11-deploy-app.html" class="nav-item" data-chapter="11-deploy-app.md"><span class="nav-num">11</span><span class="nav-t">Deploy App</span><span class="nav-p" data-progress-for="11-deploy-app.md" data-total="8"></span></a><a href="12-day2-operations.html" class="nav-item" data-chapter="12-day2-operations.md"><span class="nav-num">12</span><span class="nav-t">Day-2 Operations</span><span class="nav-p" data-progress-for="12-day2-operations.md" data-total="11"></span></a><a href="13-troubleshooting.html" class="nav-item" data-chapter="13-troubleshooting.md"><span class="nav-num">13</span><span class="nav-t">Troubleshooting</span><span class="nav-p" data-progress-for="13-troubleshooting.md" data-total="18"></span></a><a href="14-grafana-logs.html" class="nav-item" data-chapter="14-grafana-logs.md"><span class="nav-num">14</span><span class="nav-t">ดู log ใน Grafana</span><span class="nav-p" data-progress-for="14-grafana-logs.md" data-total="15"></span></a><a href="15-headlamp.html" class="nav-item" data-chapter="15-headlamp.md"><span class="nav-num">15</span><span class="nav-t">Headlamp — เว็บ UI</span><span class="nav-p" data-progress-for="15-headlamp.md" data-total="10"></span></a><a href="CHECKLIST.html" class="nav-item" data-chapter="CHECKLIST.md"><span class="nav-num">✓</span><span class="nav-t">เช็กลิสต์งานค้าง</span><span class="nav-p" data-progress-for="CHECKLIST.md" data-total="11"></span></a><a href="ansible.html" class="nav-item" data-chapter="ansible.md"><span class="nav-num">✓</span><span class="nav-t">Ansible runbook</span><span class="nav-p" data-progress-for="ansible.md" data-total="9"></span></a><a href="deploy-zeeme-ads.html" class="nav-item" data-chapter="deploy-zeeme-ads.md"><span class="nav-num">✓</span><span class="nav-t">Deploy zeeme-ads</span><span class="nav-p" data-progress-for="deploy-zeeme-ads.md" data-total="20"></span></a><a href="deploy-demo.html" class="nav-item" data-chapter="deploy-demo.md"><span class="nav-num">✓</span><span class="nav-t">Demo — auth ที่ Gateway</span><span class="nav-p" data-progress-for="deploy-demo.md" data-total="12"></span></a></nav>
 </aside>
 
 <div class="wrap">
-  <header class="top">
-    <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
-    <div class="top-t">
-      <h1>บทที่ 01 — เตรียม OS</h1>
-      <p class="sub">รันที่: 🖥️ ทุกเครื่อง (ทั้ง 6 เครื่อง) · เวลาที่ใช้: ~20 นาที/เครื่อง · reboot 1 ครั้ง · บทนี้เหมือนกันหมดทุกเครื่อง ยกเว้น ขั้นที่ 1 (hostname) และ ขั้นที่ 5 (partition)</p>
-    </div>
-    <div class="top-p">
-      <span id="pcount">0/14</span>
-      <div class="bar"><i id="pbar"></i></div>
-      <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
-    </div>
-  </header>
+  <div class="stick">
+    <header class="top">
+      <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
+      <div class="top-t">
+        <h1>บทที่ 01 — เตรียม OS</h1>
+        <p class="sub">รันที่: 🖥️ ทุกเครื่อง (ทั้ง 6 เครื่อง) · เวลาที่ใช้: ~20 นาที/เครื่อง · reboot 1 ครั้ง · บทนี้เหมือนกันหมดทุกเครื่อง ยกเว้น ขั้นที่ 1 (hostname) และ ขั้นที่ 5 (partition)</p>
+      </div>
+      <div class="top-p">
+        <span id="pcount">0/14</span>
+        <div class="bar"><i id="pbar"></i></div>
+        <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
+      </div>
+    </header>
+    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="0 · โหลดตัวแปร">0 · โหลดตัวแปร</option><option value="2" data-t="1 · Hostname และ /etc/hosts">1 · Hostname และ /etc/hosts</option><option value="3" data-t="1.1 · ตั้ง resolver option — ทำให้ทุกอย่างที่เหลือเร็วขึ้น 6 เท่า">1.1 · ตั้ง resolver option — ทำให้ทุกอย่างที่เหลือเร็วขึ้น 6 เท่า</option><option value="4" data-t="1.2 · ปิด IPv6 ที่ interface">1.2 · ปิด IPv6 ที่ interface</option><option value="5" data-t="2 · ยืนยัน kernel และตรึงไว้">2 · ยืนยัน kernel และตรึงไว้</option><option value="6" data-t="3 · จัดการ repo">3 · จัดการ repo</option><option value="7" data-t="4 · ลง package พื้นฐาน">4 · ลง package พื้นฐาน</option><option value="8" data-t="5 · ย้าย partition /home">5 · ย้าย partition /home</option><option value="9" data-t="6 · kernel module และ sysctl">6 · kernel module และ sysctl</option><option value="10" data-t="7 · ปิด swap และตั้ง SELinux">7 · ปิด swap และตั้ง SELinux</option><option value="11" data-t="8 · firewalld">8 · firewalld</option><option value="12" data-t="9 · วัด disk latency ของ etcd">9 · วัด disk latency ของ etcd</option><option value="13" data-t="10 · Reboot แล้วตรวจซ้ำ">10 · Reboot แล้วตรวจซ้ำ</option><option value="14" data-t="✅ เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</option></select></div>
+  </div>
 
   <main>
     <div class="intro"><hr />
 </div>
     <div class="mtabs" id="mtabs"><span class="mtabs-l">แสดงเฉพาะ:</span><button class="mtab on" type="button" data-m="all">ทั้งหมด</button><button class="mtab" type="button" data-m="masters">🎩 master ทุกตัว</button><button class="mtab" type="button" data-m="workers">⚙️ worker</button></div>
-    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2>0 · โหลดตัวแปร</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+    <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2 id="0--โหลดตัวแปร">0 · โหลดตัวแปร</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 echo "K8S=$K8S_VERSION  VIP=$VIP  IFACE=$NODE_IFACE"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>K8S=1.36.3  VIP=192.168.50.100  IFACE=ens192</code>
 ถ้าค่าไหนว่าง แปลว่ายังไม่ได้ source — หยุดแล้วแก้ก่อน</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2>1 · Hostname และ /etc/hosts</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2 id="1--hostname-และ-etchosts">1 · Hostname และ /etc/hosts</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>รันเฉพาะบรรทัดที่ตรงกับเครื่องที่กำลังทำอยู่:</p>
 <div class="cb"><pre><code class="language-bash">hostnamectl set-hostname k8s-master01    # บน 192.168.50.101
 hostnamectl set-hostname k8s-master02    # บน 192.168.50.102
@@ -274,7 +318,7 @@ hostname &amp;&amp; ping -c1 ${MASTER01_NAME} &amp;&amp; ping -c1 ${REGISTRY_HOS
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ชื่อเครื่องถูกต้อง และ ping ทั้งสองปลายทางได้</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2>1.1 · ตั้ง resolver option — ทำให้ทุกอย่างที่เหลือเร็วขึ้น 6 เท่า</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="11--ตั้ง-resolver-option--ทำให้ทุกอย่างที่เหลือเร็วขึ้น-6-เท่า">1.1 · ตั้ง resolver option — ทำให้ทุกอย่างที่เหลือเร็วขึ้น 6 เท่า</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>ค่าตั้งต้นของ glibc ทำให้ทุกการแปลงชื่อใหม่ช้าลง 5 วินาที บนเครือข่ายชุดนี้</strong></p>
 <p>resolver ยิงคำถาม <code>A</code> (IPv4) กับ <code>AAAA</code> (IPv6) ออกไปพร้อมกันบน socket เดียว
 firewall/NAT ระหว่างทางทิ้งคำตอบตัวที่สองบางครั้ง resolver จึงรอจนครบ timeout 5 วินาที
@@ -393,7 +437,7 @@ public DNS แปลชื่อ <code>registry.myhr.co.th</code> ไม่ไ�
 <p>จะแก้ทั้งเรื่องช้าและตัดความจำเป็นของ <code>/etc/hosts</code> ไปพร้อมกัน</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2>1.2 · ปิด IPv6 ที่ interface</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="12--ปิด-ipv6-ที่-interface">1.2 · ปิด IPv6 ที่ interface</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>เครื่องได้ IPv6 address มาแต่ไม่มี route ออกไปข้างนอก</strong> ซึ่งแย่กว่าไม่มี IPv6 เลย
 เพราะโปรแกรมเห็นว่าตัวเองมี IPv6 ใช้ได้ ก็เลือกใช้ แล้วไปตายกลางทาง</p>
 <p>อาการจริงที่เจอตอนลง Envoy Gateway:</p>
@@ -435,7 +479,7 @@ ip -6 addr show "${NODE_IFACE}" | grep -c inet6
 ขึ้นกับว่า DNS ตอบ IPv6 มาก่อนหรือเปล่าในครั้งนั้น ซึ่งเป็นอาการที่ทำซ้ำไม่ได้</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2>2 · ยืนยัน kernel และตรึงไว้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2 id="2--ยืนยัน-kernel-และตรึงไว้">2 · ยืนยัน kernel และตรึงไว้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>Oracle Linux ให้ kernel มาสองตัว เราใช้ <strong>UEK 8U2</strong> ตามค่า default
 <strong>ห้ามผสม UEK กับ RHCK ใน cluster เดียวกัน</strong> เด็ดขาด</p>
 <div class="cb"><pre><code class="language-bash">uname -r
@@ -466,7 +510,7 @@ dnf versionlock list
 แล้ว <strong>ล็อกกลับทันทีหลัง reboot</strong> ไม่งั้น node จะค่อย ๆ ไหลไปคนละเวอร์ชันโดยไม่มีใครรู้</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2>3 · จัดการ repo</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2 id="3--จัดการ-repo">3 · จัดการ repo</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>ปิด repo ที่จะไปทับของที่เราติดตั้งเอง:</p>
 <div class="cb"><pre><code class="language-bash"># ol9_addons มี containerd ของ Oracle ซึ่งจะไปทับตัวที่เราลงจาก tarball ในบทที่ 02
 dnf config-manager --disable ol9_addons 2&gt;/dev/null || true
@@ -482,7 +526,7 @@ dnf repolist enabled
 <div class="cb"><pre><code class="language-bash">systemctl disable --now ksplice-uptrack.service 2&gt;/dev/null || true
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2>4 · ลง package พื้นฐาน</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2 id="4--ลง-package-พื้นฐาน">4 · ลง package พื้นฐาน</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">dnf install -y \
   chrony open-vm-tools tar curl wget \
   iproute-tc socat conntrack-tools ethtool \
@@ -496,7 +540,7 @@ systemctl enable --now chronyd
 <p><strong>ควรเห็น:</strong> <code>Leap status : Normal</code> และ <code>System time</code> ต่างไม่เกินหลัก <strong>มิลลิวินาที</strong>
 ถ้าเห็น <code>Not synchronised</code> ให้หยุดแล้วแก้ NTP ก่อน</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all masters workers"><div class="step-head"><h2>5 · ย้าย partition /home</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all masters workers"><div class="step-head"><h2 id="5--ย้าย-partition-home">5 · ย้าย partition /home</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>Kubernetes ไม่ใช้ <code>/home</code> เลย ขณะที่ของที่โตเร็วทั้งหมดไปกองใต้ <code>/var</code>
 ย้าย partition 100 GB นี้ไปรับงานที่มีประโยชน์แทน</p>
 <blockquote>
@@ -506,7 +550,7 @@ systemctl enable --now chronyd
 <div class="cb"><pre><code class="language-bash">lsblk -f
 findmnt /home
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-</div><div class="sub" data-machine="masters"><h3>🎩 บน master ทั้ง 3 เครื่อง — ย้ายไปเป็น <code>/var/lib/etcd</code></h3>
+</div><div class="sub" data-machine="masters"><h3 id="-บน-master-ทั้ง-3-เครื่อง--ย้ายไปเป็น-varlibetcd">🎩 บน master ทั้ง 3 เครื่อง — ย้ายไปเป็น <code>/var/lib/etcd</code></h3>
 <div class="cb"><pre><code class="language-bash">HOME_DEV=$(findmnt -no SOURCE /home)
 echo "จะย้าย $HOME_DEV ไปเป็น /var/lib/etcd"
 
@@ -527,7 +571,7 @@ ls -A /var/lib/etcd                   # ต้องไม่พิมพ์อ�
 ตรวจให้แน่ว่าไม่มีอะไรต้องเก็บ แล้วเอาออกด้วย <code>rmdir</code> ทีละอัน — มันจะปฏิเสธถ้าข้างในไม่ว่าง
 ต่างจาก <code>rm -rf</code> ที่ลบข้อมูลทิ้งโดยไม่เตือน</p>
 </blockquote>
-</div><div class="sub" data-machine="workers"><h3>⚙️ บน worker ทั้ง 3 เครื่อง — ย้ายไปเป็น <code>/var/lib/containerd</code></h3>
+</div><div class="sub" data-machine="workers"><h3 id="️-บน-worker-ทั้ง-3-เครื่อง--ย้ายไปเป็น-varlibcontainerd">⚙️ บน worker ทั้ง 3 เครื่อง — ย้ายไปเป็น <code>/var/lib/containerd</code></h3>
 <div class="cb"><pre><code class="language-bash">HOME_DEV=$(findmnt -no SOURCE /home)
 echo "จะย้าย $HOME_DEV ไปเป็น /var/lib/containerd"
 
@@ -548,7 +592,7 @@ grep -v '^#' /etc/fstab | grep -E 'etcd|containerd'
 ให้วัด fsync ในขั้นที่ 9 แล้วตัดสินว่าต้องขอ VMDK แยกให้ etcd ไหม</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2>6 · kernel module และ sysctl</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2 id="6--kernel-module-และ-sysctl">6 · kernel module และ sysctl</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">cat &gt; /etc/modules-load.d/k8s.conf &lt;&lt;'EOF'
 overlay
 br_netfilter
@@ -576,7 +620,7 @@ sysctl net.ipv4.ip_forward net.bridge.bridge-nf-call-iptables
 — คู่มือชุดเดิมไม่มีไฟล์นี้ พอ reboot แล้ว pod จึงคุยข้าม node ไม่ได้</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2>7 · ปิด swap และตั้ง SELinux</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2 id="7--ปิด-swap-และตั้ง-selinux">7 · ปิด swap และตั้ง SELinux</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">swapoff -a
 sed -i '/[[:space:]]swap[[:space:]]/s/^/#/' /etc/fstab
 
@@ -595,10 +639,10 @@ grep -i '^SELINUX=' /etc/selinux/config
 ถ้าองค์กรมีข้อกำหนดว่าต้อง <code>enforcing</code> ต้องทำ policy module เพิ่มและทดสอบใน lab ก่อน</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11" data-machines="all masters workers"><div class="step-head"><h2>8 · firewalld</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="10"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-11" data-step="11" data-machines="all masters workers"><div class="step-head"><h2 id="8--firewalld">8 · firewalld</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>firewalld <strong>เปิดอยู่</strong> ตามที่ทีมยืนยัน จึงต้องเปิดพอร์ตให้ครบ
 ถ้าขาดข้อใดข้อหนึ่ง อาการจะไปโผล่ตอน <code>kubeadm init</code> หรือตอน pod คุยข้าม node</p>
-</div><div class="sub" data-machine="masters"><h3>🎩 บน master ทั้ง 3 เครื่อง</h3>
+</div><div class="sub" data-machine="masters"><h3 id="-บน-master-ทั้ง-3-เครื่อง">🎩 บน master ทั้ง 3 เครื่อง</h3>
 <div class="cb"><pre><code class="language-bash">firewall-cmd --permanent --add-port=6443/tcp          # kube-apiserver
 firewall-cmd --permanent --add-port=8443/tcp          # HAProxy frontend (VIP)
 firewall-cmd --permanent --add-port=2379-2380/tcp     # etcd client + peer
@@ -613,7 +657,7 @@ firewall-cmd --permanent --add-port=4240/tcp          # Cilium health
 firewall-cmd --permanent --add-port=4244-4245/tcp     # Hubble
 firewall-cmd --reload
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-</div><div class="sub" data-machine="workers"><h3>⚙️ บน worker ทั้ง 3 เครื่อง</h3>
+</div><div class="sub" data-machine="workers"><h3 id="️-บน-worker-ทั้ง-3-เครื่อง">⚙️ บน worker ทั้ง 3 เครื่อง</h3>
 <div class="cb"><pre><code class="language-bash">firewall-cmd --permanent --add-port=10250/tcp         # kubelet API
 firewall-cmd --permanent --add-port=30000-32767/tcp   # NodePort range
 firewall-cmd --permanent --add-port=9100/tcp          # node-exporter (บท 09)
@@ -626,7 +670,7 @@ firewall-cmd --reload
 <div class="cb"><pre><code class="language-bash">firewall-cmd --list-all
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> พอร์ตครบตามรายการของบทบาทนั้น และ master ต้องมี <code>protocols: vrrp</code></p>
-</div><div class="sub" data-machine="all"><h3>🔴 เปิดให้ forward เข้าวง pod ได้ — ทำทุกเครื่อง ห้ามข้าม</h3>
+</div><div class="sub" data-machine="all"><h3 id="-เปิดให้-forward-เข้าวง-pod-ได้--ทำทุกเครื่อง-ห้ามข้าม">🔴 เปิดให้ forward เข้าวง pod ได้ — ทำทุกเครื่อง ห้ามข้าม</h3>
 <p>เปิดพอร์ตอย่างเดียว<strong>ไม่พอ</strong> พอร์ตข้างบนคุมแค่ traffic ที่ปลายทางเป็นตัวเครื่องเอง (<code>INPUT</code>)
 แต่ traffic ที่วิ่งไปหา pod ต้องผ่าน <code>FORWARD</code> ซึ่ง firewalld ปิดอยู่</p>
 <p>zone <code>public</code> มีแค่ <code>ens192</code> และ <code>forward: yes</code> อนุญาตเฉพาะ <code>ens192</code> → <code>ens192</code>
@@ -663,7 +707,7 @@ Cilium ตอบ ARP ให้ LB IP · BPF map มี backend ครบ · conn
 <p><strong>ไม่ต้องเปิด <code>10256/tcp</code></strong> (kube-proxy health) เพราะเราไม่ติดตั้ง kube-proxy
 <strong>ไม่ต้องเปิด <code>179/tcp</code></strong> (BGP) เพราะใช้ L2 announcement ไม่ใช่ BGP mode</p>
 </blockquote>
-</div><div class="sub" data-machine="all"><h3>หมายเหตุ — interface ของ Cilium กับ firewalld</h3>
+</div><div class="sub" data-machine="all"><h3 id="หมายเหตุ--interface-ของ-cilium-กับ-firewalld">หมายเหตุ — interface ของ Cilium กับ firewalld</h3>
 <p>หลังลง Cilium ในบทที่ 05 ถ้าเจอว่า pod ข้าม node ไม่ได้ ให้ลองเพิ่ม interface ของ Cilium
 เข้า zone <code>trusted</code> แล้วทดสอบซ้ำ:</p>
 <div class="cb"><pre><code class="language-bash">firewall-cmd --permanent --zone=trusted --add-interface=cilium_host
@@ -677,7 +721,7 @@ firewall-cmd --reload
 เพราะ firewalld เขียนกฎ nftables ใหม่ทั้งชุดตอน reload · <strong>จดผลลง บทที่ 13 ไม่ว่าจะผ่านหรือไม่</strong></p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-12" data-step="12" data-machines="all"><div class="step-head"><h2>9 · วัด disk latency ของ etcd</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="11"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-12" data-step="12" data-machines="all"><div class="step-head"><h2 id="9--วัด-disk-latency-ของ-etcd">9 · วัด disk latency ของ etcd</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <blockquote>
 <p><strong>🎩 รันเฉพาะ master ทั้ง 3 เครื่อง</strong></p>
 </blockquote>
@@ -696,7 +740,7 @@ fio --rw=write --ioengine=sync --fdatasync=1 --directory=/var/lib/etcd \
 ถ้าไม่ผ่าน 10 ms ให้ขอ VMDK แยกสำหรับ etcd หรือย้ายไป datastore ที่ไม่แชร์กับ VM อื่นเยอะ</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="12"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-13" data-step="13" data-machines="all"><div class="step-head"><h2>10 · Reboot แล้วตรวจซ้ำ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="12"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-13" data-step="13" data-machines="all"><div class="step-head"><h2 id="10--reboot-แล้วตรวจซ้ำ">10 · Reboot แล้วตรวจซ้ำ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>ข้อนี้ห้ามข้าม</strong> — จุดประสงค์คือพิสูจน์ว่าทุกอย่างยังอยู่หลัง reboot
 ซึ่งเป็นสิ่งที่คู่มือชุดเดิมพลาด</p>
 <div class="cb"><pre><code class="language-bash">reboot
@@ -712,7 +756,7 @@ firewall-cmd --list-ports                         # ต้องครบ
 chronyc tracking | grep 'Leap status'             # ต้อง Normal
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="13"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-14" data-step="14" data-machines="all"><div class="step-head"><h2>✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="13"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-14" data-step="14" data-machines="all"><div class="step-head"><h2 id="-เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>รันบน <strong>ทุกเครื่อง</strong> แล้วเทียบกัน — ทั้ง 6 เครื่องต้องได้ผลเหมือนกันทุกข้อ</p>
 <div class="cb"><pre><code class="language-bash">echo "=== $(hostname) ==="
 echo "kernel : $(uname -r)"
@@ -759,6 +803,7 @@ node ที่ kernel ต่างกันจะให้อาการ networ
   function mine(){ var a=load(); return (a[CH]||[]); }
   function setMine(list){ var a=load(); a[CH]=list; save(a); }
 
+  var jumpSel=document.getElementById('jumpsel'), stick;
   var toastEl=document.getElementById('toast'), toastT;
   function toast(msg){
     toastEl.textContent=msg; toastEl.classList.add('show');
@@ -774,6 +819,12 @@ node ที่ kernel ต่างกันจะให้อาการ networ
       var b=s.querySelector('.done-btn');
       if(b) b.querySelector('.lbl').textContent = is ? 'ทำแล้ว' : 'ทำแล้ว';
     });
+    if(jumpSel){
+      [].forEach.call(jumpSel.options, function(o){
+        if(!o.value) return;
+        o.textContent=(done.indexOf(+o.value)>=0 ? '✓ ' : '')+o.dataset.t;
+      });
+    }
     var n=done.length;
     document.getElementById('pcount').textContent=n+'/'+TOTAL;
     document.getElementById('pbar').style.width=(TOTAL?100*n/TOTAL:0)+'%';
@@ -901,6 +952,7 @@ node ที่ kernel ต่างกันจะให้อาการ networ
         var dm=d.dataset.machine||'all';
         d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
       });
+      syncJump(); spy();
       try{ localStorage.setItem(MKEY,m); }catch(e){}
       paintFab();
     };
@@ -913,11 +965,60 @@ node ที่ kernel ต่างกันจะให้อาการ networ
     applyM(savedM);
   }
 
+  /* ---------- แถบทางลัด ---------- */
+  stick=document.querySelector('.stick');
+  function stickH(){ return stick ? stick.getBoundingClientRect().height : 0; }
+  function fitPad(){
+    /* หัวข้อต้องไม่โดนแถบที่ติดหนึบทับตอนกดทางลัด — ความสูงของแถบไม่เท่ากันระหว่าง
+       จอใหญ่กับจอเล็ก จึงวัดเอาจริงแทนที่จะ hardcode ตัวเลขไว้ใน css
+       แต่ถ้าวัดได้ตอนหน้ายังไม่วางเลย์เอาต์ ค่าที่ได้จะเพี้ยนจนดันหัวข้อไปกลางจอ */
+    var h=stickH();
+    if(!h || !window.innerHeight) return;
+    document.documentElement.style.scrollPaddingTop=Math.min(h+12, innerHeight*0.6)+'px';
+  }
+  function syncJump(){
+    if(!jumpSel) return;
+    /* ขั้นที่แถบกรองเครื่องซ่อนอยู่ ต้องหายจากลิสต์ด้วย
+       ไม่งั้นเลือกแล้ววิ่งไปจอดตรงส่วนที่มองไม่เห็น */
+    [].forEach.call(jumpSel.options, function(o){
+      if(!o.value) return;
+      var sec=document.getElementById('step-'+o.value);
+      o.hidden = !!(sec && sec.classList.contains('hide-m'));
+    });
+  }
+  function spy(){
+    if(!jumpSel) return;
+    var line=stickH()+16, cur='';
+    document.querySelectorAll('.step').forEach(function(s){
+      if(s.classList.contains('hide-m')) return;
+      if(s.getBoundingClientRect().top<=line) cur=s.dataset.step;
+    });
+    /* ตัวที่โชว์อยู่ = ขั้นที่กำลังอ่าน แต่ไม่แตะตอนลิสต์กำลังเปิด เดี๋ยวค่าเปลี่ยนใต้มือ */
+    if(document.activeElement!==jumpSel && jumpSel.value!==cur) jumpSel.value=cur;
+  }
+  if(jumpSel){
+    jumpSel.addEventListener('change', function(){
+      var sec=jumpSel.value && document.getElementById('step-'+jumpSel.value);
+      if(!sec) return;
+      sec.scrollIntoView();          /* ใช้ scroll-padding-top ที่ fitPad วัดไว้ */
+      jumpSel.blur();                /* คืน scroll ให้ล้อเมาส์ ไม่ค้างอยู่ที่ลิสต์ */
+    });
+    var spyQ=false;
+    window.addEventListener('scroll', function(){
+      if(spyQ) return;
+      spyQ=true;
+      requestAnimationFrame(function(){ spyQ=false; spy(); });
+    }, {passive:true});
+    window.addEventListener('resize', function(){ fitPad(); spy(); });
+    fitPad(); syncJump(); spy();
+  }
+
   /* ---------- เมนูบนจอเล็ก ---------- */
   var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');
   if(burger) burger.addEventListener('click', function(){ sb.classList.toggle('open'); });
 
   paint();
+  spy();
 })();
 </script>
 </body>

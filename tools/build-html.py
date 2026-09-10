@@ -24,6 +24,7 @@ import json
 import posixpath
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 try:
@@ -42,8 +43,14 @@ DOCS = ROOT / "docs"
 OUT = ROOT / "html"
 
 # ลำดับบทตามที่ควรอ่าน — ไฟล์ที่ไม่อยู่ในนี้จะไม่ถูกแปลง
-ANSIBLE_SRC = "ansible/README.md"   # runbook ของ Ansible — คนละโฟลเดอร์กับ docs/
-ANSIBLE_OUT = "ansible.html"
+# หน้าที่อยู่นอก docs/ — (path จริงเทียบจาก root, ชื่อไฟล์ html, ชื่อสั้นในสารบัญ)
+# ที่ต้องมีลิสต์นี้เพราะ runbook บางตัวอยู่ติดกับของที่มันสั่ง ไม่ใช่ใน docs/ และย้ายมาไม่ได้:
+# README ของ deployments/<service>/ ต้องอยู่ข้าง manifest ไม่งั้นคนแก้ไฟล์จะไม่เห็นมัน
+EXTRA_PAGES = [
+    ("ansible/README.md",                "ansible.html",          "Ansible runbook"),
+    ("deployments/zeeme-ads/README.md",  "deploy-zeeme-ads.html", "Deploy zeeme-ads"),
+    ("deployments/demo/README.md",       "deploy-demo.html",      "Demo — auth ที่ Gateway"),
+]
 
 CHAPTERS = [
     ("00-overview.md", "ภาพรวมและลำดับงาน"),
@@ -60,8 +67,26 @@ CHAPTERS = [
     ("11-deploy-app.md", "Deploy App"),
     ("12-day2-operations.md", "Day-2 Operations"),
     ("13-troubleshooting.md", "Troubleshooting"),
+    ("14-grafana-logs.md", "ดู log ใน Grafana"),
+    ("15-headlamp.md", "Headlamp — เว็บ UI"),
     ("CHECKLIST.md", "เช็กลิสต์งานค้าง"),
 ]
+
+
+def slugify(text: str) -> str:
+    r"""สร้าง id ของหัวข้อด้วยกติกาเดียวกับ GitHub
+
+    ต้องตรงกับ GitHub เพราะลิงก์ #anchor ใน docs/*.md ถูกเขียนให้ใช้ได้ตอนอ่านบน
+    GitHub อยู่แล้ว — ถ้าใช้กติกาคนละแบบ ลิงก์ชุดเดียวกันจะพังในฝั่งใดฝั่งหนึ่งเสมอ
+    เก็บตัวอักษร ตัวเลข และเครื่องหมายผสมของภาษาไทยไว้ ตัดวรรคตอนกับสัญลักษณ์ออก
+    """
+    keep = []
+    for ch in text.strip().lower():
+        # \w ของ Python ไม่นับสระ/วรรณยุกต์ไทย (category Mn) จึงใช้ไม่ได้ที่นี่ —
+        # มันจะกินสระออกจนได้ id คนละตัวกับที่ GitHub สร้าง แล้วลิงก์พังเฉพาะหัวข้อภาษาไทย
+        if ch in "-_" or ch.isspace() or unicodedata.category(ch)[0] in "LMN":
+            keep.append(ch)
+    return re.sub(r"\s", "-", "".join(keep))
 
 
 def make_md():
@@ -82,7 +107,20 @@ def make_md():
             "</div>\n"
         )
 
+    def heading_open(self, tokens, idx, options, env):
+        # ใส่ id ให้ทุกหัวข้อ เพื่อให้ลิงก์ #anchor ที่เขียนไว้ใน .md ใช้ได้จริงในหน้าเว็บ
+        # ก่อนหน้านี้ renderer ไม่ใส่ id เลย สารบัญอาการของบทที่ 13 จึงกดแล้วไม่ไปไหน
+        tok = tokens[idx]
+        slug = slugify(tokens[idx + 1].content if idx + 1 < len(tokens) else "")
+        used = env.setdefault("_slugs", {})
+        n = used.get(slug, 0)
+        used[slug] = n + 1
+        if n:
+            slug = f"{slug}-{n}"
+        return f'<{tok.tag} id="{slug}">'
+
     md.add_render_rule("fence", fence)
+    md.add_render_rule("heading_open", heading_open)
     return md
 
 
@@ -106,8 +144,9 @@ def rewrite_links(html: str, src_dir: str = "docs") -> str:
             name = Path(abs_path).name
             if any(name == c for c, _ in CHAPTERS):
                 return f'href="{name[:-3]}.html{tail}"'
-            if abs_path == ANSIBLE_SRC:
-                return f'href="{ANSIBLE_OUT}{tail}"'
+            for extra_src, extra_out, _short in EXTRA_PAGES:
+                if abs_path == extra_src:
+                    return f'href="{extra_out}{tail}"'
         # ไฟล์อื่นในrepo — html/ อยู่ชั้นเดียวกับ docs/ จึงถอยออกหนึ่งชั้น
         return f'href="../{abs_path}{tail}"'
 
@@ -123,10 +162,13 @@ def split_steps(html: str):
     intro = parts[0] if parts else ""
     steps = []
     for i, chunk in enumerate(parts[1:], start=1):
-        m = re.match(r"<h2[^>]*>(.*?)</h2>", chunk, re.S)
-        title = re.sub(r"<[^>]+>", "", m.group(1)).strip() if m else f"ขั้นที่ {i}"
+        m = re.match(r"<h2([^>]*)>(.*?)</h2>", chunk, re.S)
+        title = re.sub(r"<[^>]+>", "", m.group(2)).strip() if m else f"ขั้นที่ {i}"
         body = chunk[m.end():] if m else chunk
-        steps.append({"n": i, "title": title, "body": body})
+        # เก็บ id ของ h2 ไว้ด้วย — page() สร้าง step-head ขึ้นใหม่ ถ้าไม่ส่งต่อ id จะหายไป
+        # แล้วลิงก์ #anchor ที่ชี้มาหัวข้อระดับ h2 (สารบัญอาการของบท 13 และ 14) จะกดแล้วไม่ไปไหน
+        am = re.search(r'id="([^"]*)"', m.group(1)) if m else None
+        steps.append({"n": i, "title": title, "body": body, "anchor": am.group(1) if am else ""})
     return intro, steps
 
 
@@ -182,7 +224,7 @@ def page(chapter_file, title, subtitle, intro, steps, prev_ch, next_ch, nav, tot
         step_html.append(
             f'<section class="step" id="step-{s["n"]}" data-step="{s["n"]}" data-machines="{s["tags"]}">'
             '<div class="step-head">'
-            f'<h2>{s["title"]}</h2>'
+            f'<h2{f' id="{s["anchor"]}"' if s["anchor"] else ""}>{s["title"]}</h2>'
             f'<span class="head-tick" title="ทำแล้ว">✓</span>'
             "</div>"
             f'<div class="step-body">{s["body"]}</div>'
@@ -194,6 +236,29 @@ def page(chapter_file, title, subtitle, intro, steps, prev_ch, next_ch, nav, tot
             '</div>'
             "</section>"
         )
+
+    # แถบทางลัดบนหัวหน้า — dropdown ตัวเดียว เพราะบทหนึ่งมีได้ถึง 18 ขั้น
+    # เรียงเป็นปุ่มจะกินที่จนเนื้อหาถูกดันพ้นจอตั้งแต่ยังไม่เริ่มอ่าน
+    # ค่า value ชี้ที่ step-N ไม่ใช่ slug ของ h2 เพราะ id นี้ไม่เปลี่ยนตามการแก้ชื่อหัวข้อ
+    # และเป็น id เดียวกับที่ปุ่ม "ขั้นที่ต้องทำ" ใช้อยู่แล้ว
+    if steps:
+        # ป้ายในลิสต์ = ชื่อหัวข้อตรงตัวที่พิมพ์อยู่บนหน้า ไม่เติมเลขขั้นของเราเข้าไป
+        # หลายบทมีเลขของตัวเองอยู่ในชื่อหัวข้ออยู่แล้ว ("5. pod ข้าม node ไม่ได้")
+        # เติมเข้าไปอีกจะได้เลขสองชุดซ้อนกัน แล้วคนอ่านต้องเดาว่าเลขไหนคือเลขอะไร
+        opts = "".join(
+            f'<option value="{s["n"]}" data-t="{s["title"]}">{s["title"]}</option>'
+            for s in steps
+        )
+        jump_html = (
+            '<div class="jump" id="jump">'
+            '<label class="jump-l" for="jumpsel">ทางลัด</label>'
+            '<select class="jump-s" id="jumpsel">'
+            '<option value="">— เลือกขั้นตอนที่จะไป —</option>'
+            f'{opts}</select>'
+            '</div>'
+        )
+    else:
+        jump_html = ""
 
     nav_html = "".join(
         f'<a href="{f[:-3]}.html" class="nav-item{" cur" if f == chapter_file else ""}" '
@@ -233,6 +298,7 @@ def page(chapter_file, title, subtitle, intro, steps, prev_ch, next_ch, nav, tot
         ("{prev}", prev_html),
         ("{next}", next_html),
         ("{tabs}", tabs_html),
+        ("{jump}", jump_html),
     ):
         out = out.replace(k, val)
     return out
@@ -254,18 +320,21 @@ TEMPLATE = """<!doctype html>
 </aside>
 
 <div class="wrap">
-  <header class="top">
-    <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
-    <div class="top-t">
-      <h1>{title}</h1>
-      <p class="sub">{subtitle}</p>
-    </div>
-    <div class="top-p">
-      <span id="pcount">0/{total}</span>
-      <div class="bar"><i id="pbar"></i></div>
-      <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
-    </div>
-  </header>
+  <div class="stick">
+    <header class="top">
+      <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
+      <div class="top-t">
+        <h1>{title}</h1>
+        <p class="sub">{subtitle}</p>
+      </div>
+      <div class="top-p">
+        <span id="pcount">0/{total}</span>
+        <div class="bar"><i id="pbar"></i></div>
+        <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
+      </div>
+    </header>
+    {jump}
+  </div>
 
   <main>
     <div class="intro">{intro}</div>
@@ -293,6 +362,7 @@ CSS = """
   --accent:#2d6ae0; --accent-soft:#eaf1fe;
   --done-bg:#eaf7ee; --done-line:#8fd3a8; --done-ink:#1c6b3c;
   --code-bg:#1e2530; --code-ink:#e6edf3; --warn:#b4530a;
+  --f1:#d1372b; --f1-bg:#fdeceb;
   --radius:10px;
   --font:"Segoe UI","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;
   --mono:"Cascadia Mono",Consolas,"Noto Sans Thai Mono",monospace;
@@ -303,6 +373,7 @@ CSS = """
     --accent:#6ea3ff; --accent-soft:#1b2740;
     --done-bg:#152a1e; --done-line:#2f6b47; --done-ink:#7fd9a3;
     --code-bg:#0d1117; --code-ink:#e6edf3; --warn:#e0913f;
+    --f1:#ff8b80; --f1-bg:#331b19;
   }
 }
 html{scroll-behavior:smooth;scroll-padding-top:84px}
@@ -326,7 +397,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
 
 /* ---------- layout ---------- */
 .wrap{margin-left:260px;min-height:100vh}
-.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;
+.stick{position:sticky;top:0;z-index:30}
+.top{display:flex;align-items:center;gap:16px;
   padding:12px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
 .top-t{flex:1;min-width:0}
 .top h1{margin:0;font-size:19px;line-height:1.3}
@@ -340,6 +412,19 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
 .reset:hover{border-color:var(--accent);color:var(--accent)}
 .burger{display:none;border:0;background:transparent;color:var(--ink);font-size:20px;cursor:pointer}
 main{max-width:920px;padding:24px 30px 120px}
+
+/* ---------- แถบทางลัดไปแต่ละขั้น ---------- */
+/* dropdown ตัวเดียว สูงบรรทัดเดียวเท่ากันทุกบท ไม่ว่าบทนั้นจะมีกี่ขั้น
+   และตัวที่โชว์อยู่คือขั้นที่กำลังอ่าน จึงบอกตำแหน่งตัวเองไปในตัว */
+.jump{display:flex;gap:9px;align-items:center;
+  padding:7px 30px;background:var(--panel);border-bottom:1px solid var(--line)}
+.jump-l{color:var(--dim);font-size:12.5px;flex-shrink:0}
+.jump-s{flex:1;min-width:0;max-width:520px;font:inherit;font-size:13px;
+  color:var(--ink);background:var(--panel);border:1px solid var(--line);
+  border-radius:7px;padding:4px 9px;cursor:pointer}
+.jump-s:hover,.jump-s:focus{border-color:var(--accent);outline:none}
+/* ขั้นที่ทำแล้วขึ้น ✓ นำหน้าในลิสต์ — กวาดตาเห็นว่าค้างตรงไหน */
+.jump-s option{color:var(--ink);background:var(--panel)}
 
 /* ---------- steps ---------- */
 .intro{padding:0 2px 6px}
@@ -387,6 +472,30 @@ th{background:var(--accent-soft);font-weight:600}
 tbody tr:nth-child(even){background:rgba(128,128,128,.045)}
 hr{border:0;border-top:1px solid var(--line);margin:22px 0}
 img{max-width:100%}
+
+/* ---------- ภาพประกอบ (SVG ฝังในเนื้อ markdown) ---------- */
+.fig{margin:18px 0;padding:14px 14px 10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto}
+.fig svg{display:block;width:100%;height:auto;min-width:560px}
+.fig figcaption{margin-top:9px;font-size:12.5px;color:var(--dim);text-align:center;line-height:1.6}
+.fig text{font-family:var(--font);font-size:13px;fill:var(--ink)}
+.fig text.t-mono{font-family:var(--mono);font-size:11.5px}
+.fig text.t-dim{fill:var(--dim);font-size:11.5px}
+.fig text.t-ok{fill:var(--done-ink);font-size:12px}
+.fig text.t-bad{fill:var(--f1);font-size:12px}
+.fig text.t-sm{font-size:12px}
+.fig text.t-hd{font-size:13.5px;font-weight:700}
+.fig .box{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+.fig .box-p{fill:var(--panel);stroke:var(--line);stroke-width:1.5}
+.fig .box-bad{fill:var(--f1-bg);stroke:var(--f1);stroke-width:1.5}
+.fig .box-ok{fill:var(--done-bg);stroke:var(--done-line);stroke-width:1.5}
+.fig .zone{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:6 4}
+.fig .wall{fill:none;stroke:var(--f1);stroke-width:2;stroke-dasharray:7 5}
+.fig .ln{stroke:var(--dim);stroke-width:1.6;fill:none}
+.fig .ln-a{stroke:var(--accent);stroke-width:2;fill:none}
+.fig .ln-ok{stroke:var(--done-line);stroke-width:2;fill:none}
+.fig .ln-bad{stroke:var(--f1);stroke-width:2;fill:none}
+.fig .ln-d{stroke-dasharray:5 4}
 
 /* ---------- code block ---------- */
 .cb{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
@@ -443,13 +552,14 @@ img{max-width:100%}
   .burger{display:block}
   main{padding:18px 16px 120px}
   .top{padding:10px 14px}
+  .jump{padding:6px 12px}
   .top h1{font-size:16px}
   .top-p .bar{display:none}
   .fab-txt{display:none}
   .fab{padding:15px;border-radius:50%}
 }
 @media print{
-  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger{display:none}
+  .sidebar,.fab,.done-btn,.cb-copy,.top-p,.burger,.jump{display:none}
   .wrap{margin-left:0}
 }
 
@@ -478,6 +588,7 @@ JS = r"""
   function mine(){ var a=load(); return (a[CH]||[]); }
   function setMine(list){ var a=load(); a[CH]=list; save(a); }
 
+  var jumpSel=document.getElementById('jumpsel'), stick;
   var toastEl=document.getElementById('toast'), toastT;
   function toast(msg){
     toastEl.textContent=msg; toastEl.classList.add('show');
@@ -493,6 +604,12 @@ JS = r"""
       var b=s.querySelector('.done-btn');
       if(b) b.querySelector('.lbl').textContent = is ? 'ทำแล้ว' : 'ทำแล้ว';
     });
+    if(jumpSel){
+      [].forEach.call(jumpSel.options, function(o){
+        if(!o.value) return;
+        o.textContent=(done.indexOf(+o.value)>=0 ? '✓ ' : '')+o.dataset.t;
+      });
+    }
     var n=done.length;
     document.getElementById('pcount').textContent=n+'/'+TOTAL;
     document.getElementById('pbar').style.width=(TOTAL?100*n/TOTAL:0)+'%';
@@ -620,6 +737,7 @@ JS = r"""
         var dm=d.dataset.machine||'all';
         d.classList.toggle('hide-m', !(m==='all' || dm===m || dm==='all'));
       });
+      syncJump(); spy();
       try{ localStorage.setItem(MKEY,m); }catch(e){}
       paintFab();
     };
@@ -632,11 +750,60 @@ JS = r"""
     applyM(savedM);
   }
 
+  /* ---------- แถบทางลัด ---------- */
+  stick=document.querySelector('.stick');
+  function stickH(){ return stick ? stick.getBoundingClientRect().height : 0; }
+  function fitPad(){
+    /* หัวข้อต้องไม่โดนแถบที่ติดหนึบทับตอนกดทางลัด — ความสูงของแถบไม่เท่ากันระหว่าง
+       จอใหญ่กับจอเล็ก จึงวัดเอาจริงแทนที่จะ hardcode ตัวเลขไว้ใน css
+       แต่ถ้าวัดได้ตอนหน้ายังไม่วางเลย์เอาต์ ค่าที่ได้จะเพี้ยนจนดันหัวข้อไปกลางจอ */
+    var h=stickH();
+    if(!h || !window.innerHeight) return;
+    document.documentElement.style.scrollPaddingTop=Math.min(h+12, innerHeight*0.6)+'px';
+  }
+  function syncJump(){
+    if(!jumpSel) return;
+    /* ขั้นที่แถบกรองเครื่องซ่อนอยู่ ต้องหายจากลิสต์ด้วย
+       ไม่งั้นเลือกแล้ววิ่งไปจอดตรงส่วนที่มองไม่เห็น */
+    [].forEach.call(jumpSel.options, function(o){
+      if(!o.value) return;
+      var sec=document.getElementById('step-'+o.value);
+      o.hidden = !!(sec && sec.classList.contains('hide-m'));
+    });
+  }
+  function spy(){
+    if(!jumpSel) return;
+    var line=stickH()+16, cur='';
+    document.querySelectorAll('.step').forEach(function(s){
+      if(s.classList.contains('hide-m')) return;
+      if(s.getBoundingClientRect().top<=line) cur=s.dataset.step;
+    });
+    /* ตัวที่โชว์อยู่ = ขั้นที่กำลังอ่าน แต่ไม่แตะตอนลิสต์กำลังเปิด เดี๋ยวค่าเปลี่ยนใต้มือ */
+    if(document.activeElement!==jumpSel && jumpSel.value!==cur) jumpSel.value=cur;
+  }
+  if(jumpSel){
+    jumpSel.addEventListener('change', function(){
+      var sec=jumpSel.value && document.getElementById('step-'+jumpSel.value);
+      if(!sec) return;
+      sec.scrollIntoView();          /* ใช้ scroll-padding-top ที่ fitPad วัดไว้ */
+      jumpSel.blur();                /* คืน scroll ให้ล้อเมาส์ ไม่ค้างอยู่ที่ลิสต์ */
+    });
+    var spyQ=false;
+    window.addEventListener('scroll', function(){
+      if(spyQ) return;
+      spyQ=true;
+      requestAnimationFrame(function(){ spyQ=false; spy(); });
+    }, {passive:true});
+    window.addEventListener('resize', function(){ fitPad(); spy(); });
+    fitPad(); syncJump(); spy();
+  }
+
   /* ---------- เมนูบนจอเล็ก ---------- */
   var burger=document.getElementById('burger'), sb=document.getElementById('sidebar');
   if(burger) burger.addEventListener('click', function(){ sb.classList.toggle('open'); });
 
   paint();
+  spy();
 })();
 """
 
@@ -700,16 +867,18 @@ INDEX_TEMPLATE = """<!doctype html>
 def sources():
     """ทุกหน้าที่จะสร้าง — (ชื่อเสมือน, ชื่อสั้น, path จริง, โฟลเดอร์ต้นทาง)
 
-    ansible/README.md อยู่คนละโฟลเดอร์กับ docs/ จึงต้องบอกโฟลเดอร์ต้นทางด้วย
+    หน้าใน EXTRA_PAGES อยู่คนละโฟลเดอร์กับ docs/ จึงต้องบอกโฟลเดอร์ต้นทางด้วย
     ไม่งั้นลิงก์ relative ในไฟล์จะถูกแปลผิด
     """
     out = []
     for f, t in CHAPTERS:
         if (DOCS / f).exists():
             out.append((f, t, DOCS / f, "docs"))
-    ans = ROOT / ANSIBLE_SRC
-    if ans.exists():
-        out.append((ANSIBLE_OUT[:-5] + ".md", "Ansible runbook", ans, "ansible"))
+    for extra_src, extra_out, short in EXTRA_PAGES:
+        path = ROOT / extra_src
+        if path.exists():
+            # src_dir คือโฟลเดอร์ที่ไฟล์ .md อยู่ ใช้แปลลิงก์ relative ในไฟล์ให้ถูก
+            out.append((extra_out[:-5] + ".md", short, path, posixpath.dirname(extra_src)))
     return out
 
 
