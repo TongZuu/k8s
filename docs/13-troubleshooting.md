@@ -27,11 +27,17 @@ cilium status                                        # network ยังดี�
 ```bash
 NS=myhr-prod                                   # namespace ที่มีปัญหา
 APP=zeeme-ads                                  # ชื่อ Deployment
-POD=$(kubectl -n "$NS" get pod -l app="$APP" -o name | head -1 | cut -d/ -f2)
+POD=$(kubectl -n "$NS" get pod -l app.kubernetes.io/name="$APP" -o name | head -1 | cut -d/ -f2)
 SVC=$APP
 NODE=$(kubectl -n "$NS" get pod "$POD" -o jsonpath='{.spec.nodeName}')
 echo "NS=$NS POD=$POD NODE=$NODE"
 ```
+
+> 🔴 **`-l app.kubernetes.io/name=` ไม่ใช่ `-l app=`** — manifest ของเราติด label ตาม
+> แบบแผน `app.kubernetes.io/*` (ดู `deployments/zeeme-ads/deployment.yaml`) ถ้าใช้ `-l app=`
+> จะไม่ match อะไรเลย แล้ว `$POD` จะกลายเป็นค่าว่างโดยไม่มี error สักบรรทัด
+> · แต่ใน **LogQL ของ Loki ใช้ `app=`** เพราะ Alloy แปลงชื่อ label ให้แล้ว (`alloy-values.yaml`)
+> สองที่นี้เขียนไม่เหมือนกันโดยตั้งใจ ไม่ใช่พิมพ์ผิด
 
 > `$POD_A` / `$POD_B` / `$POD_B_IP` ใช้เฉพาะหัวข้อ **5 · pod คุยข้าม node ไม่ได้** — ตั้งค่าที่หัวข้อนั้น
 
@@ -53,12 +59,17 @@ echo "NS=$NS POD=$POD NODE=$NODE"
 | [10](#10-drain-ค้าง) | `drain` ค้าง | PDB / replica |
 | [11](#11-pod-running-แต่เรียกไม่ได้) | pod `Running` แต่เรียกไม่ได้ | NetworkPolicy |
 | [12](#12-kubeadm-init-ตายตั้งแต่ยังไม่เริ่ม) | `kubeadm init` ตายตั้งแต่ยังไม่เริ่ม | ไฟล์ `--config` — โครงไฟล์ / ค่าข้างใน |
+| [13](#13-r-command-not-found) | `$'\r': command not found` | ไฟล์ CRLF ที่ scp มาจาก Windows |
 
 > **อาการที่เฉพาะเจาะจงกับ Cilium + Envoy Gateway** (404/503 จาก Gateway, HTTPRoute ไม่ผูก,
 > cert ของ listener, ARP/L2, NetworkPolicy ตัด Envoy) อยู่ในหน้าแยกที่ค้นด้วยข้อความ error ได้:
 > [`../html/cilium-envoy-scenarios.html`](../html/cilium-envoy-scenarios.html) —
 > **28 อาการ** เรียงตามความถี่ที่เจอจริง + **25 แบบแผน** ว่าควรออกแบบยังไงตั้งแต่แรก
 > บทนี้ยังเป็นจุดตั้งต้นเสมอ
+
+> 🔍 **เมื่อ `kubectl logs` ไม่มีของให้ดูแล้ว** (pod ตายไปแล้ว · rollout ทับไปแล้ว ·
+> ต้องดูย้อนหลังข้ามคืน) ให้ไปที่ [บทที่ 14 — ดู log ใน Grafana ตามอาการของ pod](14-grafana-logs.md)
+> ซึ่งเรียงตามอาการชุดเดียวกับสารบัญข้างบน
 
 ---
 
@@ -296,6 +307,10 @@ Spring Boot ที่ใช้เวลาเริ่ม 60 วินาที�
 ### `violates PodSecurity "restricted"`
 manifest ยังใช้ `runAsUser: 0` — เทียบกับแม่แบบ (บทที่ 11)
 
+> 🔍 **`--previous` ให้ดูได้แค่รอบก่อนหน้า 1 รอบ** — pod ที่วน crash มาทั้งคืน รอบแรก
+> ซึ่งเป็นรอบที่บอกสาเหตุจริงหายไปแล้ว **แต่ Loki เก็บครบทุกรอบ**
+> ดูวิธีไล่ที่ [บทที่ 14 ข้อ 1](14-grafana-logs.md#1--pod-crashloopbackoff)
+
 ---
 
 ## 5. pod ข้าม node ไม่ได้
@@ -353,9 +368,14 @@ cat /etc/modules-load.d/k8s.conf
 
 ### 5.4 ดูของจริงด้วย Hubble
 ```bash
-kubectl -n kube-system exec -it ds/cilium -- \
-  hubble observe --namespace "$NS" --verdict DROPPED --last 100
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    hubble observe --namespace "$NS" --verdict DROPPED --last 50
+done
 ```
+> วนทุก agent เพราะ flow อยู่ใน ring buffer ของเครื่องที่ pod รันเท่านั้น —
+> `exec ds/cilium` ได้เครื่องเดียว ถามผิดเครื่องจะได้ผลว่างทั้งที่มี flow ถูก drop จริง
 
 ---
 
@@ -511,6 +531,10 @@ bash /root/k8s/config/gateway/import-public-cert.sh --dry-run \
 
 ## 9. image pull ไม่ผ่าน
 
+> วิธีสร้าง/ซ่อม `regcred` อยู่ที่ [บทที่ 10 หัวข้อ 7](10-security.md) —
+> เช็ก `curl https://$REGISTRY_HOST/v2/` ก่อนเสมอ ถ้าไม่ได้ `401` แปลว่าไม่ใช่ปัญหารหัส
+> แล้วสร้าง secret กี่รอบก็ไม่หาย
+
 ```bash
 kubectl -n "$NS" describe pod "$POD" | grep -A5 Failed
 ```
@@ -575,8 +599,11 @@ kubectl -n "$NS" get svc "$SVC" -o jsonpath='{.spec.selector}'; echo
 
 **ถ้า endpoints มีแต่ยังเรียกไม่ได้ → เกือบทุกครั้งเป็น NetworkPolicy:**
 ```bash
-kubectl -n kube-system exec -it ds/cilium -- \
-  hubble observe --namespace "$NS" --verdict DROPPED --last 50
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    hubble observe --namespace "$NS" --verdict DROPPED --last 20
+done
 ```
 **นี่คือวิธีที่ถูกต้อง — ดูของจริงว่าอะไรถูก drop แล้วเปิดเฉพาะเส้นนั้น**
 ไม่ใช่เดาเอาจากเอกสาร
@@ -586,6 +613,10 @@ kubectl -n kube-system exec -it ds/cilium -- \
 kubectl -n "$NS" run t --rm -it --restart=Never --image=curlimages/curl -- \
   curl -sv "http://${SVC}"
 ```
+
+> 🔍 **ถ้าอยากรู้ว่า request วิ่งไปถึงไหนแล้วหายตรงไหน** ให้เทียบ log ของ Envoy Gateway
+> กับ log ของ app ในหน้าเดียวกัน — [บทที่ 14 ข้อ 4](14-grafana-logs.md#4--pod-running-แต่-client-ได้-5xx)
+> มีตารางอ่านผลว่าฝั่งไหนเงียบแปลว่าอะไร
 
 ---
 
@@ -766,6 +797,35 @@ kubeadm token create --ttl 2h --print-join-command
 
 ---
 
+## 13. `$'\r': command not found`
+
+```
+/root/k8s/versions.env: line 13: $'\r': command not found
+```
+
+ไฟล์บนเครื่องเป็น **CRLF** — มาจากการ scp ตอนที่repoยังไม่มี [`.gitattributes`](../.gitattributes)
+บังคับ LF หรือมีคนแก้ไฟล์บนเครื่องด้วยเครื่องมือฝั่ง Windows · bash อ่าน `\r`
+ท้ายบรรทัดเป็นชื่อคำสั่ง และถ้าสคริปต์นั้นตั้ง `set -e` ไว้จะตายทันทีตรงบรรทัดนั้น
+
+**อาการที่หลอกกว่า:** ถ้าไม่ตาย ค่าตัวแปรจะมี `\r` ติดไปด้วยเงียบ ๆ —
+`VIP="192.168.50.100\r"` แล้วทุกคำสั่งที่ใช้ค่านี้จะต่อไม่ติดโดยไม่มี error บอกสาเหตุ
+
+**ตรวจว่ามีไฟล์ไหนบ้าง:**
+```bash
+grep -rlU $'\r' /root/k8s/versions.env /root/k8s/config 2>/dev/null || echo "ไม่มี CRLF"
+```
+
+**แก้ทีเดียวทุกไฟล์:**
+```bash
+grep -rlU $'\r' /root/k8s/versions.env /root/k8s/config 2>/dev/null | xargs -r sed -i 's/\r$//'
+```
+
+> repoบังคับ LF ไว้แล้วผ่าน `.gitattributes` ไฟล์ที่ scp ขึ้นมา**หลังจากนั้น**จึงไม่มีปัญหานี้
+> ที่ยังเจอคือสำเนาเก่าที่ค้างอยู่บนเครื่องตั้งแต่ก่อนหน้า — แก้ครั้งเดียวจบ
+> หรือจะ scp ทับใหม่จากrepoก็ได้เหมือนกัน
+
+---
+
 ## รวมคำสั่งที่ใช้บ่อย
 
 ```bash
@@ -773,7 +833,7 @@ kubeadm token create --ttl 2h --print-join-command
 kubectl get nodes && kubectl get pods -A | grep -v Running && cilium status
 
 # ดู flow ที่ถูก drop
-kubectl -n kube-system exec -it ds/cilium -- hubble observe --verdict DROPPED --last 100
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do echo "== $p"; kubectl -n kube-system exec "$p" -c cilium-agent -- hubble observe --verdict DROPPED --last 30; done
 
 # HAProxy backend
 curl -s http://127.0.0.1:8404/stats
