@@ -143,10 +143,16 @@ kubectl -n myhr-prod describe pod <ชื่อ> | tail -20
 ### pod `Running` แต่เรียกไม่ได้
 เกือบทุกครั้งเป็น NetworkPolicy — ดูของจริงอย่าเดา:
 ```bash
-kubectl -n kube-system exec -it ds/cilium -- \
-  hubble observe --namespace myhr-prod --verdict DROPPED --last 50
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  echo "== $p"
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    hubble observe --namespace myhr-prod --verdict DROPPED --last 20
+done
 ```
 แล้วเปิดเฉพาะเส้นที่ถูก drop จริง
+
+> ต้องวนทุก agent — flow อยู่ใน ring buffer ของเครื่องที่ pod รันเท่านั้น
+> `exec ds/cilium` ได้เครื่องเดียวที่ Kubernetes เลือกให้ ถามผิดเครื่องจะได้ผลว่าง
 
 ---
 
