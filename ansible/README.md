@@ -250,6 +250,17 @@ ansible-playbook prepare-os.yml --check --diff --limit k8s-master01 --skip-tags 
 > **`--check` ตรวจได้ไม่ครบ** — Ansible ข้าม `shell`/`command` ทุกตัวใน check mode
 > (`skipped=6` ที่เห็นคือพวกนั้น) `changed=0` จึงยังไม่ใช่หลักฐานเต็ม
 > ตัวที่พิสูจน์จริงคือ [ขั้น 5](#ขั้น-5---พิสูจน์ว่า-playbook-เทียบเท่าการทำมือ)
+>
+> 🔴 **เคยกัดจริง (11 ก.ย. 2026):** ด่าน `versionlock` เป็น `shell` จึงถูกข้ามใน
+> `--check` แล้ว `failed_when` ไม่เคยถูกประเมิน · `ansible.cfg` ตั้ง
+> `display_skipped_hosts = False` ไว้ด้วย จึงไม่มีบรรทัดไหนบอกว่ามันถูกข้าม —
+> `--check` เขียวหมด แล้วรันจริงตายที่ task นั้นทันที (`stdout: "0"`)
+> · แก้แล้วด้วย `check_mode: false` เฉพาะด่านนั้น
+>
+> เส้นแบ่งที่ใช้ตัดสิน: เงื่อนไข **"ก่อน"** ที่ playbook ไม่ทำให้ (versionlock)
+> ต้องเห็นตั้งแต่ dry run · เงื่อนไข **"หลัง"** ที่ playbook สร้างเอง
+> (เวลา sync ซึ่งมาหลังเปิด chronyd) ต้องปล่อยให้ skip ไม่งั้น `--check` จะ fail
+> ทั้งที่รันจริงแล้วผ่าน
 
 > **ทำไม `versions.env` โหลดใน `pre_tasks` ไม่ใช่ play แยก** — `--limit` มีผลกับ *ทุก* play
 > ถ้าแยก play ที่ `hosts: localhost` ไว้ต่างหาก พอสั่ง `--limit k8s-master01` มันจะตัด play นั้นทิ้ง

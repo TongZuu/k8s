@@ -85,6 +85,17 @@
         cmd: dnf versionlock list 2>/dev/null | grep -c kernel-uek || true
       register: _vlock
       changed_when: false
+      # 🔴 ต้องรันแม้ใน --check ไม่งั้น dry run "ผ่าน" ทั้งที่เครื่องยังไม่พร้อม
+      #    module shell/command ถูก skip อัตโนมัติใน check mode → _vlock ไม่ถูก register
+      #    → failed_when ไม่เคยถูกประเมิน → ด่านนี้หายไปทั้งด่าน
+      #    แล้ว ansible.cfg ตั้ง display_skipped_hosts = False ไว้ จึงไม่มีบรรทัดไหน
+      #    บอกด้วยซ้ำว่ามันถูกข้าม — คนรันเห็น --check เขียวแล้วไปเจอ failed ตอนรันจริง
+      #
+      #    ต่างจาก "เวลาต้อง sync แล้ว" ข้างล่างที่ปล่อยให้ skip โดยเจตนา:
+      #    ตัวนั้นเป็นเงื่อนไข "หลัง" playbook เปิด chronyd ให้ (ข้อ 4) ถ้าบังคับให้รัน
+      #    ใน --check จะ fail ทั้งที่ playbook จริงจะแก้ให้ · ตัวนี้เป็นเงื่อนไข "ก่อน"
+      #    ที่ playbook ไม่ทำให้เลย จึงต้องเห็นตั้งแต่ dry run
+      check_mode: false
       failed_when: _vlock.stdout | int == 0
 
     # -------------------------------------------------------------------------

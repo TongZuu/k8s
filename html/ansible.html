@@ -526,6 +526,15 @@ grep -c k8s-master01 /etc/hosts   # ต้องได้ 0 หรือ 1 ไ�
 <p><strong><code>--check</code> ตรวจได้ไม่ครบ</strong> — Ansible ข้าม <code>shell</code>/<code>command</code> ทุกตัวใน check mode
 (<code>skipped=6</code> ที่เห็นคือพวกนั้น) <code>changed=0</code> จึงยังไม่ใช่หลักฐานเต็ม
 ตัวที่พิสูจน์จริงคือ <a href="#%E0%B8%82%E0%B8%B1%E0%B9%89%E0%B8%99-5---%E0%B8%9E%E0%B8%B4%E0%B8%AA%E0%B8%B9%E0%B8%88%E0%B8%99%E0%B9%8C%E0%B8%A7%E0%B9%88%E0%B8%B2-playbook-%E0%B9%80%E0%B8%97%E0%B8%B5%E0%B8%A2%E0%B8%9A%E0%B9%80%E0%B8%97%E0%B9%88%E0%B8%B2%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%97%E0%B8%B3%E0%B8%A1%E0%B8%B7%E0%B8%AD">ขั้น 5</a></p>
+<p>🔴 <strong>เคยกัดจริง (11 ก.ย. 2026):</strong> ด่าน <code>versionlock</code> เป็น <code>shell</code> จึงถูกข้ามใน
+<code>--check</code> แล้ว <code>failed_when</code> ไม่เคยถูกประเมิน · <code>ansible.cfg</code> ตั้ง
+<code>display_skipped_hosts = False</code> ไว้ด้วย จึงไม่มีบรรทัดไหนบอกว่ามันถูกข้าม —
+<code>--check</code> เขียวหมด แล้วรันจริงตายที่ task นั้นทันที (<code>stdout: &quot;0&quot;</code>)
+· แก้แล้วด้วย <code>check_mode: false</code> เฉพาะด่านนั้น</p>
+<p>เส้นแบ่งที่ใช้ตัดสิน: เงื่อนไข <strong>&quot;ก่อน&quot;</strong> ที่ playbook ไม่ทำให้ (versionlock)
+ต้องเห็นตั้งแต่ dry run · เงื่อนไข <strong>&quot;หลัง&quot;</strong> ที่ playbook สร้างเอง
+(เวลา sync ซึ่งมาหลังเปิด chronyd) ต้องปล่อยให้ skip ไม่งั้น <code>--check</code> จะ fail
+ทั้งที่รันจริงแล้วผ่าน</p>
 </blockquote>
 <blockquote>
 <p><strong>ทำไม <code>versions.env</code> โหลดใน <code>pre_tasks</code> ไม่ใช่ play แยก</strong> — <code>--limit</code> มีผลกับ <em>ทุก</em> play
