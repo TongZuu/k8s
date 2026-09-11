@@ -709,10 +709,14 @@ diff /tmp/b102.txt /tmp/b104.txt
 ไม่ใช่ทำต่อไปเงียบ ๆ</p>
 </div><div class="sub" data-machine="all"><h3 id="เรื่อง-kernel--บังคับแค่-majorminor">เรื่อง kernel — บังคับแค่ major.minor</h3>
 <div class="cb"><pre><code class="language-text">บังคับ  : สาย 6.12 + ต้องเป็น uek   → หลุดไป RHCK 5.14 หรือ 6.13 = หยุดทันที
-เตือน   : หางเลข 203/204/205        → errata ของ Oracle ไม่กระทบ Cilium
+ไม่คุม  : หางเลข 105/203/206        → errata ของ Oracle ไม่กระทบ Cilium
 </code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>เครื่องที่หางเลขไม่ตรงกับ <code>KERNEL_UEK</code> จะขึ้นคำเตือนทุกครั้งที่รัน แต่ไม่หยุดงาน
-สถานะปัจจุบันและแผนจัดการอยู่ใน <a href="CHECKLIST.html">CHECKLIST หมวด C2</a></p>
+<p><code>KERNEL_UEK</code> ใน <code>versions.env</code> จึงเป็นแค่ <code>6.12</code> — playbook เทียบ <code>startswith(&quot;6.12.&quot;)</code>
+ทั้งก่อนและหลัง reboot · เคยเก็บเลขเต็มแล้วเจอว่า 6 เครื่องได้ errata คนละตัวตามวันที่
+<code>dnf update</code> ทำให้ตรงกับใครก็ไม่ครบ (11 ก.ย. 2026) — เลิกคุมหางเลขที่นี่</p>
+<p><strong>&quot;6 เครื่องต้องเลขเดียวกัน&quot; ยังเป็นเป้าหมายอยู่</strong> แต่เป็นหน้าที่ของ alert
+<code>NodeKernelVersionMismatch</code> (บท 09) ไม่ใช่ของ playbook · สถานะและแผนอยู่ใน
+<a href="CHECKLIST.html">CHECKLIST หมวด C2</a></p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2 id="แหล่งความจริงของเวอร์ชัน">แหล่งความจริงของเวอร์ชัน</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p>playbook <strong>ไม่มีเลขเวอร์ชันหรือ IP เขียนไว้ตรง ๆ เลย</strong> — <code>pre_tasks</code> แรกจะ <code>source versions.env</code>

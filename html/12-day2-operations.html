@@ -562,7 +562,8 @@ for ip in 101 102 103 104 105 106; do
   echo -n "192.168.50.$ip: "; ssh "root@192.168.50.$ip" uname -r
 done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>อัปเดตเลข <code>KERNEL_UEK</code> ใน <code>versions.env</code> ถ้ามีการเปลี่ยน</strong></p>
+<p><strong>อัปเดต <code>KERNEL_UEK</code> ใน <code>versions.env</code> เฉพาะเมื่อ &quot;สาย&quot; เปลี่ยน</strong> (เช่น <code>6.12</code> → <code>6.13</code>)
+— patch ที่เปลี่ยนแค่หางเลข errata ไม่ต้องแก้อะไร เพราะ pin คุมแค่สาย</p>
 <blockquote>
 <p>alert <code>NodeKernelVersionMismatch</code> จะดังระหว่างทำ — <strong>เป็นเรื่องปกติ</strong>
 แต่ถ้ายังดังหลังจบงานแล้ว แปลว่ามีเครื่องที่ patch ไม่สำเร็จ</p>

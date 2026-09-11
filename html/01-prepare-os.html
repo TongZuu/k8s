@@ -492,9 +492,10 @@ ip -6 addr show "${NODE_IFACE}" | grep -c inet6
 grubby --default-kernel           # ที่จะบูตรอบหน้า
 rpm -q kernel-uek                 # ที่ติดตั้งไว้ทั้งหมด
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><code>KERNEL_UEK</code> ใน <code>versions.env</code> ต้องตรงกับ <strong>ตัวที่จะบูตรอบหน้า</strong> เพราะ playbook
-reboot แล้ว assert ซ้ำหลังบูต · เจอจริง 11 ก.ย. 2026: 6 เครื่องรัน 105/203 ปนกัน
-แต่ทุกเครื่องมี 206 รอบูตอยู่แล้ว</p>
+<p><code>KERNEL_UEK</code> ใน <code>versions.env</code> เป็นแค่<strong>สาย</strong> (<code>6.12</code>) ไม่ใช่เลขเต็ม — ทั้งสองค่าข้างบน
+จึงผ่านตราบที่ยังเป็น <code>6.12.x-…uek</code> · เจอจริง 11 ก.ย. 2026: 6 เครื่องรัน 105/203 ปนกัน
+แต่ทุกเครื่องมี 206 รอบูต — ถ้าคุมเลขเต็มจะตรงกับใครก็ไม่ครบ จึงตกลงคุมแค่สาย
+ส่วน &quot;ทุกเครื่องต้องเลขเดียวกัน&quot; ให้ alert <code>NodeKernelVersionMismatch</code> (บท 09) จับ</p>
 </blockquote>
 <blockquote>
 <p><strong>สิ่งที่บังคับคือสาย <code>6.12</code> และต้องเป็น <code>uek</code></strong> — สองอย่างนี้เปลี่ยน feature set

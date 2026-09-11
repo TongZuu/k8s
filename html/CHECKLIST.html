@@ -375,8 +375,9 @@ cluster-admin token, client key (ดู README หัวข้อสุดท้
 · รันอยู่: <code>105.51.5</code> → master01-02 · <code>203.76.7.3</code> → master03, worker01-03
 · <strong>ทุกเครื่องมี <code>6.12.0-206.104.3.3</code> ติดตั้งแล้ว และ <code>grubby --default-kernel</code>
 ชี้ไปที่ 206 ครบทั้ง 6</strong> → reboot ของ <code>prepare-os.yml</code> พาทุกเครื่องไปเลขเดียวกัน
-· <code>versions.env</code> ตรึง <code>KERNEL_UEK=6.12.0-206.104.3.3</code> แล้ว · assert ท้ายบท 01
-คือตัวพิสูจน์ — ผ่านครบ 6 เครื่องเมื่อไหร่ ติ๊กข้อนี้ได้
+· <code>versions.env</code> คุมแค่สาย <code>KERNEL_UEK=6.12</code> (ตกลงแล้ว ไม่คุมหางเลข) · playbook
+จึง<strong>ไม่ใช่</strong>ตัวพิสูจน์ข้อนี้ — ตัวพิสูจน์คือ <code>ansible k8s_nodes -a 'uname -r'</code>
+ได้เลขเดียวทั้ง 6 และ alert <code>NodeKernelVersionMismatch</code> เงียบ
 · ยืนยันซ้ำหลังจบบท 01: <code>ansible k8s_nodes -a 'uname -r'</code> ต้องได้เลขเดียวทั้ง 6
 · บทเรียน: <strong>ไม่กระทบ Cilium</strong> เพราะ major.minor เดียวกัน (6.12) แต่ตอนมี workload
 แล้วค่อยแก้คือครึ่งวัน + drain — รอบนี้ปิดได้ฟรีเพราะ playbook reboot อยู่แล้ว</p>
