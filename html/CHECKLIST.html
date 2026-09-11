@@ -369,17 +369,17 @@ cluster-admin token, client key (ดู README หัวข้อสุดท้
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2 id="c2--หนี้ค้างที่ตัดสินใจเลื่อนไว้">C2 · หนี้ค้างที่ตัดสินใจเลื่อนไว้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
 <li>
-<p>[ ] <strong>ทำ kernel ทุกเครื่องให้เป็นเลขเดียวกัน</strong> (ตัดสินใจเลื่อน 27 ส.ค. 2026)
-สถานะจริง (ตรวจครบทั้ง 6 เครื่องแล้ว 27 ส.ค. 2026):
-· <code>6.12.0-204.92.4.3.1</code> → master01, master02  (2 เครื่อง)
-· <code>6.12.0-203.76.7.3</code>   → master03, worker01-03  (4 เครื่อง)
-สาเหตุ: template แจก <code>6.12.0-105.51.5</code> เหมือนกัน แล้วแต่ละเครื่อง <code>dnf update</code>
-คนละวัน จึงได้คนละ errata
-· <strong>ไม่กระทบ Cilium</strong> เพราะ major.minor เดียวกัน (6.12) — playbook จึงแค่เตือน ไม่หยุด
-· ต้นทุนแก้ตอนนี้ ~15 นาที/เครื่อง · ตอนมี workload แล้วคือครึ่งวัน + ต้อง drain
-· ทางที่แนะนำ: <strong>ยกทั้ง 6 เครื่องไป <code>6.12.0-205.92.4.2</code></strong> (ใหม่สุด ยังมีในrepo)
-เพราะ <code>204.92.4.3.1</code> อาจหาไม่ได้แล้ว และการยก 2 เครื่องลง 203 คือ downgrade
-· ต้องเคาะ <strong>ก่อนจบ Phase 4</strong> — หลังรับ workload แล้วราคาขึ้นทันที</p>
+<p>[ ] <strong>ทำ kernel ทุกเครื่องให้เป็นเลขเดียวกัน</strong> — จะปิดเองตอนรัน <code>prepare-os.yml</code> รอบลง OS ใหม่
+(เดิมตัดสินใจเลื่อน 27 ส.ค. 2026 · ลง OS ใหม่ทั้ง 6 เครื่อง 10-11 ก.ย. 2026)
+สถานะจริง 11 ก.ย. 2026 หลังลงใหม่ ก่อนรัน playbook:
+· รันอยู่: <code>105.51.5</code> → master01-02 · <code>203.76.7.3</code> → master03, worker01-03
+· <strong>ทุกเครื่องมี <code>6.12.0-206.104.3.3</code> ติดตั้งแล้ว และ <code>grubby --default-kernel</code>
+ชี้ไปที่ 206 ครบทั้ง 6</strong> → reboot ของ <code>prepare-os.yml</code> พาทุกเครื่องไปเลขเดียวกัน
+· <code>versions.env</code> ตรึง <code>KERNEL_UEK=6.12.0-206.104.3.3</code> แล้ว · assert ท้ายบท 01
+คือตัวพิสูจน์ — ผ่านครบ 6 เครื่องเมื่อไหร่ ติ๊กข้อนี้ได้
+· ยืนยันซ้ำหลังจบบท 01: <code>ansible k8s_nodes -a 'uname -r'</code> ต้องได้เลขเดียวทั้ง 6
+· บทเรียน: <strong>ไม่กระทบ Cilium</strong> เพราะ major.minor เดียวกัน (6.12) แต่ตอนมี workload
+แล้วค่อยแก้คือครึ่งวัน + drain — รอบนี้ปิดได้ฟรีเพราะ playbook reboot อยู่แล้ว</p>
 </li>
 <li>
 <p>[ ] <strong>เคาะนโยบาย: ยอมให้มี Gateway API CRD ช่อง <code>experimental</code> บน production ไหม</strong>
