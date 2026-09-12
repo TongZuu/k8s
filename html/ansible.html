@@ -404,31 +404,36 @@ done
 </table>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="2--container-runtimeyml--บท-02">2 · container-runtime.yml — บท 02</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p>ต้องผ่านข้อ 1 ครบทุกเครื่องก่อน · ตั้งค่า registry ใน <a href="../ansible/group_vars/all.yml"><code>group_vars/all.yml</code></a>
-ให้ตรงของจริงก่อนรัน — ยืนยันด้วย:</p>
+<p>ต้องผ่านข้อ 1 ครบทุกเครื่องก่อน · รันทั้ง cluster:</p>
+<div class="cb"><pre><code class="language-bash">ansible-playbook container-runtime.yml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ค่าของ registry อยู่ใน <a href="../ansible/group_vars/all.yml"><code>group_vars/all.yml</code></a> ตั้งไว้ตรงของจริงแล้ว
+(<code>https</code> · CA สาธารณะ ไม่ต้องแจกไฟล์) — <strong>ไม่ต้องแก้อะไรก่อนรัน</strong></p>
+<p><strong>ถ้า registry เปลี่ยนที่อยู่หรือเปลี่ยนเป็น internal CA</strong> ค่อยตรวจแล้วแก้สองบรรทัดนั้น:</p>
 <div class="cb"><pre><code class="language-bash">curl -sI https://registry.myhr.co.th/v2/ || curl -sI http://registry.myhr.co.th/v2/
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <table>
 <thead>
 <tr>
-<th>ตัวแปร</th>
-<th>ค่า</th>
+<th>ที่เห็น</th>
+<th>ตั้ง</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>registry_scheme</code></td>
-<td><code>https</code> หรือ <code>http</code> ตามที่ curl ตอบ</td>
+<td><code>https://</code> ตอบ <code>HTTP/2 401</code> หรือ <code>200</code></td>
+<td><code>registry_scheme: https</code> (401 = ปกติ มันขอ auth)</td>
 </tr>
 <tr>
-<td><code>registry_ca_file</code></td>
-<td>path ของ CA ถ้า registry ใช้ internal CA (เว้นว่าง = ไม่ต้องลง)</td>
+<td><code>https://</code> ไม่ตอบ แต่ <code>http://</code> ตอบ</td>
+<td><code>registry_scheme: http</code></td>
+</tr>
+<tr>
+<td><code>https://</code> ขึ้น <code>SSL certificate problem</code></td>
+<td>registry ใช้ internal CA → ใส่ path ไฟล์ CA ใน <code>registry_ca_file</code></td>
 </tr>
 </tbody>
 </table>
-<p>แล้วรันทั้ง cluster:</p>
-<div class="cb"><pre><code class="language-bash">ansible-playbook container-runtime.yml
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <table>
 <thead>
 <tr>

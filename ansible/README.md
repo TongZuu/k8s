@@ -170,23 +170,26 @@ ansible-playbook prepare-os.yml --limit 'k8s_nodes:!k8s-master01'
 
 ## 2 · `container-runtime.yml` — บท 02
 
-ต้องผ่านข้อ 1 ครบทุกเครื่องก่อน · ตั้งค่า registry ใน [`group_vars/all.yml`](group_vars/all.yml)
-ให้ตรงของจริงก่อนรัน — ยืนยันด้วย:
+ต้องผ่านข้อ 1 ครบทุกเครื่องก่อน · รันทั้ง cluster:
+
+```bash
+ansible-playbook container-runtime.yml
+```
+
+ค่าของ registry อยู่ใน [`group_vars/all.yml`](group_vars/all.yml) ตั้งไว้ตรงของจริงแล้ว
+(`https` · CA สาธารณะ ไม่ต้องแจกไฟล์) — **ไม่ต้องแก้อะไรก่อนรัน**
+
+**ถ้า registry เปลี่ยนที่อยู่หรือเปลี่ยนเป็น internal CA** ค่อยตรวจแล้วแก้สองบรรทัดนั้น:
 
 ```bash
 curl -sI https://registry.myhr.co.th/v2/ || curl -sI http://registry.myhr.co.th/v2/
 ```
 
-| ตัวแปร | ค่า |
+| ที่เห็น | ตั้ง |
 |---|---|
-| `registry_scheme` | `https` หรือ `http` ตามที่ curl ตอบ |
-| `registry_ca_file` | path ของ CA ถ้า registry ใช้ internal CA (เว้นว่าง = ไม่ต้องลง) |
-
-แล้วรันทั้ง cluster:
-
-```bash
-ansible-playbook container-runtime.yml
-```
+| `https://` ตอบ `HTTP/2 401` หรือ `200` | `registry_scheme: https` (401 = ปกติ มันขอ auth) |
+| `https://` ไม่ตอบ แต่ `http://` ตอบ | `registry_scheme: http` |
+| `https://` ขึ้น `SSL certificate problem` | registry ใช้ internal CA → ใส่ path ไฟล์ CA ใน `registry_ca_file` |
 
 | ถ้าเจอ | แก้ |
 |---|---|
