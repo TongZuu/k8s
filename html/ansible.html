@@ -528,16 +528,15 @@ ansible-playbook prepare-os.yml --check --diff --limit k8s-master01 --skip-tags 
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ต้องได้ <code>changed=0</code></strong> — ถ้ายังมี <code>changed</code> แปลว่ามี task ที่รายงานผิดหรือแก้ซ้ำทุกรอบ
 หยุดดูก่อนไปเครื่องอื่น เพราะจะเจอปัญหาเดียวกันคูณหกเครื่อง</p>
-<div class="cb"><pre><code class="language-bash"># 3 · master ที่เหลือ ทีละเครื่อง (VIP ยังไม่มี ยังไม่ต้องกลัวลำดับ)
-ansible-playbook prepare-os.yml --limit k8s-master02
-ansible-playbook prepare-os.yml --limit k8s-master03
+<div class="cb"><pre><code class="language-bash"># 3 · ที่เหลืออีก 5 เครื่อง รวดเดียว — playbook reboot ทีละเครื่องให้เอง (serial: 1)
+ansible-playbook prepare-os.yml --limit 'k8s_nodes:!k8s-master01'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<div class="cb"><pre><code class="language-bash"># 4 · worker01 เครื่องเดียวก่อน — เส้นทาง worker ต่างจาก master จริง (ดูขั้น 4)
-ansible-playbook prepare-os.yml --limit k8s-worker01
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<div class="cb"><pre><code class="language-bash"># 5 · worker ที่เหลือ พร้อมกันได้
-ansible-playbook prepare-os.yml --limit 'k8s-worker02,k8s-worker03'
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p>master กับ worker ต่างกันแค่พอร์ต firewalld (worker เปิด NodePort · master เปิด
+apiserver/etcd/VRRP) เป็น <code>when:</code> สองสามบรรทัดที่ declarative — พอร์ตผิดจะรู้ทันที
+ตอน join ไม่ใช่ของที่พังเงียบ จึงไม่ต้องแยกรอบทดสอบ worker อีก (ตัดออก 12 ก.ย. 2026)
+· ไม่ต้องไล่ master ทีละเครื่องด้วย — VIP ยังไม่มีในบทนี้ ลำดับไม่มีผล</p>
+</blockquote>
 <p>จบบท 01 แล้วไปบทถัดไปด้วยลำดับเดียวกัน — <code>container-runtime.yml</code> → <code>ha-layer.yml</code>
 → <code>create-cluster.yml</code> → <code>cilium.yml</code></p>
 <blockquote>
@@ -634,41 +633,19 @@ join ข้ามถ้ามี <code>/etc/kubernetes/kubelet.conf</code> · ma
 เป็น command task ที่ถูกข้ามใน check mode แล้วข้อตรวจท้ายก็จะไม่ผ่านตามไปด้วย
 ใช้ <code>--list-hosts</code> ดูว่าจะแตะเครื่องไหนบ้างจะตรงประเด็นกว่า</p>
 </blockquote>
-</div><div class="sub" data-machine="all"><h3 id="ขั้น-4--เส้นทาง-worker-ต้องทดสอบแยก">ขั้น 4 · เส้นทาง worker ต้องทดสอบแยก</h3>
-<p>master กับ worker เดินคนละกิ่งใน playbook — <strong>ผ่าน master ไม่ได้แปลว่า worker ผ่าน</strong></p>
+</div><div class="sub" data-machine="all"><h3 id="ขั้น-4--worker--ดูให้เห็นว่ากิ่งของมันถูก">ขั้น 4 · worker — ดูให้เห็นว่ากิ่งของมันถูก</h3>
+<p>master กับ worker ต่างกันแค่ในหมวด firewalld (<code>when:</code> บน 3 task) — ดู <code>--diff</code> ของ worker
+หนึ่งเครื่องพอ:</p>
 <div class="cb"><pre><code class="language-bash">ansible-playbook prepare-os.yml --check --diff --limit k8s-worker01 --skip-tags reboot
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>รูปร่างตัวเลขที่ควรเห็น เทียบกับ master ที่สถานะเดียวกัน:</p>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>master</th>
-<th>worker</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>changed</code></td>
-<td>8</td>
-<td><strong>7</strong> (ไม่มี task เปิด VRRP)</td>
-</tr>
-<tr>
-<td><code>skipped</code></td>
-<td>6</td>
-<td><strong>7</strong></td>
-</tr>
-</tbody>
-</table>
-<p>และใน <code>--diff</code> ต้องเห็น:</p>
-<ul>
-<li>เปิดพอร์ต <strong>5 ตัว</strong> ไม่ใช่ 9 — ต้องมี <code>30000-32767/tcp</code> (NodePort)</li>
-<li><strong>ไม่มี</strong> task <code>เปิด VRRP</code></li>
-<li>บรรทัดสถานะ partition พูดถึง <code>/var/lib/containerd</code> ไม่ใช่ <code>/var/lib/etcd</code></li>
-</ul>
-<p>ผ่านแล้วค่อย:</p>
-<div class="cb"><pre><code class="language-bash">ansible-playbook prepare-os.yml --limit k8s-worker01
-ansible-playbook prepare-os.yml --limit 'k8s-worker02,k8s-worker03'
+<p>ต้องเห็น: เปิด <code>30000-32767/tcp</code> (NodePort) · <strong>ไม่มี</strong> <code>6443</code>/<code>2379-2380</code> · <strong>ไม่มี</strong> task
+<code>เปิด VRRP</code> · บรรทัดสถานะ partition พูดถึง <code>/var/lib/containerd</code></p>
+<blockquote>
+<p>ไม่มีตารางตัวเลข <code>changed</code>/<code>skipped</code> อีกแล้ว — เลขพวกนั้นเปลี่ยนทุกครั้งที่ playbook
+เปลี่ยน (12 ก.ย. 2026 เปลี่ยน 4 รอบในวันเดียว) แล้วกลายเป็นของผิดที่คนเชื่อ</p>
+</blockquote>
+<p>ผ่านแล้ว:</p>
+<div class="cb"><pre><code class="language-bash">ansible-playbook prepare-os.yml --limit workers
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 </div><div class="sub" data-machine="all"><h3 id="ขั้น-5---พิสูจน์ว่า-playbook-เทียบเท่าการทำมือ">ขั้น 5 · 🔑 พิสูจน์ว่า playbook เทียบเท่าการทำมือ</h3>
 <p><strong>นี่คือเกณฑ์ผ่านของทั้งเรื่อง</strong> — เทียบเครื่องที่ทำมือกับเครื่องที่ playbook ทำ</p>
@@ -677,7 +654,9 @@ diff &lt;(sed '1,3d;s/k8s-master0[0-9]/NODE/g' /tmp/a101.txt) \
      &lt;(sed '1,3d;s/k8s-master0[0-9]/NODE/g' /tmp/a102.txt) &amp;&amp; echo "&gt;&gt;&gt; เหมือนกันทุกบรรทัด &lt;&lt;&lt;"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>(ตัด 3 บรรทัดหัวที่มีชื่อเครื่องกับเวลา และแทนชื่อ master01/02 เป็น <code>NODE</code> เพื่อให้เทียบได้)</p>
-<p>เทียบ worker กับ master ก็ได้ — <strong>ควรต่างแค่ 3 จุดที่ตั้งใจ</strong> (ชื่อเครื่อง, partition, รายการพอร์ต):</p>
+<p>เทียบ worker กับ master ก็ได้ — <strong>ควรต่างแค่ 3 จุดที่ตั้งใจ</strong> (ชื่อเครื่อง · รายการพอร์ต ·
+บรรทัด partition ที่ต่างเพราะปลายทางคนละชื่อ <code>/var/lib/etcd</code> vs <code>/var/lib/containerd</code>
+ไม่ใช่เพราะสถานะต่าง):</p>
 <div class="cb"><pre><code class="language-bash">for ip in 102 104; do ssh root@192.168.50.$ip 'bash -s' &lt; ../config/audit-node.sh &gt; /tmp/b$ip.txt; done
 diff /tmp/b102.txt /tmp/b104.txt
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
