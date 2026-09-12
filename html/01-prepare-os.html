@@ -516,6 +516,10 @@ reboot
 dnf versionlock add kernel-uek kernel-uek-core kernel-uek-modules
 dnf versionlock list
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p><code>prepare-os.yml</code> ทำข้อนี้ให้เอง (ลง plugin + ล็อก ถ้ายังไม่ได้ล็อก) — ทำมือเฉพาะ
+ตอนไม่ได้ใช้ Ansible</p>
+</blockquote>
 <p><strong>ควรเห็น:</strong> รายการ <code>kernel-uek-*</code> โผล่ในลิสต์ versionlock</p>
 <blockquote>
 <p><strong>สำคัญ:</strong> ตอน patch kernel ตามรอบ (บทที่ 12) ต้อง <code>dnf versionlock delete</code> ชั่วคราว

@@ -4,9 +4,9 @@
 #  รัน:   ansible-playbook prepare-os.yml --check     ← ดูอย่างเดียว ไม่แก้อะไร
 #         ansible-playbook prepare-os.yml
 #
-#  ⚠️ playbook นี้ "ไม่ได้" ทำข้อ 2 ของบท 01 โดยเจตนา:
-#     · ข้อ 2 สลับ/ตรึง kernel  → ควรอยู่ใน VM template ไม่ใช่ที่นี่
-#       มี task ตรวจให้ว่าทำมาแล้วหรือยัง ถ้ายังจะหยุดทันที
+#  ⚠️ playbook นี้ "ไม่ได้" ทำอย่างเดียวคือ "สลับ" kernel (ข้อ 2 ของบท 01):
+#     · ต้องเป็นสาย 6.12 และเป็น uek มาตั้งแต่ VM template — มี assert ตรวจ ถ้าผิดสายหยุด
+#     · ส่วน "ตรึง" (versionlock) playbook ทำให้เอง (12 ก.ย. 2026 — เคยเป็นด่านทำมือ)
 #
 #  ข้อ 5 ย้าย partition เป็น "ทางเลือก" (เปลี่ยนเมื่อ 11 ก.ย. 2026)
 #     เคยเป็น assert ที่หยุด playbook · ตอนนี้แค่ print สถานะแล้วทำงานต่อ
@@ -72,24 +72,34 @@
              แก้ที่ VM template ก่อน อย่าให้ playbook สลับ kernel ให้
         success_msg: "kernel {{ ansible_facts['kernel'] }} อยู่ในสาย {{ v.KERNEL_UEK }}"
 
-    - name: kernel ต้องถูก versionlock ไว้แล้ว
+    # -------------------------------------------------------------------------
+    #  versionlock — playbook ทำให้เอง (เปลี่ยนจาก gate เป็น task 12 ก.ย. 2026)
+    # -------------------------------------------------------------------------
+    #  เคยเป็นด่านที่หยุด playbook แล้วให้คนไปทำมือ ด้วยเหตุผลว่า "ควรอยู่ใน VM template"
+    #  ซึ่งเป็นความชอบ ไม่ใช่ความเสี่ยง · ของที่ต้องเป็นด่านจริงคือของที่พลาดแล้ว
+    #  เครื่องบูตไม่ขึ้น (สลับ kernel · แก้ fstab) — versionlock ไม่ใช่: idempotent,
+    #  ถอดได้ทุกเมื่อด้วย versionlock delete, และไม่แตะของที่รันอยู่
+    #  ให้คนทำมือก่อนรัน = ทำให้ Ansible เป็นแค่ตัวตรวจ ไม่ใช่ตัวทำ
+    #
+    #  ล็อกทุก version ของ kernel-uek ที่ติดตั้งอยู่ตอนนี้ (รวมตัวที่รอบูต)
+    #  ตอน patch kernel ตามรอบ (บท 12) ต้อง versionlock delete ก่อน แล้วรันซ้ำให้ล็อกใหม่
+    - name: ลง plugin versionlock
+      ansible.builtin.dnf:
+        name: python3-dnf-plugin-versionlock
+        state: present
+
+    - name: kernel-uek ถูกล็อกแล้วหรือยัง
       ansible.builtin.shell:
         executable: /bin/bash
         cmd: dnf versionlock list 2>/dev/null | grep -c kernel-uek || true
       register: _vlock
       changed_when: false
-      # 🔴 ต้องรันแม้ใน --check ไม่งั้น dry run "ผ่าน" ทั้งที่เครื่องยังไม่พร้อม
-      #    module shell/command ถูก skip อัตโนมัติใน check mode → _vlock ไม่ถูก register
-      #    → failed_when ไม่เคยถูกประเมิน → ด่านนี้หายไปทั้งด่าน
-      #    แล้ว ansible.cfg ตั้ง display_skipped_hosts = False ไว้ จึงไม่มีบรรทัดไหน
-      #    บอกด้วยซ้ำว่ามันถูกข้าม — คนรันเห็น --check เขียวแล้วไปเจอ failed ตอนรันจริง
-      #
-      #    ต่างจาก "เวลาต้อง sync แล้ว" ข้างล่างที่ปล่อยให้ skip โดยเจตนา:
-      #    ตัวนั้นเป็นเงื่อนไข "หลัง" playbook เปิด chronyd ให้ (ข้อ 4) ถ้าบังคับให้รัน
-      #    ใน --check จะ fail ทั้งที่ playbook จริงจะแก้ให้ · ตัวนี้เป็นเงื่อนไข "ก่อน"
-      #    ที่ playbook ไม่ทำให้เลย จึงต้องเห็นตั้งแต่ dry run
-      check_mode: false
-      failed_when: _vlock.stdout | int == 0
+      check_mode: false   # อ่านอย่างเดียว — ให้ --check รายงานได้ว่าจะล็อกหรือไม่
+
+    - name: ล็อก kernel-uek ไว้ที่ version ที่ติดตั้งอยู่
+      ansible.builtin.command:
+        cmd: dnf versionlock add kernel-uek kernel-uek-core kernel-uek-modules
+      when: _vlock.stdout | int == 0
 
     # -------------------------------------------------------------------------
     #  partition แยก — บอกสถานะ ไม่บล็อก

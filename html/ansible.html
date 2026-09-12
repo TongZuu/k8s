@@ -247,7 +247,7 @@ img{max-width:100%}
         <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
       </div>
     </header>
-    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="สถานะ">สถานะ</option><option value="2" data-t="ติดตั้งครั้งเดียว">ติดตั้งครั้งเดียว</option><option value="3" data-t="2 ข้อที่ playbook ไม่ทำให้">2 ข้อที่ playbook ไม่ทำให้</option><option value="4" data-t="ลำดับการรัน — ห้ามข้าม">ลำดับการรัน — ห้ามข้าม</option><option value="5" data-t="สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;">สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;</option><option value="6" data-t="แหล่งความจริงของเวอร์ชัน">แหล่งความจริงของเวอร์ชัน</option><option value="7" data-t="แก้ปัญหาที่เคยเจอจริง">แก้ปัญหาที่เคยเจอจริง</option><option value="8" data-t="คำสั่งที่ใช้บ่อย">คำสั่งที่ใช้บ่อย</option><option value="9" data-t="เมื่อไหร่ควรใช้จริง">เมื่อไหร่ควรใช้จริง</option></select></div>
+    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="สถานะ">สถานะ</option><option value="2" data-t="ติดตั้งครั้งเดียว">ติดตั้งครั้งเดียว</option><option value="3" data-t="ข้อเดียวที่ playbook ไม่ทำให้ — kernel ต้องมาถูกสายตั้งแต่ template">ข้อเดียวที่ playbook ไม่ทำให้ — kernel ต้องมาถูกสายตั้งแต่ template</option><option value="4" data-t="ลำดับการรัน — ห้ามข้าม">ลำดับการรัน — ห้ามข้าม</option><option value="5" data-t="สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;">สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;</option><option value="6" data-t="แหล่งความจริงของเวอร์ชัน">แหล่งความจริงของเวอร์ชัน</option><option value="7" data-t="แก้ปัญหาที่เคยเจอจริง">แก้ปัญหาที่เคยเจอจริง</option><option value="8" data-t="คำสั่งที่ใช้บ่อย">คำสั่งที่ใช้บ่อย</option><option value="9" data-t="เมื่อไหร่ควรใช้จริง">เมื่อไหร่ควรใช้จริง</option></select></div>
   </div>
 
   <main>
@@ -422,9 +422,16 @@ done
 <p>ต้องได้ <code>SUCCESS</code> หกบรรทัด ไม่มีเครื่องไหนถามรหัสอีก
 ถ้าเครื่องไหนขึ้น <code>Permission denied (publickey,...)</code> แปลว่ายังไม่ได้แลก key กับเครื่องนั้น</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="2-ข้อที่-playbook-ไม่ทำให้">2 ข้อที่ playbook ไม่ทำให้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p>playbook <strong>ตรวจ</strong> ทั้งสองข้อเป็น task แรก ๆ <strong>ก่อนแตะอะไรบนเครื่อง</strong> และหยุดถ้ายังไม่ได้ทำ
-แต่ <strong>ไม่ทำให้</strong> โดยเจตนา</p>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="ข้อเดียวที่-playbook-ไม่ทำให้--kernel-ต้องมาถูกสายตั้งแต่-template">ข้อเดียวที่ playbook ไม่ทำให้ — kernel ต้องมาถูกสายตั้งแต่ template</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>playbook <strong>ตรวจ</strong> เป็น task แรก ๆ <strong>ก่อนแตะอะไรบนเครื่อง</strong> และหยุดถ้าผิดสาย
+แต่ <strong>ไม่สลับ kernel ให้</strong> โดยเจตนา</p>
+<blockquote>
+<p><strong>versionlock ไม่ใช่ขั้นทำมืออีกแล้ว</strong> (12 ก.ย. 2026) — เคยเป็นด่านที่สองที่หยุด
+playbook แล้วให้คนไป <code>dnf versionlock add</code> เอง ด้วยเหตุผล &quot;ควรอยู่ใน template&quot;
+ซึ่งเป็นความชอบ ไม่ใช่ความเสี่ยง · มัน idempotent และถอดได้ทุกเมื่อ ต่างจากการสลับ
+kernel ที่พลาดแล้วเครื่องบูตไม่ขึ้น · ตอนนี้ playbook ลง plugin + ล็อกให้เอง
+ถ้าล็อกอยู่แล้วก็ข้าม</p>
+</blockquote>
 <blockquote>
 <p><strong>ไม่ต้อง ssh ไปดูเองก่อน</strong> — เคยมี loop <code>uname -r</code> + <code>audit-node.sh</code> ตรงนี้ ตัดออกแล้ว
 (12 ก.ย. 2026) เพราะมันซ้ำกับ gate ในตัว playbook เป๊ะ ๆ · gate อยู่ก่อน task แรก
@@ -444,10 +451,6 @@ done
 <tr>
 <td>kernel สาย <code>6.12</code> และเป็น <code>uek</code></td>
 <td>เปลี่ยน kernel + reboot พร้อมกัน 6 เครื่องคือความเสี่ยงฟรี ๆ</td>
-</tr>
-<tr>
-<td><code>versionlock</code> kernel-uek</td>
-<td>ควรอยู่ใน VM template</td>
 </tr>
 </tbody>
 </table>
@@ -515,7 +518,7 @@ grep -c k8s-master01 /etc/hosts   # ต้องได้ 0 หรือ 1 ไ�
 · <code>--check</code> ใส่เครื่องเปล่าจะล้มเองที่ task แรกที่ต่อเนื่องกัน (ดู
 <a href="#--check-%E0%B8%A5%E0%B9%89%E0%B8%A1%E0%B8%9A%E0%B8%99%E0%B9%80%E0%B8%84%E0%B8%A3%E0%B8%B7%E0%B9%88%E0%B8%AD%E0%B8%87%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B9%88%E0%B8%B2--dest--must-be-an-existing-dir">ตารางในหัวข้อแก้ปัญหา</a>)
 <strong>อย่าเริ่มด้วย <code>--check</code></strong></p>
-<p>ทำ 2 ข้อที่ playbook ไม่ทำให้ก่อน (หัวข้อข้างบน) แล้ว:</p>
+<p>ขอแค่ kernel มาถูกสาย (<code>6.12</code> + <code>uek</code>) จาก template — ที่เหลือ playbook ทำหมด:</p>
 <div class="cb"><pre><code class="language-bash"># 1 · master01 เครื่องเดียวก่อน — รันจริงเลย ไม่ต้อง --check
 ansible-playbook prepare-os.yml --limit k8s-master01
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>

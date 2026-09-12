@@ -276,6 +276,9 @@ dnf versionlock add kernel-uek kernel-uek-core kernel-uek-modules
 dnf versionlock list
 ```
 
+> `prepare-os.yml` ทำข้อนี้ให้เอง (ลง plugin + ล็อก ถ้ายังไม่ได้ล็อก) — ทำมือเฉพาะ
+> ตอนไม่ได้ใช้ Ansible
+
 **ควรเห็น:** รายการ `kernel-uek-*` โผล่ในลิสต์ versionlock
 
 > **สำคัญ:** ตอน patch kernel ตามรอบ (บทที่ 12) ต้อง `dnf versionlock delete` ชั่วคราว
