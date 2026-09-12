@@ -139,7 +139,6 @@ echo "exit=${PIPESTATUS[0]}"        # ต้องเป็น 0 เท่าน
 > **ทำไมต้องมี `PIPESTATUS`** — exit status ของ pipeline คือของ `tee` ไม่ใช่ของ `kubeadm`
 > ถ้า `init` ล้มแต่ `tee` เขียนไฟล์สำเร็จ shell จะถือว่าคำสั่งนี้สำเร็จ
 > ใครเอาไปใส่ script แล้วเช็ค `$?` จะได้ 0 ทั้งที่ cluster ไม่เกิด
-> (`create-cluster.yml` กันด้วย `set -euo pipefail` ที่หัว shell task)
 
 **ระหว่างรอ** ขั้นที่นานที่สุดคือ `[wait-control-plane]` — ถ้าค้างเกิน 1 นาที เปิดอีก terminal แล้วดู:
 

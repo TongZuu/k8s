@@ -44,7 +44,7 @@
 - [x] **ร่าง Ansible playbook บท 01–02 แล้ว** (26 ส.ค. 2026) — อยู่ที่ [`ansible/`](../ansible/README.md)
       อ่านเวอร์ชันจาก `versions.env` ตรง ๆ ไม่มีเลขซ้ำที่สอง
 - [ ] 🔴 **playbook ยังไม่เคยรันจริง** — ตรวจแค่ YAML syntax เท่านั้น
-      ห้ามใช้กับ production ก่อนผ่าน Phase 3 · ลำดับทดสอบอยู่ใน [`ansible/README.md`](../ansible/README.md)
+      ห้ามใช้กับ production ก่อนผ่าน Phase 3 · ลำดับรันอยู่ใน [`ansible/README.md`](../ansible/README.md)
 - [ ] ลง WSL2 + `ansible` (ตัวเต็ม ไม่ใช่ `ansible-core`) + แจก SSH key ให้ครบ 6 เครื่อง
 - [ ] ยืนยันว่า registry เป็น HTTP หรือ HTTPS แล้วตั้ง `registry_scheme` ใน
       [`ansible/group_vars/all.yml`](../ansible/group_vars/all.yml) ก่อนรัน `container-runtime.yml`

@@ -763,7 +763,6 @@ ls -la /var/lib/etcd
 แล้วไปพังตอน join master ตัวที่สอง ซึ่งไล่หายากกว่ามาก
 
 > ป้องกันที่ต้นทางแล้วในบทที่ 01 ข้อ 5 (ลบ `lost+found` ตอนย้าย partition)
-> และ `create-cluster.yml` ลบให้อัตโนมัติเฉพาะกรณีที่ในโฟลเดอร์มี `lost+found` อย่างเดียว
 
 ### 12.5 join master ล้มที่ `download-certs` — `cipher: message authentication failed`
 

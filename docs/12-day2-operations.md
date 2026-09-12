@@ -477,13 +477,7 @@ bash config/validate-repo.sh
 ansible-playbook prepare-os.yml
 ```
 
-**join เครื่องใหม่ด้วย playbook** — ต้องมี master01 อยู่ในรอบด้วยเพราะ token ออกจากเครื่องนั้น:
-
-```bash
-ansible-playbook create-cluster.yml --limit 'k8s-master01,k8s-worker04'
-```
-
-หรือทำมือ: ออก token บน master01 แล้ว join บนเครื่องใหม่
+**join เครื่องใหม่ทำมือ** ([บท 04 ข้อ 5](04-create-cluster.md)) — ออก token บน master01 แล้ว join บนเครื่องใหม่
 
 ```bash
 kubeadm token create --ttl 2h --print-join-command
