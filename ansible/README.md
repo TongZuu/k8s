@@ -261,14 +261,20 @@ ansible-playbook prepare-os.yml --check --diff --limit k8s-master01 --skip-tags 
 หยุดดูก่อนไปเครื่องอื่น เพราะจะเจอปัญหาเดียวกันคูณหกเครื่อง
 
 ```bash
-# 3 · ที่เหลืออีก 5 เครื่อง รวดเดียว — playbook reboot ทีละเครื่องให้เอง (serial: 1)
-ansible-playbook prepare-os.yml --limit 'k8s_nodes:!k8s-master01'
+# 3 · master ที่เหลือ ทีละเครื่อง (VIP ยังไม่มี ยังไม่ต้องกลัวลำดับ)
+ansible-playbook prepare-os.yml --limit k8s-master02
+ansible-playbook prepare-os.yml --limit k8s-master03
 ```
 
-> master กับ worker ต่างกันแค่พอร์ต firewalld (worker เปิด NodePort · master เปิด
-> apiserver/etcd/VRRP) เป็น `when:` สองสามบรรทัดที่ declarative — พอร์ตผิดจะรู้ทันที
-> ตอน join ไม่ใช่ของที่พังเงียบ จึงไม่ต้องแยกรอบทดสอบ worker อีก (ตัดออก 12 ก.ย. 2026)
-> · ไม่ต้องไล่ master ทีละเครื่องด้วย — VIP ยังไม่มีในบทนี้ ลำดับไม่มีผล
+```bash
+# 4 · worker01 เครื่องเดียวก่อน — เส้นทาง worker ต่างจาก master จริง (ดูขั้น 4)
+ansible-playbook prepare-os.yml --limit k8s-worker01
+```
+
+```bash
+# 5 · worker ที่เหลือ พร้อมกันได้
+ansible-playbook prepare-os.yml --limit 'k8s-worker02,k8s-worker03'
+```
 
 จบบท 01 แล้วไปบทถัดไปด้วยลำดับเดียวกัน — `container-runtime.yml` → `ha-layer.yml`
 → `create-cluster.yml` → `cilium.yml`
@@ -362,25 +368,32 @@ join ข้ามถ้ามี `/etc/kubernetes/kubelet.conf` · master ตั
 > เป็น command task ที่ถูกข้ามใน check mode แล้วข้อตรวจท้ายก็จะไม่ผ่านตามไปด้วย
 > ใช้ `--list-hosts` ดูว่าจะแตะเครื่องไหนบ้างจะตรงประเด็นกว่า
 
-### ขั้น 4 · worker — ดูให้เห็นว่ากิ่งของมันถูก
+### ขั้น 4 · เส้นทาง worker ต้องทดสอบแยก
 
-master กับ worker ต่างกันแค่ในหมวด firewalld (`when:` บน 3 task) — ดู `--diff` ของ worker
-หนึ่งเครื่องพอ:
+master กับ worker เดินคนละกิ่งใน playbook — **ผ่าน master ไม่ได้แปลว่า worker ผ่าน**
 
 ```bash
 ansible-playbook prepare-os.yml --check --diff --limit k8s-worker01 --skip-tags reboot
 ```
 
-ต้องเห็น: เปิด `30000-32767/tcp` (NodePort) · **ไม่มี** `6443`/`2379-2380` · **ไม่มี** task
-`เปิด VRRP` · บรรทัดสถานะ partition พูดถึง `/var/lib/containerd`
+รูปร่างตัวเลขที่ควรเห็น เทียบกับ master ที่สถานะเดียวกัน:
 
-> ไม่มีตารางตัวเลข `changed`/`skipped` อีกแล้ว — เลขพวกนั้นเปลี่ยนทุกครั้งที่ playbook
-> เปลี่ยน (12 ก.ย. 2026 เปลี่ยน 4 รอบในวันเดียว) แล้วกลายเป็นของผิดที่คนเชื่อ
+| | master | worker |
+|---|---|---|
+| `changed` | 8 | **7** (ไม่มี task เปิด VRRP) |
+| `skipped` | 6 | **7** |
 
-ผ่านแล้ว:
+และใน `--diff` ต้องเห็น:
+
+- เปิดพอร์ต **5 ตัว** ไม่ใช่ 9 — ต้องมี `30000-32767/tcp` (NodePort)
+- **ไม่มี** task `เปิด VRRP`
+- บรรทัดสถานะ partition พูดถึง `/var/lib/containerd` ไม่ใช่ `/var/lib/etcd`
+
+ผ่านแล้วค่อย:
 
 ```bash
-ansible-playbook prepare-os.yml --limit workers
+ansible-playbook prepare-os.yml --limit k8s-worker01
+ansible-playbook prepare-os.yml --limit 'k8s-worker02,k8s-worker03'
 ```
 
 ### ขั้น 5 · 🔑 พิสูจน์ว่า playbook เทียบเท่าการทำมือ
@@ -395,9 +408,7 @@ diff <(sed '1,3d;s/k8s-master0[0-9]/NODE/g' /tmp/a101.txt) \
 
 (ตัด 3 บรรทัดหัวที่มีชื่อเครื่องกับเวลา และแทนชื่อ master01/02 เป็น `NODE` เพื่อให้เทียบได้)
 
-เทียบ worker กับ master ก็ได้ — **ควรต่างแค่ 3 จุดที่ตั้งใจ** (ชื่อเครื่อง · รายการพอร์ต ·
-บรรทัด partition ที่ต่างเพราะปลายทางคนละชื่อ `/var/lib/etcd` vs `/var/lib/containerd`
-ไม่ใช่เพราะสถานะต่าง):
+เทียบ worker กับ master ก็ได้ — **ควรต่างแค่ 3 จุดที่ตั้งใจ** (ชื่อเครื่อง, partition, รายการพอร์ต):
 
 ```bash
 for ip in 102 104; do ssh root@192.168.50.$ip 'bash -s' < ../config/audit-node.sh > /tmp/b$ip.txt; done
