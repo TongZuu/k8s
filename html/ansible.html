@@ -247,7 +247,7 @@ img{max-width:100%}
         <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
       </div>
     </header>
-    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="สถานะ">สถานะ</option><option value="2" data-t="ติดตั้งครั้งเดียว">ติดตั้งครั้งเดียว</option><option value="3" data-t="ก่อนรันทุกเครื่อง — 2 ข้อที่ playbook ไม่ทำให้">ก่อนรันทุกเครื่อง — 2 ข้อที่ playbook ไม่ทำให้</option><option value="4" data-t="ลำดับการรัน — ห้ามข้าม">ลำดับการรัน — ห้ามข้าม</option><option value="5" data-t="สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;">สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;</option><option value="6" data-t="แหล่งความจริงของเวอร์ชัน">แหล่งความจริงของเวอร์ชัน</option><option value="7" data-t="แก้ปัญหาที่เคยเจอจริง">แก้ปัญหาที่เคยเจอจริง</option><option value="8" data-t="คำสั่งที่ใช้บ่อย">คำสั่งที่ใช้บ่อย</option><option value="9" data-t="เมื่อไหร่ควรใช้จริง">เมื่อไหร่ควรใช้จริง</option></select></div>
+    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="สถานะ">สถานะ</option><option value="2" data-t="ติดตั้งครั้งเดียว">ติดตั้งครั้งเดียว</option><option value="3" data-t="2 ข้อที่ playbook ไม่ทำให้">2 ข้อที่ playbook ไม่ทำให้</option><option value="4" data-t="ลำดับการรัน — ห้ามข้าม">ลำดับการรัน — ห้ามข้าม</option><option value="5" data-t="สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;">สิ่งที่ playbook ตั้งใจ &quot;ไม่ทำ&quot;</option><option value="6" data-t="แหล่งความจริงของเวอร์ชัน">แหล่งความจริงของเวอร์ชัน</option><option value="7" data-t="แก้ปัญหาที่เคยเจอจริง">แก้ปัญหาที่เคยเจอจริง</option><option value="8" data-t="คำสั่งที่ใช้บ่อย">คำสั่งที่ใช้บ่อย</option><option value="9" data-t="เมื่อไหร่ควรใช้จริง">เมื่อไหร่ควรใช้จริง</option></select></div>
   </div>
 
   <main>
@@ -422,15 +422,17 @@ done
 <p>ต้องได้ <code>SUCCESS</code> หกบรรทัด ไม่มีเครื่องไหนถามรหัสอีก
 ถ้าเครื่องไหนขึ้น <code>Permission denied (publickey,...)</code> แปลว่ายังไม่ได้แลก key กับเครื่องนั้น</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="ก่อนรันทุกเครื่อง--2-ข้อที่-playbook-ไม่ทำให้">ก่อนรันทุกเครื่อง — 2 ข้อที่ playbook ไม่ทำให้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p>playbook <strong>ตรวจ</strong> ทั้งสองข้อและหยุดถ้ายังไม่ได้ทำ แต่ <strong>ไม่ทำให้</strong> โดยเจตนา</p>
-<p>ดูสถานะรวดเดียว:</p>
-<div class="cb"><pre><code class="language-bash">for ip in 101 102 103 104 105 106; do
-  echo "=== .$ip ==="
-  ssh root@192.168.50.$ip 'uname -r'
-  ssh root@192.168.50.$ip 'bash -s' &lt; ../config/audit-node.sh 2&gt;&amp;1 | grep -E 'versionlock|partition'
-done
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="2-ข้อที่-playbook-ไม่ทำให้">2 ข้อที่ playbook ไม่ทำให้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p>playbook <strong>ตรวจ</strong> ทั้งสองข้อเป็น task แรก ๆ <strong>ก่อนแตะอะไรบนเครื่อง</strong> และหยุดถ้ายังไม่ได้ทำ
+แต่ <strong>ไม่ทำให้</strong> โดยเจตนา</p>
+<blockquote>
+<p><strong>ไม่ต้อง ssh ไปดูเองก่อน</strong> — เคยมี loop <code>uname -r</code> + <code>audit-node.sh</code> ตรงนี้ ตัดออกแล้ว
+(12 ก.ย. 2026) เพราะมันซ้ำกับ gate ในตัว playbook เป๊ะ ๆ · gate อยู่ก่อน task แรก
+ที่แก้เครื่อง (<code>ตั้ง hostname</code>) จึงไม่มีทางที่เครื่องจะถูกแก้ครึ่งเดียวแล้วค่อยรู้ว่า
+ไม่พร้อม · <strong>รัน playbook ไปเลย</strong> ถ้าขาดข้อไหนมันหยุดที่ task นั้นพร้อมบอกว่าต้องทำอะไร</p>
+<p>loop ทำมือมีค่าตอน playbook ยังพิสูจน์ตัวเองไม่ได้ (ขั้น 1-5 ข้างล่าง) พอผ่านแล้ว
+มันกลายเป็นพิธีกรรมที่ทำให้คนถามว่า &quot;แล้วผมจะใช้ Ansible ทำไม&quot;</p>
+</blockquote>
 <table>
 <thead>
 <tr>
