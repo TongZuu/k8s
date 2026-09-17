@@ -49,6 +49,15 @@ k8sClientRateLimit:
   qps: 20
   burst: 100
 
+# --- ข้อจำกัดของ kernel UEK 6.12 ---------------------------------------------
+# UEK ไม่มี CONFIG_INET_DIAG_DESTROY จึงบังคับปิด socket ที่ต่อกับ backend
+# ที่ถูกลบไม่ได้ · ถ้าปล่อยเป็น default (true) agent จะ log level=error
+# ทุกครั้งที่เริ่ม และ check-log-errors ใน connectivity test ตกตลอด
+# ทั้งที่ผลจริงเท่ากับปิด (17 ก.ย. 2026) · ผลที่เสีย: pod ที่ถือ UDP socket
+# ค้างกับ backend ที่หายไป ต้องเปิด socket ใหม่เอง — TCP ไม่กระทบ
+socketLB:
+  terminatePodConnections: false
+
 # --- Security -----------------------------------------------------------------
 # ระบบเก็บข้อมูลพนักงาน จึงต้องมี NetworkPolicy ใช้ได้จริง
 policyEnforcementMode: default        # เปลี่ยนเป็น always หลังเขียน policy ครบแล้ว (บทที่ 10)

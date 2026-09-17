@@ -1214,7 +1214,8 @@ for ip in 101 102 103 104 105 106; do echo -n "$ip: "; ssh root@192.168.50.$ip u
 <code>--test echo-ingress-l7 --test to-fqdns</code> → <code>All 4 tests (60 actions) successful</code></li>
 <li><strong>แก้</strong> — เพิ่มบรรทัดนั้นแบบ <code>--permanent</code> ในบท 01 ข้อ 8.1 และ <code>prepare-os.yml</code></li>
 <li><strong>ตัวที่ 27</strong> — <code>check-log-errors</code> เจอ <code>level=error</code> 1 บรรทัดจาก agent: kernel UEK 6.12 ไม่มี
-<code>CONFIG_INET_DIAG_DESTROY</code> จึงตัด socket ที่ต่อกับ backend ที่ถูกลบไม่ได้ · เป็นคนละเรื่องกับ firewalld</li>
+<code>CONFIG_INET_DIAG_DESTROY</code> จึงตัด socket ที่ต่อกับ backend ที่ถูกลบไม่ได้ · เป็นคนละเรื่องกับ firewalld
+· แก้ด้วย <code>socketLB.terminatePodConnections: false</code> ใน <code>values.yaml</code> — ผลจริงเท่าเดิม แค่ไม่ log error</li>
 </ul>
 <p><strong>28 ส.ค. 2026 · <code>kubectl</code> ได้ <code>EOF</code> จาก VIP ทั้งที่ <code>kubeadm init</code> สำเร็จ</strong></p>
 <ul>

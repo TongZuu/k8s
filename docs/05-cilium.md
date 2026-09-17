@@ -66,8 +66,8 @@ cilium version --client
 `/root/k8s/config/cilium/` อยู่บนเครื่องจาก[บท 00](00-overview.md) · ข้อนี้อ่านอย่างเดียว ไม่แก้อะไรถ้าค่าตรง
 
 ```bash
-grep -E -A1 'k8sServiceHost|k8sServicePort|clusterPoolIPv4PodCIDRList|kubeProxyReplacement' \
-  /root/k8s/config/cilium/values.yaml | grep -E 'k8sService|clusterPool|kubeProxy|^ +- '
+grep -E -A1 'k8sServiceHost|k8sServicePort|clusterPoolIPv4PodCIDRList|kubeProxyReplacement|terminatePodConnections' \
+  /root/k8s/config/cilium/values.yaml | grep -E 'k8sService|clusterPool|kubeProxy|terminatePod|^ +- '
 ```
 
 (`-A1` เพราะ `clusterPoolIPv4PodCIDRList` เป็น list — ค่าอยู่บรรทัดถัดไป `- "10.246.0.0/16"` ไม่ใช่บรรทัดเดียวกับชื่อ)
@@ -80,6 +80,7 @@ grep -E -A1 'k8sServiceHost|k8sServicePort|clusterPoolIPv4PodCIDRList|kubeProxyR
 | `k8sServiceHost` | `192.168.50.100` (VIP) |
 | `k8sServicePort` | `8443` |
 | `clusterPoolIPv4PodCIDRList` | บรรทัดถัดไปเป็น `- "10.246.0.0/16"` |
+| `terminatePodConnections` | `false` — kernel UEK ไม่มี `CONFIG_INET_DIAG_DESTROY` ถ้าเปิดไว้ agent log error และ `check-log-errors` ตก |
 
 > **`k8sServiceHost` ต้องเป็น VIP ไม่ใช่ IP ของ master01**
 > เพราะไม่มี kube-proxy Cilium จึงหา apiserver ผ่าน Service ClusterIP ไม่ได้
@@ -235,6 +236,7 @@ kubectl get ns | grep cilium-test    # ต้องว่าง
 |---|---|---|
 | **ทุกตัวที่มี L7** (`echo-ingress-l7` · `client-egress-l7-*` · `*tls-sni*` · `to-fqdns*`) `exit code 28` แต่ `pod-to-pod` ผ่าน | firewalld ปิดทาง pod → Envoy/DNS proxy บน host — ขาดบรรทัด `--zone=trusted --add-source` ใน[บท 01 ข้อ 8.1](01-prepare-os.md) (เจอจริง 17 ก.ย. 2026 ตก 26 เทสต์) | ตรวจทุกเครื่อง `firewall-cmd --zone=trusted --list-sources` ต้องได้ `10.246.0.0/16` · ไม่มีให้รันบรรทัดนั้น + `--reload` แล้วรันซ้ำเฉพาะกลุ่ม: `cilium connectivity test --test echo-ingress-l7 --test to-fqdns` |
 | `pod-to-pod` ข้าม node ตก | VXLAN `8472/udp` ไม่เปิด | [บท 13 ข้อ 5.1](13-troubleshooting.md) |
+| `check-log-errors` ตัวเดียว · ข้อความมี `CONFIG_INET_DIAG_DESTROY` | `values.yaml` ที่ใช้ไม่มี `socketLB.terminatePodConnections: false` (ข้อ 2) | แก้ไฟล์แล้ว `helm upgrade cilium cilium/cilium --version "${CILIUM_VERSION}" -n kube-system -f /root/k8s/config/cilium/values.yaml` · รอ `rollout status ds/cilium` แล้วรันเทสต์ซ้ำ |
 
 **และทดสอบข้อนี้ด้วยเสมอ — จดผลลงบทที่ 13 ไม่ว่าจะผ่านหรือไม่:**
 ```bash

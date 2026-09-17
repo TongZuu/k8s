@@ -924,6 +924,7 @@ for ip in 101 102 103 104 105 106; do echo -n "$ip: "; ssh root@192.168.50.$ip u
 - **แก้** — เพิ่มบรรทัดนั้นแบบ `--permanent` ในบท 01 ข้อ 8.1 และ `prepare-os.yml`
 - **ตัวที่ 27** — `check-log-errors` เจอ `level=error` 1 บรรทัดจาก agent: kernel UEK 6.12 ไม่มี
   `CONFIG_INET_DIAG_DESTROY` จึงตัด socket ที่ต่อกับ backend ที่ถูกลบไม่ได้ · เป็นคนละเรื่องกับ firewalld
+  · แก้ด้วย `socketLB.terminatePodConnections: false` ใน `values.yaml` — ผลจริงเท่าเดิม แค่ไม่ log error
 
 **28 ส.ค. 2026 · `kubectl` ได้ `EOF` จาก VIP ทั้งที่ `kubeadm init` สำเร็จ**
 
