@@ -239,7 +239,7 @@ img{max-width:100%}
       <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
       <div class="top-t">
         <h1>บทที่ 05 — Cilium (CNI + kube-proxy replacement + LB-IPAM)</h1>
-        <p class="sub">รันที่: 👑 master01 เท่านั้น (Helm กระจายไปทุก node ให้เอง) · เวลาที่ใช้: ~25 นาที · ต้องผ่านบทที่ 04 — node ทั้ง 6 ต้องขึ้นครบแล้วในสถานะ NotReady</p>
+        <p class="sub">รันที่: 👑 master01 เกือบทั้งบท (Helm กระจายไปทุก node ให้เอง) · ยกเว้น 2 จุดที่บอกไว้: · loop ssh ในข้อ 2 รันจากเครื่องคุณ · curl ทดสอบ LB ในข้อ 7 ต้องยิงจากเครื่องในวง LAN · ที่ไม่ใช่ node (7.2 อธิบายว่าทำไม) · ลำดับ: 1 → 7 ตามลำดับ ไม่มีข้อไหนทำพร้อมกันได้ — แต่ละข้อรอผลข้อก่อนหน้า · เวลาที่ใช้: ~25 นาที + connectivity test ข้อ 5 อีก 10-20 นาที · ต้องผ่านบทที่ 04 — kubectl get nodes เห็นครบ 6 เครื่องในสถานะ NotReady (ยังไม่มี CNI คือปกติ)</p>
       </div>
       <div class="top-p">
         <span id="pcount">0/9</span>
@@ -298,6 +298,8 @@ img{max-width:100%}
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2 id="1--ติดตั้ง-helm-4-และ-cilium-cli">1 · ติดตั้ง Helm 4 และ Cilium CLI</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> <code>/root/k8s/dl/</code> มีอยู่แล้วจาก<a href="02-container-runtime.html">บท 02</a>
+· เครื่องออก <code>get.helm.sh</code> และ <code>github.com</code> ได้ (DNS ภายนอกของวงนี้หลุดเป็นช่วง ๆ — <code>curl</code> ล้มให้รันซ้ำ)</p>
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 cd /root/k8s/dl
 
@@ -320,6 +322,8 @@ cilium version --client
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="2--ตรวจ-values-ก่อนติดตั้ง">2 · ตรวจ values ก่อนติดตั้ง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 (บล็อก <code>grep</code>) · <strong>เครื่องคุณ</strong> (loop <code>ssh</code> ไป worker) · <strong>ต้องมีก่อน:</strong>
+<code>/root/k8s/config/cilium/</code> อยู่บนเครื่องจาก<a href="00-overview.html">บท 00</a> · ข้อนี้อ่านอย่างเดียว ไม่แก้อะไรถ้าค่าตรง</p>
 <div class="cb"><pre><code class="language-bash">grep -E 'k8sServiceHost|k8sServicePort|clusterPoolIPv4PodCIDRList|kubeProxyReplacement' \
   /root/k8s/config/cilium/values.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -380,6 +384,8 @@ grep -A3 'interfaces:' /root/k8s/config/cilium/l2-announcement-policy.yaml
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="3--ติดตั้ง-cilium">3 · ติดตั้ง Cilium</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 1 (<code>helm version</code> ตอบ) · ข้อ 2 ค่าตรงครบ · <code>kubectl</code> ใช้ได้
+(<a href="04-create-cluster.html">บท 04 ข้อ 3</a> — helm ใช้ kubeconfig เดียวกัน)</p>
 <div class="cb"><pre><code class="language-bash">helm repo add cilium https://helm.cilium.io/
 helm repo update
 
@@ -411,6 +417,8 @@ DaemonSet    cilium    Desired: 6, Ready: 6/6, Available: 6/6
 <p><strong>ควรเห็น:</strong> ทั้ง 6 เครื่องเป็น <strong><code>Ready</code></strong> แล้ว</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2 id="4--ยืนยันว่า-kube-proxy-replacement-ทำงานจริง">4 · ยืนยันว่า kube-proxy replacement ทำงานจริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 3 จบและ <code>cilium status --wait</code> ผ่าน (agent Running ครบ 6 —
+ถามก่อนขึ้นครบจะได้ผลไม่ครบ 6 บรรทัด)</p>
 <div class="cb"><pre><code class="language-bash">for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
   n=$(kubectl -n kube-system get "$p" -o jsonpath='{.spec.nodeName}')
   echo "$n  $(kubectl -n kube-system exec "$p" -c cilium-agent -- \
@@ -433,6 +441,8 @@ kubectl get pods -A | grep -c kube-proxy
 <p><strong>ควรเห็น:</strong> ไม่มี <code>kube-proxy</code> ในรายการ ds และ grep คืน <code>0</code></p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2 id="5--ทดสอบ-connectivity-เต็มรูปแบบ">5 · ทดสอบ connectivity เต็มรูปแบบ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 ใน <code>tmux</code> · <strong>ต้องมีก่อน:</strong> ข้อ 4 True ครบ 6 · <code>kubectl get nodes</code> เป็น <code>Ready</code>
+ทุกเครื่องแล้ว · ทุก node ดึง image จากอินเทอร์เน็ตได้ (ชุดทดสอบใช้ image จาก <code>quay.io</code>)</p>
 <p>Cilium มีชุดทดสอบในตัว ซึ่งครอบคลุมกว่าการ ping เอง — <strong>รันให้ผ่านก่อนไปต่อ</strong></p>
 <p><strong>🔴 ต้องรันใน <code>tmux</code> เสมอ ห้ามรันตรง ๆ ผ่าน ssh</strong></p>
 <div class="cb"><pre><code class="language-bash">dnf install -y tmux 2&gt;/dev/null; tmux new -s cil "cilium connectivity test 2&gt;&amp;1 | tee /root/k8s/cilium-conn-test.log"
@@ -473,6 +483,8 @@ firewall-cmd --reload &amp;&amp; sleep 5 &amp;&amp; cilium connectivity test --t
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2 id="6--ตั้ง-loadbalancer-ip-pool">6 · ตั้ง LoadBalancer IP pool</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 5 ผ่าน · ชื่อ interface ใน <code>l2-announcement-policy.yaml</code>
+ตรงกับ worker จริง (ตรวจไว้แล้วในข้อ 2)</p>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/cilium/lb-ippool.yaml
 kubectl get ciliumloadbalancerippool
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -489,6 +501,9 @@ kubectl get ciliuml2announcementpolicy
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2 id="7---ทดสอบ-loadbalancer-จริง">7 · 🔴 ทดสอบ LoadBalancer จริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 7.1 · 7.5 (drain) · 7.6 บน 👑 master01 — <strong>แต่ <code>curl</code> ใน 7.3 และ 7.5 ต้องยิงจากเครื่องในวง
+<code>192.168.50.0/24</code> ที่ไม่ใช่ node</strong> (7.2 บอกว่าทำไมและมีทางสำรอง) · <strong>ต้องมีก่อน:</strong> ข้อ 6 —
+<code>AVAILABLE</code> ของ pool เป็น <code>10</code> และ L2 policy มีอยู่</p>
 <p>ขั้นนี้พิสูจน์ว่า Cilium ประกาศ LoadBalancer IP ออกมาบน LAN ได้จริง
 เป็นข้อที่พังบ่อยที่สุดในบทนี้ และพังด้วยสาเหตุที่มองไม่เห็นจาก <code>kubectl</code></p>
 </div><div class="sub" data-machine="all"><h3 id="71-สร้างของทดสอบ">7.1 สร้างของทดสอบ</h3>

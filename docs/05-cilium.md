@@ -1,8 +1,11 @@
 # บทที่ 05 — Cilium (CNI + kube-proxy replacement + LB-IPAM)
 
-> **รันที่: 👑 master01 เท่านั้น** (Helm กระจายไปทุก node ให้เอง)
-> **เวลาที่ใช้:** ~25 นาที
-> **ต้องผ่านบทที่ 04** — node ทั้ง 6 ต้องขึ้นครบแล้วในสถานะ `NotReady`
+> **รันที่: 👑 master01 เกือบทั้งบท** (Helm กระจายไปทุก node ให้เอง) · ยกเว้น 2 จุดที่บอกไว้:
+> loop `ssh` ในข้อ 2 รันจาก**เครื่องคุณ** · `curl` ทดสอบ LB ในข้อ 7 ต้องยิงจาก**เครื่องในวง LAN
+> ที่ไม่ใช่ node** (7.2 อธิบายว่าทำไม)
+> **ลำดับ: 1 → 7 ตามลำดับ ไม่มีข้อไหนทำพร้อมกันได้** — แต่ละข้อรอผลข้อก่อนหน้า
+> **เวลาที่ใช้:** ~25 นาที + connectivity test ข้อ 5 อีก 10-20 นาที
+> **ต้องผ่านบทที่ 04** — `kubectl get nodes` เห็นครบ 6 เครื่องในสถานะ `NotReady` (ยังไม่มี CNI คือปกติ)
 
 ---
 
@@ -28,6 +31,9 @@
 ---
 
 ## 1 · ติดตั้ง Helm 4 และ Cilium CLI
+
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** `/root/k8s/dl/` มีอยู่แล้วจาก[บท 02](02-container-runtime.md)
+· เครื่องออก `get.helm.sh` และ `github.com` ได้ (DNS ภายนอกของวงนี้หลุดเป็นช่วง ๆ — `curl` ล้มให้รันซ้ำ)
 
 ```bash
 set -a && source /root/k8s/versions.env && set +a
@@ -55,6 +61,9 @@ cilium version --client
 ---
 
 ## 2 · ตรวจ values ก่อนติดตั้ง
+
+**ทำที่:** 👑 master01 (บล็อก `grep`) · **เครื่องคุณ** (loop `ssh` ไป worker) · **ต้องมีก่อน:**
+`/root/k8s/config/cilium/` อยู่บนเครื่องจาก[บท 00](00-overview.md) · ข้อนี้อ่านอย่างเดียว ไม่แก้อะไรถ้าค่าตรง
 
 ```bash
 grep -E 'k8sServiceHost|k8sServicePort|clusterPoolIPv4PodCIDRList|kubeProxyReplacement' \
@@ -105,6 +114,9 @@ grep -A3 'interfaces:' /root/k8s/config/cilium/l2-announcement-policy.yaml
 
 ## 3 · ติดตั้ง Cilium
 
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 1 (`helm version` ตอบ) · ข้อ 2 ค่าตรงครบ · `kubectl` ใช้ได้
+([บท 04 ข้อ 3](04-create-cluster.md) — helm ใช้ kubeconfig เดียวกัน)
+
 ```bash
 helm repo add cilium https://helm.cilium.io/
 helm repo update
@@ -148,6 +160,9 @@ kubectl get nodes
 
 ## 4 · ยืนยันว่า kube-proxy replacement ทำงานจริง
 
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 3 จบและ `cilium status --wait` ผ่าน (agent Running ครบ 6 —
+ถามก่อนขึ้นครบจะได้ผลไม่ครบ 6 บรรทัด)
+
 ```bash
 for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
   n=$(kubectl -n kube-system get "$p" -o jsonpath='{.spec.nodeName}')
@@ -175,6 +190,9 @@ kubectl get pods -A | grep -c kube-proxy
 ---
 
 ## 5 · ทดสอบ connectivity เต็มรูปแบบ
+
+**ทำที่:** 👑 master01 ใน `tmux` · **ต้องมีก่อน:** ข้อ 4 True ครบ 6 · `kubectl get nodes` เป็น `Ready`
+ทุกเครื่องแล้ว · ทุก node ดึง image จากอินเทอร์เน็ตได้ (ชุดทดสอบใช้ image จาก `quay.io`)
 
 Cilium มีชุดทดสอบในตัว ซึ่งครอบคลุมกว่าการ ping เอง — **รันให้ผ่านก่อนไปต่อ**
 
@@ -233,6 +251,9 @@ kubectl delete ns cilium-test-1 --ignore-not-found
 
 ## 6 · ตั้ง LoadBalancer IP pool
 
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 5 ผ่าน · ชื่อ interface ใน `l2-announcement-policy.yaml`
+ตรงกับ worker จริง (ตรวจไว้แล้วในข้อ 2)
+
 ```bash
 kubectl apply -f /root/k8s/config/cilium/lb-ippool.yaml
 kubectl get ciliumloadbalancerippool
@@ -254,6 +275,10 @@ kubectl get ciliuml2announcementpolicy
 ---
 
 ## 7 · 🔴 ทดสอบ LoadBalancer จริง
+
+**ทำที่:** 7.1 · 7.5 (drain) · 7.6 บน 👑 master01 — **แต่ `curl` ใน 7.3 และ 7.5 ต้องยิงจากเครื่องในวง
+`192.168.50.0/24` ที่ไม่ใช่ node** (7.2 บอกว่าทำไมและมีทางสำรอง) · **ต้องมีก่อน:** ข้อ 6 —
+`AVAILABLE` ของ pool เป็น `10` และ L2 policy มีอยู่
 
 ขั้นนี้พิสูจน์ว่า Cilium ประกาศ LoadBalancer IP ออกมาบน LAN ได้จริง
 เป็นข้อที่พังบ่อยที่สุดในบทนี้ และพังด้วยสาเหตุที่มองไม่เห็นจาก `kubectl`
