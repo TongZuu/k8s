@@ -524,44 +524,41 @@ systemctl is-active  keepalived haproxy
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>enabled</code> ทั้งคู่ และ <code>active</code> ทั้งคู่</p>
 </div><div class="sub" data-machine="all"><h3 id="-ทดสอบ-54--พิสูจน์ด้วย-kubectl-จริง-ทำได้หลังบทที่-0404-create-clustermd-เท่านั้น">🔴 ทดสอบ 5.4 — พิสูจน์ด้วย <code>kubectl</code> จริง (ทำได้หลัง<a href="04-create-cluster.html">บทที่ 04</a> เท่านั้น)</h3>
-<p>ข้อ 5.1-5.3 ทำได้ตั้งแต่ยังไม่มี cluster แต่มันพิสูจน์ได้แค่ว่า <strong>keepalived ย้าย IP เป็น</strong>
-ยังไม่ได้พิสูจน์ว่า <strong>ย้ายแล้วใช้งานต่อได้</strong> ซึ่งเป็นสิ่งที่เราต้องการจริง ๆ</p>
-<p>เหตุผลอยู่ใน <a href="../config/keepalived/check_apiserver.sh"><code>check_apiserver.sh</code></a> ด่าน 2 —
-ตอนยังไม่มี apiserver ฟังที่ <code>:6443</code> สคริปต์จะ <code>exit 0</code> ออกไปเลย <strong>ด่าน 3
-(ยิง <code>/healthz</code> ผ่าน VIP) จึงไม่เคยถูกรันเลยสักครั้ง</strong> จนกว่าจะมี cluster จริง</p>
-<p><strong>เงื่อนไขก่อนเริ่ม — ต้องผ่านทั้งหมด ไม่งั้นการทดสอบจะ &quot;ผ่าน&quot; แบบหลอก:</strong></p>
+<p><strong>ทำที่:</strong> ssh เข้า 👑 master01 <strong>สองหน้าต่าง</strong> (มันมีทั้ง <code>kubectl</code> จากบท 04 ข้อ 3 และถือ VIP อยู่)
+· บล็อกที่มี <code>ssh root@...</code> รันจาก<strong>เครื่องคุณ</strong> (WSL ที่แลก key ครบ 6 เครื่อง)
+· <strong>ต้องมีก่อน:</strong> บท 04 จบ — <code>kubectl get nodes</code> บน master01 เห็นครบ 6 เครื่อง</p>
+<p>5.1-5.3 พิสูจน์ได้แค่ว่า <strong>keepalived ย้าย IP เป็น</strong> — ข้อนี้พิสูจน์ว่า <strong>ย้ายแล้ว <code>kubectl</code> ยังใช้ต่อได้</strong>
+ซึ่งเป็นสิ่งที่ต้องการจริง (ด่าน 3 ของ <a href="../config/keepalived/check_apiserver.sh"><code>check_apiserver.sh</code></a>
+ยิง <code>/healthz</code> ผ่าน VIP — ก่อนมี cluster ด่านนี้ไม่เคยถูกรันเลย)</p>
+<p><strong>1 · จากเครื่องคุณ — HAProxy ทั้ง 3 เครื่องต้องเห็น backend ครบ</strong> ไม่งั้น VIP อาจย้ายไปเครื่องที่ส่งต่อไม่ได้:</p>
 <div class="cb"><pre><code class="language-bash">for ip in 101 102 103; do
   echo -n "master$ip: "
-  ssh root@192.168.50.$ip 'curl -s "http://127.0.0.1:8404/stats;csv"'     | awk -F, '$1=="kube-apiserver-backend"{printf "%s=%s ", $2, $37}'
+  ssh root@192.168.50.$ip 'curl -s "http://127.0.0.1:8404/stats;csv"' | awk -F, '$1=="kube-apiserver-backend"{printf "%s=%s ", $2, $37}'
   echo
 done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>L7OK</code> ครบ 3 ตัวในทุกเครื่อง (9 ช่อง) — ถ้าเครื่องไหนได้ <code>L6RSP</code> ให้แก้ก่อน
-(<a href="13-troubleshooting.html">บทที่ 13 ข้อ 1.3b</a>) เพราะ VIP อาจย้ายไปเครื่องที่ส่ง traffic ต่อไม่ได้
-ซึ่งแย่กว่าไม่ย้ายเลย</p>
-<p><strong>หน้าต่างที่ 2 — วน <code>kubectl</code> ผ่าน VIP ค้างไว้ตลอดการทดสอบ:</strong></p>
+<p><strong>ควรเห็น:</strong> <code>L7OK</code> ครบ 9 ช่อง (3 เครื่อง × 3 backend) · มี <code>L6RSP</code> ที่ไหนแก้ก่อน (<a href="13-troubleshooting.html">บท 13 ข้อ 1.3b</a>)</p>
+<p><strong>2 · หน้าต่างที่ 2 บน master01 — เปิดค้างไว้ วน <code>kubectl</code> ผ่าน VIP ทุกวินาที:</strong></p>
 <div class="cb"><pre><code class="language-bash">while true; do
   printf '%s ' "$(date +%H:%M:%S)"
-  kubectl get --raw='/healthz' 2&gt;&amp;1 | tr -d '
-'
+  kubectl get --raw='/healthz' 2&gt;&amp;1 | tr -d '\n'
   echo
   sleep 1
 done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>หน้าต่างที่ 1 — หยุด keepalived บนเครื่องที่ถือ VIP:</strong></p>
+<p><strong>ควรเห็น:</strong> <code>ok</code> ทุกบรรทัด · ปล่อยไว้แล้วไปหน้าต่างที่ 1</p>
+<p><strong>3 · หน้าต่างที่ 1 บน master01 — ดึงปลั๊ก keepalived:</strong></p>
 <div class="cb"><pre><code class="language-bash">systemctl stop keepalived
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>เกณฑ์ผ่านที่แท้จริง:</strong> หน้าต่างที่ 2 ขาดได้ไม่เกิน <strong>2-3 บรรทัด</strong> แล้วกลับมาเป็น <code>ok</code> เอง
-โดยไม่ต้องแตะ kubeconfig หรือรีสตาร์ตอะไรทั้งสิ้น</p>
-<p><strong>คืนค่า แล้วยืนยันว่า VIP กลับบ้าน:</strong></p>
+<p><strong>4 · ดูหน้าต่างที่ 2 — เกณฑ์ผ่านที่แท้จริง:</strong> ขาดได้ไม่เกิน <strong>2-3 บรรทัด</strong> แล้วกลับมา <code>ok</code> เอง
+โดยไม่แตะ kubeconfig ไม่รีสตาร์ตอะไร · <strong>นับบรรทัดที่ขาดแล้วจด</strong> — นั่นคือ downtime ของ control plane
+ตอน failover ที่ต้องตอบทีม เดาไม่ได้ ต้องวัด</p>
+<p><strong>5 · หน้าต่างที่ 1 — คืนค่า แล้วจากเครื่องคุณยืนยันว่า VIP กลับ master01:</strong></p>
 <div class="cb"><pre><code class="language-bash">systemctl start keepalived
-sleep 5; for ip in 101 102 103; do echo -n "master$ip: "; ssh root@192.168.50.$ip "ip -4 addr show | grep -c 192.168.50.100"; done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>1</code> ที่ master01 เครื่องเดียว · อีกสองเครื่องเป็น <code>0</code></p>
-<blockquote>
-<p><strong>จดผลลงบทที่ 13 ทุกครั้ง</strong> — เวลาที่ VIP ใช้ย้ายจริงกี่วินาที คือตัวเลขที่ต้องใช้
-ตอนตอบทีมว่า downtime ของ control plane ตอน failover เท่าไหร่ · เดาไม่ได้ ต้องวัด</p>
-</blockquote>
+<div class="cb"><pre><code class="language-bash">sleep 5; for ip in 101 102 103; do echo -n "master$ip: "; ssh root@192.168.50.$ip "ip -4 addr show | grep -c 192.168.50.100"; done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>1</code> ที่ master01 เครื่องเดียว · อีกสองเครื่อง <code>0</code> · ปิดหน้าต่างที่ 2 ได้ (Ctrl-C)</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2 id="-เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
