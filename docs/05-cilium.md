@@ -384,28 +384,34 @@ kubectl -n kube-system exec $P -c cilium-agent -- cilium-dbg shell -- db/show l2
 **ทำที่:** 👑 master01 ทั้งหมด ยกเว้นขั้น "ยิงซ้ำ" ที่ยิงจากเครื่องเดียวกับที่ใช้ใน 7.3
 · **ต้องมีก่อน:** 7.3 ผ่าน (รู้แล้วว่า node ไหนตอบ ARP และ MAC อะไร)
 
-พิสูจน์ว่าถ้า node ที่ถือ IP หายไป node อื่นรับหน้าที่ต่อเอง — วัดด้วยของเดียวกับ 7.3:
-`curl` ต้องกลับมาได้ หรือ `arping` ต้องได้ **MAC คนละตัว** กับก่อน drain
+พิสูจน์ว่าถ้า node ที่ถือ IP **หายไปทั้งเครื่อง** node อื่นรับหน้าที่ต่อเอง — วัดด้วยของเดียวกับ 7.3:
+`curl` ต้องกลับมาได้ หรือ `arping` ต้องได้ **MAC คนละตัว** กับก่อนหน้า
 
-**1 · ดูว่าใครถืออยู่ แล้วเก็บชื่อไว้ในตัวแปร:**
+> 🔴 **ใช้ `reboot` ไม่ใช่ `kubectl drain`** (เจอจริง 18 ก.ย. 2026) — ตัวที่ถือ lease และตอบ ARP คือ
+> **cilium-agent** ซึ่งเป็น DaemonSet · `drain` ไล่แค่ pod ธรรมดา agent ยังรันอยู่และต่ออายุ lease ต่อ
+> · lease ไม่ย้าย MAC ไม่เปลี่ยน แม้รอเป็นนาที และ IP ยังใช้ได้เพราะ agent ส่งต่อไป pod บน node อื่นให้
+> — ดูเหมือน failover ไม่ทำงานทั้งที่ยังไม่ได้ทดสอบเลย
+
+**1 · ดูว่าใครถืออยู่ แล้วเก็บชื่อกับ IP ไว้:**
 
 ```bash
 HOLDER=$(kubectl -n kube-system get lease cilium-l2announce-default-lbtest -o jsonpath='{.spec.holderIdentity}')
-echo "$HOLDER"
+HOLDER_IP=$(kubectl get node "$HOLDER" -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}')
+echo "$HOLDER $HOLDER_IP"
 ```
 
-**ควรเห็น:** ชื่อ worker ตัวเดียว เช่น `k8s-worker02` — ตัวเดียวกับที่ MAC ตรงใน 7.3
+**ควรเห็น:** ชื่อ worker ตัวเดียวกับที่ MAC ตรงใน 7.3 และ IP ของมัน เช่น `k8s-worker02 192.168.50.105`
 
-**2 · เอา node นั้นออกจากการให้บริการ:**
+**2 · reboot เครื่องนั้น แล้วดูว่า lease ย้าย:**
 
 ```bash
-kubectl drain "$HOLDER" --ignore-daemonsets --delete-emptydir-data
-sleep 10
+ssh root@"$HOLDER_IP" reboot; date +%T
+sleep 20
 kubectl -n kube-system get lease cilium-l2announce-default-lbtest -o jsonpath='{.spec.holderIdentity}{"\n"}'
 ```
 
-**ควรเห็น:** ชื่อ worker **อีกตัว** ไม่ใช่ `$HOLDER` — ถ้ายังเป็นตัวเดิม รออีก 10 วินาทีแล้วดูใหม่
-(lease หมดอายุ 15 วินาที)
+**ควรเห็น:** ชื่อ worker **อีกตัว** ไม่ใช่ `$HOLDER` (lease หมดอายุ 15 วินาทีหลัง agent หาย)
+— ถ้ายังเป็นตัวเดิม รออีก 10 วินาทีแล้วดูใหม่ · **จด `date` กับเวลาที่ lease ย้าย** = downtime ของ LB IP
 
 **3 · ยิงซ้ำจากเครื่องเดิมที่ใช้ใน 7.3:**
 
@@ -413,21 +419,21 @@ kubectl -n kube-system get lease cilium-l2announce-default-lbtest -o jsonpath='{
 - ทางสำรอง (`arping` จาก node ที่ไม่ใช่ตัวถือ): MAC ที่ตอบ **ต้องเปลี่ยน** เป็นของ worker ในข้อ 2
   · ถ้ายังเป็น MAC เดิม = failover ไม่เกิดจริง (ดู 7.4)
 
-**4 · คืน node เข้าคลัสเตอร์ — ห้ามลืม:**
+**4 · รอเครื่องกลับมา:**
 
 ```bash
-kubectl uncordon "$HOLDER"
-kubectl get nodes                      # ต้องไม่มี SchedulingDisabled
+kubectl get nodes -w
 ```
 
-> ลืม `uncordon` แล้วบทถัด ๆ ไปจะ schedule pod ไม่ลง และไปโผล่เป็นอาการอื่นที่ดูไม่เกี่ยวกันเลย
-> · IP **ไม่ย้ายกลับ** มาที่ `$HOLDER` เองหลัง uncordon — ปกติ ไม่ต้องทำอะไร
+**ควรเห็น:** `$HOLDER` กลับเป็น `Ready` ภายใน ~2 นาที แล้ว Ctrl-C · ต้องไม่มี `SchedulingDisabled`
+· IP **ไม่ย้ายกลับ** มาที่ `$HOLDER` เอง — ปกติ ไม่ต้องทำอะไร
+
+> ข้อนี้นับเป็น[บท 03 ข้อ 5.3](03-ha-layer.md) (reboot test) ของฝั่ง worker ไปในตัว
 
 ### 7.6 เก็บกวาด
 
 ```bash
 kubectl delete deploy,svc lbtest
-kubectl get nodes                      # ต้องไม่มี SchedulingDisabled ค้าง
 ```
 
 ---
@@ -443,7 +449,7 @@ kubectl get nodes                      # ต้องไม่มี SchedulingD
 - [ ] LB pool `AVAILABLE = 10`
 - [ ] **curl เข้า LoadBalancer IP จากเครื่องในวง `192.168.50.0/24` ที่ไม่ใช่ node ได้**
       (ถ้าไม่มีเครื่องนั้น: `arping` จาก worker ตัวที่ไม่ได้ถือ lease ต้องได้ reply)
-- [ ] drain node ที่ถือ IP แล้ว IP ย้ายเองและ curl กลับมาได้
+- [ ] reboot node ที่ถือ IP แล้ว lease ย้ายไป worker อื่นเอง · `curl`/`arping` กลับมาได้ · node กลับ `Ready`
 - [ ] ลบ resource ทดสอบทิ้งหมดแล้ว
 
 **➡️ ต่อที่ [บทที่ 06 — ตรวจรับระบบ](06-verify.md)**

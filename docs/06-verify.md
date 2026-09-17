@@ -232,7 +232,7 @@ kubectl -n kube-system get pdb
 - [ ] **ปิด master 1 ตัวแล้ว cluster ยังใช้งานได้** · quorum ยังอยู่
 - [ ] master กลับเข้า cluster เองหลังเปิดกลับ
 - [ ] **rolling reboot ครบทั้ง 6 เครื่องโดยไม่มี service ดับ**
-- [ ] LB IP ย้าย node ได้เมื่อ drain
+- [ ] LB IP ย้าย node เองเมื่อ node ที่ถือ reboot (drain อย่างเดียวไม่ย้าย — agent ยังรัน)
 
 ### Day-2
 - [ ] etcd snapshot สร้างได้ · `snapshot status` อ่านได้ · คัดลอกออกนอก cluster แล้ว

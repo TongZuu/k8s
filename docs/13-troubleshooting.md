@@ -911,6 +911,16 @@ for ip in 101 102 103 104 105 106; do echo -n "$ip: "; ssh root@192.168.50.$ip u
 
 ### บันทึกจากการติดตั้งจริง
 
+**18 ก.ย. 2026 · `kubectl drain` ไม่ทำให้ LB IP ย้าย — คู่มือออกแบบเทสต์ผิด**
+
+- **อาการ** — บท 05 ข้อ 7.5 (เดิม) สั่ง `drain` worker ที่ถือ lease · drain จบ node เป็น
+  `SchedulingDisabled` แต่ lease ยังเป็น worker02 และ `arping` ยังได้ MAC เดิม รอเป็นนาทีก็ไม่เปลี่ยน
+- **สาเหตุจริง** — ตัวที่ถือ lease/ตอบ ARP คือ cilium-agent (DaemonSet) ซึ่ง `drain` ไม่แตะ
+  · agent ต่ออายุ lease ต่อและส่ง traffic ไป pod บน node อื่นให้ — ไม่ใช่ failover ที่ไม่ทำงาน แต่ยังไม่มีอะไรล้ม
+- **พิสูจน์** — `uncordon` แล้ว `reboot` worker02 → lease ย้ายไป worker อื่นภายใน ~20 วินาที
+  MAC ที่ตอบ `arping` เปลี่ยนตาม · worker02 กลับ `Ready` เอง
+- **แก้** — 7.5 ใช้ `reboot` และดึงชื่อ/IP ของตัวถือจาก lease · ข้อ 14 ใน scenarios page แก้คำอธิบายให้ตรง
+
 **17 ก.ย. 2026 · `cilium connectivity test` ตก 27/82 — 26 ตัวเป็น L7 ทั้งหมด**
 
 - **อาการ** — `no-policies` และ `pod-to-pod` ผ่าน · แต่ทุกเทสต์ที่มี L7 policy (`echo-ingress-l7` ·

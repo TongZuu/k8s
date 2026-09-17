@@ -1202,6 +1202,16 @@ for ip in 101 102 103 104 105 106; do echo -n "$ip: "; ssh root@192.168.50.$ip u
 <p>นี่คือส่วนที่ทำให้คู่มือชุดนี้ต่างจากชุดเดิม
 คู่มือเดิมไม่มีบทนี้เลย ความรู้จึงอยู่ในหัวคนไม่กี่คน และหายไปพร้อมคนนั้น</p>
 </div><div class="sub" data-machine="all"><h3 id="บันทึกจากการติดตั้งจริง">บันทึกจากการติดตั้งจริง</h3>
+<p><strong>18 ก.ย. 2026 · <code>kubectl drain</code> ไม่ทำให้ LB IP ย้าย — คู่มือออกแบบเทสต์ผิด</strong></p>
+<ul>
+<li><strong>อาการ</strong> — บท 05 ข้อ 7.5 (เดิม) สั่ง <code>drain</code> worker ที่ถือ lease · drain จบ node เป็น
+<code>SchedulingDisabled</code> แต่ lease ยังเป็น worker02 และ <code>arping</code> ยังได้ MAC เดิม รอเป็นนาทีก็ไม่เปลี่ยน</li>
+<li><strong>สาเหตุจริง</strong> — ตัวที่ถือ lease/ตอบ ARP คือ cilium-agent (DaemonSet) ซึ่ง <code>drain</code> ไม่แตะ
+· agent ต่ออายุ lease ต่อและส่ง traffic ไป pod บน node อื่นให้ — ไม่ใช่ failover ที่ไม่ทำงาน แต่ยังไม่มีอะไรล้ม</li>
+<li><strong>พิสูจน์</strong> — <code>uncordon</code> แล้ว <code>reboot</code> worker02 → lease ย้ายไป worker อื่นภายใน ~20 วินาที
+MAC ที่ตอบ <code>arping</code> เปลี่ยนตาม · worker02 กลับ <code>Ready</code> เอง</li>
+<li><strong>แก้</strong> — 7.5 ใช้ <code>reboot</code> และดึงชื่อ/IP ของตัวถือจาก lease · ข้อ 14 ใน scenarios page แก้คำอธิบายให้ตรง</li>
+</ul>
 <p><strong>17 ก.ย. 2026 · <code>cilium connectivity test</code> ตก 27/82 — 26 ตัวเป็น L7 ทั้งหมด</strong></p>
 <ul>
 <li><strong>อาการ</strong> — <code>no-policies</code> และ <code>pod-to-pod</code> ผ่าน · แต่ทุกเทสต์ที่มี L7 policy (<code>echo-ingress-l7</code> ·

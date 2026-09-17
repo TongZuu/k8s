@@ -436,7 +436,7 @@ kubectl -n kube-system get pdb
 <li>[ ] <strong>ปิด master 1 ตัวแล้ว cluster ยังใช้งานได้</strong> · quorum ยังอยู่</li>
 <li>[ ] master กลับเข้า cluster เองหลังเปิดกลับ</li>
 <li>[ ] <strong>rolling reboot ครบทั้ง 6 เครื่องโดยไม่มี service ดับ</strong></li>
-<li>[ ] LB IP ย้าย node ได้เมื่อ drain</li>
+<li>[ ] LB IP ย้าย node เองเมื่อ node ที่ถือ reboot (drain อย่างเดียวไม่ย้าย — agent ยังรัน)</li>
 </ul>
 </div><div class="sub" data-machine="all"><h3 id="day-2">Day-2</h3>
 <ul>

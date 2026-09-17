@@ -1166,9 +1166,11 @@ kubectl explain clienttrafficpolicy.spec --recursive | head -40
       <div class="sc-b">
         <div class="sym"><b>อาการ</b> — ระหว่างแพตช์ kernel/rolling reboot ตามงาน day-2
           curl จากข้างนอกขาดไปหลายสิบวินาที ทั้งที่ Envoy pod ยังมีอยู่ node อื่น</div>
-        <p>เมื่อ node ที่ถือ lease ของ L2 announcement ถูก drain
-          Cilium จะย้าย lease ไป node อื่นและส่ง gratuitous ARP ให้
-          ปกติกินเวลาไม่กี่วินาที — ถ้านานกว่านั้นมักติดที่ ARP cache ฝั่งตรงข้าม</p>
+        <p>ต้องรู้ก่อนว่า <b><code>drain</code> อย่างเดียวไม่ย้าย lease</b> (ทดสอบจริง 18 ก.ย. 2026) —
+          ตัวที่ถือ lease และตอบ ARP คือ cilium-agent ซึ่งเป็น DaemonSet ไม่โดน drain
+          node ที่ cordon แล้วจึงยังประกาศ IP ต่อและส่ง traffic ไป pod บน node อื่นให้ ไม่มีอะไรสะดุด
+          · lease ย้ายจริงตอน <b>reboot</b> (agent หาย → lease หมดอายุ 15 วินาที → node อื่นรับแล้วส่ง
+          gratuitous ARP) — ช่วงนั้นคือจุดที่ traffic ขาดได้ ถ้านานกว่าราว 20 วินาทีมักติดที่ ARP cache ฝั่งตรงข้าม</p>
 
         <h4>วินิจฉัย — ต้องดูสองฝั่งพร้อมกัน</h4>
         <div class="cb"><pre><code># ฝั่งคลัสเตอร์ — lease ย้ายไปหรือยัง
@@ -1184,7 +1186,7 @@ kubectl -n envoy-gateway-system get pod -o wide
         <h4>สาเหตุเรียงตามที่เจอจริง</h4>
         <ol>
           <li><b>Envoy pod มี replica เดียวและอยู่บน node ที่กำลัง drain</b> —
-            lease ย้ายทันแต่ไม่มี pod ให้ส่ง traffic ต่อ</li>
+            IP ยังประกาศอยู่แต่ไม่มี pod ให้ส่ง traffic ต่อ</li>
           <li><b>ARP cache ค้าง</b> ที่ client หรือที่ switch — IP ยังชี้ MAC เดิมจนกว่าจะหมดอายุ</li>
           <li><b><code>externalTrafficPolicy: Local</code></b> — node ที่ประกาศ IP ต้องมี Envoy pod
             อยู่บนตัวเองด้วย ไม่งั้น traffic จะตกหาย ตรวจค่าจริงก่อนสรุป</li>
@@ -1196,14 +1198,15 @@ kubectl -n envoy-gateway-system get pod -o wide
           <li>ทำให้ Envoy proxy มี <b>อย่างน้อย 2 replica และกระจายคนละ node</b>
             (ตั้งผ่าน <code>EnvoyProxy</code> ที่ผูกกับ GatewayClass) — ข้อนี้สำคัญกว่าทุกข้อ
             เพราะเราต้อง drain node ทุก 1-2 เดือนอยู่แล้ว</li>
-          <li>drain ทีละเครื่องและรอ curl กลับมาเขียวก่อนไปเครื่องถัดไป อย่า drain พร้อมกัน</li>
+          <li>drain + reboot ทีละเครื่องและรอ curl กลับมาเขียวก่อนไปเครื่องถัดไป อย่าทำพร้อมกัน
+            — จังหวะที่ขาดคือตอน reboot ไม่ใช่ตอน drain</li>
           <li>ถ้า ARP ค้างที่ client ทดสอบล้าง cache ฝั่งนั้นเพื่อยืนยันสาเหตุ
             (<code>ip neigh flush 192.168.50.200</code> บน Linux · <code>netsh interface ip delete arpcache</code> บน Windows)
             ถ้าล้างแล้วกลับมาทันที = ปัญหาอยู่ที่ ARP cache ไม่ใช่ที่คลัสเตอร์</li>
         </ul>
 
         <h4>ทดสอบก่อนถึงวันจริง</h4>
-        <div class="cb"><pre><code># ยิงต่อเนื่องจากเครื่องนอกคลัสเตอร์ไว้ก่อน แล้วค่อย drain
+        <div class="cb"><pre><code># ยิงต่อเนื่องจากเครื่องนอกคลัสเตอร์ไว้ก่อน แล้วค่อย reboot node ที่ถือ lease (บท 05 ข้อ 7.5)
 while true; do curl -s -o /dev/null -w "%{http_code} " -m2 http://192.168.50.200; sleep 1; done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
         <div class="tags"><span class="tag">#drain</span><span class="tag">#failover</span><span class="tag">#arp-cache</span><span class="tag">#lease</span><span class="tag">#externalTrafficPolicy</span></div>
