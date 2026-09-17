@@ -83,12 +83,13 @@ kubeadm init phase preflight --config=/root/k8s/config/kubeadm/kubeadm-config.ya
 > ถ้ามันผ่านแล้ว preflight ยังฟ้อง แปลว่าปัญหาอยู่ที่เครื่อง ไม่ใช่ที่ไฟล์
 
 > **`[ERROR DirAvailable--var-lib-etcd]: /var/lib/etcd is not empty`**
-> ปกติคือ `lost+found` ที่ ext4 แถมมากับ partition ที่แยกไว้ในบทที่ 01 ไม่ใช่ข้อมูล etcd
+> เจอเฉพาะเครื่องที่ย้าย partition มา — ปกติคือ `lost+found` ที่ ext4 แถมมา ไม่ใช่ข้อมูล etcd
 > **ดูก่อนลบเสมอ** — `ls -la /var/lib/etcd`
 >
 > | เห็นอะไร | แปลว่า | ทำอะไร |
 > |---|---|---|
-> | มีแค่ `lost+found` | filesystem ใหม่ปกติ | `rm -rf /var/lib/etcd/lost+found` แล้ว preflight ใหม่ |
+> | `No such file or directory` | **ปกติที่สุด** — ไม่ได้ย้าย partition (บท 01 ข้อ 5 เป็นทางเลือก) kubeadm สร้างให้เอง | ไม่ต้องทำอะไร |
+> | มีแค่ `lost+found` | ย้าย partition มา — ext4 แถมโฟลเดอร์นี้ให้ | `rm -rf /var/lib/etcd/lost+found` แล้ว preflight ใหม่ |
 > | มี `member/` | เคย `kubeadm init` มาก่อน | ต้อง `kubeadm reset -f` ก่อน ห้ามลบมือเปล่า |
 > | มีโฟลเดอร์อื่น เช่น `myhr` | ของเก่าที่ติดมาจาก `/home` ตอนย้าย partition | ตรวจว่าไม่มีข้อมูลที่ต้องเก็บ แล้ว `rmdir` (ไม่ใช่ `rm -rf` — `rmdir` จะปฏิเสธถ้าข้างในไม่ว่าง) |
 >
@@ -282,7 +283,7 @@ kubeadm token create --ttl 2h --print-join-command
 
 ### 4.2 · 🎩 บน master02 — ทำครบทุกอย่างในเครื่องนี้
 
-**เตรียมเครื่อง** — audit policy, ที่เก็บ log, และล้าง `/var/lib/etcd` ให้ว่าง:
+**เตรียมเครื่อง** — audit policy, ที่เก็บ log, และดูว่า `/var/lib/etcd` ไม่มีของเก่า:
 
 ```bash
 set -a && source /root/k8s/versions.env && set +a
@@ -292,10 +293,11 @@ ls -l /etc/kubernetes/audit-policy.yaml
 ls -la /var/lib/etcd
 ```
 
-**ควรเห็น:** ไฟล์ `audit-policy.yaml` ขนาดไม่เป็น 0 · และ `/var/lib/etcd` **ต้องว่าง**
+**ควรเห็น:** ไฟล์ `audit-policy.yaml` ขนาดไม่เป็น 0 · และบรรทัด `/var/lib/etcd` เป็น
+**`No such file or directory`** (ไม่ได้ย้าย partition — kubeadm สร้างให้เอง ดีที่สุด) **หรือว่างเปล่า**
 
-`/var/lib/etcd` ของ master02/03 ก็มี `lost+found` (และอาจมีโฟลเดอร์เก่าจาก `/home`) เหมือน master01
-ถ้าไม่ว่าง `kubeadm join` จะตายที่ preflight ด้วย `[ERROR DirAvailable--var-lib-etcd]`:
+**เฉพาะเครื่องที่ย้าย partition มา** (บท 01 ข้อ 5) จะเห็น `lost+found` และอาจมีโฟลเดอร์เก่าจาก
+`/home` — ถ้าไม่ว่าง `kubeadm join` จะตายที่ preflight ด้วย `[ERROR DirAvailable--var-lib-etcd]`:
 
 ```bash
 rm -rf /var/lib/etcd/lost+found; rmdir /var/lib/etcd/* 2>/dev/null; ls -A /var/lib/etcd

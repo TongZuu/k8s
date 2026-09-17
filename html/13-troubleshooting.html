@@ -1042,8 +1042,9 @@ install -D -m 0600 /root/k8s/config/kubeadm/audit-policy.yaml /etc/kubernetes/au
 <div class="cb"><pre><code class="language-text">[ERROR DirAvailable--var-lib-etcd]: /var/lib/etcd is not empty
 </code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>kubeadm ขอ <code>dataDir</code> ที่ว่างเปล่าจริง ๆ — ไม่สนว่าของข้างในเป็นของ filesystem เอง
-บน cluster นี้ <code>/var/lib/etcd</code> เป็น partition แยกที่ย้ายมาจาก <code>/home</code> ในบทที่ 01
-ext4 จึงแถม <code>lost+found</code> มาให้ทุกเครื่องตั้งแต่แรก และถ้าเครื่องนั้นเคยมีคนใช้ <code>/home</code>
+เกิดเฉพาะเครื่องที่ย้าย partition มาเป็น <code>/var/lib/etcd</code> (บท 01 ข้อ 5 — เป็นทางเลือก)
+เครื่องที่ไม่ได้ย้ายจะไม่มีโฟลเดอร์นี้เลยตอน init/join ซึ่ง kubeadm สร้างให้เองและไม่มีทางเจอ error นี้ ·
+ext4 แถม <code>lost+found</code> มาให้ทุก partition ใหม่ และถ้าเครื่องนั้นเคยมีคนใช้ <code>/home</code>
 โฟลเดอร์ของเดิมจะติดมาด้วย (เครื่องที่ VM template แบ่ง partition มาให้เลยจะมีแค่ <code>lost+found</code>)</p>
 <p><strong>ดูก่อนลบเสมอ:</strong></p>
 <div class="cb"><pre><code class="language-bash">ls -la /var/lib/etcd

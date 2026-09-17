@@ -311,7 +311,7 @@ kubeadm init phase preflight --config=/root/k8s/config/kubeadm/kubeadm-config.ya
 </blockquote>
 <blockquote>
 <p><strong><code>[ERROR DirAvailable--var-lib-etcd]: /var/lib/etcd is not empty</code></strong>
-ปกติคือ <code>lost+found</code> ที่ ext4 แถมมากับ partition ที่แยกไว้ในบทที่ 01 ไม่ใช่ข้อมูล etcd
+เจอเฉพาะเครื่องที่ย้าย partition มา — ปกติคือ <code>lost+found</code> ที่ ext4 แถมมา ไม่ใช่ข้อมูล etcd
 <strong>ดูก่อนลบเสมอ</strong> — <code>ls -la /var/lib/etcd</code></p>
 <table>
 <thead>
@@ -323,8 +323,13 @@ kubeadm init phase preflight --config=/root/k8s/config/kubeadm/kubeadm-config.ya
 </thead>
 <tbody>
 <tr>
+<td><code>No such file or directory</code></td>
+<td><strong>ปกติที่สุด</strong> — ไม่ได้ย้าย partition (บท 01 ข้อ 5 เป็นทางเลือก) kubeadm สร้างให้เอง</td>
+<td>ไม่ต้องทำอะไร</td>
+</tr>
+<tr>
 <td>มีแค่ <code>lost+found</code></td>
-<td>filesystem ใหม่ปกติ</td>
+<td>ย้าย partition มา — ext4 แถมโฟลเดอร์นี้ให้</td>
 <td><code>rm -rf /var/lib/etcd/lost+found</code> แล้ว preflight ใหม่</td>
 </tr>
 <tr>
@@ -538,16 +543,17 @@ kubeadm token create --ttl 2h --print-join-command
 ทั้งสองคำสั่งรันซ้ำได้ไม่มีผลข้างเคียง</p>
 </blockquote>
 </div><div class="sub" data-machine="masters"><h3 id="42---บน-master02--ทำครบทุกอย่างในเครื่องนี้">4.2 · 🎩 บน master02 — ทำครบทุกอย่างในเครื่องนี้</h3>
-<p><strong>เตรียมเครื่อง</strong> — audit policy, ที่เก็บ log, และล้าง <code>/var/lib/etcd</code> ให้ว่าง:</p>
+<p><strong>เตรียมเครื่อง</strong> — audit policy, ที่เก็บ log, และดูว่า <code>/var/lib/etcd</code> ไม่มีของเก่า:</p>
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 mkdir -p /var/log/kubernetes
 install -D -m 0600 /root/k8s/config/kubeadm/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
 ls -l /etc/kubernetes/audit-policy.yaml
 ls -la /var/lib/etcd
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> ไฟล์ <code>audit-policy.yaml</code> ขนาดไม่เป็น 0 · และ <code>/var/lib/etcd</code> <strong>ต้องว่าง</strong></p>
-<p><code>/var/lib/etcd</code> ของ master02/03 ก็มี <code>lost+found</code> (และอาจมีโฟลเดอร์เก่าจาก <code>/home</code>) เหมือน master01
-ถ้าไม่ว่าง <code>kubeadm join</code> จะตายที่ preflight ด้วย <code>[ERROR DirAvailable--var-lib-etcd]</code>:</p>
+<p><strong>ควรเห็น:</strong> ไฟล์ <code>audit-policy.yaml</code> ขนาดไม่เป็น 0 · และบรรทัด <code>/var/lib/etcd</code> เป็น
+<strong><code>No such file or directory</code></strong> (ไม่ได้ย้าย partition — kubeadm สร้างให้เอง ดีที่สุด) <strong>หรือว่างเปล่า</strong></p>
+<p><strong>เฉพาะเครื่องที่ย้าย partition มา</strong> (บท 01 ข้อ 5) จะเห็น <code>lost+found</code> และอาจมีโฟลเดอร์เก่าจาก
+<code>/home</code> — ถ้าไม่ว่าง <code>kubeadm join</code> จะตายที่ preflight ด้วย <code>[ERROR DirAvailable--var-lib-etcd]</code>:</p>
 <div class="cb"><pre><code class="language-bash">rm -rf /var/lib/etcd/lost+found; rmdir /var/lib/etcd/* 2&gt;/dev/null; ls -A /var/lib/etcd
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ไม่มีอะไรพิมพ์ออกมาเลย · ถ้ายังเหลืออะไรอยู่ = มีข้อมูลจริงข้างใน
