@@ -717,8 +717,8 @@ kubectl -n monitoring run conf-check --rm --attach --restart=Never --image=busyb
 **5.4.4 สลับ Alertmanager มาใช้ตัวกลาง**
 
 ไฟล์ `config/monitoring/alertmanager-config.yaml` ในรีโปเป็น `webhook_configs` ให้แล้ว
-(ของเดิมที่เป็น `email_configs` ถูกคอมเมนต์ไว้ข้าง ๆ พร้อมกลับมาใช้) — scp ทับแล้ว
-`helm upgrade` ตามข้อ 5.2 จากนั้นยิงของปลอมตามข้อ 5.3 ซ้ำ แล้วดูที่ตัวกลาง:
+(ของเดิมที่เป็น `email_configs` ถูกคอมเมนต์ไว้ข้าง ๆ พร้อมกลับมาใช้) — ไฟล์อยู่บนเครื่องแล้ว
+จาก[บท 00](00-overview.md) · `helm upgrade` ตามข้อ 5.2 จากนั้นยิงของปลอมตามข้อ 5.3 ซ้ำ แล้วดูที่ตัวกลาง:
 ```bash
 kubectl -n monitoring logs deploy/alert-mail-relay --tail=20
 ```

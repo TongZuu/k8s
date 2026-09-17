@@ -50,17 +50,8 @@ kubeadm config images pull --kubernetes-version "v${K8S_VERSION}"
 
 ## 2 · 👑 เตรียม config และ init
 
-**ทำที่:** บรรทัด `scp` แรกรันจาก**เครื่องคุณ** · ที่เหลือ 👑 master01 · **ต้องมีก่อน:** ข้อ 1 (image
-อยู่บนเครื่องแล้ว — init จะไม่ไปรอดาวน์โหลด) · `config/kubeadm/` ในrepoเป็นรุ่นล่าสุด
-
-**ถ้าเพิ่งแก้ไฟล์ในrepo ต้องส่งขึ้นเครื่องก่อน** — รันจากrepoบนเครื่องตัวเอง ไม่ใช่บน master01
-(ไฟล์ใน `/root/k8s/` เป็นคนละก๊อปปี้กับrepo แก้ในrepoแล้วเครื่องไม่รู้เรื่องด้วย)
-
-```bash
-scp config/kubeadm/kubeadm-config.yaml config/kubeadm/audit-policy.yaml root@192.168.50.101:/root/k8s/config/kubeadm/
-```
-
-ต่อไปนี้รันบน **master01**:
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 1 (image อยู่บนเครื่องแล้ว — init จะไม่ไปรอดาวน์โหลด)
+· `/root/k8s/config/kubeadm/` อยู่บนเครื่องแล้วจาก[บท 00](00-overview.md)
 
 ```bash
 # 🔴 audit ต้องครบสองอย่างก่อน init ไม่งั้น apiserver ไม่ขึ้น
@@ -245,7 +236,7 @@ crictl logs "$(crictl ps -a --name kube-apiserver -q | head -1)" 2>&1 | grep -i 
 
 | ขั้น | เครื่อง | ทำอะไร |
 |---|---|---|
-| 4.1 | 👑 master01 | เตรียมไฟล์ + ออกบัตรผ่าน — **ทำครั้งเดียวใช้ได้ทั้งสองเครื่อง** |
+| 4.1 | 👑 master01 | ออกบัตรผ่าน — **ทำครั้งเดียวใช้ได้ทั้งสองเครื่อง** |
 | 4.2 | 🎩 master02 | ทำครบทุกอย่างในเครื่องนี้รวดเดียว จนถึง join เสร็จ |
 | 4.3 | 👑 master01 | ตรวจว่า master02 เข้ามาจริง |
 | 4.4 | 🎩 master03 | ทำซ้ำ 4.2 แล้วกลับไปตรวจด้วย 4.3 |
@@ -253,16 +244,7 @@ crictl logs "$(crictl ps -a --name kube-apiserver -q | head -1)" 2>&1 | grep -i 
 > **ห้ามทำ master02 กับ master03 พร้อมกัน** — etcd รับ member ทีละราย
 > ต้องเห็น master02 ขึ้นครบใน 4.3 ก่อนถึงจะเริ่ม master03
 
-### 4.1 · 👑 บน master01 — เตรียมของให้ทั้งสองเครื่อง
-
-**ส่ง audit policy ไปทั้ง master02 และ master03:**
-
-```bash
-for ip in 102 103; do
-  ssh root@192.168.50.$ip 'mkdir -p /root/k8s/config/kubeadm'
-  scp /root/k8s/config/kubeadm/audit-policy.yaml root@192.168.50.$ip:/root/k8s/config/kubeadm/
-done
-```
+### 4.1 · 👑 บน master01 — ออกบัตรผ่านให้ทั้งสองเครื่อง
 
 **ออก certificate-key และคำสั่ง join ชุดใหม่:**
 

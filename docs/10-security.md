@@ -75,28 +75,20 @@ registry password, cluster-admin token และ client key **ฝังอยู
 worker 3 ตัวเป็นที่ที่ pod รันจริง · ฐานข้อมูลกับ registry อยู่<b>นอก</b> cluster คนละวง IP</figcaption>
 </figure>
 
-## 0 · ส่งไฟล์ config ขึ้นเครื่องก่อน
+## 0 · ตรวจว่า config บนเครื่องตรงกับrepo
 
-**ถ้าเพิ่งแก้ไฟล์ในrepo ต้องส่งขึ้นเครื่องก่อน** — รันจากrepoบนเครื่องตัวเอง ไม่ใช่บน master
-(ไฟล์ใน `/root/k8s/` เป็นคนละก๊อปปี้กับrepo แก้ในrepoแล้วเครื่องไม่รู้เรื่องด้วย)
-
-บทนี้ใช้ `encryption-config.yaml` กับ `audit-policy.yaml` **ทั้ง 3 master** ส่วนที่เหลือ
-apply จาก master01 อย่างเดียว — ส่งให้ครบทุกเครื่องไปเลยง่ายกว่า:
-
-```bash
-for ip in 101 102 103; do
-  ssh root@192.168.50.$ip 'mkdir -p /root/k8s/config/security'
-  scp config/security/*.yaml root@192.168.50.$ip:/root/k8s/config/security/
-done
-```
-
-**ตรวจว่าของขึ้นจริงและตรงกับrepo** — เทียบ md5 ทีเดียวทั้ง 3 เครื่อง:
+**ทำที่:** เครื่องคุณ (ที่มีrepo) · ไฟล์ทั้งหมดอยู่ที่ `/root/k8s/config/security/` แล้วจาก
+[บท 00](00-overview.md) — บทนี้ใช้ `encryption-config.yaml` กับ `audit-policy.yaml`
+**ทั้ง 3 master** จึงต้องตรงกันทุกเครื่อง เทียบ md5 ก่อน:
 ```bash
 md5sum config/security/*.yaml
 for ip in 101 102 103; do echo "== .$ip"; ssh root@192.168.50.$ip 'md5sum /root/k8s/config/security/*.yaml'; done
 ```
 **ควรเห็น:** ค่า md5 เหมือนกันทั้ง 4 ชุด ครบ 6 ไฟล์ (`allow-dns` · `audit-policy` ·
 `default-deny` · `encryption-config` · `namespaces` · `rbac`)
+
+ถ้าไม่ตรง แปลว่า `/root/k8s/` เป็นชุดเก่า — sync ใหม่ทั้ง 6 เครื่องตาม[บท 00](00-overview.md)
+แล้วเทียบซ้ำ อย่า copy ทีละไฟล์
 
 > ⚠️ การ copy รอบนี้ทับแค่ไฟล์ใน `/root/k8s/` — ของที่วางไว้ที่ `/etc/kubernetes/` แล้ว
 > **ไม่โดน** ถ้าแก้ไฟล์ต้นทางหลังจากทำข้อ 1.2 หรือข้อ 5 ไปแล้ว ต้อง `\cp -f` ซ้ำ
@@ -1025,11 +1017,8 @@ crictl pull --creds '<PULL_ONLY_USER>:<PULL_ONLY_PASSWORD>' "${REGISTRY_HOST}/my
 แล้วทดสอบผ่าน VIP ก็ยังผ่าน 2 ใน 3 ครั้ง · ติด label PSA แล้วแต่ไม่มีผลจะรู้ตอนบทที่ 11 ·
 apply NetworkPolicy สำเร็จไม่ได้แปลว่า Cilium บังคับใช้จริง
 
-[`verify-security.sh`](../config/security/verify-security.sh) ยิงของจริงทุกข้อแล้วสรุปเป็น ผ่าน/ตก:
-
-```bash
-scp config/security/verify-security.sh root@192.168.50.101:/root/k8s/config/security/
-```
+[`verify-security.sh`](../config/security/verify-security.sh) ยิงของจริงทุกข้อแล้วสรุปเป็น ผ่าน/ตก
+(อยู่บนเครื่องแล้วจาก[บท 00](00-overview.md)):
 
 **👑 บน master01:**
 ```bash

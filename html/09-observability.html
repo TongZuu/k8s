@@ -1035,8 +1035,8 @@ kubectl -n monitoring rollout status deploy/alert-mail-relay --timeout=180s
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>5.4.4 สลับ Alertmanager มาใช้ตัวกลาง</strong></p>
 <p>ไฟล์ <code>config/monitoring/alertmanager-config.yaml</code> ในรีโปเป็น <code>webhook_configs</code> ให้แล้ว
-(ของเดิมที่เป็น <code>email_configs</code> ถูกคอมเมนต์ไว้ข้าง ๆ พร้อมกลับมาใช้) — scp ทับแล้ว
-<code>helm upgrade</code> ตามข้อ 5.2 จากนั้นยิงของปลอมตามข้อ 5.3 ซ้ำ แล้วดูที่ตัวกลาง:</p>
+(ของเดิมที่เป็น <code>email_configs</code> ถูกคอมเมนต์ไว้ข้าง ๆ พร้อมกลับมาใช้) — ไฟล์อยู่บนเครื่องแล้ว
+จาก<a href="00-overview.html">บท 00</a> · <code>helm upgrade</code> ตามข้อ 5.2 จากนั้นยิงของปลอมตามข้อ 5.3 ซ้ำ แล้วดูที่ตัวกลาง:</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring logs deploy/alert-mail-relay --tail=20
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <table>

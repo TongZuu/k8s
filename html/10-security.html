@@ -247,7 +247,7 @@ img{max-width:100%}
         <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
       </div>
     </header>
-    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="ทำไมบทนี้ไม่ใช่ทางเลือก">ทำไมบทนี้ไม่ใช่ทางเลือก</option><option value="2" data-t="0 · ส่งไฟล์ config ขึ้นเครื่องก่อน">0 · ส่งไฟล์ config ขึ้นเครื่องก่อน</option><option value="3" data-t="1 · 🔴 etcd encryption at rest">1 · 🔴 etcd encryption at rest</option><option value="4" data-t="2 · Pod Security Admission">2 · Pod Security Admission</option><option value="5" data-t="3 · 🔴 NetworkPolicy default-deny">3 · 🔴 NetworkPolicy default-deny</option><option value="6" data-t="4 · RBAC ตามหน้าที่">4 · RBAC ตามหน้าที่</option><option value="7" data-t="5 · Audit log">5 · Audit log</option><option value="8" data-t="6 · หนี้เก่าที่ต้องจ่าย — หมุน credential">6 · หนี้เก่าที่ต้องจ่าย — หมุน credential</option><option value="9" data-t="7 · imagePullSecret — ให้ cluster ดึง image จาก private registry">7 · imagePullSecret — ให้ cluster ดึง image จาก private registry</option><option value="10" data-t="8 · ตรวจทั้งบทด้วยสคริปต์เดียว">8 · ตรวจทั้งบทด้วยสคริปต์เดียว</option><option value="11" data-t="✅ เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</option></select></div>
+    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="ทำไมบทนี้ไม่ใช่ทางเลือก">ทำไมบทนี้ไม่ใช่ทางเลือก</option><option value="2" data-t="0 · ตรวจว่า config บนเครื่องตรงกับrepo">0 · ตรวจว่า config บนเครื่องตรงกับrepo</option><option value="3" data-t="1 · 🔴 etcd encryption at rest">1 · 🔴 etcd encryption at rest</option><option value="4" data-t="2 · Pod Security Admission">2 · Pod Security Admission</option><option value="5" data-t="3 · 🔴 NetworkPolicy default-deny">3 · 🔴 NetworkPolicy default-deny</option><option value="6" data-t="4 · RBAC ตามหน้าที่">4 · RBAC ตามหน้าที่</option><option value="7" data-t="5 · Audit log">5 · Audit log</option><option value="8" data-t="6 · หนี้เก่าที่ต้องจ่าย — หมุน credential">6 · หนี้เก่าที่ต้องจ่าย — หมุน credential</option><option value="9" data-t="7 · imagePullSecret — ให้ cluster ดึง image จาก private registry">7 · imagePullSecret — ให้ cluster ดึง image จาก private registry</option><option value="10" data-t="8 · ตรวจทั้งบทด้วยสคริปต์เดียว">8 · ตรวจทั้งบทด้วยสคริปต์เดียว</option><option value="11" data-t="✅ เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</option></select></div>
   </div>
 
   <main>
@@ -310,22 +310,17 @@ registry password, cluster-admin token และ client key <strong>ฝังอ
 <figcaption>เครื่องทั้งหมดที่มี — master 3 ตัวรับคำสั่ง (apiserver) และเก็บสถานะ (etcd) ·
 worker 3 ตัวเป็นที่ที่ pod รันจริง · ฐานข้อมูลกับ registry อยู่<b>นอก</b> cluster คนละวง IP</figcaption>
 </figure>
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2 id="0--ส่งไฟล์-config-ขึ้นเครื่องก่อน">0 · ส่งไฟล์ config ขึ้นเครื่องก่อน</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p><strong>ถ้าเพิ่งแก้ไฟล์ในrepo ต้องส่งขึ้นเครื่องก่อน</strong> — รันจากrepoบนเครื่องตัวเอง ไม่ใช่บน master
-(ไฟล์ใน <code>/root/k8s/</code> เป็นคนละก๊อปปี้กับrepo แก้ในrepoแล้วเครื่องไม่รู้เรื่องด้วย)</p>
-<p>บทนี้ใช้ <code>encryption-config.yaml</code> กับ <code>audit-policy.yaml</code> <strong>ทั้ง 3 master</strong> ส่วนที่เหลือ
-apply จาก master01 อย่างเดียว — ส่งให้ครบทุกเครื่องไปเลยง่ายกว่า:</p>
-<div class="cb"><pre><code class="language-bash">for ip in 101 102 103; do
-  ssh root@192.168.50.$ip 'mkdir -p /root/k8s/config/security'
-  scp config/security/*.yaml root@192.168.50.$ip:/root/k8s/config/security/
-done
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ตรวจว่าของขึ้นจริงและตรงกับrepo</strong> — เทียบ md5 ทีเดียวทั้ง 3 เครื่อง:</p>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2 id="0--ตรวจว่า-config-บนเครื่องตรงกับrepo">0 · ตรวจว่า config บนเครื่องตรงกับrepo</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> เครื่องคุณ (ที่มีrepo) · ไฟล์ทั้งหมดอยู่ที่ <code>/root/k8s/config/security/</code> แล้วจาก
+<a href="00-overview.html">บท 00</a> — บทนี้ใช้ <code>encryption-config.yaml</code> กับ <code>audit-policy.yaml</code>
+<strong>ทั้ง 3 master</strong> จึงต้องตรงกันทุกเครื่อง เทียบ md5 ก่อน:</p>
 <div class="cb"><pre><code class="language-bash">md5sum config/security/*.yaml
 for ip in 101 102 103; do echo "== .$ip"; ssh root@192.168.50.$ip 'md5sum /root/k8s/config/security/*.yaml'; done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ค่า md5 เหมือนกันทั้ง 4 ชุด ครบ 6 ไฟล์ (<code>allow-dns</code> · <code>audit-policy</code> ·
 <code>default-deny</code> · <code>encryption-config</code> · <code>namespaces</code> · <code>rbac</code>)</p>
+<p>ถ้าไม่ตรง แปลว่า <code>/root/k8s/</code> เป็นชุดเก่า — sync ใหม่ทั้ง 6 เครื่องตาม<a href="00-overview.html">บท 00</a>
+แล้วเทียบซ้ำ อย่า copy ทีละไฟล์</p>
 <blockquote>
 <p>⚠️ การ copy รอบนี้ทับแค่ไฟล์ใน <code>/root/k8s/</code> — ของที่วางไว้ที่ <code>/etc/kubernetes/</code> แล้ว
 <strong>ไม่โดน</strong> ถ้าแก้ไฟล์ต้นทางหลังจากทำข้อ 1.2 หรือข้อ 5 ไปแล้ว ต้อง <code>\cp -f</code> ซ้ำ
@@ -1296,9 +1291,8 @@ pod ถัดไปเกิด ซึ่งอาจเป็นตอน drain
 <p>ทุกด่านในบทนี้ผ่านได้ทั้งที่ระบบยังไม่ปลอดภัย — เปิด encryption แค่ master01
 แล้วทดสอบผ่าน VIP ก็ยังผ่าน 2 ใน 3 ครั้ง · ติด label PSA แล้วแต่ไม่มีผลจะรู้ตอนบทที่ 11 ·
 apply NetworkPolicy สำเร็จไม่ได้แปลว่า Cilium บังคับใช้จริง</p>
-<p><a href="../config/security/verify-security.sh"><code>verify-security.sh</code></a> ยิงของจริงทุกข้อแล้วสรุปเป็น ผ่าน/ตก:</p>
-<div class="cb"><pre><code class="language-bash">scp config/security/verify-security.sh root@192.168.50.101:/root/k8s/config/security/
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><a href="../config/security/verify-security.sh"><code>verify-security.sh</code></a> ยิงของจริงทุกข้อแล้วสรุปเป็น ผ่าน/ตก
+(อยู่บนเครื่องแล้วจาก<a href="00-overview.html">บท 00</a>):</p>
 <p><strong>👑 บน master01:</strong></p>
 <div class="cb"><pre><code class="language-bash">bash /root/k8s/config/security/verify-security.sh
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
