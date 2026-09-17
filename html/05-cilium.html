@@ -468,13 +468,28 @@ kubectl get ns | grep cilium-test    # ต้องว่าง
 <p><strong>&quot;ค้าง&quot; กับ &quot;พัง&quot; แยกกันที่ log ยังเดินอยู่ไหม</strong> ไม่ใช่ที่หน้าจอนิ่ง —
 บางเทสต์เงียบเป็นนาทีได้ปกติ นี่คือเหตุผลที่ต้องมี <code>tee</code> ไว้ดูย้อนหลัง</p>
 </blockquote>
-<p>ถ้าไม่ผ่าน ให้ดูก่อนว่าเป็นเรื่อง firewalld หรือเปล่า:</p>
-<div class="cb"><pre><code class="language-bash"># ลองเพิ่ม interface ของ Cilium เข้า trusted zone แล้วทดสอบซ้ำ (ทำทุก node)
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_host
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_net
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_vxlan
-firewall-cmd --reload
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ถ้าตกเป็นกลุ่ม — ดูว่าตกกลุ่มไหน</strong> (บรรทัด <code>❌ N/82 tests failed</code> ตามด้วยรายชื่อ):</p>
+<table>
+<thead>
+<tr>
+<th>เทสต์ที่ตก</th>
+<th>สาเหตุ</th>
+<th>แก้</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ทุกตัวที่มี L7</strong> (<code>echo-ingress-l7</code> · <code>client-egress-l7-*</code> · <code>*tls-sni*</code> · <code>to-fqdns*</code>) <code>exit code 28</code> แต่ <code>pod-to-pod</code> ผ่าน</td>
+<td>firewalld ปิดทาง pod → Envoy/DNS proxy บน host — ขาดบรรทัด <code>--zone=trusted --add-source</code> ใน<a href="01-prepare-os.html">บท 01 ข้อ 8.1</a> (เจอจริง 17 ก.ย. 2026 ตก 26 เทสต์)</td>
+<td>ตรวจทุกเครื่อง <code>firewall-cmd --zone=trusted --list-sources</code> ต้องได้ <code>10.246.0.0/16</code> · ไม่มีให้รันบรรทัดนั้น + <code>--reload</code> แล้วรันซ้ำเฉพาะกลุ่ม: <code>cilium connectivity test --test echo-ingress-l7 --test to-fqdns</code></td>
+</tr>
+<tr>
+<td><code>pod-to-pod</code> ข้าม node ตก</td>
+<td>VXLAN <code>8472/udp</code> ไม่เปิด</td>
+<td><a href="13-troubleshooting.html">บท 13 ข้อ 5.1</a></td>
+</tr>
+</tbody>
+</table>
 <p><strong>และทดสอบข้อนี้ด้วยเสมอ — จดผลลงบทที่ 13 ไม่ว่าจะผ่านหรือไม่:</strong></p>
 <div class="cb"><pre><code class="language-bash"># firewalld เขียนกฎ nftables ใหม่ทั้งชุดตอน reload — pod ต้องยังคุยกันได้หลังจากนี้
 firewall-cmd --reload &amp;&amp; sleep 5 &amp;&amp; cilium connectivity test --test 'pod-to-pod'

@@ -1210,38 +1210,41 @@ while true; do curl -s -o /dev/null -w "%{http_code} " -m2 http://192.168.50.200
       </div>
     </article>
 
-    <article class="sc closed" data-kind="issue" id="s15" data-freq="2" data-cat="net" data-kw="firewalld reload nftables pod to pod ตาย vxlan 8472 trusted zone cilium_host">
-      <div class="sc-h"><span class="sc-n">15</span><h3>pod คุยข้าม node ไม่ได้หลัง <code>firewall-cmd --reload</code></h3><span class="badge f2">🟠 บ่อย</span><span class="caret">▾</span></div>
+    <article class="sc closed" data-kind="issue" id="s15" data-freq="2" data-cat="net" data-kw="firewalld reload nftables pod to pod ตาย vxlan 8472 trusted zone source l7 policy timeout exit 28 envoy proxy dns proxy host">
+      <div class="sc-h"><span class="sc-n">15</span><h3>firewalld กับ Cilium — pod ข้าม node ไม่ได้ หรือ L7 policy timeout</h3><span class="badge f2">🟠 บ่อย</span><span class="caret">▾</span></div>
       <div class="sc-b">
-        <div class="sym"><b>อาการ</b> — pod บน node เดียวกันคุยกันได้ แต่ข้าม node ไม่ได้
-          มักเกิดหลังมีคนแก้ firewall หรือหลัง reboot</div>
-        <p><code>firewalld</code> เขียนกฎ nftables ใหม่ทั้งชุดตอน reload
-          ซึ่งอาจลบกฎที่ Cilium ใส่ไว้ออกไปด้วย — เป็นเหตุผลที่บทที่ 05 บังคับให้ทดสอบ
-          <code>firewall-cmd --reload</code> แล้ววัดผลทุกครั้ง ไม่ใช่แค่ทดสอบตอนติดตั้ง</p>
+        <div class="sym"><b>อาการ 1</b> — pod บน node เดียวกันคุยกันได้ แต่ข้าม node ไม่ได้
+          มักเกิดหลังมีคนแก้ firewall หรือหลัง reboot<br>
+          <b>อาการ 2 (เจอจริง 17 ก.ย. 2026)</b> — <code>pod-to-pod</code> ผ่าน แต่ทุกอย่างที่ผ่าน
+          <b>L7 policy</b> หรือ <b>DNS policy</b> timeout (<code>curl</code> exit 28) · <code>cilium connectivity test</code>
+          ตก 26 เทสต์ ล้วนเป็น <code>echo-ingress-l7</code> · <code>client-egress-l7-*</code> · <code>tls-sni</code> · <code>to-fqdns</code></div>
+        <p>firewalld คุม 2 ทางที่ Cilium ต้องใช้: <b>FORWARD</b> (ข้างนอก → pod, และ VXLAN <code>8472/udp</code>
+          ระหว่าง node) กับ <b>INPUT</b> (pod → host) — ทางหลังมักถูกลืม เพราะ Envoy L7 proxy และ DNS proxy
+          ของ Cilium <b>ฟังอยู่บน host</b> ที่พอร์ตสุ่ม 10000-20000 ไม่ใช่ใน pod · packet จาก pod เข้าทาง
+          <code>lxc...</code> ซึ่งไม่อยู่ใน zone ไหน ตกไป <code>public</code> แล้วโดน reject ·
+          Hubble ไม่เห็น drop เพราะเกิดใน host stack หลัง BPF ส่งต่อไปแล้ว</p>
 
-        <h4>วินิจฉัย</h4>
-        <div class="cb"><pre><code># หา pod สองตัวคนละ node แล้วยิงหากัน
-kubectl get pod -A -o wide | head
+        <h4>วินิจฉัย — ทำทุก node</h4>
+        <div class="cb"><pre><code># อาการ 1: VXLAN ต้องเปิด
+firewall-cmd --list-ports | grep 8472
 
-# VXLAN ต้องเปิดที่ทุก node
-firewall-cmd --list-all | grep -E '8472|trusted|interfaces'
-
-# interface ของ Cilium อยู่ใน trusted zone ไหม
-firewall-cmd --zone=trusted --list-interfaces
+# อาการ 2: วง pod ต้องเป็น source ของ zone trusted (บท 01 ข้อ 8.1)
+firewall-cmd --zone=trusted --list-sources          # ต้องได้ 10.246.0.0/16
+firewall-cmd --info-policy=kube-pods | grep target  # ต้องได้ CONTINUE
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 
-        <h4>แก้ — ทำทุก node</h4>
-        <div class="cb"><pre><code>firewall-cmd --permanent --zone=trusted --add-interface=cilium_host
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_net
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_vxlan
+        <h4>แก้ — ทำทุก node ที่ขาด</h4>
+        <div class="cb"><pre><code>firewall-cmd --permanent --add-port=8472/udp
+firewall-cmd --permanent --zone=trusted --add-source=10.246.0.0/16
 firewall-cmd --reload
 
-# แล้ว "ต้องทดสอบซ้ำหลัง reload เสมอ" — reload คือขั้นที่ทำให้พัง ไม่ใช่ขั้นที่ทำให้หาย
-sleep 5 &amp;&amp; cilium connectivity test --test 'pod-to-pod'
+# reload คือขั้นที่ทำให้พังได้ ไม่ใช่แค่ขั้นที่ทำให้หาย — ทดสอบซ้ำหลัง reload เสมอ
+sleep 5 &amp;&amp; cilium connectivity test --test pod-to-pod --test echo-ingress-l7
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-        <blockquote><p>จดผลการทดสอบข้อนี้ลงบทที่ 13 ทุกครั้งไม่ว่าจะผ่านหรือไม่ผ่าน —
-          ค่าที่จดไว้คือสิ่งเดียวที่ทำให้รอบหน้ารู้ได้ว่า “เคยผ่าน” หรือ “ไม่เคยลอง”</p></blockquote>
-        <div class="tags"><span class="tag">#firewalld</span><span class="tag">#nftables</span><span class="tag">#vxlan</span><span class="tag">#pod-to-pod</span></div>
+        <blockquote><p>ใช้ <b>source</b> ไม่ใช่ interface — <code>lxc...</code> ชื่อสุ่มใส่ใน zone ไม่ได้ และทดสอบแล้วว่า
+          การเอา <code>cilium_host</code> / <code>cilium_net</code> / <code>cilium_vxlan</code> เข้า trusted ไม่ใช่ตัวที่ขาด ·
+          พิสูจน์ 17 ก.ย. 2026: ใส่ source แบบ runtime แล้วรันเฉพาะกลุ่มที่ตก → 60/60 action ผ่าน</p></blockquote>
+        <div class="tags"><span class="tag">#firewalld</span><span class="tag">#nftables</span><span class="tag">#vxlan</span><span class="tag">#pod-to-pod</span><span class="tag">#l7-policy</span></div>
       </div>
     </article>
 

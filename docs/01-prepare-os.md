@@ -506,14 +506,18 @@ firewall-cmd --list-all
 ```
 **ควรเห็น:** พอร์ตครบตามรายการของบทบาทนั้น และ master ต้องมี `protocols: vrrp`
 
-### 🔴 เปิดให้ forward เข้าวง pod ได้ — ทำทุกเครื่อง ห้ามข้าม
+### 🔴 เปิดทางเข้าออกวง pod — ทำทุกเครื่อง ห้ามข้าม
 
-เปิดพอร์ตอย่างเดียว**ไม่พอ** พอร์ตข้างบนคุมแค่ traffic ที่ปลายทางเป็นตัวเครื่องเอง (`INPUT`)
-แต่ traffic ที่วิ่งไปหา pod ต้องผ่าน `FORWARD` ซึ่ง firewalld ปิดอยู่
+เปิดพอร์ตอย่างเดียว**ไม่พอ** พอร์ตข้างบนคุมแค่ traffic ที่ปลายทางเป็นตัวเครื่องเอง
+และมาจาก `ens192` — traffic ของ pod ผ่านทางที่ firewalld ปิดอยู่อีก **2 ทาง**:
 
-zone `public` มีแค่ `ens192` และ `forward: yes` อนุญาตเฉพาะ `ens192` → `ens192`
-ส่วน packet ที่ไปหา pod ต้องออกทาง `lxc...` ที่ Cilium สร้างขึ้นแบบไดนามิก
-ซึ่ง**ไม่ได้อยู่ใน zone ไหนเลย** — firewalld จึงทิ้งเงียบ ๆ
+1. **`FORWARD` — จากข้างนอกไปหา pod** (NodePort · LoadBalancer IP) · zone `public` มีแค่ `ens192`
+   และ `forward: yes` อนุญาตเฉพาะ `ens192` → `ens192` ส่วน packet ที่ไปหา pod ต้องออกทาง `lxc...`
+   ที่ Cilium สร้างแบบไดนามิกและ**ไม่อยู่ใน zone ไหนเลย** → policy `kube-pods` ข้างล่างเปิดให้
+2. **`INPUT` — จาก pod เข้า host stack** · Envoy L7 proxy และ DNS proxy ของ Cilium ฟังอยู่บน host
+   ไม่ใช่ใน pod · packet จาก pod เข้ามาทาง `lxc...` ตกไป zone `public` ซึ่งไม่มีพอร์ตของ proxy
+   (สุ่ม 10000-20000) → `reject` → ทุกอย่างที่ผ่าน L7 policy timeout · บรรทัด `--zone=trusted
+   --add-source` เปิดให้ (source ชนะ interface ใน firewalld — ใช้ได้ไม่ว่า packet เข้าทางไหน)
 
 **⚙️ รันทุกเครื่องทั้ง 6:**
 ```bash
@@ -525,14 +529,16 @@ firewall-cmd --permanent --policy=kube-pods --add-egress-zone=ANY
 firewall-cmd --permanent --policy=kube-pods --set-target=CONTINUE
 firewall-cmd --permanent --policy=kube-pods --add-rich-rule="rule family=ipv4 destination address=${POD_CIDR} accept"
 firewall-cmd --permanent --policy=kube-pods --add-rich-rule="rule family=ipv4 source address=${POD_CIDR} accept"
+firewall-cmd --permanent --zone=trusted --add-source=${POD_CIDR}
 firewall-cmd --reload
 ```
 
 **ตรวจ:**
 ```bash
-firewall-cmd --info-policy=kube-pods
+firewall-cmd --info-policy=kube-pods; firewall-cmd --zone=trusted --list-sources
 ```
 **ควรเห็น:** `target: CONTINUE` · `ingress-zones: ANY` · `egress-zones: ANY` · rich rule 2 บรรทัด
+· บรรทัดสุดท้าย `10.246.0.0/16`
 
 > 🔴 **อาการถ้าลืมข้อนี้ — หาสาเหตุยากที่สุดในชุด (เจอจริง 6 ก.ย. 2026)**
 > SSH เข้า node ได้ปกติ (`INPUT`) แต่ **NodePort และ LoadBalancer IP เข้าไม่ได้เลย**
@@ -547,6 +553,12 @@ firewall-cmd --info-policy=kube-pods
 > `target: CONTINUE` + rich rule 2 ข้อ = เปิดเฉพาะ traffic ที่เกี่ยวกับวง pod
 > ไม่ได้เปิด forward ทั้งเครื่อง
 
+> 🔴 **อาการถ้าลืมบรรทัด `--add-source` (เจอจริง 17 ก.ย. 2026)** — `cilium connectivity test`
+> ในบท 05 ตก 26 เทสต์ ทุกตัวเป็นเทสต์ที่มี L7 policy (`echo-ingress-l7` · `client-egress-l7-*` ·
+> `tls-sni` · `to-fqdns`) ด้วย `exit code 28` (timeout) ขณะที่ `pod-to-pod` และ `no-policies` ผ่าน
+> · ตกทั้ง pod บน node เดียวกันและคนละ node · Hubble ไม่มี drop เพราะ firewalld ทิ้งใน host stack
+> หลังจาก BPF ส่งต่อไปแล้ว · เติม source แล้วรันเฉพาะกลุ่มที่ตก → ผ่านทันที (60/60 action)
+
 ---
 
 
@@ -555,18 +567,11 @@ firewall-cmd --info-policy=kube-pods
 
 ### หมายเหตุ — interface ของ Cilium กับ firewalld
 
-หลังลง Cilium ในบทที่ 05 ถ้าเจอว่า pod ข้าม node ไม่ได้ ให้ลองเพิ่ม interface ของ Cilium
-เข้า zone `trusted` แล้วทดสอบซ้ำ:
+**ไม่ต้อง**เอา `cilium_host` / `cilium_net` / `cilium_vxlan` เข้า zone `trusted` — ทดสอบแล้ว
+(17 ก.ย. 2026) ว่าสิ่งที่ขาดคือ **source** ของวง pod ไม่ใช่ interface (packet จาก pod เข้ามาทาง
+`lxc...` ซึ่งชื่อสุ่ม ใส่ใน zone ไม่ได้) · ข้อ 8.1 ข้างบนครอบคลุมแล้ว
 
-```bash
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_host
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_net
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_vxlan
-firewall-cmd --reload
-```
-
-> **ต้องทดสอบใน lab ว่าจำเป็นจริงไหม** — อย่าใส่ไว้ล่วงหน้าโดยไม่รู้เหตุผล
-> และต้องทดสอบด้วยว่า `firewall-cmd --reload` ตอน Cilium รันอยู่แล้ว pod ยังคุยกันได้
+> ยังต้องทดสอบว่า `firewall-cmd --reload` ตอน Cilium รันอยู่แล้ว pod ยังคุยกันได้ (บท 05 ข้อ 5)
 > เพราะ firewalld เขียนกฎ nftables ใหม่ทั้งชุดตอน reload · **จดผลลง บทที่ 13 ไม่ว่าจะผ่านหรือไม่**
 
 ---

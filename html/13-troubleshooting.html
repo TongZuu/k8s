@@ -688,13 +688,15 @@ firewall-cmd --list-all
 firewall-cmd --permanent --add-port=4240/tcp
 firewall-cmd --reload
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ถ้าอาการเกิดขึ้นทันทีหลัง <code>firewall-cmd --reload</code>:</strong>
-firewalld เขียนกฎ nftables ใหม่ทั้งชุดตอน reload ลองเพิ่ม interface ของ Cilium เข้า trusted zone:</p>
-<div class="cb"><pre><code class="language-bash">firewall-cmd --permanent --zone=trusted --add-interface=cilium_host
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_net
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_vxlan
-firewall-cmd --reload
+<p><strong>ถ้า pod-to-pod ผ่าน แต่ทุกอย่างที่ผ่าน L7 policy / DNS policy timeout</strong> (เจอจริง 17 ก.ย. 2026):
+Envoy L7 proxy และ DNS proxy ของ Cilium อยู่บน host ไม่ใช่ใน pod — packet จาก pod เข้าทาง <code>lxc...</code>
+ตกไป zone <code>public</code> แล้วโดน reject · Hubble ไม่เห็น drop เพราะเกิดใน host stack หลัง BPF</p>
+<div class="cb"><pre><code class="language-bash">firewall-cmd --zone=trusted --list-sources        # ต้องได้ 10.246.0.0/16 ทุกเครื่อง
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ถ้าว่าง = ขาดบรรทัดสุดท้ายของ<a href="01-prepare-os.html">บท 01 ข้อ 8.1</a>:</p>
+<div class="cb"><pre><code class="language-bash">firewall-cmd --permanent --zone=trusted --add-source=10.246.0.0/16 &amp;&amp; firewall-cmd --reload
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ไม่ต้องเอา <code>cilium_host</code> / <code>cilium_net</code> / <code>cilium_vxlan</code> เข้า <code>trusted</code> — ทดสอบแล้วว่าไม่ใช่ตัวที่ขาด</p>
 </div><div class="sub" data-machine="all"><h3 id="52-mtu--ping-ผ่าน-แต่-http-ค้าง">5.2 MTU — &quot;ping ผ่าน แต่ HTTP ค้าง&quot;</h3>
 <div class="cb"><pre><code class="language-bash">kubectl -n "$NS" exec "$POD_A" -- ping -c3 -M do -s 1372 "$POD_B_IP"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -1200,6 +1202,20 @@ for ip in 101 102 103 104 105 106; do echo -n "$ip: "; ssh root@192.168.50.$ip u
 <p>นี่คือส่วนที่ทำให้คู่มือชุดนี้ต่างจากชุดเดิม
 คู่มือเดิมไม่มีบทนี้เลย ความรู้จึงอยู่ในหัวคนไม่กี่คน และหายไปพร้อมคนนั้น</p>
 </div><div class="sub" data-machine="all"><h3 id="บันทึกจากการติดตั้งจริง">บันทึกจากการติดตั้งจริง</h3>
+<p><strong>17 ก.ย. 2026 · <code>cilium connectivity test</code> ตก 27/82 — 26 ตัวเป็น L7 ทั้งหมด</strong></p>
+<ul>
+<li><strong>อาการ</strong> — <code>no-policies</code> และ <code>pod-to-pod</code> ผ่าน · แต่ทุกเทสต์ที่มี L7 policy (<code>echo-ingress-l7</code> ·
+<code>client-egress-l7-*</code> · <code>tls-sni</code> · <code>to-fqdns</code>) ได้ <code>exit code 28</code> ทั้ง pod บน node เดียวกันและคนละ node
+· ตกเฉพาะ <code>client2</code> ที่ policy ครอบ ส่วน <code>client</code> บน node เดียวกันผ่าน · Envoy <code>Running</code> ครบ 6 · Hubble ไม่มี drop</li>
+<li><strong>สาเหตุจริง</strong> — traffic ที่ต้องผ่าน L7 ถูก BPF ส่งขึ้น host stack ไปหา Envoy/DNS proxy ซึ่งฟังบน host
+· packet เข้าทาง <code>lxc...</code> ตกไป zone <code>public</code> ที่ไม่มีพอร์ตของ proxy → <code>reject with icmpx admin-prohibited</code>
+· policy <code>kube-pods</code> ของบท 01 เปิดแค่ <code>FORWARD</code> ไม่ครอบ <code>INPUT</code></li>
+<li><strong>พิสูจน์</strong> — <code>firewall-cmd --zone=trusted --add-source=10.246.0.0/16</code> (runtime) ทั้ง 6 เครื่อง แล้วรัน
+<code>--test echo-ingress-l7 --test to-fqdns</code> → <code>All 4 tests (60 actions) successful</code></li>
+<li><strong>แก้</strong> — เพิ่มบรรทัดนั้นแบบ <code>--permanent</code> ในบท 01 ข้อ 8.1 และ <code>prepare-os.yml</code></li>
+<li><strong>ตัวที่ 27</strong> — <code>check-log-errors</code> เจอ <code>level=error</code> 1 บรรทัดจาก agent: kernel UEK 6.12 ไม่มี
+<code>CONFIG_INET_DIAG_DESTROY</code> จึงตัด socket ที่ต่อกับ backend ที่ถูกลบไม่ได้ · เป็นคนละเรื่องกับ firewalld</li>
+</ul>
 <p><strong>28 ส.ค. 2026 · <code>kubectl</code> ได้ <code>EOF</code> จาก VIP ทั้งที่ <code>kubeadm init</code> สำเร็จ</strong></p>
 <ul>
 <li><strong>อาการ</strong> — <code>kubeadm init</code> จบสวย พิมพ์คำสั่ง join ครบ · <code>crictl ps</code> เห็น <code>kube-apiserver</code> <code>Running</code> ไม่ restart เลย
@@ -1228,7 +1244,8 @@ backend จึง <code>DOWN</code> ครบทั้ง 3 ตัว แล้�
 <p><strong>สิ่งที่ต้องจดจาก Phase 1 (lab) โดยเฉพาะ:</strong></p>
 <ul>
 <li>[ ] <code>firewall-cmd --reload</code> ตอน Cilium รันอยู่ — pod ยังคุยกันได้ไหม</li>
-<li>[ ] ต้องเพิ่ม cilium interface เข้า trusted zone หรือเปล่า</li>
+<li>[x] ต้องเพิ่ม cilium interface เข้า trusted zone หรือเปล่า — <strong>ไม่ใช่ interface แต่เป็น source</strong>
+<code>--zone=trusted --add-source=10.246.0.0/16</code> (17 ก.ย. 2026 · บันทึกด้านล่าง)</li>
 <li>[ ] switch เปิด ARP inspection ไหม และแก้ยังไง</li>
 <li>[ ] MTU ต้องตั้งเองหรือ Cilium ตรวจถูก</li>
 <li>[ ] เวลา failover ของ keepalived จริงกี่วินาที</li>

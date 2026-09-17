@@ -696,12 +696,17 @@ firewall-cmd --reload
 <div class="cb"><pre><code class="language-bash">firewall-cmd --list-all
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> พอร์ตครบตามรายการของบทบาทนั้น และ master ต้องมี <code>protocols: vrrp</code></p>
-</div><div class="sub" data-machine="all"><h3 id="-เปิดให้-forward-เข้าวง-pod-ได้--ทำทุกเครื่อง-ห้ามข้าม">🔴 เปิดให้ forward เข้าวง pod ได้ — ทำทุกเครื่อง ห้ามข้าม</h3>
-<p>เปิดพอร์ตอย่างเดียว<strong>ไม่พอ</strong> พอร์ตข้างบนคุมแค่ traffic ที่ปลายทางเป็นตัวเครื่องเอง (<code>INPUT</code>)
-แต่ traffic ที่วิ่งไปหา pod ต้องผ่าน <code>FORWARD</code> ซึ่ง firewalld ปิดอยู่</p>
-<p>zone <code>public</code> มีแค่ <code>ens192</code> และ <code>forward: yes</code> อนุญาตเฉพาะ <code>ens192</code> → <code>ens192</code>
-ส่วน packet ที่ไปหา pod ต้องออกทาง <code>lxc...</code> ที่ Cilium สร้างขึ้นแบบไดนามิก
-ซึ่ง<strong>ไม่ได้อยู่ใน zone ไหนเลย</strong> — firewalld จึงทิ้งเงียบ ๆ</p>
+</div><div class="sub" data-machine="all"><h3 id="-เปิดทางเข้าออกวง-pod--ทำทุกเครื่อง-ห้ามข้าม">🔴 เปิดทางเข้าออกวง pod — ทำทุกเครื่อง ห้ามข้าม</h3>
+<p>เปิดพอร์ตอย่างเดียว<strong>ไม่พอ</strong> พอร์ตข้างบนคุมแค่ traffic ที่ปลายทางเป็นตัวเครื่องเอง
+และมาจาก <code>ens192</code> — traffic ของ pod ผ่านทางที่ firewalld ปิดอยู่อีก <strong>2 ทาง</strong>:</p>
+<ol>
+<li><strong><code>FORWARD</code> — จากข้างนอกไปหา pod</strong> (NodePort · LoadBalancer IP) · zone <code>public</code> มีแค่ <code>ens192</code>
+และ <code>forward: yes</code> อนุญาตเฉพาะ <code>ens192</code> → <code>ens192</code> ส่วน packet ที่ไปหา pod ต้องออกทาง <code>lxc...</code>
+ที่ Cilium สร้างแบบไดนามิกและ<strong>ไม่อยู่ใน zone ไหนเลย</strong> → policy <code>kube-pods</code> ข้างล่างเปิดให้</li>
+<li><strong><code>INPUT</code> — จาก pod เข้า host stack</strong> · Envoy L7 proxy และ DNS proxy ของ Cilium ฟังอยู่บน host
+ไม่ใช่ใน pod · packet จาก pod เข้ามาทาง <code>lxc...</code> ตกไป zone <code>public</code> ซึ่งไม่มีพอร์ตของ proxy
+(สุ่ม 10000-20000) → <code>reject</code> → ทุกอย่างที่ผ่าน L7 policy timeout · บรรทัด <code>--zone=trusted --add-source</code> เปิดให้ (source ชนะ interface ใน firewalld — ใช้ได้ไม่ว่า packet เข้าทางไหน)</li>
+</ol>
 <p><strong>⚙️ รันทุกเครื่องทั้ง 6:</strong></p>
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 
@@ -711,12 +716,14 @@ firewall-cmd --permanent --policy=kube-pods --add-egress-zone=ANY
 firewall-cmd --permanent --policy=kube-pods --set-target=CONTINUE
 firewall-cmd --permanent --policy=kube-pods --add-rich-rule="rule family=ipv4 destination address=${POD_CIDR} accept"
 firewall-cmd --permanent --policy=kube-pods --add-rich-rule="rule family=ipv4 source address=${POD_CIDR} accept"
+firewall-cmd --permanent --zone=trusted --add-source=${POD_CIDR}
 firewall-cmd --reload
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ตรวจ:</strong></p>
-<div class="cb"><pre><code class="language-bash">firewall-cmd --info-policy=kube-pods
+<div class="cb"><pre><code class="language-bash">firewall-cmd --info-policy=kube-pods; firewall-cmd --zone=trusted --list-sources
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>target: CONTINUE</code> · <code>ingress-zones: ANY</code> · <code>egress-zones: ANY</code> · rich rule 2 บรรทัด</p>
+<p><strong>ควรเห็น:</strong> <code>target: CONTINUE</code> · <code>ingress-zones: ANY</code> · <code>egress-zones: ANY</code> · rich rule 2 บรรทัด
+· บรรทัดสุดท้าย <code>10.246.0.0/16</code></p>
 <blockquote>
 <p>🔴 <strong>อาการถ้าลืมข้อนี้ — หาสาเหตุยากที่สุดในชุด (เจอจริง 6 ก.ย. 2026)</strong>
 SSH เข้า node ได้ปกติ (<code>INPUT</code>) แต่ <strong>NodePort และ LoadBalancer IP เข้าไม่ได้เลย</strong>
@@ -728,22 +735,24 @@ Cilium ตอบ ARP ให้ LB IP · BPF map มี backend ครบ · conn
 <p><code>target: CONTINUE</code> + rich rule 2 ข้อ = เปิดเฉพาะ traffic ที่เกี่ยวกับวง pod
 ไม่ได้เปิด forward ทั้งเครื่อง</p>
 </blockquote>
+<blockquote>
+<p>🔴 <strong>อาการถ้าลืมบรรทัด <code>--add-source</code> (เจอจริง 17 ก.ย. 2026)</strong> — <code>cilium connectivity test</code>
+ในบท 05 ตก 26 เทสต์ ทุกตัวเป็นเทสต์ที่มี L7 policy (<code>echo-ingress-l7</code> · <code>client-egress-l7-*</code> ·
+<code>tls-sni</code> · <code>to-fqdns</code>) ด้วย <code>exit code 28</code> (timeout) ขณะที่ <code>pod-to-pod</code> และ <code>no-policies</code> ผ่าน
+· ตกทั้ง pod บน node เดียวกันและคนละ node · Hubble ไม่มี drop เพราะ firewalld ทิ้งใน host stack
+หลังจาก BPF ส่งต่อไปแล้ว · เติม source แล้วรันเฉพาะกลุ่มที่ตก → ผ่านทันที (60/60 action)</p>
+</blockquote>
 <hr />
 <blockquote>
 <p><strong>ไม่ต้องเปิด <code>10256/tcp</code></strong> (kube-proxy health) เพราะเราไม่ติดตั้ง kube-proxy
 <strong>ไม่ต้องเปิด <code>179/tcp</code></strong> (BGP) เพราะใช้ L2 announcement ไม่ใช่ BGP mode</p>
 </blockquote>
 </div><div class="sub" data-machine="all"><h3 id="หมายเหตุ--interface-ของ-cilium-กับ-firewalld">หมายเหตุ — interface ของ Cilium กับ firewalld</h3>
-<p>หลังลง Cilium ในบทที่ 05 ถ้าเจอว่า pod ข้าม node ไม่ได้ ให้ลองเพิ่ม interface ของ Cilium
-เข้า zone <code>trusted</code> แล้วทดสอบซ้ำ:</p>
-<div class="cb"><pre><code class="language-bash">firewall-cmd --permanent --zone=trusted --add-interface=cilium_host
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_net
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_vxlan
-firewall-cmd --reload
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ไม่ต้อง</strong>เอา <code>cilium_host</code> / <code>cilium_net</code> / <code>cilium_vxlan</code> เข้า zone <code>trusted</code> — ทดสอบแล้ว
+(17 ก.ย. 2026) ว่าสิ่งที่ขาดคือ <strong>source</strong> ของวง pod ไม่ใช่ interface (packet จาก pod เข้ามาทาง
+<code>lxc...</code> ซึ่งชื่อสุ่ม ใส่ใน zone ไม่ได้) · ข้อ 8.1 ข้างบนครอบคลุมแล้ว</p>
 <blockquote>
-<p><strong>ต้องทดสอบใน lab ว่าจำเป็นจริงไหม</strong> — อย่าใส่ไว้ล่วงหน้าโดยไม่รู้เหตุผล
-และต้องทดสอบด้วยว่า <code>firewall-cmd --reload</code> ตอน Cilium รันอยู่แล้ว pod ยังคุยกันได้
+<p>ยังต้องทดสอบว่า <code>firewall-cmd --reload</code> ตอน Cilium รันอยู่แล้ว pod ยังคุยกันได้ (บท 05 ข้อ 5)
 เพราะ firewalld เขียนกฎ nftables ใหม่ทั้งชุดตอน reload · <strong>จดผลลง บทที่ 13 ไม่ว่าจะผ่านหรือไม่</strong></p>
 </blockquote>
 <hr />

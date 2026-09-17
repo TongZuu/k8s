@@ -446,6 +446,19 @@
       ansible.builtin.command: firewall-cmd --reload
       when: _fw_pol is changed
 
+    #  ทางที่ 2 — INPUT จาก pod เข้า host stack: Envoy L7 proxy และ DNS proxy
+    #  ของ Cilium ฟังบน host ที่พอร์ตสุ่ม 10000-20000 · packet จาก pod เข้าทาง
+    #  lxc... ตกไป zone public ที่ไม่มีพอร์ตพวกนี้ -> reject -> ทุก L7 policy timeout
+    #  (17 ก.ย. 2026: connectivity test ตก 26 เทสต์ exit 28 · ใส่ source แล้วผ่านหมด)
+    #  ใช้ source ไม่ใช่ interface เพราะ lxc... ชื่อสุ่ม และ source ชนะ interface เสมอ
+    - name: zone trusted รับ source จากวง pod — ทางเข้า Envoy/DNS proxy บน host
+      ansible.posix.firewalld:
+        zone: trusted
+        source: "{{ v.POD_CIDR }}"
+        permanent: true
+        immediate: true
+        state: enabled
+
 # =============================================================================
 #  reboot + ตรวจซ้ำ — ข้ามได้ด้วย --skip-tags reboot
 # =============================================================================

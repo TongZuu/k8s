@@ -229,14 +229,12 @@ kubectl get ns | grep cilium-test    # ต้องว่าง
 > **"ค้าง" กับ "พัง" แยกกันที่ log ยังเดินอยู่ไหม** ไม่ใช่ที่หน้าจอนิ่ง —
 > บางเทสต์เงียบเป็นนาทีได้ปกติ นี่คือเหตุผลที่ต้องมี `tee` ไว้ดูย้อนหลัง
 
-ถ้าไม่ผ่าน ให้ดูก่อนว่าเป็นเรื่อง firewalld หรือเปล่า:
-```bash
-# ลองเพิ่ม interface ของ Cilium เข้า trusted zone แล้วทดสอบซ้ำ (ทำทุก node)
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_host
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_net
-firewall-cmd --permanent --zone=trusted --add-interface=cilium_vxlan
-firewall-cmd --reload
-```
+**ถ้าตกเป็นกลุ่ม — ดูว่าตกกลุ่มไหน** (บรรทัด `❌ N/82 tests failed` ตามด้วยรายชื่อ):
+
+| เทสต์ที่ตก | สาเหตุ | แก้ |
+|---|---|---|
+| **ทุกตัวที่มี L7** (`echo-ingress-l7` · `client-egress-l7-*` · `*tls-sni*` · `to-fqdns*`) `exit code 28` แต่ `pod-to-pod` ผ่าน | firewalld ปิดทาง pod → Envoy/DNS proxy บน host — ขาดบรรทัด `--zone=trusted --add-source` ใน[บท 01 ข้อ 8.1](01-prepare-os.md) (เจอจริง 17 ก.ย. 2026 ตก 26 เทสต์) | ตรวจทุกเครื่อง `firewall-cmd --zone=trusted --list-sources` ต้องได้ `10.246.0.0/16` · ไม่มีให้รันบรรทัดนั้น + `--reload` แล้วรันซ้ำเฉพาะกลุ่ม: `cilium connectivity test --test echo-ingress-l7 --test to-fqdns` |
+| `pod-to-pod` ข้าม node ตก | VXLAN `8472/udp` ไม่เปิด | [บท 13 ข้อ 5.1](13-troubleshooting.md) |
 
 **และทดสอบข้อนี้ด้วยเสมอ — จดผลลงบทที่ 13 ไม่ว่าจะผ่านหรือไม่:**
 ```bash
