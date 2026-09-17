@@ -354,6 +354,11 @@ echo "NS=$NS POD=$POD NODE=$NODE"
 <td>ไฟล์ <code>--config</code> — โครงไฟล์ / ค่าข้างใน</td>
 </tr>
 <tr>
+<td><a href="#126-init-%E0%B8%95%E0%B8%B2%E0%B8%A2%E0%B8%97%E0%B8%B5%E0%B9%88-wait-control-plane--could-not-bootstrap-the-admin-user--context-deadline-exceeded">12.6</a></td>
+<td>init ตายที่ <code>wait-control-plane</code> ทั้งที่ cluster ขึ้นแล้ว</td>
+<td>จังหวะ — POST แรกรอเกิน 10s · reset แล้ว init ใหม่</td>
+</tr>
+<tr>
 <td><a href="#13-r-command-not-found">13</a></td>
 <td><code>$'\r': command not found</code></td>
 <td>ไฟล์ CRLF ที่ scp มาจาก Windows</td>
@@ -1112,6 +1117,39 @@ kubeadm token create --ttl 2h --print-join-command
 </tr>
 </tbody>
 </table>
+<hr />
+</div><div class="sub" data-machine="all"><h3 id="126-init-ตายที่-wait-control-plane--could-not-bootstrap-the-admin-user--context-deadline-exceeded">12.6 init ตายที่ <code>wait-control-plane</code> — <code>could not bootstrap the admin user</code> · <code>context deadline exceeded</code></h3>
+<div class="cb"><pre><code class="language-text">error execution phase wait-control-plane: cannot obtain client without bootstrap:
+could not bootstrap the admin user in file admin.conf: unable to create ClusterRoleBinding:
+Post "https://192.168.50.101:6443/apis/rbac.authorization.k8s.io/v1/clusterrolebindings?timeout=10s":
+context deadline exceeded
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ต่างจาก 12.3 ตรงที่ cluster ขึ้นแล้วจริง</strong> — ต้องแยกให้ออกก่อน เพราะทางแก้คนละทาง:</p>
+<div class="cb"><pre><code class="language-bash">crictl ps | grep -E 'apiserver|etcd|controller|scheduler'      # 12.6: Running ครบ 4 · 12.3: apiserver ไม่มี
+curl -sk -o /dev/null -w '%{http_code} %{time_total}s\n' https://192.168.50.101:6443/readyz   # 12.6: 200 ในหลักสิบ ms
+kubectl --kubeconfig /etc/kubernetes/super-admin.conf get clusterrolebinding kubeadm:cluster-admins   # 12.6: NotFound
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>เกิดอะไรขึ้น</strong> — kubeadm เห็น <code>/healthz</code> ตอบแล้วยิง POST แรก (สร้าง ClusterRoleBinding
+<code>kubeadm:cluster-admins</code> ให้ <code>admin.conf</code>) โดยรอได้ 10 วินาที แต่ apiserver ที่เพิ่งขึ้นยัง
+สร้าง RBAC ของระบบเองอยู่เป็นร้อยรายการหลัง etcd เพิ่ง Running · POST เลยต่อคิวเกิน 10 วินาที
+<strong>เป็นจังหวะ ไม่ใช่ config ผิด ไม่ใช่ disk ช้า</strong> (เจอจริง 18 ก.ย. 2026: etcd fsync 97% ≤ 2ms
+audit-policy ครบ ทุกอย่างปกติ)</p>
+<p><strong>ผลที่ทิ้งไว้:</strong> <code>admin.conf</code> มีแต่ <strong>Forbidden</strong> (CRB ที่ผูกมันไม่ถูกสร้าง) และ phase ที่เหลือ
+ทั้งหมด — <code>upload-config</code> · <code>mark-control-plane</code> · <code>bootstrap-token</code> · <code>kubelet-finalize</code> ·
+<code>addon</code> (CoreDNS) — <strong>ไม่ได้รัน</strong> เพราะ init หยุดก่อนถึง</p>
+<p><strong>แก้ — reset แล้ว init ใหม่</strong> ยังไม่มีเครื่องไหน join จึงไม่มีอะไรเสีย และเร็วกว่าไล่รัน phase
+ที่ขาดทีละตัวด้วยมือ (5 phase พลาดตัวเดียว = cluster ครึ่งใบที่ไล่ยากกว่าเดิม):</p>
+<div class="cb"><pre><code class="language-bash">kubeadm reset -f --cri-socket unix:///run/containerd/containerd.sock
+rm -rf /etc/cni/net.d /var/lib/cni
+ls -A /var/lib/etcd            # ต้องว่าง (ดู 12.4 ถ้ามี lost+found)
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>แล้วทำ<a href="04-create-cluster.html">บท 04 ข้อ 2</a>ซ้ำตั้งแต่ <code>install audit-policy</code> — <code>reset</code> ล้าง
+<code>/etc/kubernetes/</code> ไปด้วย · รอบสองมักผ่านเพราะ image อยู่ครบและ apiserver ไม่ต้องรออะไร</p>
+<blockquote>
+<p><strong>อย่าไปสร้าง CRB เองด้วย <code>super-admin.conf</code> แล้วเดินต่อ</strong> — มันแก้แค่ <code>admin.conf</code> แต่ phase
+อีก 5 อย่างยังขาดอยู่ · <code>super-admin.conf</code> มีไว้<strong>ดู</strong>ว่าเกิดอะไรขึ้น (อย่างบล็อกตรวจข้างบน)
+ไม่ใช่ไว้ซ่อม init ที่จบไม่ครบ</p>
+</blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="15"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-16" data-step="16" data-machines="all"><div class="step-head"><h2 id="13-r-command-not-found">13. $'\r': command not found</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-text">/root/k8s/versions.env: line 13: $'\r': command not found

@@ -59,6 +59,7 @@ echo "NS=$NS POD=$POD NODE=$NODE"
 | [10](#10-drain-ค้าง) | `drain` ค้าง | PDB / replica |
 | [11](#11-pod-running-แต่เรียกไม่ได้) | pod `Running` แต่เรียกไม่ได้ | NetworkPolicy |
 | [12](#12-kubeadm-init-ตายตั้งแต่ยังไม่เริ่ม) | `kubeadm init` ตายตั้งแต่ยังไม่เริ่ม | ไฟล์ `--config` — โครงไฟล์ / ค่าข้างใน |
+| [12.6](#126-init-ตายที่-wait-control-plane--could-not-bootstrap-the-admin-user--context-deadline-exceeded) | init ตายที่ `wait-control-plane` ทั้งที่ cluster ขึ้นแล้ว | จังหวะ — POST แรกรอเกิน 10s · reset แล้ว init ใหม่ |
 | [13](#13-r-command-not-found) | `$'\r': command not found` | ไฟล์ CRLF ที่ scp มาจาก Windows |
 
 > **อาการที่เฉพาะเจาะจงกับ Cilium + Envoy Gateway** (404/503 จาก Gateway, HTTPRoute ไม่ผูก,
@@ -793,6 +794,51 @@ kubeadm token create --ttl 2h --print-join-command
 | `cipher: message authentication failed` | key ไม่ตรงกับ Secret ปัจจุบัน — มีการ upload-certs ใหม่ไปแล้ว |
 | `secrets "kubeadm-certs" not found` | Secret หมดอายุหรือถูกลบไปแล้ว — ต้อง `upload-certs` ใหม่ |
 | `couldn't validate the identity of the API Server` | `--discovery-token-ca-cert-hash` ผิด ไม่ใช่เรื่อง key |
+
+---
+
+### 12.6 init ตายที่ `wait-control-plane` — `could not bootstrap the admin user` · `context deadline exceeded`
+
+```
+error execution phase wait-control-plane: cannot obtain client without bootstrap:
+could not bootstrap the admin user in file admin.conf: unable to create ClusterRoleBinding:
+Post "https://192.168.50.101:6443/apis/rbac.authorization.k8s.io/v1/clusterrolebindings?timeout=10s":
+context deadline exceeded
+```
+
+**ต่างจาก 12.3 ตรงที่ cluster ขึ้นแล้วจริง** — ต้องแยกให้ออกก่อน เพราะทางแก้คนละทาง:
+
+```bash
+crictl ps | grep -E 'apiserver|etcd|controller|scheduler'      # 12.6: Running ครบ 4 · 12.3: apiserver ไม่มี
+curl -sk -o /dev/null -w '%{http_code} %{time_total}s\n' https://192.168.50.101:6443/readyz   # 12.6: 200 ในหลักสิบ ms
+kubectl --kubeconfig /etc/kubernetes/super-admin.conf get clusterrolebinding kubeadm:cluster-admins   # 12.6: NotFound
+```
+
+**เกิดอะไรขึ้น** — kubeadm เห็น `/healthz` ตอบแล้วยิง POST แรก (สร้าง ClusterRoleBinding
+`kubeadm:cluster-admins` ให้ `admin.conf`) โดยรอได้ 10 วินาที แต่ apiserver ที่เพิ่งขึ้นยัง
+สร้าง RBAC ของระบบเองอยู่เป็นร้อยรายการหลัง etcd เพิ่ง Running · POST เลยต่อคิวเกิน 10 วินาที
+**เป็นจังหวะ ไม่ใช่ config ผิด ไม่ใช่ disk ช้า** (เจอจริง 18 ก.ย. 2026: etcd fsync 97% ≤ 2ms
+audit-policy ครบ ทุกอย่างปกติ)
+
+**ผลที่ทิ้งไว้:** `admin.conf` มีแต่ **Forbidden** (CRB ที่ผูกมันไม่ถูกสร้าง) และ phase ที่เหลือ
+ทั้งหมด — `upload-config` · `mark-control-plane` · `bootstrap-token` · `kubelet-finalize` ·
+`addon` (CoreDNS) — **ไม่ได้รัน** เพราะ init หยุดก่อนถึง
+
+**แก้ — reset แล้ว init ใหม่** ยังไม่มีเครื่องไหน join จึงไม่มีอะไรเสีย และเร็วกว่าไล่รัน phase
+ที่ขาดทีละตัวด้วยมือ (5 phase พลาดตัวเดียว = cluster ครึ่งใบที่ไล่ยากกว่าเดิม):
+
+```bash
+kubeadm reset -f --cri-socket unix:///run/containerd/containerd.sock
+rm -rf /etc/cni/net.d /var/lib/cni
+ls -A /var/lib/etcd            # ต้องว่าง (ดู 12.4 ถ้ามี lost+found)
+```
+
+แล้วทำ[บท 04 ข้อ 2](04-create-cluster.md)ซ้ำตั้งแต่ `install audit-policy` — `reset` ล้าง
+`/etc/kubernetes/` ไปด้วย · รอบสองมักผ่านเพราะ image อยู่ครบและ apiserver ไม่ต้องรออะไร
+
+> **อย่าไปสร้าง CRB เองด้วย `super-admin.conf` แล้วเดินต่อ** — มันแก้แค่ `admin.conf` แต่ phase
+> อีก 5 อย่างยังขาดอยู่ · `super-admin.conf` มีไว้**ดู**ว่าเกิดอะไรขึ้น (อย่างบล็อกตรวจข้างบน)
+> ไม่ใช่ไว้ซ่อม init ที่จบไม่ครบ
 
 ---
 
