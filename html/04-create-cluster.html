@@ -562,26 +562,48 @@ ls -la /var/lib/etcd
 chown "$(id -u):$(id -g)" "$HOME/.kube/config"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 </div><div class="sub" data-machine="m01"><h3 id="43---กลับมาที่-master01--ตรวจว่าเข้าจริง">4.3 · 👑 กลับมาที่ master01 — ตรวจว่าเข้าจริง</h3>
+<p><code>join</code> ผ่านสวยไม่ได้แปลว่า control plane ของ master02 ใช้งานได้ — <code>kubeadm join --control-plane</code>
+รอแค่ etcd member เข้าครบ <strong>ไม่ได้รอ apiserver ของเครื่องนั้นขึ้น</strong> จึงต้องดู 3 อย่างนี้ครบ:</p>
 <div class="cb"><pre><code class="language-bash">kubectl get nodes
 kubectl -n kube-system get pods -l component=etcd -o wide
+kubectl -n kube-system get pods -l component=kube-apiserver -o wide
+curl -s "http://127.0.0.1:8404/stats;csv" | awk -F, '$1=="kube-apiserver-backend"{print $2, $18, "check="$37}'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> node เพิ่มมาอีกหนึ่งตัว และมี pod <code>etcd-k8s-master02</code> เพิ่มตาม</p>
-<p><strong>🔴 <code>join</code> สำเร็จ ไม่ได้แปลว่า control plane เครื่องนั้นใช้งานได้</strong> — <code>kubeadm join --control-plane</code>
-รอแค่ etcd member เข้าครบแล้ว mark node ก็จบ <strong>ไม่ได้รอให้ apiserver ของเครื่องนั้นขึ้น</strong>
-ถ้าลืมวาง <code>audit-policy.yaml</code> ใน 4.2 คำสั่ง join จะผ่านสวย แต่ apiserver ของเครื่องนั้นไม่เกิด
-ต้องดูสองอย่างนี้ถึงจะรู้:</p>
-<div class="cb"><pre><code class="language-bash">kubectl -n kube-system get pods -l component=kube-apiserver -o wide
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>kube-apiserver-k8s-master02</code> สถานะ <code>Running</code> — ถ้าไม่มีแถวนี้เลยคือ kubelet
-ยังสร้าง pod ไม่ได้ · <strong>แก้ได้โดยไม่ต้อง reset หรือ join ใหม่</strong> แค่วางไฟล์ที่ขาดลงไป
-kubelet จะสร้าง static pod ให้เองภายในไม่กี่วินาที (รันบนเครื่องที่ขาด):</p>
+<p><strong>ควรเห็น:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>get nodes</code></td>
+<td>node เพิ่มมาอีกหนึ่งตัว (<code>k8s-master02</code>)</td>
+</tr>
+<tr>
+<td>etcd</td>
+<td>มี pod <code>etcd-k8s-master02</code> เพิ่ม</td>
+</tr>
+<tr>
+<td>apiserver</td>
+<td>มี pod <code>kube-apiserver-k8s-master02</code> สถานะ <code>Running</code></td>
+</tr>
+<tr>
+<td>HAProxy</td>
+<td>บรรทัด <code>k8s-master02</code> เป็น <code>UP check=L7OK</code> (ตอนแรกเป็น <code>DOWN check=L4CON</code> แล้วเปลี่ยนภายในไม่กี่วินาที)</td>
+</tr>
+</tbody>
+</table>
+<p>ครบ 4 ข้อแล้วไป 4.4</p>
+<p><strong>ถ้าไม่มี pod apiserver ของ master02 หรือ HAProxy ยัง <code>DOWN</code> เกินหนึ่งนาที</strong> — apiserver ของ master02
+ไม่เกิด เกือบทั้งหมดคือลืม <code>install audit-policy</code> ใน 4.2 (kubelet ไม่ยอมสร้าง pod ถ้าไฟล์ที่
+<code>extraVolumes</code> ชี้ไม่มี) · <strong>แก้ได้โดยไม่ต้อง reset หรือ join ใหม่</strong> — วางไฟล์ <strong>บน master02</strong>
+แล้ว kubelet สร้าง static pod ให้เองภายในไม่กี่วินาที:</p>
 <div class="cb"><pre><code class="language-bash">install -D -m 0600 /root/k8s/config/kubeadm/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<div class="cb"><pre><code class="language-bash">curl -s "http://127.0.0.1:8404/stats;csv" | awk -F, '$1=="kube-apiserver-backend"{print $2, $18, "check="$37}'
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>k8s-master02</code> เปลี่ยนจาก <code>DOWN check=L4CON</code> เป็น <code>UP check=L7OK</code> ภายในไม่กี่วินาที
-ถ้ายัง <code>DOWN</code> อยู่หลังผ่านไปหนึ่งนาที แปลว่า apiserver ของ master02 ไม่ขึ้น —
-เกือบทั้งหมดคือลืมขั้นเตรียม audit policy ใน 4.2 (ดู <a href="13-troubleshooting.html">บทที่ 13 ข้อ 12.3</a>)</p>
+<p>กลับมา master01 รันบล็อกตรวจข้างบนซ้ำ · ถ้ายังไม่ขึ้นดู <a href="13-troubleshooting.html">บทที่ 13 ข้อ 12.3</a></p>
 </div><div class="sub" data-machine="masters"><h3 id="44---master03--ทำซ้ำ">4.4 · 🎩 master03 — ทำซ้ำ</h3>
 <p><strong>ผ่าน 4.3 แล้วเท่านั้น</strong> จึงไปทำ 4.2 ทั้งชุดบน master03 แล้วกลับมาตรวจด้วย 4.3 อีกรอบ
 บรรทัด join จาก 4.1 ใช้ซ้ำกับ master03 ได้ ถ้ายังไม่เกิน 2 ชั่วโมง <strong>และไม่ได้รัน 4.1 ซ้ำระหว่างนั้น</strong>

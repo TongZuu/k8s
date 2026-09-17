@@ -318,37 +318,37 @@ chown "$(id -u):$(id -g)" "$HOME/.kube/config"
 
 ### 4.3 · 👑 กลับมาที่ master01 — ตรวจว่าเข้าจริง
 
+`join` ผ่านสวยไม่ได้แปลว่า control plane ของ master02 ใช้งานได้ — `kubeadm join --control-plane`
+รอแค่ etcd member เข้าครบ **ไม่ได้รอ apiserver ของเครื่องนั้นขึ้น** จึงต้องดู 3 อย่างนี้ครบ:
+
 ```bash
 kubectl get nodes
 kubectl -n kube-system get pods -l component=etcd -o wide
-```
-
-**ควรเห็น:** node เพิ่มมาอีกหนึ่งตัว และมี pod `etcd-k8s-master02` เพิ่มตาม
-
-**🔴 `join` สำเร็จ ไม่ได้แปลว่า control plane เครื่องนั้นใช้งานได้** — `kubeadm join --control-plane`
-รอแค่ etcd member เข้าครบแล้ว mark node ก็จบ **ไม่ได้รอให้ apiserver ของเครื่องนั้นขึ้น**
-ถ้าลืมวาง `audit-policy.yaml` ใน 4.2 คำสั่ง join จะผ่านสวย แต่ apiserver ของเครื่องนั้นไม่เกิด
-ต้องดูสองอย่างนี้ถึงจะรู้:
-
-```bash
 kubectl -n kube-system get pods -l component=kube-apiserver -o wide
+curl -s "http://127.0.0.1:8404/stats;csv" | awk -F, '$1=="kube-apiserver-backend"{print $2, $18, "check="$37}'
 ```
 
-**ควรเห็น:** `kube-apiserver-k8s-master02` สถานะ `Running` — ถ้าไม่มีแถวนี้เลยคือ kubelet
-ยังสร้าง pod ไม่ได้ · **แก้ได้โดยไม่ต้อง reset หรือ join ใหม่** แค่วางไฟล์ที่ขาดลงไป
-kubelet จะสร้าง static pod ให้เองภายในไม่กี่วินาที (รันบนเครื่องที่ขาด):
+**ควรเห็น:**
+
+| | |
+|---|---|
+| `get nodes` | node เพิ่มมาอีกหนึ่งตัว (`k8s-master02`) |
+| etcd | มี pod `etcd-k8s-master02` เพิ่ม |
+| apiserver | มี pod `kube-apiserver-k8s-master02` สถานะ `Running` |
+| HAProxy | บรรทัด `k8s-master02` เป็น `UP check=L7OK` (ตอนแรกเป็น `DOWN check=L4CON` แล้วเปลี่ยนภายในไม่กี่วินาที) |
+
+ครบ 4 ข้อแล้วไป 4.4
+
+**ถ้าไม่มี pod apiserver ของ master02 หรือ HAProxy ยัง `DOWN` เกินหนึ่งนาที** — apiserver ของ master02
+ไม่เกิด เกือบทั้งหมดคือลืม `install audit-policy` ใน 4.2 (kubelet ไม่ยอมสร้าง pod ถ้าไฟล์ที่
+`extraVolumes` ชี้ไม่มี) · **แก้ได้โดยไม่ต้อง reset หรือ join ใหม่** — วางไฟล์ **บน master02**
+แล้ว kubelet สร้าง static pod ให้เองภายในไม่กี่วินาที:
 
 ```bash
 install -D -m 0600 /root/k8s/config/kubeadm/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
 ```
 
-```bash
-curl -s "http://127.0.0.1:8404/stats;csv" | awk -F, '$1=="kube-apiserver-backend"{print $2, $18, "check="$37}'
-```
-
-**ควรเห็น:** `k8s-master02` เปลี่ยนจาก `DOWN check=L4CON` เป็น `UP check=L7OK` ภายในไม่กี่วินาที
-ถ้ายัง `DOWN` อยู่หลังผ่านไปหนึ่งนาที แปลว่า apiserver ของ master02 ไม่ขึ้น —
-เกือบทั้งหมดคือลืมขั้นเตรียม audit policy ใน 4.2 (ดู [บทที่ 13 ข้อ 12.3](13-troubleshooting.md))
+กลับมา master01 รันบล็อกตรวจข้างบนซ้ำ · ถ้ายังไม่ขึ้นดู [บทที่ 13 ข้อ 12.3](13-troubleshooting.md)
 
 ### 4.4 · 🎩 master03 — ทำซ้ำ
 
