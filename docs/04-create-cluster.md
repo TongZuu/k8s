@@ -474,33 +474,20 @@ done
 > · เดิมข้อนี้ใช้ `grep -o 'k8s-master0[123]'` ซึ่ง**ผ่านเสมอ** เพราะชื่อ server อยู่ในหน้า stats
 > ตั้งแต่ config ถูกโหลด ต่อให้ backend DOWN ครบทั้ง 3 ตัวก็ยัง grep เจอ
 
-### 🔒 เก็บกวาดบัตรผ่าน — ทำหลัง join ครบทุกเครื่องแล้ว
+### 🔒 ฉีกบัตรผ่านทิ้ง — หลัง join ครบ 6 เครื่อง
 
-**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 6 เห็นครบ 6 เครื่อง — ลบก่อนหน้านั้นแล้วเครื่องที่ยัง
-ไม่ join จะ join ไม่ได้ ต้องออกใหม่
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 6 เห็นครบ 6 เครื่อง (ลบก่อนหน้านั้น เครื่องที่ยังไม่ join จะ join ไม่ได้)
 
-`upload-certs` ฝาก **CA key ของ control plane** ไว้ใน Secret `kubeadm-certs` (เข้ารหัสด้วย
-certificate-key ที่พิมพ์ออกมา) ส่วน token ที่ออกไว้ก็ยังใช้ join ได้จนกว่าจะหมดอายุ
-ทั้งสองอย่างมีอายุสั้นและหายเองได้ แต่ไม่มีเหตุผลให้เก็บไว้เมื่อ join ครบแล้ว
+token กับ Secret `kubeadm-certs` ที่ใช้ join ยังใช้ได้อีก 2 ชั่วโมง — ใครได้ไปก็ join เครื่องแปลกปลอมได้
+ลบทิ้งเลย ไม่รอหมดอายุ · เครื่องที่ join แล้วไม่กระทบ (มี cert ของตัวเองแล้ว)
 
 ```bash
-kubeadm token list
-kubectl -n kube-system get secret kubeadm-certs
-```
-
-```bash
-kubeadm token list -o jsonpath='{range .items[*]}{.token_id}{"
-"}{end}' 2>/dev/null | xargs -r kubeadm token delete
+kubeadm token list -o jsonpath='{range .items[*]}{.token_id}{"\n"}{end}' | xargs -r kubeadm token delete
 kubectl -n kube-system delete secret kubeadm-certs --ignore-not-found
+kubeadm token list          # ต้องว่าง
 ```
 
-**ควรเห็น:** `kubeadm token list` ว่าง และ Secret หายไป
-
-> ต้องออก token ใหม่ทีหลังก็ทำได้ตลอดด้วย `kubeadm token create --ttl 2h --print-join-command`
-> · ถ้าจะเพิ่ม master ทีหลังต้อง `kubeadm init phase upload-certs --upload-certs` ใหม่อีกรอบ
->
-> การ join ที่ทำไปแล้วไม่ได้รับผลกระทบเลย — node ที่เข้ามาแล้วใช้ cert ของตัวเองใน
-> `/etc/kubernetes/kubelet.conf` ไม่ได้พึ่ง token หรือ Secret นี้อีก
+ต้องเพิ่มเครื่องทีหลัง → รัน 4.1 (master) หรือ 5.1 (worker) ใหม่ได้ตลอด
 
 ---
 

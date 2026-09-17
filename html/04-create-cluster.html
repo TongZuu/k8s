@@ -712,26 +712,15 @@ done
 · เดิมข้อนี้ใช้ <code>grep -o 'k8s-master0[123]'</code> ซึ่ง<strong>ผ่านเสมอ</strong> เพราะชื่อ server อยู่ในหน้า stats
 ตั้งแต่ config ถูกโหลด ต่อให้ backend DOWN ครบทั้ง 3 ตัวก็ยัง grep เจอ</p>
 </blockquote>
-</div><div class="sub" data-machine="all"><h3 id="-เก็บกวาดบัตรผ่าน--ทำหลัง-join-ครบทุกเครื่องแล้ว">🔒 เก็บกวาดบัตรผ่าน — ทำหลัง join ครบทุกเครื่องแล้ว</h3>
-<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 6 เห็นครบ 6 เครื่อง — ลบก่อนหน้านั้นแล้วเครื่องที่ยัง
-ไม่ join จะ join ไม่ได้ ต้องออกใหม่</p>
-<p><code>upload-certs</code> ฝาก <strong>CA key ของ control plane</strong> ไว้ใน Secret <code>kubeadm-certs</code> (เข้ารหัสด้วย
-certificate-key ที่พิมพ์ออกมา) ส่วน token ที่ออกไว้ก็ยังใช้ join ได้จนกว่าจะหมดอายุ
-ทั้งสองอย่างมีอายุสั้นและหายเองได้ แต่ไม่มีเหตุผลให้เก็บไว้เมื่อ join ครบแล้ว</p>
-<div class="cb"><pre><code class="language-bash">kubeadm token list
-kubectl -n kube-system get secret kubeadm-certs
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<div class="cb"><pre><code class="language-bash">kubeadm token list -o jsonpath='{range .items[*]}{.token_id}{"
-"}{end}' 2&gt;/dev/null | xargs -r kubeadm token delete
+</div><div class="sub" data-machine="all"><h3 id="-ฉีกบัตรผ่านทิ้ง--หลัง-join-ครบ-6-เครื่อง">🔒 ฉีกบัตรผ่านทิ้ง — หลัง join ครบ 6 เครื่อง</h3>
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 6 เห็นครบ 6 เครื่อง (ลบก่อนหน้านั้น เครื่องที่ยังไม่ join จะ join ไม่ได้)</p>
+<p>token กับ Secret <code>kubeadm-certs</code> ที่ใช้ join ยังใช้ได้อีก 2 ชั่วโมง — ใครได้ไปก็ join เครื่องแปลกปลอมได้
+ลบทิ้งเลย ไม่รอหมดอายุ · เครื่องที่ join แล้วไม่กระทบ (มี cert ของตัวเองแล้ว)</p>
+<div class="cb"><pre><code class="language-bash">kubeadm token list -o jsonpath='{range .items[*]}{.token_id}{"\n"}{end}' | xargs -r kubeadm token delete
 kubectl -n kube-system delete secret kubeadm-certs --ignore-not-found
+kubeadm token list          # ต้องว่าง
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>kubeadm token list</code> ว่าง และ Secret หายไป</p>
-<blockquote>
-<p>ต้องออก token ใหม่ทีหลังก็ทำได้ตลอดด้วย <code>kubeadm token create --ttl 2h --print-join-command</code>
-· ถ้าจะเพิ่ม master ทีหลังต้อง <code>kubeadm init phase upload-certs --upload-certs</code> ใหม่อีกรอบ</p>
-<p>การ join ที่ทำไปแล้วไม่ได้รับผลกระทบเลย — node ที่เข้ามาแล้วใช้ cert ของตัวเองใน
-<code>/etc/kubernetes/kubelet.conf</code> ไม่ได้พึ่ง token หรือ Secret นี้อีก</p>
-</blockquote>
+<p>ต้องเพิ่มเครื่องทีหลัง → รัน 4.1 (master) หรือ 5.1 (worker) ใหม่ได้ตลอด</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2 id="-เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>
