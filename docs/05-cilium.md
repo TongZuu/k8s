@@ -66,9 +66,11 @@ cilium version --client
 `/root/k8s/config/cilium/` อยู่บนเครื่องจาก[บท 00](00-overview.md) · ข้อนี้อ่านอย่างเดียว ไม่แก้อะไรถ้าค่าตรง
 
 ```bash
-grep -E 'k8sServiceHost|k8sServicePort|clusterPoolIPv4PodCIDRList|kubeProxyReplacement' \
-  /root/k8s/config/cilium/values.yaml
+grep -E -A1 'k8sServiceHost|k8sServicePort|clusterPoolIPv4PodCIDRList|kubeProxyReplacement' \
+  /root/k8s/config/cilium/values.yaml | grep -E 'k8sService|clusterPool|kubeProxy|^ +- '
 ```
+
+(`-A1` เพราะ `clusterPoolIPv4PodCIDRList` เป็น list — ค่าอยู่บรรทัดถัดไป `- "10.246.0.0/16"` ไม่ใช่บรรทัดเดียวกับชื่อ)
 
 **ต้องตรงกับ `versions.env`:**
 
@@ -77,7 +79,7 @@ grep -E 'k8sServiceHost|k8sServicePort|clusterPoolIPv4PodCIDRList|kubeProxyRepla
 | `kubeProxyReplacement` | `true` |
 | `k8sServiceHost` | `192.168.50.100` (VIP) |
 | `k8sServicePort` | `8443` |
-| `clusterPoolIPv4PodCIDRList` | `10.246.0.0/16` |
+| `clusterPoolIPv4PodCIDRList` | บรรทัดถัดไปเป็น `- "10.246.0.0/16"` |
 
 > **`k8sServiceHost` ต้องเป็น VIP ไม่ใช่ IP ของ master01**
 > เพราะไม่มี kube-proxy Cilium จึงหา apiserver ผ่าน Service ClusterIP ไม่ได้

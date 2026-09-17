@@ -324,9 +324,10 @@ cilium version --client
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="2--ตรวจ-values-ก่อนติดตั้ง">2 · ตรวจ values ก่อนติดตั้ง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>ทำที่:</strong> 👑 master01 (บล็อก <code>grep</code>) · <strong>เครื่องคุณ</strong> (loop <code>ssh</code> ไป worker) · <strong>ต้องมีก่อน:</strong>
 <code>/root/k8s/config/cilium/</code> อยู่บนเครื่องจาก<a href="00-overview.html">บท 00</a> · ข้อนี้อ่านอย่างเดียว ไม่แก้อะไรถ้าค่าตรง</p>
-<div class="cb"><pre><code class="language-bash">grep -E 'k8sServiceHost|k8sServicePort|clusterPoolIPv4PodCIDRList|kubeProxyReplacement' \
-  /root/k8s/config/cilium/values.yaml
+<div class="cb"><pre><code class="language-bash">grep -E -A1 'k8sServiceHost|k8sServicePort|clusterPoolIPv4PodCIDRList|kubeProxyReplacement' \
+  /root/k8s/config/cilium/values.yaml | grep -E 'k8sService|clusterPool|kubeProxy|^ +- '
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>(<code>-A1</code> เพราะ <code>clusterPoolIPv4PodCIDRList</code> เป็น list — ค่าอยู่บรรทัดถัดไป <code>- &quot;10.246.0.0/16&quot;</code> ไม่ใช่บรรทัดเดียวกับชื่อ)</p>
 <p><strong>ต้องตรงกับ <code>versions.env</code>:</strong></p>
 <table>
 <thead>
@@ -350,7 +351,7 @@ cilium version --client
 </tr>
 <tr>
 <td><code>clusterPoolIPv4PodCIDRList</code></td>
-<td><code>10.246.0.0/16</code></td>
+<td>บรรทัดถัดไปเป็น <code>- &quot;10.246.0.0/16&quot;</code></td>
 </tr>
 </tbody>
 </table>
