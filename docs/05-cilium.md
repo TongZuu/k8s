@@ -381,19 +381,47 @@ kubectl -n kube-system exec $P -c cilium-agent -- cilium-dbg shell -- db/show l2
 
 ### 7.5 ทดสอบ failover ของ LB IP
 
+**ทำที่:** 👑 master01 ทั้งหมด ยกเว้นขั้น "ยิงซ้ำ" ที่ยิงจากเครื่องเดียวกับที่ใช้ใน 7.3
+· **ต้องมีก่อน:** 7.3 ผ่าน (รู้แล้วว่า node ไหนตอบ ARP และ MAC อะไร)
+
+พิสูจน์ว่าถ้า node ที่ถือ IP หายไป node อื่นรับหน้าที่ต่อเอง — วัดด้วยของเดียวกับ 7.3:
+`curl` ต้องกลับมาได้ หรือ `arping` ต้องได้ **MAC คนละตัว** กับก่อน drain
+
+**1 · ดูว่าใครถืออยู่ แล้วเก็บชื่อไว้ในตัวแปร:**
+
 ```bash
-kubectl -n kube-system get lease -o custom-columns=NAME:.metadata.name,HOLDER:.spec.holderIdentity | grep l2announce
-kubectl drain k8s-worker03 --ignore-daemonsets --delete-emptydir-data    # ตัวที่ถือ
-sleep 10
-curl -I http://192.168.50.200          # จากเครื่องทดสอบในวง — ต้องกลับมาได้
-kubectl uncordon k8s-worker03
+HOLDER=$(kubectl -n kube-system get lease cilium-l2announce-default-lbtest -o jsonpath='{.spec.holderIdentity}')
+echo "$HOLDER"
 ```
 
-ถ้าใช้ `arping` แทน ให้ดูที่ **MAC ที่ตอบ** — ต้องเปลี่ยนเป็นของ node อีกตัวหลัง drain
-ถ้า MAC เดิมยังตอบอยู่แปลว่า failover ไม่เกิดขึ้นจริง
+**ควรเห็น:** ชื่อ worker ตัวเดียว เช่น `k8s-worker02` — ตัวเดียวกับที่ MAC ตรงใน 7.3
 
-> **อย่าลืม `uncordon`** — ลืมแล้วบทถัด ๆ ไปจะ schedule pod ไม่ลง
-> และจะไปโผล่เป็นอาการอื่นที่ดูไม่เกี่ยวกันเลย
+**2 · เอา node นั้นออกจากการให้บริการ:**
+
+```bash
+kubectl drain "$HOLDER" --ignore-daemonsets --delete-emptydir-data
+sleep 10
+kubectl -n kube-system get lease cilium-l2announce-default-lbtest -o jsonpath='{.spec.holderIdentity}{"\n"}'
+```
+
+**ควรเห็น:** ชื่อ worker **อีกตัว** ไม่ใช่ `$HOLDER` — ถ้ายังเป็นตัวเดิม รออีก 10 วินาทีแล้วดูใหม่
+(lease หมดอายุ 15 วินาที)
+
+**3 · ยิงซ้ำจากเครื่องเดิมที่ใช้ใน 7.3:**
+
+- ทางหลัก: `curl -I http://192.168.50.200` → ต้องได้ `200 OK` เหมือนเดิม
+- ทางสำรอง (`arping` จาก node ที่ไม่ใช่ตัวถือ): MAC ที่ตอบ **ต้องเปลี่ยน** เป็นของ worker ในข้อ 2
+  · ถ้ายังเป็น MAC เดิม = failover ไม่เกิดจริง (ดู 7.4)
+
+**4 · คืน node เข้าคลัสเตอร์ — ห้ามลืม:**
+
+```bash
+kubectl uncordon "$HOLDER"
+kubectl get nodes                      # ต้องไม่มี SchedulingDisabled
+```
+
+> ลืม `uncordon` แล้วบทถัด ๆ ไปจะ schedule pod ไม่ลง และไปโผล่เป็นอาการอื่นที่ดูไม่เกี่ยวกันเลย
+> · IP **ไม่ย้ายกลับ** มาที่ `$HOLDER` เองหลัง uncordon — ปกติ ไม่ต้องทำอะไร
 
 ### 7.6 เก็บกวาด
 

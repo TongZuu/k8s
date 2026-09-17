@@ -642,17 +642,35 @@ kubectl -n kube-system exec $P -c cilium-agent -- cilium-dbg shell -- db/show l2
 <p>ถ้าองค์กรยกเว้นให้ไม่ได้: เปลี่ยนไปใช้ BGP mode (ให้ SE ตั้ง peer + เปิด <code>179/tcp</code>)
 หรือถอยไปใช้ NodePort แล้วให้ hardware LB ยิงเข้ามา</p>
 </div><div class="sub" data-machine="all"><h3 id="75-ทดสอบ-failover-ของ-lb-ip">7.5 ทดสอบ failover ของ LB IP</h3>
-<div class="cb"><pre><code class="language-bash">kubectl -n kube-system get lease -o custom-columns=NAME:.metadata.name,HOLDER:.spec.holderIdentity | grep l2announce
-kubectl drain k8s-worker03 --ignore-daemonsets --delete-emptydir-data    # ตัวที่ถือ
-sleep 10
-curl -I http://192.168.50.200          # จากเครื่องทดสอบในวง — ต้องกลับมาได้
-kubectl uncordon k8s-worker03
+<p><strong>ทำที่:</strong> 👑 master01 ทั้งหมด ยกเว้นขั้น &quot;ยิงซ้ำ&quot; ที่ยิงจากเครื่องเดียวกับที่ใช้ใน 7.3
+· <strong>ต้องมีก่อน:</strong> 7.3 ผ่าน (รู้แล้วว่า node ไหนตอบ ARP และ MAC อะไร)</p>
+<p>พิสูจน์ว่าถ้า node ที่ถือ IP หายไป node อื่นรับหน้าที่ต่อเอง — วัดด้วยของเดียวกับ 7.3:
+<code>curl</code> ต้องกลับมาได้ หรือ <code>arping</code> ต้องได้ <strong>MAC คนละตัว</strong> กับก่อน drain</p>
+<p><strong>1 · ดูว่าใครถืออยู่ แล้วเก็บชื่อไว้ในตัวแปร:</strong></p>
+<div class="cb"><pre><code class="language-bash">HOLDER=$(kubectl -n kube-system get lease cilium-l2announce-default-lbtest -o jsonpath='{.spec.holderIdentity}')
+echo "$HOLDER"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>ถ้าใช้ <code>arping</code> แทน ให้ดูที่ <strong>MAC ที่ตอบ</strong> — ต้องเปลี่ยนเป็นของ node อีกตัวหลัง drain
-ถ้า MAC เดิมยังตอบอยู่แปลว่า failover ไม่เกิดขึ้นจริง</p>
+<p><strong>ควรเห็น:</strong> ชื่อ worker ตัวเดียว เช่น <code>k8s-worker02</code> — ตัวเดียวกับที่ MAC ตรงใน 7.3</p>
+<p><strong>2 · เอา node นั้นออกจากการให้บริการ:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl drain "$HOLDER" --ignore-daemonsets --delete-emptydir-data
+sleep 10
+kubectl -n kube-system get lease cilium-l2announce-default-lbtest -o jsonpath='{.spec.holderIdentity}{"\n"}'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ชื่อ worker <strong>อีกตัว</strong> ไม่ใช่ <code>$HOLDER</code> — ถ้ายังเป็นตัวเดิม รออีก 10 วินาทีแล้วดูใหม่
+(lease หมดอายุ 15 วินาที)</p>
+<p><strong>3 · ยิงซ้ำจากเครื่องเดิมที่ใช้ใน 7.3:</strong></p>
+<ul>
+<li>ทางหลัก: <code>curl -I http://192.168.50.200</code> → ต้องได้ <code>200 OK</code> เหมือนเดิม</li>
+<li>ทางสำรอง (<code>arping</code> จาก node ที่ไม่ใช่ตัวถือ): MAC ที่ตอบ <strong>ต้องเปลี่ยน</strong> เป็นของ worker ในข้อ 2
+· ถ้ายังเป็น MAC เดิม = failover ไม่เกิดจริง (ดู 7.4)</li>
+</ul>
+<p><strong>4 · คืน node เข้าคลัสเตอร์ — ห้ามลืม:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl uncordon "$HOLDER"
+kubectl get nodes                      # ต้องไม่มี SchedulingDisabled
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
-<p><strong>อย่าลืม <code>uncordon</code></strong> — ลืมแล้วบทถัด ๆ ไปจะ schedule pod ไม่ลง
-และจะไปโผล่เป็นอาการอื่นที่ดูไม่เกี่ยวกันเลย</p>
+<p>ลืม <code>uncordon</code> แล้วบทถัด ๆ ไปจะ schedule pod ไม่ลง และไปโผล่เป็นอาการอื่นที่ดูไม่เกี่ยวกันเลย
+· IP <strong>ไม่ย้ายกลับ</strong> มาที่ <code>$HOLDER</code> เองหลัง uncordon — ปกติ ไม่ต้องทำอะไร</p>
 </blockquote>
 </div><div class="sub" data-machine="all"><h3 id="76-เก็บกวาด">7.6 เก็บกวาด</h3>
 <div class="cb"><pre><code class="language-bash">kubectl delete deploy,svc lbtest
