@@ -520,29 +520,6 @@ echo "$JOIN --control-plane --certificate-key $CERT_KEY --cri-socket unix:///run
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> บรรทัดเดียวขึ้นต้น <code>kubeadm join 192.168.50.100:8443 --token ...</code> และมี
 <code>--control-plane --certificate-key &lt;64 ตัวอักษร hex&gt;</code> อยู่ในนั้น — <strong>copy ทั้งบรรทัด</strong></p>
-<blockquote>
-<p>ทำไมประกอบให้แทนที่จะให้เติมเอง — <code>--print-join-command</code> พิมพ์คำสั่งของ <em>worker</em> เสมอ
-(ไม่มี <code>--control-plane</code>) ถ้าลืมเติมจะได้ worker ที่ชื่อเหมือน master แต่ไม่มี control plane
-และ <code>certificate-key</code> ต้องมาจากรอบเดียวกับ token — ประกอบในบล็อกเดียวกันตัดทั้งสองกับดักทิ้ง</p>
-</blockquote>
-<blockquote>
-<p><strong>🔴 ค่าที่ใช้ต้องมาจากการรันรอบเดียวกัน</strong> — <code>upload-certs</code> เข้ารหัส cert ใหม่ด้วย key ใหม่ทุกครั้ง
-ที่รัน ดังนั้น<strong>พอรันรอบใหม่ key รอบก่อนจะใช้ไม่ได้ทันที</strong> ไม่ต้องรอหมดอายุ
-หยิบ key เก่าจาก <code>kubeadm-init.log</code> มาใช้ = <code>cipher: message authentication failed</code>
-ตอน join (ดู <a href="13-troubleshooting.html">บทที่ 13 ข้อ 12.5</a>)</p>
-<p>ถ้าจะ join ทั้ง master02 และ master03 ให้ใช้ค่าชุดเดียวกันทั้งสองเครื่องได้เลย ภายใน 2 ชั่วโมง
-แต่ถ้าเผลอรัน <code>upload-certs</code> คั่นกลาง ต้องเอาค่าชุดใหม่ไปใช้กับเครื่องที่เหลือ</p>
-</blockquote>
-<blockquote>
-<p><strong><code>--ttl 2h</code> ห้ามลืม</strong> — <code>kubeadm token create</code> มี default เป็น <strong>24 ชั่วโมง</strong>
-ซึ่งสวนทางกับ <code>ttl: &quot;2h&quot;</code> ที่ตั้งใจตั้งไว้ใน <code>kubeadm-config.yaml</code> ตั้งแต่ <code>init</code>
-ลืมใส่ = แอบมีบัตรผ่านเข้า cluster อายุ 24 ชม. ลอยอยู่โดยไม่มีใครรู้</p>
-</blockquote>
-<blockquote>
-<p><strong>ออกใหม่ทุกครั้ง ไม่ต้องไปงมใน <code>kubeadm-init.log</code></strong> — <code>certificate-key</code> หมดอายุใน 2 ชั่วโมง
-และ token หมดตาม <code>ttl: 2h</code> ที่ตั้งไว้ · ออกใหม่ถูกกว่าการมานั่งเดาว่าของเก่ายังใช้ได้ไหม
-ทั้งสองคำสั่งรันซ้ำได้ไม่มีผลข้างเคียง</p>
-</blockquote>
 </div><div class="sub" data-machine="masters"><h3 id="42---บน-master02--ทำครบทุกอย่างในเครื่องนี้">4.2 · 🎩 บน master02 — ทำครบทุกอย่างในเครื่องนี้</h3>
 <p><strong>เตรียมเครื่อง</strong> — audit policy, ที่เก็บ log, และดูว่า <code>/var/lib/etcd</code> ไม่มีของเก่า:</p>
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
@@ -607,9 +584,10 @@ kubelet จะสร้าง static pod ให้เองภายในไม
 เกือบทั้งหมดคือลืมขั้นเตรียม audit policy ใน 4.2 (ดู <a href="13-troubleshooting.html">บทที่ 13 ข้อ 12.3</a>)</p>
 </div><div class="sub" data-machine="masters"><h3 id="44---master03--ทำซ้ำ">4.4 · 🎩 master03 — ทำซ้ำ</h3>
 <p><strong>ผ่าน 4.3 แล้วเท่านั้น</strong> จึงไปทำ 4.2 ทั้งชุดบน master03 แล้วกลับมาตรวจด้วย 4.3 อีกรอบ
-บรรทัด join จาก 4.1 ยังใช้ได้ ถ้ายังไม่เกิน 2 ชั่วโมง
-<strong>และยังไม่มีใครรัน <code>upload-certs</code> คั่นกลาง</strong> — ถ้ารันไปแล้วต้องออกชุดใหม่ตาม 4.1 อีกรอบ
-แล้วใช้ค่าใหม่ทั้งคู่</p>
+บรรทัด join จาก 4.1 ใช้ซ้ำกับ master03 ได้ ถ้ายังไม่เกิน 2 ชั่วโมง <strong>และไม่ได้รัน 4.1 ซ้ำระหว่างนั้น</strong>
+(รันซ้ำ = บรรทัดเก่าใช้ไม่ได้ทันที ไม่ต้องรอหมดอายุ) · ไม่แน่ใจก็รัน 4.1 ใหม่ ซ้ำได้ไม่มีผลข้างเคียง
+— อย่าหยิบจาก <code>kubeadm-init.log</code> (จะเจอ <code>cipher: message authentication failed</code> ดู
+<a href="13-troubleshooting.html">บทที่ 13 ข้อ 12.5</a>)</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all m01 workers"><div class="step-head"><h2 id="5--️-join-worker-ทั้ง-3-เครื่อง">5 · ⚙️ Join worker ทั้ง 3 เครื่อง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>ทำที่:</strong> 5.1 และ 5.3 บน 👑 master01 · 5.2 บน ⚙️ worker ทั้ง 3 พร้อมกัน · <strong>ต้องมีก่อน:</strong> ข้อ 4
