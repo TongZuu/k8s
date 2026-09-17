@@ -247,23 +247,22 @@ crictl logs "$(crictl ps -a --name kube-apiserver -q | head -1)" 2>&1 | grep -i 
 
 ### 4.1 · 👑 บน master01 — ออกบัตรผ่านให้ทั้งสองเครื่อง
 
-**ออก certificate-key และคำสั่ง join ชุดใหม่:**
+**ออกบัตรผ่านแล้วประกอบเป็นคำสั่ง join ที่พร้อมรัน** — บล็อกนี้พิมพ์คำสั่งเต็มบรรทัดออกมา
+ให้ copy ไปวางบน master02/03 ได้เลย ไม่มีช่องให้เติม:
 
 ```bash
-kubeadm init phase upload-certs --upload-certs | tail -1
-kubeadm token create --ttl 2h --print-join-command
+CERT_KEY=$(kubeadm init phase upload-certs --upload-certs | tail -1)
+JOIN=$(kubeadm token create --ttl 2h --print-join-command)
+echo
+echo "$JOIN --control-plane --certificate-key $CERT_KEY --cri-socket unix:///run/containerd/containerd.sock"
 ```
 
-**เก็บผลลัพธ์สองบรรทัดนี้ไว้** — บรรทัดแรกคือ `certificate-key` บรรทัดที่สองคือคำสั่ง join
+**ควรเห็น:** บรรทัดเดียวขึ้นต้น `kubeadm join 192.168.50.100:8443 --token ...` และมี
+`--control-plane --certificate-key <64 ตัวอักษร hex>` อยู่ในนั้น — **copy ทั้งบรรทัด**
 
-> **🔴 คำสั่งที่ `--print-join-command` พิมพ์ออกมาเป็นของ worker เสมอ** — ไม่มี `--control-plane`
-> ให้ ถ้าเอาไปรันบน master ตรง ๆ จะได้ worker ที่ชื่อเหมือน master แต่ไม่มี control plane
-> ต้องเติมสองบรรทัดนี้เองเสมอ แล้วจะได้หน้าตาแบบในขั้น 4.2:
->
-> ```
->   --control-plane \
->   --certificate-key <ค่าจากบรรทัดแรก>
-> ```
+> ทำไมประกอบให้แทนที่จะให้เติมเอง — `--print-join-command` พิมพ์คำสั่งของ *worker* เสมอ
+> (ไม่มี `--control-plane`) ถ้าลืมเติมจะได้ worker ที่ชื่อเหมือน master แต่ไม่มี control plane
+> และ `certificate-key` ต้องมาจากรอบเดียวกับ token — ประกอบในบล็อกเดียวกันตัดทั้งสองกับดักทิ้ง
 
 > **🔴 ค่าที่ใช้ต้องมาจากการรันรอบเดียวกัน** — `upload-certs` เข้ารหัส cert ใหม่ด้วย key ใหม่ทุกครั้ง
 > ที่รัน ดังนั้น**พอรันรอบใหม่ key รอบก่อนจะใช้ไม่ได้ทันที** ไม่ต้องรอหมดอายุ
@@ -317,16 +316,17 @@ rm -rf /var/lib/etcd/lost+found; rmdir /var/lib/etcd/* 2>/dev/null; ls -A /var/l
 > ไม่มีไฟล์ policy = apiserver ของเครื่องนี้ไม่ขึ้น อาการจะเป็น
 > "join สำเร็จแต่ node ไม่ Ready และ etcd ไม่ครบ" ซึ่งไล่หายากมาก
 
-**join เข้า control plane** — เอาค่าจาก 4.1 มาเติมสามช่อง:
+**join เข้า control plane** — วางบรรทัดที่ 4.1 พิมพ์ให้ ทั้งบรรทัด ไม่ต้องแก้อะไร
 
-```bash
-kubeadm join 192.168.50.100:8443 \
-  --token <BOOTSTRAP_TOKEN> \
-  --discovery-token-ca-cert-hash sha256:<CA_CERT_HASH> \
-  --control-plane \
-  --certificate-key <CERTIFICATE_KEY> \
+หน้าตาที่ควรเป็น (ไว้เทียบ — อย่าพิมพ์ตาม ค่าจริงอยู่ในบรรทัดจาก 4.1):
+
+```
+kubeadm join 192.168.50.100:8443 --token abcdef.0123456789abcdef \
+  --discovery-token-ca-cert-hash sha256:... --control-plane --certificate-key ... \
   --cri-socket unix:///run/containerd/containerd.sock
 ```
+
+ถ้าบรรทัดที่วางไม่มี `--control-plane` แปลว่าหยิบผิดบรรทัด — กลับไป 4.1
 
 **ตั้ง kubeconfig ให้เครื่องนี้ด้วย** (จะได้ใช้ `kubectl` จาก master02 ได้):
 
@@ -373,7 +373,7 @@ curl -s "http://127.0.0.1:8404/stats;csv" | awk -F, '$1=="kube-apiserver-backend
 ### 4.4 · 🎩 master03 — ทำซ้ำ
 
 **ผ่าน 4.3 แล้วเท่านั้น** จึงไปทำ 4.2 ทั้งชุดบน master03 แล้วกลับมาตรวจด้วย 4.3 อีกรอบ
-ค่า token กับ certificate-key จาก 4.1 ยังใช้ได้ ถ้ายังไม่เกิน 2 ชั่วโมง
+บรรทัด join จาก 4.1 ยังใช้ได้ ถ้ายังไม่เกิน 2 ชั่วโมง
 **และยังไม่มีใครรัน `upload-certs` คั่นกลาง** — ถ้ารันไปแล้วต้องออกชุดใหม่ตาม 4.1 อีกรอบ
 แล้วใช้ค่าใหม่ทั้งคู่
 
@@ -394,18 +394,21 @@ curl -s "http://127.0.0.1:8404/stats;csv" | awk -F, '$1=="kube-apiserver-backend
 ### 5.1 · 👑 บน master01
 
 ```bash
-kubeadm token create --ttl 2h --print-join-command
+echo "$(kubeadm token create --ttl 2h --print-join-command) --cri-socket unix:///run/containerd/containerd.sock"
 ```
+
+**ควรเห็น:** บรรทัดเดียวขึ้นต้น `kubeadm join 192.168.50.100:8443 --token ...` และ**ไม่มี**
+`--control-plane` — **copy ทั้งบรรทัด** ใช้ได้กับ worker ทั้ง 3 เครื่อง
 
 ### 5.2 · ⚙️ บน worker แต่ละเครื่อง
 
-เติมค่าจาก 5.1 แล้วรันได้พร้อมกันทั้ง 3 เครื่อง:
+วางบรรทัดที่ 5.1 พิมพ์ให้ — รันได้พร้อมกันทั้ง 3 เครื่อง ไม่ต้องแก้อะไร
 
-```bash
-kubeadm join 192.168.50.100:8443 \
-  --token <BOOTSTRAP_TOKEN> \
-  --discovery-token-ca-cert-hash sha256:<CA_CERT_HASH> \
-  --cri-socket unix:///run/containerd/containerd.sock
+หน้าตาที่ควรเป็น (ไว้เทียบ):
+
+```
+kubeadm join 192.168.50.100:8443 --token abcdef.0123456789abcdef \
+  --discovery-token-ca-cert-hash sha256:... --cri-socket unix:///run/containerd/containerd.sock
 ```
 
 > **ไม่มี `--control-plane` และไม่มี `--certificate-key`** — สองอย่างนี้ใช้เฉพาะ master

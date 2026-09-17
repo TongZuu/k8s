@@ -511,18 +511,19 @@ tail -1 /var/log/kubernetes/audit.log | head -c 300; echo
 ต้องเห็น master02 ขึ้นครบใน 4.3 ก่อนถึงจะเริ่ม master03</p>
 </blockquote>
 </div><div class="sub" data-machine="m01"><h3 id="41---บน-master01--ออกบัตรผ่านให้ทั้งสองเครื่อง">4.1 · 👑 บน master01 — ออกบัตรผ่านให้ทั้งสองเครื่อง</h3>
-<p><strong>ออก certificate-key และคำสั่ง join ชุดใหม่:</strong></p>
-<div class="cb"><pre><code class="language-bash">kubeadm init phase upload-certs --upload-certs | tail -1
-kubeadm token create --ttl 2h --print-join-command
+<p><strong>ออกบัตรผ่านแล้วประกอบเป็นคำสั่ง join ที่พร้อมรัน</strong> — บล็อกนี้พิมพ์คำสั่งเต็มบรรทัดออกมา
+ให้ copy ไปวางบน master02/03 ได้เลย ไม่มีช่องให้เติม:</p>
+<div class="cb"><pre><code class="language-bash">CERT_KEY=$(kubeadm init phase upload-certs --upload-certs | tail -1)
+JOIN=$(kubeadm token create --ttl 2h --print-join-command)
+echo
+echo "$JOIN --control-plane --certificate-key $CERT_KEY --cri-socket unix:///run/containerd/containerd.sock"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>เก็บผลลัพธ์สองบรรทัดนี้ไว้</strong> — บรรทัดแรกคือ <code>certificate-key</code> บรรทัดที่สองคือคำสั่ง join</p>
+<p><strong>ควรเห็น:</strong> บรรทัดเดียวขึ้นต้น <code>kubeadm join 192.168.50.100:8443 --token ...</code> และมี
+<code>--control-plane --certificate-key &lt;64 ตัวอักษร hex&gt;</code> อยู่ในนั้น — <strong>copy ทั้งบรรทัด</strong></p>
 <blockquote>
-<p><strong>🔴 คำสั่งที่ <code>--print-join-command</code> พิมพ์ออกมาเป็นของ worker เสมอ</strong> — ไม่มี <code>--control-plane</code>
-ให้ ถ้าเอาไปรันบน master ตรง ๆ จะได้ worker ที่ชื่อเหมือน master แต่ไม่มี control plane
-ต้องเติมสองบรรทัดนี้เองเสมอ แล้วจะได้หน้าตาแบบในขั้น 4.2:</p>
-<div class="cb"><pre><code class="language-text">  --control-plane \
-  --certificate-key &lt;ค่าจากบรรทัดแรก&gt;
-</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ทำไมประกอบให้แทนที่จะให้เติมเอง — <code>--print-join-command</code> พิมพ์คำสั่งของ <em>worker</em> เสมอ
+(ไม่มี <code>--control-plane</code>) ถ้าลืมเติมจะได้ worker ที่ชื่อเหมือน master แต่ไม่มี control plane
+และ <code>certificate-key</code> ต้องมาจากรอบเดียวกับ token — ประกอบในบล็อกเดียวกันตัดทั้งสองกับดักทิ้ง</p>
 </blockquote>
 <blockquote>
 <p><strong>🔴 ค่าที่ใช้ต้องมาจากการรันรอบเดียวกัน</strong> — <code>upload-certs</code> เข้ารหัส cert ใหม่ด้วย key ใหม่ทุกครั้ง
@@ -571,14 +572,13 @@ ls -la /var/lib/etcd
 ไม่มีไฟล์ policy = apiserver ของเครื่องนี้ไม่ขึ้น อาการจะเป็น
 &quot;join สำเร็จแต่ node ไม่ Ready และ etcd ไม่ครบ&quot; ซึ่งไล่หายากมาก</p>
 </blockquote>
-<p><strong>join เข้า control plane</strong> — เอาค่าจาก 4.1 มาเติมสามช่อง:</p>
-<div class="cb"><pre><code class="language-bash">kubeadm join 192.168.50.100:8443 \
-  --token &lt;BOOTSTRAP_TOKEN&gt; \
-  --discovery-token-ca-cert-hash sha256:&lt;CA_CERT_HASH&gt; \
-  --control-plane \
-  --certificate-key &lt;CERTIFICATE_KEY&gt; \
+<p><strong>join เข้า control plane</strong> — วางบรรทัดที่ 4.1 พิมพ์ให้ ทั้งบรรทัด ไม่ต้องแก้อะไร</p>
+<p>หน้าตาที่ควรเป็น (ไว้เทียบ — อย่าพิมพ์ตาม ค่าจริงอยู่ในบรรทัดจาก 4.1):</p>
+<div class="cb"><pre><code class="language-text">kubeadm join 192.168.50.100:8443 --token abcdef.0123456789abcdef \
+  --discovery-token-ca-cert-hash sha256:... --control-plane --certificate-key ... \
   --cri-socket unix:///run/containerd/containerd.sock
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>ถ้าบรรทัดที่วางไม่มี <code>--control-plane</code> แปลว่าหยิบผิดบรรทัด — กลับไป 4.1</p>
 <p><strong>ตั้ง kubeconfig ให้เครื่องนี้ด้วย</strong> (จะได้ใช้ <code>kubectl</code> จาก master02 ได้):</p>
 <div class="cb"><pre><code class="language-bash">mkdir -p "$HOME/.kube"
 \cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
@@ -607,7 +607,7 @@ kubelet จะสร้าง static pod ให้เองภายในไม
 เกือบทั้งหมดคือลืมขั้นเตรียม audit policy ใน 4.2 (ดู <a href="13-troubleshooting.html">บทที่ 13 ข้อ 12.3</a>)</p>
 </div><div class="sub" data-machine="masters"><h3 id="44---master03--ทำซ้ำ">4.4 · 🎩 master03 — ทำซ้ำ</h3>
 <p><strong>ผ่าน 4.3 แล้วเท่านั้น</strong> จึงไปทำ 4.2 ทั้งชุดบน master03 แล้วกลับมาตรวจด้วย 4.3 อีกรอบ
-ค่า token กับ certificate-key จาก 4.1 ยังใช้ได้ ถ้ายังไม่เกิน 2 ชั่วโมง
+บรรทัด join จาก 4.1 ยังใช้ได้ ถ้ายังไม่เกิน 2 ชั่วโมง
 <strong>และยังไม่มีใครรัน <code>upload-certs</code> คั่นกลาง</strong> — ถ้ารันไปแล้วต้องออกชุดใหม่ตาม 4.1 อีกรอบ
 แล้วใช้ค่าใหม่ทั้งคู่</p>
 <hr />
@@ -642,15 +642,16 @@ kubelet จะสร้าง static pod ให้เองภายในไม
 </tbody>
 </table>
 </div><div class="sub" data-machine="m01"><h3 id="51---บน-master01">5.1 · 👑 บน master01</h3>
-<div class="cb"><pre><code class="language-bash">kubeadm token create --ttl 2h --print-join-command
+<div class="cb"><pre><code class="language-bash">echo "$(kubeadm token create --ttl 2h --print-join-command) --cri-socket unix:///run/containerd/containerd.sock"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> บรรทัดเดียวขึ้นต้น <code>kubeadm join 192.168.50.100:8443 --token ...</code> และ<strong>ไม่มี</strong>
+<code>--control-plane</code> — <strong>copy ทั้งบรรทัด</strong> ใช้ได้กับ worker ทั้ง 3 เครื่อง</p>
 </div><div class="sub" data-machine="workers"><h3 id="52--️-บน-worker-แต่ละเครื่อง">5.2 · ⚙️ บน worker แต่ละเครื่อง</h3>
-<p>เติมค่าจาก 5.1 แล้วรันได้พร้อมกันทั้ง 3 เครื่อง:</p>
-<div class="cb"><pre><code class="language-bash">kubeadm join 192.168.50.100:8443 \
-  --token &lt;BOOTSTRAP_TOKEN&gt; \
-  --discovery-token-ca-cert-hash sha256:&lt;CA_CERT_HASH&gt; \
-  --cri-socket unix:///run/containerd/containerd.sock
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>วางบรรทัดที่ 5.1 พิมพ์ให้ — รันได้พร้อมกันทั้ง 3 เครื่อง ไม่ต้องแก้อะไร</p>
+<p>หน้าตาที่ควรเป็น (ไว้เทียบ):</p>
+<div class="cb"><pre><code class="language-text">kubeadm join 192.168.50.100:8443 --token abcdef.0123456789abcdef \
+  --discovery-token-ca-cert-hash sha256:... --cri-socket unix:///run/containerd/containerd.sock
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p><strong>ไม่มี <code>--control-plane</code> และไม่มี <code>--certificate-key</code></strong> — สองอย่างนี้ใช้เฉพาะ master</p>
 <p><strong>worker ไม่ต้องมี <code>audit-policy.yaml</code></strong> — ไฟล์นั้นใช้กับ kube-apiserver ซึ่งรันบน master เท่านั้น
