@@ -239,7 +239,7 @@ img{max-width:100%}
       <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
       <div class="top-t">
         <h1>บทที่ 04 — สร้าง Cluster</h1>
-        <p class="sub">รันที่: 👑 master01 ก่อน → 🎩 master02-03 → ⚙️ worker ทุกตัว · เวลาที่ใช้: ~30 นาที · ⚠️ ต้องผ่าน failover test ของบทที่ 03 มาก่อน</p>
+        <p class="sub">รันที่: 👑 master01 ก่อน → 🎩 master02-03 → ⚙️ worker ทุกตัว · ลำดับ: ข้อ 1-3 บน master01 ล้วน · ข้อ 4 master02 แล้วค่อย master03 — ทีละเครื่อง ห้ามพร้อมกัน · · ข้อ 5 worker ทั้ง 3 พร้อมกันได้ · ข้อ 6 กลับมา master01 · เวลาที่ใช้: ~30 นาที · ⚠️ ต้องผ่าน failover test 5.1-5.3 ของบทที่ 03 มาก่อน · 5.4 ทำหลังบทนี้</p>
       </div>
       <div class="top-p">
         <span id="pcount">0/8</span>
@@ -255,6 +255,8 @@ img{max-width:100%}
 </div>
     <div class="mtabs" id="mtabs"><span class="mtabs-l">แสดงเฉพาะ:</span><button class="mtab on" type="button" data-m="all">ทั้งหมด</button><button class="mtab" type="button" data-m="m01">👑 master01</button><button class="mtab" type="button" data-m="masters">🎩 master ทุกตัว</button><button class="mtab" type="button" data-m="workers">⚙️ worker</button></div>
     <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2 id="ตรวจก่อนเริ่ม--4-ข้อ">ตรวจก่อนเริ่ม — 4 ข้อ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> <a href="02-container-runtime.html">บท 02</a> ครบทุกเครื่อง ·
+<a href="03-ha-layer.html">บท 03</a> ข้อ 5.1-5.3 ผ่าน (VIP อยู่ที่ master01, HAProxy ฟัง 8443 ครบ 3 เครื่อง)</p>
 <p>รันบน <strong>master01</strong>:</p>
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 
@@ -270,6 +272,8 @@ crictl info | jq -r '.config.containerd.runtimes.runc.options.SystemdCgroup' | g
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="m01"><div class="step-head"><h2 id="1---ดึง-image-ล่วงหน้า">1 · 👑 ดึง image ล่วงหน้า</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="m01">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ตรวจก่อนเริ่ม ✓ ครบ 4 (และตัวแปรจากบล็อกนั้นยังอยู่ใน shell นี้)
+· เครื่องออกถึง registry ของ image ได้</p>
 <div class="cb"><pre><code class="language-bash">kubeadm config images list --kubernetes-version "v${K8S_VERSION}"
 kubeadm config images pull --kubernetes-version "v${K8S_VERSION}"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -280,6 +284,8 @@ kubeadm config images pull --kubernetes-version "v${K8S_VERSION}"
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all m01"><div class="step-head"><h2 id="2---เตรียม-config-และ-init">2 · 👑 เตรียม config และ init</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> บรรทัด <code>scp</code> แรกรันจาก<strong>เครื่องคุณ</strong> · ที่เหลือ 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 1 (image
+อยู่บนเครื่องแล้ว — init จะไม่ไปรอดาวน์โหลด) · <code>config/kubeadm/</code> ในrepoเป็นรุ่นล่าสุด</p>
 <p><strong>ถ้าเพิ่งแก้ไฟล์ในrepo ต้องส่งขึ้นเครื่องก่อน</strong> — รันจากrepoบนเครื่องตัวเอง ไม่ใช่บน master01
 (ไฟล์ใน <code>/root/k8s/</code> เป็นคนละก๊อปปี้กับrepo แก้ในrepoแล้วเครื่องไม่รู้เรื่องด้วย)</p>
 <div class="cb"><pre><code class="language-bash">scp config/kubeadm/kubeadm-config.yaml config/kubeadm/audit-policy.yaml root@192.168.50.101:/root/k8s/config/kubeadm/
@@ -411,6 +417,8 @@ Then you can join any number of worker nodes ...
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all m01"><div class="step-head"><h2 id="3---ตั้ง-kubeconfig">3 · 👑 ตั้ง kubeconfig</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 2 init จบด้วย <code>Your Kubernetes control-plane has initialized</code>
+(มี <code>/etc/kubernetes/admin.conf</code> แล้ว) · ข้อ 4-6 ทั้งหมดใช้ <code>kubectl</code> จากข้อนี้</p>
 <div class="cb"><pre><code class="language-bash">mkdir -p "$HOME/.kube"
 \cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
 chown "$(id -u):$(id -g)" "$HOME/.kube/config"
@@ -463,6 +471,9 @@ tail -1 /var/log/kubernetes/audit.log | head -c 300; echo
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all m01 masters"><div class="step-head"><h2 id="4---join-master02-และ-master03">4 · 🎩 Join master02 และ master03</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> สลับ master01 ↔ master02 ↔ master03 ตามตารางข้างล่าง · <strong>ต้องมีก่อน:</strong> ข้อ 3 (<code>kubectl</code>
+ใช้ได้ — 4.3 ต้องใช้) · บน master02/03: <a href="02-container-runtime.html">บท 02</a> และ <a href="03-ha-layer.html">บท 03</a>
+จบแล้ว (containerd, HAProxy, keepalived รันอยู่)</p>
 <p><strong>ลำดับเครื่อง — ทำตามนี้จะสลับเครื่องแค่ 4 ครั้ง ไม่ต้องเด้งไปมา:</strong></p>
 <table>
 <thead>
@@ -606,6 +617,9 @@ kubelet จะสร้าง static pod ให้เองภายในไม
 แล้วใช้ค่าใหม่ทั้งคู่</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all m01 workers"><div class="step-head"><h2 id="5--️-join-worker-ทั้ง-3-เครื่อง">5 · ⚙️ Join worker ทั้ง 3 เครื่อง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 5.1 และ 5.3 บน 👑 master01 · 5.2 บน ⚙️ worker ทั้ง 3 พร้อมกัน · <strong>ต้องมีก่อน:</strong> ข้อ 4
+ครบ (4.3 เห็น master ทั้ง 3 ใน <code>kubectl get nodes</code>) · บน worker: <a href="01-prepare-os.html">บท 01</a>
+และ <a href="02-container-runtime.html">02</a> จบ — <strong>ไม่ต้องทำบท 03</strong> worker ไม่มี HAProxy/keepalived</p>
 <table>
 <thead>
 <tr>
@@ -653,6 +667,7 @@ kubelet จะสร้าง static pod ให้เองภายในไม
 <p><strong>ควรเห็น:</strong> ครบ 6 เครื่อง — worker ขึ้นเป็น <code>ROLES &lt;none&gt;</code> ซึ่งถูกต้องแล้ว</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all m01"><div class="step-head"><h2 id="6---ตรวจสถานะรวม--บน-master01-ทั้งหมด">6 · 👑 ตรวจสถานะรวม — บน master01 ทั้งหมด</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> 5.3 ผ่าน (worker ทั้ง 3 โผล่ใน <code>kubectl get nodes</code>)</p>
 <p>ทุกคำสั่งในข้อนี้รันบน master01 เครื่องเดียว ไม่ต้องย้ายเครื่อง</p>
 <div class="cb"><pre><code class="language-bash">kubectl get nodes -o wide
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -702,6 +717,8 @@ done
 ตั้งแต่ config ถูกโหลด ต่อให้ backend DOWN ครบทั้ง 3 ตัวก็ยัง grep เจอ</p>
 </blockquote>
 </div><div class="sub" data-machine="all"><h3 id="-เก็บกวาดบัตรผ่าน--ทำหลัง-join-ครบทุกเครื่องแล้ว">🔒 เก็บกวาดบัตรผ่าน — ทำหลัง join ครบทุกเครื่องแล้ว</h3>
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 6 เห็นครบ 6 เครื่อง — ลบก่อนหน้านั้นแล้วเครื่องที่ยัง
+ไม่ join จะ join ไม่ได้ ต้องออกใหม่</p>
 <p><code>upload-certs</code> ฝาก <strong>CA key ของ control plane</strong> ไว้ใน Secret <code>kubeadm-certs</code> (เข้ารหัสด้วย
 certificate-key ที่พิมพ์ออกมา) ส่วน token ที่ออกไว้ก็ยังใช้ join ได้จนกว่าจะหมดอายุ
 ทั้งสองอย่างมีอายุสั้นและหายเองได้ แต่ไม่มีเหตุผลให้เก็บไว้เมื่อ join ครบแล้ว</p>
@@ -729,13 +746,15 @@ kubectl -n kube-system delete secret kubeadm-certs --ignore-not-found
 <li>[ ] <code>/etc/kubernetes/pki/</code> มี cert ครบบน master ทั้ง 3</li>
 <li>[ ] เก็บ <code>kubeadm-init.log</code> ไว้ที่ปลอดภัยแล้ว และ<strong>ไม่ได้อยู่ใน git</strong></li>
 <li>[ ] ลบ bootstrap token ที่เหลือ และ Secret <code>kubeadm-certs</code> ทิ้งแล้ว</li>
+<li>[ ] <strong>กลับไปทำ <a href="03-ha-layer.html">บท 03 ข้อ 5.4</a> — failover ด้วย <code>kubectl</code> จริง</strong> ที่รอ cluster อยู่
+(ใช้แค่ <code>/healthz</code> ผ่าน VIP ไม่ต้องรอ Cilium · ข้ามไปแล้วจะไม่มีใครกลับมาทำ)</li>
 </ul>
 <p><strong>ตรวจอายุ certificate ไว้เป็น baseline:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubeadm certs check-expiration
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> cert ทั่วไปเหลือ ~364 วัน · CA เหลือ ~3649 วัน
 <strong>จดวันหมดอายุลงปฏิทินทีมทันที</strong> — นี่คือสิ่งที่ cluster เดิมพลาดจนต้องรื้อทำใหม่</p>
-<p><strong>➡️ ต่อที่ <a href="05-cilium.html">บทที่ 05 — Cilium</a></strong></p>
+<p><strong>➡️ ทำ <a href="03-ha-layer.html">บท 03 ข้อ 5.4</a> ก่อน แล้วค่อยต่อที่ <a href="05-cilium.html">บทที่ 05 — Cilium</a></strong></p>
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section>
     <div class="pn-row"><a class="pn" href="03-ha-layer.html">← HA Layer</a><a class="pn" href="05-cilium.html">Cilium →</a></div>
   </main>

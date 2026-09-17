@@ -1,12 +1,17 @@
 # บทที่ 04 — สร้าง Cluster
 
 > **รันที่: 👑 master01 ก่อน → 🎩 master02-03 → ⚙️ worker ทุกตัว**
+> **ลำดับ: ข้อ 1-3 บน master01 ล้วน · ข้อ 4 master02 แล้วค่อย master03 — ทีละเครื่อง ห้ามพร้อมกัน
+> · ข้อ 5 worker ทั้ง 3 พร้อมกันได้ · ข้อ 6 กลับมา master01**
 > **เวลาที่ใช้:** ~30 นาที
-> **⚠️ ต้องผ่าน failover test ของบทที่ 03 มาก่อน**
+> **⚠️ ต้องผ่าน failover test 5.1-5.3 ของบทที่ 03 มาก่อน · 5.4 ทำหลังบทนี้**
 
 ---
 
 ## ตรวจก่อนเริ่ม — 4 ข้อ
+
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** [บท 02](02-container-runtime.md) ครบทุกเครื่อง ·
+[บท 03](03-ha-layer.md) ข้อ 5.1-5.3 ผ่าน (VIP อยู่ที่ master01, HAProxy ฟัง 8443 ครบ 3 เครื่อง)
 
 รันบน **master01**:
 
@@ -28,6 +33,9 @@ crictl info | jq -r '.config.containerd.runtimes.runc.options.SystemdCgroup' | g
 
 ## 1 · 👑 ดึง image ล่วงหน้า
 
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ตรวจก่อนเริ่ม ✓ ครบ 4 (และตัวแปรจากบล็อกนั้นยังอยู่ใน shell นี้)
+· เครื่องออกถึง registry ของ image ได้
+
 ```bash
 kubeadm config images list --kubernetes-version "v${K8S_VERSION}"
 kubeadm config images pull --kubernetes-version "v${K8S_VERSION}"
@@ -41,6 +49,9 @@ kubeadm config images pull --kubernetes-version "v${K8S_VERSION}"
 ---
 
 ## 2 · 👑 เตรียม config และ init
+
+**ทำที่:** บรรทัด `scp` แรกรันจาก**เครื่องคุณ** · ที่เหลือ 👑 master01 · **ต้องมีก่อน:** ข้อ 1 (image
+อยู่บนเครื่องแล้ว — init จะไม่ไปรอดาวน์โหลด) · `config/kubeadm/` ในrepoเป็นรุ่นล่าสุด
 
 **ถ้าเพิ่งแก้ไฟล์ในrepo ต้องส่งขึ้นเครื่องก่อน** — รันจากrepoบนเครื่องตัวเอง ไม่ใช่บน master01
 (ไฟล์ใน `/root/k8s/` เป็นคนละก๊อปปี้กับrepo แก้ในrepoแล้วเครื่องไม่รู้เรื่องด้วย)
@@ -172,6 +183,9 @@ Then you can join any number of worker nodes ...
 
 ## 3 · 👑 ตั้ง kubeconfig
 
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 2 init จบด้วย `Your Kubernetes control-plane has initialized`
+(มี `/etc/kubernetes/admin.conf` แล้ว) · ข้อ 4-6 ทั้งหมดใช้ `kubectl` จากข้อนี้
+
 ```bash
 mkdir -p "$HOME/.kube"
 \cp -f /etc/kubernetes/admin.conf "$HOME/.kube/config"
@@ -222,6 +236,10 @@ crictl logs "$(crictl ps -a --name kube-apiserver -q | head -1)" 2>&1 | grep -i 
 ---
 
 ## 4 · 🎩 Join master02 และ master03
+
+**ทำที่:** สลับ master01 ↔ master02 ↔ master03 ตามตารางข้างล่าง · **ต้องมีก่อน:** ข้อ 3 (`kubectl`
+ใช้ได้ — 4.3 ต้องใช้) · บน master02/03: [บท 02](02-container-runtime.md) และ [บท 03](03-ha-layer.md)
+จบแล้ว (containerd, HAProxy, keepalived รันอยู่)
 
 **ลำดับเครื่อง — ทำตามนี้จะสลับเครื่องแค่ 4 ครั้ง ไม่ต้องเด้งไปมา:**
 
@@ -379,6 +397,10 @@ curl -s "http://127.0.0.1:8404/stats;csv" | awk -F, '$1=="kube-apiserver-backend
 
 ## 5 · ⚙️ Join worker ทั้ง 3 เครื่อง
 
+**ทำที่:** 5.1 และ 5.3 บน 👑 master01 · 5.2 บน ⚙️ worker ทั้ง 3 พร้อมกัน · **ต้องมีก่อน:** ข้อ 4
+ครบ (4.3 เห็น master ทั้ง 3 ใน `kubectl get nodes`) · บน worker: [บท 01](01-prepare-os.md)
+และ [02](02-container-runtime.md) จบ — **ไม่ต้องทำบท 03** worker ไม่มี HAProxy/keepalived
+
 | ขั้น | เครื่อง | ทำอะไร |
 |---|---|---|
 | 5.1 | 👑 master01 | ออกคำสั่ง join สำหรับ worker |
@@ -418,6 +440,8 @@ kubectl get nodes
 ---
 
 ## 6 · 👑 ตรวจสถานะรวม — บน master01 ทั้งหมด
+
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** 5.3 ผ่าน (worker ทั้ง 3 โผล่ใน `kubectl get nodes`)
 
 ทุกคำสั่งในข้อนี้รันบน master01 เครื่องเดียว ไม่ต้องย้ายเครื่อง
 
@@ -484,6 +508,9 @@ done
 
 ### 🔒 เก็บกวาดบัตรผ่าน — ทำหลัง join ครบทุกเครื่องแล้ว
 
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 6 เห็นครบ 6 เครื่อง — ลบก่อนหน้านั้นแล้วเครื่องที่ยัง
+ไม่ join จะ join ไม่ได้ ต้องออกใหม่
+
 `upload-certs` ฝาก **CA key ของ control plane** ไว้ใน Secret `kubeadm-certs` (เข้ารหัสด้วย
 certificate-key ที่พิมพ์ออกมา) ส่วน token ที่ออกไว้ก็ยังใช้ join ได้จนกว่าจะหมดอายุ
 ทั้งสองอย่างมีอายุสั้นและหายเองได้ แต่ไม่มีเหตุผลให้เก็บไว้เมื่อ join ครบแล้ว
@@ -518,6 +545,8 @@ kubectl -n kube-system delete secret kubeadm-certs --ignore-not-found
 - [ ] `/etc/kubernetes/pki/` มี cert ครบบน master ทั้ง 3
 - [ ] เก็บ `kubeadm-init.log` ไว้ที่ปลอดภัยแล้ว และ**ไม่ได้อยู่ใน git**
 - [ ] ลบ bootstrap token ที่เหลือ และ Secret `kubeadm-certs` ทิ้งแล้ว
+- [ ] **กลับไปทำ [บท 03 ข้อ 5.4](03-ha-layer.md) — failover ด้วย `kubectl` จริง** ที่รอ cluster อยู่
+      (ใช้แค่ `/healthz` ผ่าน VIP ไม่ต้องรอ Cilium · ข้ามไปแล้วจะไม่มีใครกลับมาทำ)
 
 **ตรวจอายุ certificate ไว้เป็น baseline:**
 ```bash
@@ -526,4 +555,4 @@ kubeadm certs check-expiration
 **ควรเห็น:** cert ทั่วไปเหลือ ~364 วัน · CA เหลือ ~3649 วัน
 **จดวันหมดอายุลงปฏิทินทีมทันที** — นี่คือสิ่งที่ cluster เดิมพลาดจนต้องรื้อทำใหม่
 
-**➡️ ต่อที่ [บทที่ 05 — Cilium](05-cilium.md)**
+**➡️ ทำ [บท 03 ข้อ 5.4](03-ha-layer.md) ก่อน แล้วค่อยต่อที่ [บทที่ 05 — Cilium](05-cilium.md)**
