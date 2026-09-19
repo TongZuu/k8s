@@ -132,9 +132,17 @@ helm install monitoring prometheus-community/kube-prometheus-stack \
   --namespace monitoring --create-namespace \
   --version "${KUBE_PROM_STACK_CHART}" \
   -f /root/k8s/config/monitoring/kube-prometheus-values.yaml
-
-kubectl -n monitoring rollout status statefulset/prometheus-monitoring-kube-prometheus-prometheus --timeout=10m
 ```
+**ควรเห็น:** `STATUS: deployed` · `DESCRIPTION: Install complete` (NOTES ยาว ๆ ข้างล่างไม่ต้องทำตาม — คู่มือนี้ครอบแล้ว)
+
+**รอ Prometheus ขึ้น** — Operator เป็นคนสร้าง StatefulSet ให้**หลัง** helm จบไม่กี่วินาที
+ถ้า `rollout status` ทันทีจะได้ `NotFound` ทั้งที่ไม่มีอะไรพัง (เจอจริง 19 ก.ย. 2026) บล็อกนี้รอให้มันโผล่ก่อน:
+```bash
+STS=prometheus-monitoring-kube-prometheus-prometheus
+until kubectl -n monitoring get sts "$STS" >/dev/null 2>&1; do echo "รอ Operator สร้าง $STS ..."; sleep 5; done
+kubectl -n monitoring rollout status statefulset/"$STS" --timeout=10m
+```
+**ควรเห็น:** `statefulset rolling update complete 1 pods at revision ...` (ครั้งแรก 2-5 นาที ดึง image)
 
 **ตรวจ PV ผูกถูกตัว — ต้องดูคู่ ไม่ใช่ดูแค่คำว่า `Bound`:**
 ```bash

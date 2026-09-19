@@ -355,9 +355,15 @@ helm install monitoring prometheus-community/kube-prometheus-stack \
   --namespace monitoring --create-namespace \
   --version "${KUBE_PROM_STACK_CHART}" \
   -f /root/k8s/config/monitoring/kube-prometheus-values.yaml
-
-kubectl -n monitoring rollout status statefulset/prometheus-monitoring-kube-prometheus-prometheus --timeout=10m
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>STATUS: deployed</code> · <code>DESCRIPTION: Install complete</code> (NOTES ยาว ๆ ข้างล่างไม่ต้องทำตาม — คู่มือนี้ครอบแล้ว)</p>
+<p><strong>รอ Prometheus ขึ้น</strong> — Operator เป็นคนสร้าง StatefulSet ให้<strong>หลัง</strong> helm จบไม่กี่วินาที
+ถ้า <code>rollout status</code> ทันทีจะได้ <code>NotFound</code> ทั้งที่ไม่มีอะไรพัง (เจอจริง 19 ก.ย. 2026) บล็อกนี้รอให้มันโผล่ก่อน:</p>
+<div class="cb"><pre><code class="language-bash">STS=prometheus-monitoring-kube-prometheus-prometheus
+until kubectl -n monitoring get sts "$STS" &gt;/dev/null 2&gt;&amp;1; do echo "รอ Operator สร้าง $STS ..."; sleep 5; done
+kubectl -n monitoring rollout status statefulset/"$STS" --timeout=10m
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>statefulset rolling update complete 1 pods at revision ...</code> (ครั้งแรก 2-5 นาที ดึง image)</p>
 <p><strong>ตรวจ PV ผูกถูกตัว — ต้องดูคู่ ไม่ใช่ดูแค่คำว่า <code>Bound</code>:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring get pvc -o custom-columns=NAME:.metadata.name,VOL:.spec.volumeName,SIZE:.spec.resources.requests.storage
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
