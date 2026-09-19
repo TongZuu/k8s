@@ -239,7 +239,7 @@ img{max-width:100%}
       <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
       <div class="top-t">
         <h1>บทที่ 10 — Security Baseline</h1>
-        <p class="sub">รันที่: 🎩 master ทั้ง 3 (สำหรับ etcd encryption) + 👑 master01 (ที่เหลือ) · เวลาที่ใช้: ~60 นาที · ต้องผ่านบทที่ 09 — ต้องมี monitoring ก่อน เพราะขั้นตอนบางอย่างอาจทำของพัง</p>
+        <p class="sub">รันที่: 👑 master01 เป็นหลัก · ยกเว้น: ข้อ 0 จากเครื่องคุณ · ข้อ 1.2-1.3 และข้อ 5 ต้อง ssh เข้า · 🎩 master ทั้ง 3 ทีละเครื่อง (แก้ apiserver ของแต่ละเครื่อง — ทำพร้อมกันไม่ได้ จะเสีย apiserver ทั้ง cluster) · · ข้อ 6 ไม่ใช่งานบน cluster · ลำดับ: 0 → 8 ตามลำดับ · ข้อ 2 (namespace) ต้องมาก่อน 3 · 4 · 7 ซึ่งอ้าง namespace เหล่านั้น · เวลาที่ใช้: ~60 นาที · ต้องผ่านบทที่ 09 — ต้องมี monitoring ก่อน เพราะขั้นตอนบางอย่างอาจทำของพัง</p>
       </div>
       <div class="top-p">
         <span id="pcount">0/11</span>
@@ -311,7 +311,8 @@ registry password, cluster-admin token และ client key <strong>ฝังอ
 worker 3 ตัวเป็นที่ที่ pod รันจริง · ฐานข้อมูลกับ registry อยู่<b>นอก</b> cluster คนละวง IP</figcaption>
 </figure>
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2 id="0--ตรวจว่า-config-บนเครื่องตรงกับrepo">0 · ตรวจว่า config บนเครื่องตรงกับrepo</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p><strong>ทำที่:</strong> เครื่องคุณ (ที่มีrepo) · ไฟล์ทั้งหมดอยู่ที่ <code>/root/k8s/config/security/</code> แล้วจาก
+<p><strong>ทำที่:</strong> เครื่องคุณ (ที่มีrepo · WSL/Git Bash) · <strong>ต้องมีก่อน:</strong> VPN ต่ออยู่ · key ssh ครบ 3 master
+· ไฟล์ทั้งหมดอยู่ที่ <code>/root/k8s/config/security/</code> แล้วจาก
 <a href="00-overview.html">บท 00</a> — บทนี้ใช้ <code>encryption-config.yaml</code> กับ <code>audit-policy.yaml</code>
 <strong>ทั้ง 3 master</strong> จึงต้องตรงกันทุกเครื่อง เทียบ md5 ก่อน:</p>
 <div class="cb"><pre><code class="language-bash">md5sum config/security/*.yaml
@@ -328,6 +329,9 @@ for ip in 101 102 103; do echo "== .$ip"; ssh root@192.168.50.$ip 'md5sum /root/
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all masters"><div class="step-head"><h2 id="1---etcd-encryption-at-rest">1 · 🔴 etcd encryption at rest</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 1.1 👑 master01 · 1.2 🎩 ทั้ง 3 master (key <strong>เดียวกัน</strong> ทุกเครื่อง) · 1.3 🎩 ทีละเครื่อง รอ <code>/healthz</code> ก่อนเครื่องถัดไป
+· 1.4 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 0 md5 ตรง · ที่เก็บ secret ขององค์กรพร้อมรับ key (1.1 ออก key แล้วต้องเก็บทันที)
+· etcd snapshot ล่าสุดมี (<a href="06-verify.html">บท 06 ข้อ 7</a>) — ข้อนี้แก้ apiserver ทั้ง 3 เครื่อง</p>
 <p>โดยค่าเริ่มต้น Kubernetes เก็บ Secret ใน etcd เป็น <strong>base64 ธรรมดา ไม่ได้เข้ารหัส</strong>
 ใครที่อ่านไฟล์ etcd ได้ (หรือได้ backup ไป) จะเห็น secret ทั้งหมด</p>
 </div><div class="sub" data-machine="all"><h3 id="11-สร้าง-encryption-key">1.1 สร้าง encryption key</h3>
@@ -437,6 +441,8 @@ done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="2--pod-security-admission">2 · Pod Security Admission</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 1 จบ apiserver ทั้ง 3 <code>/healthz</code> = <code>ok</code> · ข้อนี้สร้าง namespace
+<code>myhr-prod</code> / <code>myhr-uat</code> ที่ข้อ 3 · 4 · 7 ต้องใช้</p>
 <p>PSA เป็นของที่มีอยู่ใน Kubernetes อยู่แล้ว ไม่ต้องลงอะไรเพิ่ม แค่ติด label ที่ namespace</p>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/security/namespaces.yaml
 kubectl get ns -L pod-security.kubernetes.io/enforce
@@ -471,6 +477,8 @@ kubectl get ns -L pod-security.kubernetes.io/enforce
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2 id="3---networkpolicy-default-deny">3 · 🔴 NetworkPolicy default-deny</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 ทั้งข้อ (3.1 → 3.4 ตามลำดับ — 3.1 ต้องวัด<strong>ก่อน</strong> 3.2 ไม่งั้น 3.3 ไม่มีอะไรเทียบ)
+· <strong>ต้องมีก่อน:</strong> ข้อ 2 (namespace <code>myhr-prod</code> มีแล้ว) · Hubble ทำงาน (<a href="05-cilium.html">บท 05</a>) · pod ดึง image ทดสอบได้</p>
 <p>นี่คือเหตุผลหลักที่เลือก Cilium แทน Flannel — Flannel ทำข้อนี้ไม่ได้เลย</p>
 <p><strong>หลักการ: ปิดทุกอย่างก่อน แล้วค่อยเปิดทีละเส้นที่จำเป็น</strong></p>
 </div><div class="sub" data-machine="all"><h3 id="31-วัดค่าก่อน-apply">3.1 วัดค่าก่อน apply</h3>
@@ -708,6 +716,9 @@ done
 <a href="../config/cilium/values.yaml"><code>values.yaml</code></a> ในrepo หรือ agent เครื่องนั้นยังไม่ได้ restart</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2 id="4--rbac-ตามหน้าที่">4 · RBAC ตามหน้าที่</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · 4.1 ต้องรันบน master01 เท่านั้น (ใช้ <code>/etc/kubernetes/pki/ca.key</code> เซ็น cert — ห้ามคัดลอก key ออก)
+· ไฟล์ kubeconfig ที่ออกได้ส่งให้เจ้าตัวทางช่องทางลับขององค์กร · <strong>ต้องมีก่อน:</strong> ข้อ 2 (namespace) · รู้แล้วว่าใคร 2 คน
+จะถือ <code>cluster-admin</code> · 4.2 อ่านอย่างเดียว ยังไม่ต้องทำ</p>
 <p><code>cluster-admin</code> ควรมีคนถือน้อยที่สุด และต้องรู้ว่าใครถือบ้าง</p>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/security/rbac.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -962,20 +973,27 @@ oidc-groups-claim: "groups"
 — นั่นคือเหตุผลที่ตั้งชื่อ group ไว้แบบนี้ตั้งแต่ตอนที่ยังไม่มี OIDC</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2 id="5--audit-log">5 · Audit log</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p>เปิดไว้แล้วตั้งแต่ <code>kubeadm-config.yaml</code> (บทที่ 04) แต่ยังไม่มี policy
-ซึ่งแปลว่า<strong>ยังไม่ได้บันทึกอะไรเลย</strong></p>
-<p><strong>🎩 ทำทั้ง 3 master ทีละตัว:</strong></p>
+<p><strong>ทำที่:</strong> 🎩 master ทั้ง 3 <strong>ทีละเครื่อง</strong> (ssh เข้าแต่ละเครื่อง รอ apiserver กลับมาก่อนเครื่องถัดไป) · 5.3-5.4 บน 👑 master01
+· <strong>ต้องมีก่อน:</strong> ข้อ 0 (ไฟล์ตรง repo) · ข้อ 1 จบ apiserver ทั้ง 3 ปกติ — ข้อนี้จะ restart apiserver อีกรอบ</p>
+<p>audit <strong>ทำงานอยู่แล้วตั้งแต่บท 04</strong> — <code>kubeadm-config.yaml</code> ตั้ง <code>--audit-policy-file</code> + mount ไว้ และบท 04 ข้อ 2/4.2
+ติดตั้ง policy ชุดพื้นฐาน (<code>config/kubeadm/audit-policy.yaml</code>) บน master ทุกตัว · ข้อนี้<strong>เปลี่ยนเป็น policy ชุดเต็ม</strong>
+(<code>config/security/audit-policy.yaml</code> — เพิ่ม RBAC · <code>exec</code>/<code>attach</code>/<code>port-forward</code> แบบ <code>RequestResponse</code> และตัด scrape ของ Prometheus)</p>
+<blockquote>
+<p>🔴 <strong>ไม่ต้องแก้ <code>kube-apiserver.yaml</code></strong> — flag กับ volume มีอยู่แล้วจากบท 04 ใส่ซ้ำจะได้ volume ชื่อซ้ำ
+แล้ว apiserver ของเครื่องนั้นไม่ขึ้นเลย · apiserver อ่าน policy ตอนเริ่มเท่านั้น จึงต้อง restart หลังเปลี่ยนไฟล์</p>
+</blockquote>
+<p><strong>🎩 บนแต่ละ master ทีละตัว:</strong></p>
 <div class="cb"><pre><code class="language-bash">\cp -f /root/k8s/config/security/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
 chmod 600 /etc/kubernetes/audit-policy.yaml
-
-# ตรวจว่าไฟล์ลงจริง ไม่ใช่ค้างของเก่า
-grep -c 'kind: Policy' /etc/kubernetes/audit-policy.yaml
+grep -c 'pods/exec' /etc/kubernetes/audit-policy.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>1</code> — ถ้าได้ <code>0</code> แปลว่า copy ไม่โดน apiserver จะ restart ไม่ขึ้นเพราะหา policy ไม่เจอ</p>
-<p>เพิ่มใน <code>kube-apiserver.yaml</code>:</p>
-<div class="cb"><pre><code class="language-yaml">    - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
-</code></pre><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>พร้อม volumeMount ของ <code>/etc/kubernetes/audit-policy.yaml</code> และ <code>/var/log/kubernetes</code></p>
+<p><strong>ควรเห็น:</strong> <code>1</code> = ชุดเต็มลงแล้ว (ชุดพื้นฐานของบท 04 ไม่มีบรรทัดนี้ — ได้ <code>0</code> แปลว่า copy ไม่โดน)</p>
+<p><strong>restart apiserver ของเครื่องนี้</strong> — ย้าย manifest ออกแล้วกลับ kubelet จะสร้าง pod ใหม่ให้:</p>
+<div class="cb"><pre><code class="language-bash">mv /etc/kubernetes/manifests/kube-apiserver.yaml /root/ &amp;&amp; sleep 10 &amp;&amp; mv /root/kube-apiserver.yaml /etc/kubernetes/manifests/
+until curl -sk https://127.0.0.1:6443/healthz | grep -q ok; do sleep 3; done; echo "apiserver ของ $(hostname) ok"
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>apiserver ของ k8s-masterXX ok</code> ภายใน ~1 นาที → ค่อยไปเครื่องถัดไป
+(ระหว่างนั้น <code>kubectl</code> ผ่าน VIP ยังใช้ได้ — HAProxy ส่งไป master ที่เหลือ)</p>
 </div><div class="sub" data-machine="all"><h3 id="51-มันคืออะไร-และไฟล์อยู่ที่ไหน">5.1 มันคืออะไร และไฟล์อยู่ที่ไหน</h3>
 <p>apiserver เขียนบันทึกทุก request ที่เข้ามาหามันเป็น JSON บรรทัดละ event —
 <strong>ใคร ทำอะไร กับอะไร เมื่อไหร่ ผลเป็นยังไง</strong> เป็นที่เดียวในระบบที่ตอบได้ว่า
@@ -1078,6 +1096,7 @@ done
 <p><strong>ควรเห็น:</strong> ว่างเปล่าในระบบที่ปกติ — ทุกบรรทัดที่โผล่ต้องอธิบายได้ว่าใครทำและทำไม</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2 id="6--หนี้เก่าที่ต้องจ่าย--หมุน-credential">6 · หนี้เก่าที่ต้องจ่าย — หมุน credential</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> ไม่ใช่งานบน cluster — งานประสานกับทีม infra/network/registry · ติ๊กตารางนี้ให้ครบก่อนส่งมอบ</p>
 <blockquote>
 <p>🔴 <strong>ข้อนี้ไม่เกี่ยวกับ cluster ใหม่ แต่ห้ามข้าม</strong></p>
 </blockquote>
@@ -1118,6 +1137,9 @@ done
 <p>cluster ต้องใช้ตัวหลังเท่านั้น วิธีเอาเข้า cluster อยู่ที่ <strong>หัวข้อ 7</strong> ข้างล่าง</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2 id="7--imagepullsecret--ให้-cluster-ดึง-image-จาก-private-registry">7 · imagePullSecret — ให้ cluster ดึง image จาก private registry</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 (7.1 → 7.4) · <strong>ต้องมีก่อน:</strong> ข้อ 2 (namespace <code>myhr-prod</code> / <code>myhr-uat</code>) · รหัส registry
+จาก <code>secrets.env</code> บนเครื่องคุณ (คีย์ <code>PULL_ONLY_USER</code> / <code>PULL_ONLY_PASSWORD</code>) พิมพ์ทางแป้นพิมพ์ตอน 7.2
+· node ต่อ <code>registry.myhr.co.th</code> ได้แล้ว (<a href="02-container-runtime.html">บท 02</a>)</p>
 <p><code>registry.myhr.co.th</code> เป็น registry ส่วนตัว ยิง <code>/v2/</code> เปล่า ๆ จะได้ <code>401</code> เสมอ
 <strong>kubelet บนทุก node จึงต้องมี credential ก่อน ไม่งั้น pod ทุกตัวจะค้างที่ <code>ImagePullBackOff</code></strong></p>
 <p>วิธีที่ใช้คือแบบเดิมที่เคยทำมา 2 ขั้น: <strong>สร้าง Secret ชนิด <code>dockerconfigjson</code> ชื่อ <code>regcred</code></strong>
@@ -1288,6 +1310,7 @@ pod ถัดไปเกิด ซึ่งอาจเป็นตอน drain
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2 id="8--ตรวจทั้งบทด้วยสคริปต์เดียว">8 · ตรวจทั้งบทด้วยสคริปต์เดียว</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 1-5 และ 7 จบ (ข้อ 6 สคริปต์ตรวจไม่ได้) · apiserver ทั้ง 3 ปกติ</p>
 <p>ทุกด่านในบทนี้ผ่านได้ทั้งที่ระบบยังไม่ปลอดภัย — เปิด encryption แค่ master01
 แล้วทดสอบผ่าน VIP ก็ยังผ่าน 2 ใน 3 ครั้ง · ติด label PSA แล้วแต่ไม่มีผลจะรู้ตอนบทที่ 11 ·
 apply NetworkPolicy สำเร็จไม่ได้แปลว่า Cilium บังคับใช้จริง</p>

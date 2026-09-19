@@ -1,6 +1,9 @@
 # บทที่ 10 — Security Baseline
 
-> **รันที่: 🎩 master ทั้ง 3 (สำหรับ etcd encryption) + 👑 master01 (ที่เหลือ)**
+> **รันที่: 👑 master01 เป็นหลัก** · ยกเว้น: ข้อ 0 จาก**เครื่องคุณ** · ข้อ 1.2-1.3 และข้อ 5 ต้อง ssh เข้า
+> **🎩 master ทั้ง 3 ทีละเครื่อง** (แก้ apiserver ของแต่ละเครื่อง — ทำพร้อมกันไม่ได้ จะเสีย apiserver ทั้ง cluster)
+> · ข้อ 6 ไม่ใช่งานบน cluster
+> **ลำดับ: 0 → 8 ตามลำดับ** · ข้อ 2 (namespace) ต้องมาก่อน 3 · 4 · 7 ซึ่งอ้าง namespace เหล่านั้น
 > **เวลาที่ใช้:** ~60 นาที
 > **ต้องผ่านบทที่ 09** — ต้องมี monitoring ก่อน เพราะขั้นตอนบางอย่างอาจทำของพัง
 
@@ -77,7 +80,8 @@ worker 3 ตัวเป็นที่ที่ pod รันจริง · �
 
 ## 0 · ตรวจว่า config บนเครื่องตรงกับrepo
 
-**ทำที่:** เครื่องคุณ (ที่มีrepo) · ไฟล์ทั้งหมดอยู่ที่ `/root/k8s/config/security/` แล้วจาก
+**ทำที่:** เครื่องคุณ (ที่มีrepo · WSL/Git Bash) · **ต้องมีก่อน:** VPN ต่ออยู่ · key ssh ครบ 3 master
+· ไฟล์ทั้งหมดอยู่ที่ `/root/k8s/config/security/` แล้วจาก
 [บท 00](00-overview.md) — บทนี้ใช้ `encryption-config.yaml` กับ `audit-policy.yaml`
 **ทั้ง 3 master** จึงต้องตรงกันทุกเครื่อง เทียบ md5 ก่อน:
 ```bash
@@ -97,6 +101,10 @@ for ip in 101 102 103; do echo "== .$ip"; ssh root@192.168.50.$ip 'md5sum /root/
 ---
 
 ## 1 · 🔴 etcd encryption at rest
+
+**ทำที่:** 1.1 👑 master01 · 1.2 🎩 ทั้ง 3 master (key **เดียวกัน** ทุกเครื่อง) · 1.3 🎩 ทีละเครื่อง รอ `/healthz` ก่อนเครื่องถัดไป
+· 1.4 👑 master01 · **ต้องมีก่อน:** ข้อ 0 md5 ตรง · ที่เก็บ secret ขององค์กรพร้อมรับ key (1.1 ออก key แล้วต้องเก็บทันที)
+· etcd snapshot ล่าสุดมี ([บท 06 ข้อ 7](06-verify.md)) — ข้อนี้แก้ apiserver ทั้ง 3 เครื่อง
 
 โดยค่าเริ่มต้น Kubernetes เก็บ Secret ใน etcd เป็น **base64 ธรรมดา ไม่ได้เข้ารหัส**
 ใครที่อ่านไฟล์ etcd ได้ (หรือได้ backup ไป) จะเห็น secret ทั้งหมด
@@ -238,6 +246,9 @@ kubectl -n default delete secret enc-test
 
 ## 2 · Pod Security Admission
 
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 1 จบ apiserver ทั้ง 3 `/healthz` = `ok` · ข้อนี้สร้าง namespace
+`myhr-prod` / `myhr-uat` ที่ข้อ 3 · 4 · 7 ต้องใช้
+
 PSA เป็นของที่มีอยู่ใน Kubernetes อยู่แล้ว ไม่ต้องลงอะไรเพิ่ม แค่ติด label ที่ namespace
 
 ```bash
@@ -261,6 +272,9 @@ kubectl get ns -L pod-security.kubernetes.io/enforce
 ---
 
 ## 3 · 🔴 NetworkPolicy default-deny
+
+**ทำที่:** 👑 master01 ทั้งข้อ (3.1 → 3.4 ตามลำดับ — 3.1 ต้องวัด**ก่อน** 3.2 ไม่งั้น 3.3 ไม่มีอะไรเทียบ)
+· **ต้องมีก่อน:** ข้อ 2 (namespace `myhr-prod` มีแล้ว) · Hubble ทำงาน ([บท 05](05-cilium.md)) · pod ดึง image ทดสอบได้
 
 นี่คือเหตุผลหลักที่เลือก Cilium แทน Flannel — Flannel ทำข้อนี้ไม่ได้เลย
 
@@ -484,6 +498,10 @@ done
 ---
 
 ## 4 · RBAC ตามหน้าที่
+
+**ทำที่:** 👑 master01 · 4.1 ต้องรันบน master01 เท่านั้น (ใช้ `/etc/kubernetes/pki/ca.key` เซ็น cert — ห้ามคัดลอก key ออก)
+· ไฟล์ kubeconfig ที่ออกได้ส่งให้เจ้าตัวทางช่องทางลับขององค์กร · **ต้องมีก่อน:** ข้อ 2 (namespace) · รู้แล้วว่าใคร 2 คน
+จะถือ `cluster-admin` · 4.2 อ่านอย่างเดียว ยังไม่ต้องทำ
 
 `cluster-admin` ควรมีคนถือน้อยที่สุด และต้องรู้ว่าใครถือบ้าง
 
@@ -718,24 +736,31 @@ AD ของบริษัท ──→ OIDC provider ──→ apiserver
 
 ## 5 · Audit log
 
-เปิดไว้แล้วตั้งแต่ `kubeadm-config.yaml` (บทที่ 04) แต่ยังไม่มี policy
-ซึ่งแปลว่า**ยังไม่ได้บันทึกอะไรเลย**
+**ทำที่:** 🎩 master ทั้ง 3 **ทีละเครื่อง** (ssh เข้าแต่ละเครื่อง รอ apiserver กลับมาก่อนเครื่องถัดไป) · 5.3-5.4 บน 👑 master01
+· **ต้องมีก่อน:** ข้อ 0 (ไฟล์ตรง repo) · ข้อ 1 จบ apiserver ทั้ง 3 ปกติ — ข้อนี้จะ restart apiserver อีกรอบ
 
-**🎩 ทำทั้ง 3 master ทีละตัว:**
+audit **ทำงานอยู่แล้วตั้งแต่บท 04** — `kubeadm-config.yaml` ตั้ง `--audit-policy-file` + mount ไว้ และบท 04 ข้อ 2/4.2
+ติดตั้ง policy ชุดพื้นฐาน (`config/kubeadm/audit-policy.yaml`) บน master ทุกตัว · ข้อนี้**เปลี่ยนเป็น policy ชุดเต็ม**
+(`config/security/audit-policy.yaml` — เพิ่ม RBAC · `exec`/`attach`/`port-forward` แบบ `RequestResponse` และตัด scrape ของ Prometheus)
+
+> 🔴 **ไม่ต้องแก้ `kube-apiserver.yaml`** — flag กับ volume มีอยู่แล้วจากบท 04 ใส่ซ้ำจะได้ volume ชื่อซ้ำ
+> แล้ว apiserver ของเครื่องนั้นไม่ขึ้นเลย · apiserver อ่าน policy ตอนเริ่มเท่านั้น จึงต้อง restart หลังเปลี่ยนไฟล์
+
+**🎩 บนแต่ละ master ทีละตัว:**
 ```bash
 \cp -f /root/k8s/config/security/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
 chmod 600 /etc/kubernetes/audit-policy.yaml
-
-# ตรวจว่าไฟล์ลงจริง ไม่ใช่ค้างของเก่า
-grep -c 'kind: Policy' /etc/kubernetes/audit-policy.yaml
+grep -c 'pods/exec' /etc/kubernetes/audit-policy.yaml
 ```
-**ควรเห็น:** `1` — ถ้าได้ `0` แปลว่า copy ไม่โดน apiserver จะ restart ไม่ขึ้นเพราะหา policy ไม่เจอ
+**ควรเห็น:** `1` = ชุดเต็มลงแล้ว (ชุดพื้นฐานของบท 04 ไม่มีบรรทัดนี้ — ได้ `0` แปลว่า copy ไม่โดน)
 
-เพิ่มใน `kube-apiserver.yaml`:
-```yaml
-    - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
+**restart apiserver ของเครื่องนี้** — ย้าย manifest ออกแล้วกลับ kubelet จะสร้าง pod ใหม่ให้:
+```bash
+mv /etc/kubernetes/manifests/kube-apiserver.yaml /root/ && sleep 10 && mv /root/kube-apiserver.yaml /etc/kubernetes/manifests/
+until curl -sk https://127.0.0.1:6443/healthz | grep -q ok; do sleep 3; done; echo "apiserver ของ $(hostname) ok"
 ```
-พร้อม volumeMount ของ `/etc/kubernetes/audit-policy.yaml` และ `/var/log/kubernetes`
+**ควรเห็น:** `apiserver ของ k8s-masterXX ok` ภายใน ~1 นาที → ค่อยไปเครื่องถัดไป
+(ระหว่างนั้น `kubectl` ผ่าน VIP ยังใช้ได้ — HAProxy ส่งไป master ที่เหลือ)
 
 ### 5.1 มันคืออะไร และไฟล์อยู่ที่ไหน
 
@@ -819,6 +844,8 @@ jq -r 'select(.objectRef.subresource=="exec")
 
 ## 6 · หนี้เก่าที่ต้องจ่าย — หมุน credential
 
+**ทำที่:** ไม่ใช่งานบน cluster — งานประสานกับทีม infra/network/registry · ติ๊กตารางนี้ให้ครบก่อนส่งมอบ
+
 > 🔴 **ข้อนี้ไม่เกี่ยวกับ cluster ใหม่ แต่ห้ามข้าม**
 
 credential ที่รั่วในคู่มือชุดเดิม **ต้องถือว่าถูกเปิดเผยไปแล้วทั้งหมด**
@@ -840,6 +867,10 @@ cluster ต้องใช้ตัวหลังเท่านั้น ว�
 ---
 
 ## 7 · imagePullSecret — ให้ cluster ดึง image จาก private registry
+
+**ทำที่:** 👑 master01 (7.1 → 7.4) · **ต้องมีก่อน:** ข้อ 2 (namespace `myhr-prod` / `myhr-uat`) · รหัส registry
+จาก `secrets.env` บนเครื่องคุณ (คีย์ `PULL_ONLY_USER` / `PULL_ONLY_PASSWORD`) พิมพ์ทางแป้นพิมพ์ตอน 7.2
+· node ต่อ `registry.myhr.co.th` ได้แล้ว ([บท 02](02-container-runtime.md))
 
 `registry.myhr.co.th` เป็น registry ส่วนตัว ยิง `/v2/` เปล่า ๆ จะได้ `401` เสมอ
 **kubelet บนทุก node จึงต้องมี credential ก่อน ไม่งั้น pod ทุกตัวจะค้างที่ `ImagePullBackOff`**
@@ -1012,6 +1043,8 @@ crictl pull --creds '<PULL_ONLY_USER>:<PULL_ONLY_PASSWORD>' "${REGISTRY_HOST}/my
 ---
 
 ## 8 · ตรวจทั้งบทด้วยสคริปต์เดียว
+
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 1-5 และ 7 จบ (ข้อ 6 สคริปต์ตรวจไม่ได้) · apiserver ทั้ง 3 ปกติ
 
 ทุกด่านในบทนี้ผ่านได้ทั้งที่ระบบยังไม่ปลอดภัย — เปิด encryption แค่ master01
 แล้วทดสอบผ่าน VIP ก็ยังผ่าน 2 ใน 3 ครั้ง · ติด label PSA แล้วแต่ไม่มีผลจะรู้ตอนบทที่ 11 ·
