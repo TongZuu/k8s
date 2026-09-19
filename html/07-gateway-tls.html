@@ -662,111 +662,98 @@ kubectl -n envoy-gateway-system get secret myhr-public-tls
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2 id="4--สร้าง-gateway">4 · สร้าง Gateway</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 2 (GatewayClass <code>eg</code> ACCEPTED) · ข้อ 3 (Secret <code>myhr-public-tls</code> มีแล้ว)
 · pool ของ<a href="05-cilium.html">บท 05 ข้อ 6</a> มี IP ว่าง (<code>kubectl get ciliumloadbalancerippool</code> — <code>AVAILABLE</code> ไม่เป็น 0)</p>
+<p><strong>1 · apply:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/gateway/gateway.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>gateway.gateway.networking.k8s.io/myhr-gateway created</code></p>
-<p>listener HTTPS ในไฟล์ชี้ไปที่ Secret <code>myhr-public-tls</code> ที่สร้างไว้ตอนขั้นที่ 3</p>
-<p><strong>รอให้พร้อมก่อน อย่าเพิ่งเช็ค</strong> — <code>apply</code> เสร็จไม่ได้แปลว่าใช้งานได้:</p>
+<p><strong>2 · รอให้พร้อม</strong> — <code>apply</code> เสร็จไม่ได้แปลว่าใช้งานได้ Envoy Gateway ต้องสร้าง Envoy pod + Service LoadBalancer
+ให้ก่อน ครั้งแรกดึง image ด้วย (1-3 นาที) · <strong>อย่าเพิ่ง <code>get</code> ก่อนบรรทัดนี้จบ</strong> — จะเห็น <code>PROGRAMMED=False</code>
+ซึ่งปกติ แล้วเข้าใจผิดว่าพัง:</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system wait --for=condition=Programmed   gateway/myhr-gateway --timeout=5m
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>gateway.gateway.networking.k8s.io/myhr-gateway condition met</code> (ครั้งแรก 1-3 นาที)</p>
-<blockquote>
-<p>🔴 <strong><code>PROGRAMMED=False</code> ทันทีหลัง apply เป็นเรื่องปกติ ไม่ใช่ปัญหา</strong>
-Envoy Gateway ต้องไปสร้าง Deployment ของ Envoy proxy กับ Service <code>type: LoadBalancer</code>
-ก่อน แล้วรอ pod พร้อม กว่าจะครบใช้เวลาหลายสิบวินาที <strong>ครั้งแรกนานกว่านั้นมาก
-เพราะต้องดึง image ลง worker ด้วย</strong></p>
-<p>ถ้าไม่รอแล้วรีบ <code>get</code> จะเห็น <code>False</code> แล้วเข้าใจผิดว่าพัง ซึ่งเสียเวลาไล่ของที่ไม่ได้เสีย
-— <code>kubectl wait</code> คืนค่าเมื่อพร้อมจริง หรือ error ตอนครบ 5 นาที ซึ่งตอนนั้นค่อยไล่หาสาเหตุ</p>
-</blockquote>
+<p><strong>ควรเห็น:</strong> <code>gateway.gateway.networking.k8s.io/myhr-gateway condition met</code> · หมดเวลา → ดู &quot;ถ้าไม่ผ่าน&quot; ท้ายข้อ</p>
+<p><strong>3 · ตรวจภาพรวมและ listener ทั้งสองตัว:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get gateway myhr-gateway
+kubectl -n envoy-gateway-system get gateway myhr-gateway \
+  -o jsonpath='{range .status.listeners[*]}{.name}{":"}{range .conditions[*]}{" "}{.type}={.status}{end}{"\n"}{end}'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>PROGRAMMED=True</code> และคอลัมน์ <code>ADDRESS</code> เป็น IP จาก pool เช่น <code>192.168.50.200</code></p>
-<p><strong>ถ้า <code>kubectl wait</code> หมดเวลา 5 นาที</strong> ค่อยไล่ตามนี้ — <code>describe</code> บอก <code>Reason</code> ตรง ๆ
-ไม่ต้องเดาจากอาการ:</p>
-<div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system describe gateway myhr-gateway | sed -n '/^Status:/,$p'
-kubectl -n envoy-gateway-system get pods -o wide
+<p><strong>ควรเห็น:</strong> บรรทัดแรก <code>PROGRAMMED=True</code> และ <code>ADDRESS</code> เป็น IP จาก pool เช่น <code>192.168.50.200</code>
+· แล้วสองบรรทัด <code>http:</code> และ <code>https:</code> ที่มี <code>Accepted=True Programmed=True ResolvedRefs=True</code> ทั้งคู่
+(คอลัมน์ <code>PROGRAMMED</code> เป็นสถานะรวม — listener <code>https</code> พังตัวเดียวก็ยังขึ้น <code>True</code> ได้ จึงต้องดูแยก)</p>
+<p><strong>4 · Envoy ต้องอยู่ครบทุก worker</strong> (ผลจาก <code>envoyproxy.yaml</code> ในข้อ 2):</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get ds,pod -o wide -l app.kubernetes.io/name=envoy
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> DaemonSet <code>DESIRED=3 READY=3</code> และ pod อยู่คนละ worker กันทั้งสามตัว</p>
+<p><strong>5 · จด IP ไว้</strong> — ข้อ 5 ต้องใช้บนเครื่องทดสอบซึ่งไม่มี kubectl:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}{"\n"}'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> IP บรรทัดเดียว เช่น <code>192.168.50.200</code> — ตัวนี้คือ <code>GW_IP</code> ของข้อ 5 · <strong>นี่คือ IP เดียวที่กินจาก pool ทั้ง 10 ตัว</strong></p>
+<p>ครบ 5 ขั้น → ไปข้อ 5</p>
+<hr />
+</div><div class="sub" data-machine="all"><h3 id="ถ้าข้อ-4-ไม่ผ่าน--หาอาการที่ตรงแล้วทำตามแถวนั้น">ถ้าข้อ 4 ไม่ผ่าน — หาอาการที่ตรงแล้วทำตามแถวนั้น</h3>
 <table>
 <thead>
 <tr>
-<th><code>Reason</code> ที่เห็น</th>
-<th>มักแปลว่า</th>
+<th>เห็นอะไร</th>
+<th>ดูต่อด้วย</th>
+<th>แปลว่า / แก้</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>AddressNotAssigned</code></td>
-<td>Service ยังไม่ได้ IP → Cilium LB-IPAM (<a href="05-cilium.html">บท 05</a>)</td>
+<td>ขั้น 2 <code>wait</code> หมดเวลา 5 นาที</td>
+<td><code>kubectl -n envoy-gateway-system describe gateway myhr-gateway | sed -n '/^Status:/,$p'</code> — อ่านช่อง <code>Reason:</code> ใต้ <code>Conditions:</code></td>
+<td>ตาราง Reason ข้างล่าง</td>
 </tr>
 <tr>
-<td><code>InvalidCertificateRef</code> / <code>NoValidListeners</code></td>
-<td>Secret <code>myhr-public-tls</code> ไม่มี ผิด namespace หรือไม่ใช่ <code>type: kubernetes.io/tls</code></td>
+<td>ขั้น 3 <code>ADDRESS</code> ว่าง</td>
+<td><code>kubectl get gatewayclass</code> · <code>kubectl -n envoy-gateway-system get svc</code></td>
+<td>ไม่มี GatewayClass <code>eg</code> = ไม่มี controller รับ Gateway นี้ (apply ผ่านแต่ค้างตลอดไป) → ท้ายข้อ 2 · มี class แต่ไม่มี Service <code>LoadBalancer</code> → <code>kubectl -n envoy-gateway-system logs deploy/envoy-gateway | tail</code> · มี Service แต่ <code>EXTERNAL-IP</code> เป็น <code>&lt;pending&gt;</code> → pool หมด/LB-IPAM (<a href="05-cilium.html">บท 05 ข้อ 6</a>)</td>
 </tr>
 <tr>
-<td>proxy pod ไม่ <code>Running</code> (<code>ImagePullBackOff</code>)</td>
+<td>ขั้น 3 <code>https:</code> มี <code>ResolvedRefs=False</code></td>
+<td><code>kubectl -n envoy-gateway-system get secret myhr-public-tls</code></td>
+<td>Secret ไม่มี · ผิด namespace · หรือ <code>TYPE</code> ไม่ใช่ <code>kubernetes.io/tls</code> → ทำข้อ 3 ใหม่</td>
+</tr>
+<tr>
+<td>ขั้น 4 ได้ <code>Deployment</code> แทน <code>DaemonSet</code></td>
+<td><code>kubectl get gatewayclass eg -o jsonpath='{.spec.parametersRef}{&quot;\n&quot;}'</code> ต้องมี <code>&quot;name&quot;:&quot;myhr-proxy&quot;</code></td>
+<td>ว่าง = <code>gatewayclass.yaml</code> ไม่ได้ชี้ <code>EnvoyProxy</code> — <code>EnvoyProxy</code> ถูกลงไว้เฉย ๆ ไม่มีใครใช้ และไม่มี error ให้เห็น → apply <code>gatewayclass.yaml</code> ของrepoซ้ำ</td>
+</tr>
+<tr>
+<td>ขั้น 4 pod ไม่ <code>Running</code> (<code>ImagePullBackOff</code>)</td>
+<td><code>kubectl -n envoy-gateway-system get pods -o wide</code></td>
 <td>worker ดึง image ไม่ได้ — ปิด IPv6 ให้ครบทุกเครื่อง (<a href="01-prepare-os.html">บท 01 ข้อ 1.2</a>)</td>
-</tr>
-<tr>
-<td>GatewayClass ไม่ถูกรับ</td>
-<td><code>gatewayClassName: eg</code> ไม่ตรงกับ GatewayClass ที่มี — ย้อนไปท้ายขั้นที่ 2</td>
 </tr>
 </tbody>
 </table>
-<p><strong>ตรวจ listener ทีละตัว</strong> — คอลัมน์ <code>PROGRAMMED</code> ข้างบนเป็นสถานะรวม
-listener ตัวเดียวพังแล้วอีกตัวยังใช้ได้ ซึ่งมองจากตารางไม่เห็น:</p>
-<div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get gateway myhr-gateway \
-  -o jsonpath='{range .status.listeners[*]}{.name}{":"}{range .conditions[*]}{" "}{.type}={.status}{end}{"\n"}{end}'
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> ทั้ง <code>http</code> และ <code>https</code> เป็น <code>Accepted=True Programmed=True ResolvedRefs=True</code></p>
-<p>ถ้า <code>https</code> ขึ้น <code>ResolvedRefs=False</code> แปลว่า Secret ที่อ้างถึงไม่มี ผิด namespace
-หรือไม่ใช่ <code>type: kubernetes.io/tls</code> — กลับไปขั้นที่ 3</p>
-<blockquote>
-<p>Envoy Gateway จะสร้าง Service <code>type: LoadBalancer</code> ให้อัตโนมัติ
-ซึ่ง Cilium LB-IPAM จะจ่าย IP ให้ — <strong>นี่คือ IP เดียวที่กินจาก pool ทั้ง 10 ตัว</strong></p>
-</blockquote>
-<p><strong>ถ้า <code>ADDRESS</code> ว่าง — ไล่ตามลำดับนี้:</strong></p>
-<div class="cb"><pre><code class="language-bash">kubectl get gatewayclass
-kubectl -n envoy-gateway-system get svc
-kubectl get ciliumloadbalancerippool default-pool -o yaml | grep -A5 status
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong><code>Reason:</code> ที่เจอใน <code>describe</code>:</strong></p>
 <table>
 <thead>
 <tr>
-<th>ที่เจอ</th>
+<th><code>Reason</code></th>
 <th>แปลว่า</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>ไม่มี GatewayClass <code>eg</code></td>
-<td><strong>ไม่มี controller ตัวไหนรับ Gateway ตัวนี้ไปทำ</strong> — Gateway จะ apply ผ่านโดยไม่มี error แต่ <code>ADDRESS</code> ว่างตลอดไป ย้อนไปทำท้ายขั้นที่ 2</td>
+<td><code>AddressNotAssigned</code></td>
+<td>Service ยังไม่ได้ IP → แถว &quot;ADDRESS ว่าง&quot; ข้างบน</td>
 </tr>
 <tr>
-<td>มี GatewayClass แต่ไม่มี Service <code>type: LoadBalancer</code></td>
-<td>Envoy Gateway ยังไม่ได้ reconcile — ดู log ของ <code>deploy/envoy-gateway</code></td>
+<td><code>InvalidCertificateRef</code> / <code>NoValidListeners</code></td>
+<td>Secret <code>myhr-public-tls</code> ไม่มี ผิด namespace หรือไม่ใช่ <code>type: kubernetes.io/tls</code> → ข้อ 3</td>
 </tr>
 <tr>
-<td>มี Service แต่ <code>EXTERNAL-IP</code> ค้าง <code>&lt;pending&gt;</code></td>
-<td>pool หมดหรือ LB-IPAM มีปัญหา — กลับไปดูบทที่ 05</td>
+<td><code>Pending</code> ค้างและ pod Envoy ไม่ <code>Running</code></td>
+<td>แถว <code>ImagePullBackOff</code> ข้างบน</td>
+</tr>
+<tr>
+<td><code>InvalidParameters</code> / <code>Unknown</code> ที่ GatewayClass</td>
+<td><code>gatewayClassName: eg</code> ไม่ตรงกับ GatewayClass ที่มี → ท้ายข้อ 2</td>
 </tr>
 </tbody>
 </table>
-<p><strong>ตรวจว่า Envoy กระจายครบทุก worker</strong> — ตรงนี้ Envoy ถึงจะถูกสร้างจริง:</p>
-<div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get ds,pod -o wide -l app.kubernetes.io/name=envoy
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> DaemonSet <code>DESIRED=3 READY=3</code> และ pod อยู่คนละ worker กันทั้งสามตัว</p>
-<p><strong>ถ้าได้ Deployment แทน DaemonSet</strong> แปลว่า <code>parametersRef</code> ใน <code>gatewayclass.yaml</code>
-ไม่ได้ชี้มาที่ <code>EnvoyProxy</code> — ตรวจด้วย:</p>
-<div class="cb"><pre><code class="language-bash">kubectl get gatewayclass eg -o jsonpath='{.spec.parametersRef}{"\n"}'
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> JSON ที่มี <code>&quot;name&quot;:&quot;myhr-proxy&quot;</code> — ถ้าว่าง แปลว่า <code>EnvoyProxy</code> ถูกลงไว้เฉย ๆ
-โดยไม่มีใครใช้ ซึ่ง<strong>ไม่มี error ให้เห็น</strong></p>
-<hr />
-<p><strong>จด IP ที่ได้ไว้</strong> — ขั้นถัดไปต้องใช้บนเครื่องทดสอบซึ่งไม่มี kubectl:</p>
-<div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get gateway myhr-gateway \
-  -o jsonpath='{.status.addresses[0].value}{"\n"}'
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> IP บรรทัดเดียว เช่น <code>192.168.50.200</code> — ตัวนี้คือ <code>GW_IP</code> ของข้อ 5</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2 id="5--ทดสอบด้วย-httproute-จริง">5 · ทดสอบด้วย HTTPRoute จริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>ทำที่:</strong> ครึ่งแรก (สร้างของทดสอบ + ตรวจ route) บน 👑 master01 · ครึ่งหลัง (<code>curl</code>) บน<strong>เครื่องทดสอบในวง LAN</strong>

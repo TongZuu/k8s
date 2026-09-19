@@ -400,96 +400,64 @@ kubectl -n envoy-gateway-system get secret myhr-public-tls
 **ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 2 (GatewayClass `eg` ACCEPTED) · ข้อ 3 (Secret `myhr-public-tls` มีแล้ว)
 · pool ของ[บท 05 ข้อ 6](05-cilium.md) มี IP ว่าง (`kubectl get ciliumloadbalancerippool` — `AVAILABLE` ไม่เป็น 0)
 
+**1 · apply:**
 ```bash
 kubectl apply -f /root/k8s/config/gateway/gateway.yaml
 ```
 **ควรเห็น:** `gateway.gateway.networking.k8s.io/myhr-gateway created`
 
-listener HTTPS ในไฟล์ชี้ไปที่ Secret `myhr-public-tls` ที่สร้างไว้ตอนขั้นที่ 3
-
-**รอให้พร้อมก่อน อย่าเพิ่งเช็ค** — `apply` เสร็จไม่ได้แปลว่าใช้งานได้:
+**2 · รอให้พร้อม** — `apply` เสร็จไม่ได้แปลว่าใช้งานได้ Envoy Gateway ต้องสร้าง Envoy pod + Service LoadBalancer
+ให้ก่อน ครั้งแรกดึง image ด้วย (1-3 นาที) · **อย่าเพิ่ง `get` ก่อนบรรทัดนี้จบ** — จะเห็น `PROGRAMMED=False`
+ซึ่งปกติ แล้วเข้าใจผิดว่าพัง:
 ```bash
 kubectl -n envoy-gateway-system wait --for=condition=Programmed   gateway/myhr-gateway --timeout=5m
 ```
-**ควรเห็น:** `gateway.gateway.networking.k8s.io/myhr-gateway condition met` (ครั้งแรก 1-3 นาที)
+**ควรเห็น:** `gateway.gateway.networking.k8s.io/myhr-gateway condition met` · หมดเวลา → ดู "ถ้าไม่ผ่าน" ท้ายข้อ
 
-> 🔴 **`PROGRAMMED=False` ทันทีหลัง apply เป็นเรื่องปกติ ไม่ใช่ปัญหา**
-> Envoy Gateway ต้องไปสร้าง Deployment ของ Envoy proxy กับ Service `type: LoadBalancer`
-> ก่อน แล้วรอ pod พร้อม กว่าจะครบใช้เวลาหลายสิบวินาที **ครั้งแรกนานกว่านั้นมาก
-> เพราะต้องดึง image ลง worker ด้วย**
->
-> ถ้าไม่รอแล้วรีบ `get` จะเห็น `False` แล้วเข้าใจผิดว่าพัง ซึ่งเสียเวลาไล่ของที่ไม่ได้เสีย
-> — `kubectl wait` คืนค่าเมื่อพร้อมจริง หรือ error ตอนครบ 5 นาที ซึ่งตอนนั้นค่อยไล่หาสาเหตุ
-
+**3 · ตรวจภาพรวมและ listener ทั้งสองตัว:**
 ```bash
 kubectl -n envoy-gateway-system get gateway myhr-gateway
-```
-
-**ควรเห็น:** `PROGRAMMED=True` และคอลัมน์ `ADDRESS` เป็น IP จาก pool เช่น `192.168.50.200`
-
-**ถ้า `kubectl wait` หมดเวลา 5 นาที** ค่อยไล่ตามนี้ — `describe` บอก `Reason` ตรง ๆ
-ไม่ต้องเดาจากอาการ:
-```bash
-kubectl -n envoy-gateway-system describe gateway myhr-gateway | sed -n '/^Status:/,$p'
-kubectl -n envoy-gateway-system get pods -o wide
-```
-
-| `Reason` ที่เห็น | มักแปลว่า |
-|---|---|
-| `AddressNotAssigned` | Service ยังไม่ได้ IP → Cilium LB-IPAM ([บท 05](05-cilium.md)) |
-| `InvalidCertificateRef` / `NoValidListeners` | Secret `myhr-public-tls` ไม่มี ผิด namespace หรือไม่ใช่ `type: kubernetes.io/tls` |
-| proxy pod ไม่ `Running` (`ImagePullBackOff`) | worker ดึง image ไม่ได้ — ปิด IPv6 ให้ครบทุกเครื่อง ([บท 01 ข้อ 1.2](01-prepare-os.md)) |
-| GatewayClass ไม่ถูกรับ | `gatewayClassName: eg` ไม่ตรงกับ GatewayClass ที่มี — ย้อนไปท้ายขั้นที่ 2 |
-
-**ตรวจ listener ทีละตัว** — คอลัมน์ `PROGRAMMED` ข้างบนเป็นสถานะรวม
-listener ตัวเดียวพังแล้วอีกตัวยังใช้ได้ ซึ่งมองจากตารางไม่เห็น:
-```bash
 kubectl -n envoy-gateway-system get gateway myhr-gateway \
   -o jsonpath='{range .status.listeners[*]}{.name}{":"}{range .conditions[*]}{" "}{.type}={.status}{end}{"\n"}{end}'
 ```
-**ควรเห็น:** ทั้ง `http` และ `https` เป็น `Accepted=True Programmed=True ResolvedRefs=True`
+**ควรเห็น:** บรรทัดแรก `PROGRAMMED=True` และ `ADDRESS` เป็น IP จาก pool เช่น `192.168.50.200`
+· แล้วสองบรรทัด `http:` และ `https:` ที่มี `Accepted=True Programmed=True ResolvedRefs=True` ทั้งคู่
+(คอลัมน์ `PROGRAMMED` เป็นสถานะรวม — listener `https` พังตัวเดียวก็ยังขึ้น `True` ได้ จึงต้องดูแยก)
 
-ถ้า `https` ขึ้น `ResolvedRefs=False` แปลว่า Secret ที่อ้างถึงไม่มี ผิด namespace
-หรือไม่ใช่ `type: kubernetes.io/tls` — กลับไปขั้นที่ 3
-
-> Envoy Gateway จะสร้าง Service `type: LoadBalancer` ให้อัตโนมัติ
-> ซึ่ง Cilium LB-IPAM จะจ่าย IP ให้ — **นี่คือ IP เดียวที่กินจาก pool ทั้ง 10 ตัว**
-
-**ถ้า `ADDRESS` ว่าง — ไล่ตามลำดับนี้:**
-```bash
-kubectl get gatewayclass
-kubectl -n envoy-gateway-system get svc
-kubectl get ciliumloadbalancerippool default-pool -o yaml | grep -A5 status
-```
-
-| ที่เจอ | แปลว่า |
-|---|---|
-| ไม่มี GatewayClass `eg` | **ไม่มี controller ตัวไหนรับ Gateway ตัวนี้ไปทำ** — Gateway จะ apply ผ่านโดยไม่มี error แต่ `ADDRESS` ว่างตลอดไป ย้อนไปทำท้ายขั้นที่ 2 |
-| มี GatewayClass แต่ไม่มี Service `type: LoadBalancer` | Envoy Gateway ยังไม่ได้ reconcile — ดู log ของ `deploy/envoy-gateway` |
-| มี Service แต่ `EXTERNAL-IP` ค้าง `<pending>` | pool หมดหรือ LB-IPAM มีปัญหา — กลับไปดูบทที่ 05 |
-
-**ตรวจว่า Envoy กระจายครบทุก worker** — ตรงนี้ Envoy ถึงจะถูกสร้างจริง:
+**4 · Envoy ต้องอยู่ครบทุก worker** (ผลจาก `envoyproxy.yaml` ในข้อ 2):
 ```bash
 kubectl -n envoy-gateway-system get ds,pod -o wide -l app.kubernetes.io/name=envoy
 ```
 **ควรเห็น:** DaemonSet `DESIRED=3 READY=3` และ pod อยู่คนละ worker กันทั้งสามตัว
 
-**ถ้าได้ Deployment แทน DaemonSet** แปลว่า `parametersRef` ใน `gatewayclass.yaml`
-ไม่ได้ชี้มาที่ `EnvoyProxy` — ตรวจด้วย:
+**5 · จด IP ไว้** — ข้อ 5 ต้องใช้บนเครื่องทดสอบซึ่งไม่มี kubectl:
 ```bash
-kubectl get gatewayclass eg -o jsonpath='{.spec.parametersRef}{"\n"}'
+kubectl -n envoy-gateway-system get gateway myhr-gateway -o jsonpath='{.status.addresses[0].value}{"\n"}'
 ```
-**ควรเห็น:** JSON ที่มี `"name":"myhr-proxy"` — ถ้าว่าง แปลว่า `EnvoyProxy` ถูกลงไว้เฉย ๆ
-โดยไม่มีใครใช้ ซึ่ง**ไม่มี error ให้เห็น**
+**ควรเห็น:** IP บรรทัดเดียว เช่น `192.168.50.200` — ตัวนี้คือ `GW_IP` ของข้อ 5 · **นี่คือ IP เดียวที่กินจาก pool ทั้ง 10 ตัว**
+
+ครบ 5 ขั้น → ไปข้อ 5
 
 ---
 
-**จด IP ที่ได้ไว้** — ขั้นถัดไปต้องใช้บนเครื่องทดสอบซึ่งไม่มี kubectl:
-```bash
-kubectl -n envoy-gateway-system get gateway myhr-gateway \
-  -o jsonpath='{.status.addresses[0].value}{"\n"}'
-```
-**ควรเห็น:** IP บรรทัดเดียว เช่น `192.168.50.200` — ตัวนี้คือ `GW_IP` ของข้อ 5
+### ถ้าข้อ 4 ไม่ผ่าน — หาอาการที่ตรงแล้วทำตามแถวนั้น
+
+| เห็นอะไร | ดูต่อด้วย | แปลว่า / แก้ |
+|---|---|---|
+| ขั้น 2 `wait` หมดเวลา 5 นาที | `kubectl -n envoy-gateway-system describe gateway myhr-gateway \| sed -n '/^Status:/,$p'` — อ่านช่อง `Reason:` ใต้ `Conditions:` | ตาราง Reason ข้างล่าง |
+| ขั้น 3 `ADDRESS` ว่าง | `kubectl get gatewayclass` · `kubectl -n envoy-gateway-system get svc` | ไม่มี GatewayClass `eg` = ไม่มี controller รับ Gateway นี้ (apply ผ่านแต่ค้างตลอดไป) → ท้ายข้อ 2 · มี class แต่ไม่มี Service `LoadBalancer` → `kubectl -n envoy-gateway-system logs deploy/envoy-gateway \| tail` · มี Service แต่ `EXTERNAL-IP` เป็น `<pending>` → pool หมด/LB-IPAM ([บท 05 ข้อ 6](05-cilium.md)) |
+| ขั้น 3 `https:` มี `ResolvedRefs=False` | `kubectl -n envoy-gateway-system get secret myhr-public-tls` | Secret ไม่มี · ผิด namespace · หรือ `TYPE` ไม่ใช่ `kubernetes.io/tls` → ทำข้อ 3 ใหม่ |
+| ขั้น 4 ได้ `Deployment` แทน `DaemonSet` | `kubectl get gatewayclass eg -o jsonpath='{.spec.parametersRef}{"\n"}'` ต้องมี `"name":"myhr-proxy"` | ว่าง = `gatewayclass.yaml` ไม่ได้ชี้ `EnvoyProxy` — `EnvoyProxy` ถูกลงไว้เฉย ๆ ไม่มีใครใช้ และไม่มี error ให้เห็น → apply `gatewayclass.yaml` ของrepoซ้ำ |
+| ขั้น 4 pod ไม่ `Running` (`ImagePullBackOff`) | `kubectl -n envoy-gateway-system get pods -o wide` | worker ดึง image ไม่ได้ — ปิด IPv6 ให้ครบทุกเครื่อง ([บท 01 ข้อ 1.2](01-prepare-os.md)) |
+
+**`Reason:` ที่เจอใน `describe`:**
+
+| `Reason` | แปลว่า |
+|---|---|
+| `AddressNotAssigned` | Service ยังไม่ได้ IP → แถว "ADDRESS ว่าง" ข้างบน |
+| `InvalidCertificateRef` / `NoValidListeners` | Secret `myhr-public-tls` ไม่มี ผิด namespace หรือไม่ใช่ `type: kubernetes.io/tls` → ข้อ 3 |
+| `Pending` ค้างและ pod Envoy ไม่ `Running` | แถว `ImagePullBackOff` ข้างบน |
+| `InvalidParameters` / `Unknown` ที่ GatewayClass | `gatewayClassName: eg` ไม่ตรงกับ GatewayClass ที่มี → ท้ายข้อ 2 |
 
 ---
 
