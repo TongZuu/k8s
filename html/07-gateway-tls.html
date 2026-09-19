@@ -239,7 +239,7 @@ img{max-width:100%}
       <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
       <div class="top-t">
         <h1>บทที่ 07 — Envoy Gateway และ TLS</h1>
-        <p class="sub">รันที่: 👑 master01 · เวลาที่ใช้: ~40 นาที · ต้องผ่านบทที่ 05-06 — โดยเฉพาะการ curl เข้า LoadBalancer IP จากเครื่องในวง 192.168.50.0/24 ที่ไม่ใช่ node ได้</p>
+        <p class="sub">รันที่: 👑 master01 เกือบทั้งบท · ยกเว้น 2 จุดที่บอกไว้: ไฟล์ cert ในข้อ 3 ต้อง scp ขึ้นมาจากเครื่องคุณ · · curl ทดสอบในข้อ 5-6 ต้องยิงจากเครื่องในวง 192.168.50.0/24 ที่ไม่ใช่ node (เครื่องเดียวกับบท 05 ข้อ 7) · ลำดับ: 0 → 6 ตามลำดับ ทำพร้อมกันไม่ได้ — ข้อ 3 (cert) ต้องเสร็จก่อนข้อ 4 (Gateway) เสมอ · เวลาที่ใช้: ~40 นาที (ไม่รวมเวลาขอไฟล์ cert) · ต้องผ่านบทที่ 05-06 — โดยเฉพาะการ curl เข้า LoadBalancer IP จากเครื่องในวง 192.168.50.0/24 ที่ไม่ใช่ node ได้</p>
       </div>
       <div class="top-p">
         <span id="pcount">0/12</span>
@@ -306,9 +306,11 @@ web app React/Angular (P02), หลาย service ใต้ host เดียว
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="0--ตรวจว่าไฟล์ของบทนี้อยู่บนเครื่องแล้ว">0 · ตรวจว่าไฟล์ของบทนี้อยู่บนเครื่องแล้ว</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p>บทนี้อ้างไฟล์ในrepo 9 ไฟล์ ถ้า <code>/root/k8s/</code> บนเครื่องยังเป็นชุดเก่า จะเจอ
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> <a href="06-verify.html">บท 06</a> ผ่านเช็กลิสต์ · <code>/root/k8s/</code> sync จาก<a href="00-overview.html">บท 00</a></p>
+<p>บทนี้อ้างไฟล์ในrepo 10 ไฟล์ ถ้า <code>/root/k8s/</code> บนเครื่องยังเป็นชุดเก่า จะเจอ
 <code>does not exist</code> กระจายทีละขั้น และคำสั่งตรวจที่ตามมาจะตอบอะไรที่ดูเหมือนคำตอบแต่ไม่ใช่</p>
-<div class="cb"><pre><code class="language-bash">for f in config/gateway/gatewayclass.yaml \
+<div class="cb"><pre><code class="language-bash">for f in config/gateway/envoyproxy.yaml \
+         config/gateway/gatewayclass.yaml \
          config/gateway/gateway.yaml \
          config/gateway/httproute-example.yaml \
          config/gateway/https-redirect.yaml \
@@ -320,7 +322,7 @@ web app React/Angular (P02), หลาย service ใต้ host เดียว
   [ -f "/root/k8s/$f" ] &amp;&amp; echo "  ok   $f" || echo "  ขาด  $f"
 done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ต้องได้ <code>ok</code> ครบ 9 บรรทัด</strong></p>
+<p><strong>ต้องได้ <code>ok</code> ครบ 10 บรรทัด</strong></p>
 <p>ถ้ามี <code>ขาด</code> แปลว่า <code>/root/k8s/</code> บนเครื่องยังเป็นชุดเก่า ต้อง sync ใหม่ —
 <strong>คำสั่งนี้รันบนเครื่องที่มีrepo ไม่ใช่บน node</strong> โดยยืนอยู่ในโฟลเดอร์rootของrepo:</p>
 <div class="cb"><pre><code class="language-bash">scp -r docs/versions.env config/ root@192.168.50.101:/root/k8s/
@@ -333,6 +335,7 @@ done
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="1--ตรวจว่าเครื่องสะอาดก่อนเริ่ม">1 · ตรวจว่าเครื่องสะอาดก่อนเริ่ม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 0 <code>ok</code> ครบ · ข้อนี้อ่านอย่างเดียว</p>
 <blockquote>
 <p>📖 <strong>แหล่งอ้างอิงของขั้นที่ 1-2:</strong> <a href="https://gateway.envoyproxy.io/docs/install/install-helm/">Install with Helm — Envoy Gateway</a>
 <strong>ถ้าคำสั่งในบทนี้ขัดกับเอกสารทางการ ให้เชื่อเอกสาร</strong> แล้วมาแก้บทนี้ตาม
@@ -386,7 +389,10 @@ annotation <code>meta.helm.sh/release-name</code>)</p>
 <p>ผลคือ cluster ค้างอยู่กับ CRD ชุดเก่าตลอดไป โดยที่ <code>helm install</code> รายงานว่าสำเร็จ
 ขั้นที่ 2 จึงมีคำสั่งตรวจว่าได้ CRD ชุดที่ chart ตั้งใจจริงหรือเปล่า</p>
 </blockquote>
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2 id="2--ติดตั้ง-envoy-gateway">2 · ติดตั้ง Envoy Gateway</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3 id="ค่าที่โครงการนี้ใช้--ต่างจากตัวอย่างในเอกสาร">ค่าที่โครงการนี้ใช้ — ต่างจากตัวอย่างในเอกสาร</h3>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2 id="2--ติดตั้ง-envoy-gateway">2 · ติดตั้ง Envoy Gateway</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 1 สะอาด · <code>helm</code> ใช้ได้ (<a href="05-cilium.html">บท 05 ข้อ 1</a>)
+· เครื่องออก <code>docker.io</code> ได้ (chart เป็น OCI) · ทำตามลำดับในข้อนี้: chart → install → ตรวจ → EnvoyProxy → GatewayClass</p>
+</div><div class="sub" data-machine="all"><h3 id="ค่าที่โครงการนี้ใช้--ต่างจากตัวอย่างในเอกสาร">ค่าที่โครงการนี้ใช้ — ต่างจากตัวอย่างในเอกสาร</h3>
 <table>
 <thead>
 <tr>
@@ -443,9 +449,11 @@ helm show chart oci://docker.io/envoyproxy/gateway-helm --version "v${ENVOY_GATE
   --version "v${ENVOY_GATEWAY_VERSION}" \
   --namespace envoy-gateway-system --create-namespace
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>NAME: envoy-gateway</code> · <code>STATUS: deployed</code> · <code>REVISION: 1</code> (ใช้เวลา ~1 นาที ดึง image)</p>
 <p><strong>ตรวจด้วยคำสั่งของเอกสารทางการ:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl wait --timeout=5m -n envoy-gateway-system deployment/envoy-gateway --for=condition=Available
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>deployment.apps/envoy-gateway condition met</code> — ถ้าหมดเวลา ดู <code>kubectl -n envoy-gateway-system get pods</code></p>
 <p><strong>แล้วตรวจซ้ำด้วยตัวชี้ขาดจริง:</strong></p>
 <div class="cb"><pre><code class="language-bash">helm status envoy-gateway -n envoy-gateway-system | head -6
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -510,7 +518,9 @@ kubectl apply -f /root/k8s/config/gateway/gatewayclass.yaml   &amp;&amp; kubectl
 <blockquote>
 <p>ต่อด้วย <code>&amp;&amp;</code> เพื่อไม่ให้ <code>kubectl get</code> รันตอน <code>apply</code> ล้ม</p>
 </blockquote>
-<p><strong>ควรเห็น:</strong> <code>eg</code> · <code>CONTROLLER</code> เป็น <code>gateway.envoyproxy.io/gatewayclass-controller</code> · <code>ACCEPTED=True</code></p>
+<p><strong>ควรเห็น:</strong> <code>envoyproxy.gateway.envoyproxy.io/myhr-proxy created</code> · <code>gatewayclass.gateway.networking.k8s.io/eg created</code>
+· แล้วตาราง: <code>eg</code> · <code>CONTROLLER</code> เป็น <code>gateway.envoyproxy.io/gatewayclass-controller</code> · <code>ACCEPTED=True</code>
+(<code>ACCEPTED</code> อาจว่าง 2-3 วินาทีแรก รันบรรทัด <code>get</code> ซ้ำ)</p>
 <table>
 <thead>
 <tr>
@@ -540,6 +550,9 @@ helm get values envoy-gateway -n envoy-gateway-system -a | grep -i controllerNam
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2 id="3--ใส่-public-cert">3 · ใส่ public cert</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · ไฟล์ cert/key ส่งขึ้นมาจาก<strong>เครื่องคุณ</strong>ด้วย <code>scp</code> (บล็อกแรกข้างล่าง)
+· <strong>ต้องมีก่อน:</strong> ข้อ 2 จบ (namespace <code>envoy-gateway-system</code> มีแล้ว — Secret ต้องอยู่ที่นั่น)
+· ได้ไฟล์ cert <code>*.myhr.co.th</code> + private key จากทีมที่ดูแลโดเมนแล้ว (ไม่มี = หยุดรอ ทำข้อ 4 ต่อไม่ได้)</p>
 <p><strong>ต้องมี Secret <code>myhr-public-tls</code> ให้เสร็จก่อนสร้าง Gateway</strong> เพราะ listener HTTPS ที่อ้าง
 Secret ที่ยังไม่มี จะค้างที่ <code>Programmed=False</code> แล้วขั้นที่ 4 จะตรวจไม่ผ่าน
 โดยที่สาเหตุอยู่คนละที่กับที่กำลังมอง</p>
@@ -564,6 +577,10 @@ Secret ที่ยังไม่มี จะค้างที่ <code>Progr
 </table>
 <div class="cb"><pre><code class="language-bash">mkdir -p /root/certs &amp;&amp; chmod 700 /root/certs
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>แล้วจาก<strong>เครื่องคุณ</strong> ส่งไฟล์ที่ได้จาก CA ขึ้นไปทั้งชุด (ชื่อไฟล์ตามที่ได้มา ยังไม่ต้องเปลี่ยน):</p>
+<div class="cb"><pre><code class="language-bash">scp &lt;ไฟล์ที่ได้จาก CA ทุกไฟล์&gt; root@192.168.50.101:/root/certs/
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ชื่อไฟล์แต่ละตัวพร้อม <code>100%</code> · ต่อจากนี้กลับมาทำบน master01</p>
 <hr />
 </div><div class="sub" data-machine="all"><h3 id="31--แปลงไฟล์ให้เป็นสองไฟล์ข้างบน">3.1 · แปลงไฟล์ให้เป็นสองไฟล์ข้างบน</h3>
 <p><strong>ดูก่อนว่าได้อะไรมา</strong> — นามสกุลไฟล์เชื่อไม่ได้ CA ตั้งชื่อกันคนละแบบ
@@ -657,6 +674,7 @@ secret สร้างได้ปกติ แล้วไปตายตอน
 <div class="cb"><pre><code class="language-bash">chmod 600 /root/certs/privkey.pem
 ls -l /root/certs
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> มี <code>fullchain.pem</code> และ <code>privkey.pem</code> ทั้งคู่ขนาดไม่เป็น 0 · บรรทัด <code>privkey.pem</code> ขึ้นต้น <code>-rw-------</code></p>
 <blockquote>
 <p><strong>chain เรียงผิดลำดับ?</strong> (บาง CA ส่ง root ขึ้นก่อน) สคริปต์ตรวจข้างล่างจะจับได้ที่ข้อ 2
 เพราะมันถือว่าใบแรกคือ leaf แล้ว key จะไม่ตรงกัน · ดูลำดับจริงด้วย:</p>
@@ -670,7 +688,8 @@ ls -l /root/certs
 <div class="cb"><pre><code class="language-bash">bash /root/k8s/config/gateway/import-public-cert.sh --dry-run \
      /root/certs/fullchain.pem /root/certs/privkey.pem
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><code>--dry-run</code> ตรวจอย่างเดียว ไม่แตะ cluster — ต้องได้ <code>ok</code> ครบทั้ง 5 ข้อก่อนไปต่อ</p>
+<p><strong>ควรเห็น:</strong> หัวข้อ 1-5 มี <code>ok</code> ทุกข้อ ไม่มี <code>FAIL</code> และปิดท้าย <code>ตรวจผ่านหมด (--dry-run จึงไม่ได้เขียน secret)</code>
+— มี <code>FAIL</code> ข้อไหน ข้อความใต้บรรทัดนั้นบอกวิธีแก้ · แก้แล้วรัน <code>--dry-run</code> ซ้ำจนผ่าน</p>
 <blockquote>
 <p><strong>ทำไมไม่ใช้ <code>kubectl create secret tls</code> ตรง ๆ</strong> — คำสั่งนั้นรับไฟล์อะไรก็ได้ที่หน้าตาเป็น PEM
 แล้วตอบ <code>created</code> ทั้งที่ chain ขาด intermediate, key ไม่ใช่คู่ของ cert, key ยังมี passphrase
@@ -688,7 +707,7 @@ ls -l /root/certs
 
 kubectl -n envoy-gateway-system get secret myhr-public-tls
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>TYPE = kubernetes.io/tls</code> และ <code>DATA = 2</code></p>
+<p><strong>ควรเห็น:</strong> <code>secret/myhr-public-tls created</code> ตามด้วย <code>เรียบร้อย  ต่อที่ขั้นที่ 4</code> · แล้วตาราง <code>TYPE = kubernetes.io/tls</code> และ <code>DATA = 2</code></p>
 <blockquote>
 <p><strong>มี public cert หลายใบแยกตามชื่อ service?</strong> รันซ้ำได้ ใส่ <code>--secret &lt;ชื่อ&gt;</code> ให้แต่ละใบ
 แล้วเติมชื่อ Secret เข้าไปใน <code>certificateRefs</code> ตอนขั้นที่ 4.1:</p>
@@ -704,12 +723,16 @@ kubectl -n envoy-gateway-system get secret myhr-public-tls
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2 id="4--สร้าง-gateway">4 · สร้าง Gateway</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 2 (GatewayClass <code>eg</code> ACCEPTED) · ข้อ 3 (Secret <code>myhr-public-tls</code> มีแล้ว)
+· pool ของ<a href="05-cilium.html">บท 05 ข้อ 6</a> มี IP ว่าง (<code>kubectl get ciliumloadbalancerippool</code> — <code>AVAILABLE</code> ไม่เป็น 0)</p>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/gateway/gateway.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>gateway.gateway.networking.k8s.io/myhr-gateway created</code></p>
 <p>listener HTTPS ในไฟล์ชี้ไปที่ Secret <code>myhr-public-tls</code> ที่สร้างไว้ตอนขั้นที่ 3</p>
 <p><strong>รอให้พร้อมก่อน อย่าเพิ่งเช็ค</strong> — <code>apply</code> เสร็จไม่ได้แปลว่าใช้งานได้:</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system wait --for=condition=Programmed   gateway/myhr-gateway --timeout=5m
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>gateway.gateway.networking.k8s.io/myhr-gateway condition met</code> (ครั้งแรก 1-3 นาที)</p>
 <blockquote>
 <p>🔴 <strong><code>PROGRAMMED=False</code> ทันทีหลัง apply เป็นเรื่องปกติ ไม่ใช่ปัญหา</strong>
 Envoy Gateway ต้องไปสร้าง Deployment ของ Envoy proxy กับ Service <code>type: LoadBalancer</code>
@@ -806,8 +829,11 @@ kubectl get ciliumloadbalancerippool default-pool -o yaml | grep -A5 status
 <div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get gateway myhr-gateway \
   -o jsonpath='{.status.addresses[0].value}{"\n"}'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> IP บรรทัดเดียว เช่น <code>192.168.50.200</code> — ตัวนี้คือ <code>GW_IP</code> ของข้อ 5</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2 id="5--ทดสอบด้วย-httproute-จริง">5 · ทดสอบด้วย HTTPRoute จริง</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> ครึ่งแรก (สร้างของทดสอบ + ตรวจ route) บน 👑 master01 · ครึ่งหลัง (<code>curl</code>) บน<strong>เครื่องทดสอบในวง LAN</strong>
+— มีเส้นแบ่งบอกไว้ · <strong>ต้องมีก่อน:</strong> ข้อ 4 <code>PROGRAMMED=True</code> และจด IP มาแล้ว</p>
 <p><strong>บน master01 — สร้าง service ทดสอบ:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl create ns demo
 kubectl -n demo create deployment echo --image=nginx:alpine --replicas=2
@@ -816,6 +842,8 @@ kubectl -n demo expose deployment echo --port=80
 
 kubectl apply -f /root/k8s/config/gateway/httproute-example.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>namespace/demo created</code> · <code>deployment &quot;echo&quot; successfully rolled out</code> · <code>service/echo exposed</code>
+· <code>httproute.gateway.networking.k8s.io/echo-route created</code></p>
 <p><strong>ตรวจว่า route ผูกติดจริง:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl -n demo get httproute echo-route \
   -o jsonpath='{range .status.parents[0].conditions[*]}{.type}={.status}{"\n"}{end}'
@@ -887,19 +915,22 @@ L2 announcement มาแล้วที่ <a href="05-cilium.html">บทท�
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2 id="6--บังคับ-https">6 · บังคับ HTTPS</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> <code>apply</code> และเก็บกวาดบน 👑 master01 · <code>curl</code> ตรวจบน<strong>เครื่องทดสอบ</strong>เครื่องเดิม (<code>GW_IP</code> ยังตั้งอยู่)
+· <strong>ต้องมีก่อน:</strong> ข้อ 5 ได้ 200/404 ตามที่ควร</p>
 <p>ตอนนี้ listener HTTP ยังไม่มี route ผูกอยู่เลย ทุก request ที่เข้าทาง port 80 จึงได้ 404
 ขั้นนี้เปลี่ยนให้เป็น redirect แทน</p>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/gateway/https-redirect.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>ทำครั้งเดียวใช้กับทุก hostname — ไม่ต้องทำซ้ำต่อ service</p>
+<p><strong>ควรเห็น:</strong> <code>httproute.gateway.networking.k8s.io/https-redirect created</code> · ทำครั้งเดียวใช้กับทุก hostname — ไม่ต้องทำซ้ำต่อ service</p>
 <p><strong>ตรวจจากเครื่องทดสอบ:</strong></p>
 <div class="cb"><pre><code class="language-bash">curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' \
      -H 'Host: echo.myhr.co.th' "http://${GW_IP}"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>301 https://echo.myhr.co.th/</code></p>
-<p><strong>เก็บกวาดบน master01:</strong></p>
+<p><strong>เก็บกวาดบน master01</strong> — ลบเฉพาะของทดสอบ Gateway และ redirect อยู่ต่อ:</p>
 <div class="cb"><pre><code class="language-bash">kubectl delete ns demo
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>namespace &quot;demo&quot; deleted</code> (รอ ~10 วินาที)</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="9"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-10" data-step="10" data-machines="all"><div class="step-head"><h2 id="-เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <ul>

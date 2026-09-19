@@ -1,7 +1,9 @@
 # บทที่ 07 — Envoy Gateway และ TLS
 
-> **รันที่: 👑 master01**
-> **เวลาที่ใช้:** ~40 นาที
+> **รันที่: 👑 master01 เกือบทั้งบท** · ยกเว้น 2 จุดที่บอกไว้: ไฟล์ cert ในข้อ 3 ต้อง `scp` ขึ้นมาจาก**เครื่องคุณ**
+> · `curl` ทดสอบในข้อ 5-6 ต้องยิงจาก**เครื่องในวง `192.168.50.0/24` ที่ไม่ใช่ node** (เครื่องเดียวกับบท 05 ข้อ 7)
+> **ลำดับ: 0 → 6 ตามลำดับ ทำพร้อมกันไม่ได้** — ข้อ 3 (cert) ต้องเสร็จก่อนข้อ 4 (Gateway) เสมอ
+> **เวลาที่ใช้:** ~40 นาที (ไม่รวมเวลาขอไฟล์ cert)
 > **ต้องผ่านบทที่ 05-06** — โดยเฉพาะการ curl เข้า LoadBalancer IP จากเครื่องในวง `192.168.50.0/24` ที่ไม่ใช่ node ได้
 
 ---
@@ -53,11 +55,14 @@ microservice ทุกตัวเป็น `ClusterIP` ธรรมดา **ไ
 
 ## 0 · ตรวจว่าไฟล์ของบทนี้อยู่บนเครื่องแล้ว
 
-บทนี้อ้างไฟล์ในrepo 9 ไฟล์ ถ้า `/root/k8s/` บนเครื่องยังเป็นชุดเก่า จะเจอ
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** [บท 06](06-verify.md) ผ่านเช็กลิสต์ · `/root/k8s/` sync จาก[บท 00](00-overview.md)
+
+บทนี้อ้างไฟล์ในrepo 10 ไฟล์ ถ้า `/root/k8s/` บนเครื่องยังเป็นชุดเก่า จะเจอ
 `does not exist` กระจายทีละขั้น และคำสั่งตรวจที่ตามมาจะตอบอะไรที่ดูเหมือนคำตอบแต่ไม่ใช่
 
 ```bash
-for f in config/gateway/gatewayclass.yaml \
+for f in config/gateway/envoyproxy.yaml \
+         config/gateway/gatewayclass.yaml \
          config/gateway/gateway.yaml \
          config/gateway/httproute-example.yaml \
          config/gateway/https-redirect.yaml \
@@ -70,7 +75,7 @@ for f in config/gateway/gatewayclass.yaml \
 done
 ```
 
-**ต้องได้ `ok` ครบ 9 บรรทัด**
+**ต้องได้ `ok` ครบ 10 บรรทัด**
 
 ถ้ามี `ขาด` แปลว่า `/root/k8s/` บนเครื่องยังเป็นชุดเก่า ต้อง sync ใหม่ —
 **คำสั่งนี้รันบนเครื่องที่มีrepo ไม่ใช่บน node** โดยยืนอยู่ในโฟลเดอร์rootของrepo:
@@ -89,6 +94,8 @@ scp -r docs/versions.env config/ root@192.168.50.101:/root/k8s/
 ---
 
 ## 1 · ตรวจว่าเครื่องสะอาดก่อนเริ่ม
+
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 0 `ok` ครบ · ข้อนี้อ่านอย่างเดียว
 
 > 📖 **แหล่งอ้างอิงของขั้นที่ 1-2:** [Install with Helm — Envoy Gateway](https://gateway.envoyproxy.io/docs/install/install-helm/)
 > **ถ้าคำสั่งในบทนี้ขัดกับเอกสารทางการ ให้เชื่อเอกสาร** แล้วมาแก้บทนี้ตาม
@@ -135,6 +142,9 @@ kubectl get gateways,httproutes,grpcroutes,referencegrants -A
 
 ## 2 · ติดตั้ง Envoy Gateway
 
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 1 สะอาด · `helm` ใช้ได้ ([บท 05 ข้อ 1](05-cilium.md))
+· เครื่องออก `docker.io` ได้ (chart เป็น OCI) · ทำตามลำดับในข้อนี้: chart → install → ตรวจ → EnvoyProxy → GatewayClass
+
 ### ค่าที่โครงการนี้ใช้ — ต่างจากตัวอย่างในเอกสาร
 
 | | เอกสารทางการ | **โครงการนี้** | ทำไม |
@@ -169,11 +179,13 @@ helm install envoy-gateway oci://docker.io/envoyproxy/gateway-helm \
   --version "v${ENVOY_GATEWAY_VERSION}" \
   --namespace envoy-gateway-system --create-namespace
 ```
+**ควรเห็น:** `NAME: envoy-gateway` · `STATUS: deployed` · `REVISION: 1` (ใช้เวลา ~1 นาที ดึง image)
 
 **ตรวจด้วยคำสั่งของเอกสารทางการ:**
 ```bash
 kubectl wait --timeout=5m -n envoy-gateway-system deployment/envoy-gateway --for=condition=Available
 ```
+**ควรเห็น:** `deployment.apps/envoy-gateway condition met` — ถ้าหมดเวลา ดู `kubectl -n envoy-gateway-system get pods`
 
 **แล้วตรวจซ้ำด้วยตัวชี้ขาดจริง:**
 ```bash
@@ -255,7 +267,9 @@ kubectl apply -f /root/k8s/config/gateway/gatewayclass.yaml   && kubectl get gat
 
 > ต่อด้วย `&&` เพื่อไม่ให้ `kubectl get` รันตอน `apply` ล้ม
 
-**ควรเห็น:** `eg` · `CONTROLLER` เป็น `gateway.envoyproxy.io/gatewayclass-controller` · `ACCEPTED=True`
+**ควรเห็น:** `envoyproxy.gateway.envoyproxy.io/myhr-proxy created` · `gatewayclass.gateway.networking.k8s.io/eg created`
+· แล้วตาราง: `eg` · `CONTROLLER` เป็น `gateway.envoyproxy.io/gatewayclass-controller` · `ACCEPTED=True`
+(`ACCEPTED` อาจว่าง 2-3 วินาทีแรก รันบรรทัด `get` ซ้ำ)
 
 | ถ้าได้ข้อความนี้แทน | แปลว่า |
 |---|---|
@@ -276,6 +290,10 @@ helm get values envoy-gateway -n envoy-gateway-system -a | grep -i controllerNam
 
 ## 3 · ใส่ public cert
 
+**ทำที่:** 👑 master01 · ไฟล์ cert/key ส่งขึ้นมาจาก**เครื่องคุณ**ด้วย `scp` (บล็อกแรกข้างล่าง)
+· **ต้องมีก่อน:** ข้อ 2 จบ (namespace `envoy-gateway-system` มีแล้ว — Secret ต้องอยู่ที่นั่น)
+· ได้ไฟล์ cert `*.myhr.co.th` + private key จากทีมที่ดูแลโดเมนแล้ว (ไม่มี = หยุดรอ ทำข้อ 4 ต่อไม่ได้)
+
 **ต้องมี Secret `myhr-public-tls` ให้เสร็จก่อนสร้าง Gateway** เพราะ listener HTTPS ที่อ้าง
 Secret ที่ยังไม่มี จะค้างที่ `Programmed=False` แล้วขั้นที่ 4 จะตรวจไม่ผ่าน
 โดยที่สาเหตุอยู่คนละที่กับที่กำลังมอง
@@ -290,6 +308,14 @@ Secret ที่ยังไม่มี จะค้างที่ `Programmed
 ```bash
 mkdir -p /root/certs && chmod 700 /root/certs
 ```
+
+แล้วจาก**เครื่องคุณ** ส่งไฟล์ที่ได้จาก CA ขึ้นไปทั้งชุด (ชื่อไฟล์ตามที่ได้มา ยังไม่ต้องเปลี่ยน):
+
+```bash
+scp <ไฟล์ที่ได้จาก CA ทุกไฟล์> root@192.168.50.101:/root/certs/
+```
+
+**ควรเห็น:** ชื่อไฟล์แต่ละตัวพร้อม `100%` · ต่อจากนี้กลับมาทำบน master01
 
 ---
 
@@ -367,6 +393,7 @@ openssl pkey -in privkey-เดิม.pem -out /root/certs/privkey.pem
 chmod 600 /root/certs/privkey.pem
 ls -l /root/certs
 ```
+**ควรเห็น:** มี `fullchain.pem` และ `privkey.pem` ทั้งคู่ขนาดไม่เป็น 0 · บรรทัด `privkey.pem` ขึ้นต้น `-rw-------`
 
 > **chain เรียงผิดลำดับ?** (บาง CA ส่ง root ขึ้นก่อน) สคริปต์ตรวจข้างล่างจะจับได้ที่ข้อ 2
 > เพราะมันถือว่าใบแรกคือ leaf แล้ว key จะไม่ตรงกัน · ดูลำดับจริงด้วย:
@@ -385,7 +412,8 @@ bash /root/k8s/config/gateway/import-public-cert.sh --dry-run \
      /root/certs/fullchain.pem /root/certs/privkey.pem
 ```
 
-`--dry-run` ตรวจอย่างเดียว ไม่แตะ cluster — ต้องได้ `ok` ครบทั้ง 5 ข้อก่อนไปต่อ
+**ควรเห็น:** หัวข้อ 1-5 มี `ok` ทุกข้อ ไม่มี `FAIL` และปิดท้าย `ตรวจผ่านหมด (--dry-run จึงไม่ได้เขียน secret)`
+— มี `FAIL` ข้อไหน ข้อความใต้บรรทัดนั้นบอกวิธีแก้ · แก้แล้วรัน `--dry-run` ซ้ำจนผ่าน
 
 > **ทำไมไม่ใช้ `kubectl create secret tls` ตรง ๆ** — คำสั่งนั้นรับไฟล์อะไรก็ได้ที่หน้าตาเป็น PEM
 > แล้วตอบ `created` ทั้งที่ chain ขาด intermediate, key ไม่ใช่คู่ของ cert, key ยังมี passphrase
@@ -406,7 +434,7 @@ bash /root/k8s/config/gateway/import-public-cert.sh \
 
 kubectl -n envoy-gateway-system get secret myhr-public-tls
 ```
-**ควรเห็น:** `TYPE = kubernetes.io/tls` และ `DATA = 2`
+**ควรเห็น:** `secret/myhr-public-tls created` ตามด้วย `เรียบร้อย  ต่อที่ขั้นที่ 4` · แล้วตาราง `TYPE = kubernetes.io/tls` และ `DATA = 2`
 
 > **มี public cert หลายใบแยกตามชื่อ service?** รันซ้ำได้ ใส่ `--secret <ชื่อ>` ให้แต่ละใบ
 > แล้วเติมชื่อ Secret เข้าไปใน `certificateRefs` ตอนขั้นที่ 4.1:
@@ -425,9 +453,13 @@ kubectl -n envoy-gateway-system get secret myhr-public-tls
 
 ## 4 · สร้าง Gateway
 
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 2 (GatewayClass `eg` ACCEPTED) · ข้อ 3 (Secret `myhr-public-tls` มีแล้ว)
+· pool ของ[บท 05 ข้อ 6](05-cilium.md) มี IP ว่าง (`kubectl get ciliumloadbalancerippool` — `AVAILABLE` ไม่เป็น 0)
+
 ```bash
 kubectl apply -f /root/k8s/config/gateway/gateway.yaml
 ```
+**ควรเห็น:** `gateway.gateway.networking.k8s.io/myhr-gateway created`
 
 listener HTTPS ในไฟล์ชี้ไปที่ Secret `myhr-public-tls` ที่สร้างไว้ตอนขั้นที่ 3
 
@@ -435,6 +467,7 @@ listener HTTPS ในไฟล์ชี้ไปที่ Secret `myhr-public-tl
 ```bash
 kubectl -n envoy-gateway-system wait --for=condition=Programmed   gateway/myhr-gateway --timeout=5m
 ```
+**ควรเห็น:** `gateway.gateway.networking.k8s.io/myhr-gateway condition met` (ครั้งแรก 1-3 นาที)
 
 > 🔴 **`PROGRAMMED=False` ทันทีหลัง apply เป็นเรื่องปกติ ไม่ใช่ปัญหา**
 > Envoy Gateway ต้องไปสร้าง Deployment ของ Envoy proxy กับ Service `type: LoadBalancer`
@@ -512,10 +545,14 @@ kubectl get gatewayclass eg -o jsonpath='{.spec.parametersRef}{"\n"}'
 kubectl -n envoy-gateway-system get gateway myhr-gateway \
   -o jsonpath='{.status.addresses[0].value}{"\n"}'
 ```
+**ควรเห็น:** IP บรรทัดเดียว เช่น `192.168.50.200` — ตัวนี้คือ `GW_IP` ของข้อ 5
 
 ---
 
 ## 5 · ทดสอบด้วย HTTPRoute จริง
+
+**ทำที่:** ครึ่งแรก (สร้างของทดสอบ + ตรวจ route) บน 👑 master01 · ครึ่งหลัง (`curl`) บน**เครื่องทดสอบในวง LAN**
+— มีเส้นแบ่งบอกไว้ · **ต้องมีก่อน:** ข้อ 4 `PROGRAMMED=True` และจด IP มาแล้ว
 
 **บน master01 — สร้าง service ทดสอบ:**
 ```bash
@@ -526,6 +563,8 @@ kubectl -n demo expose deployment echo --port=80
 
 kubectl apply -f /root/k8s/config/gateway/httproute-example.yaml
 ```
+**ควรเห็น:** `namespace/demo created` · `deployment "echo" successfully rolled out` · `service/echo exposed`
+· `httproute.gateway.networking.k8s.io/echo-route created`
 
 **ตรวจว่า route ผูกติดจริง:**
 ```bash
@@ -595,13 +634,16 @@ curl -sS -v -o /dev/null --resolve "echo.myhr.co.th:443:${GW_IP}" \
 
 ## 6 · บังคับ HTTPS
 
+**ทำที่:** `apply` และเก็บกวาดบน 👑 master01 · `curl` ตรวจบน**เครื่องทดสอบ**เครื่องเดิม (`GW_IP` ยังตั้งอยู่)
+· **ต้องมีก่อน:** ข้อ 5 ได้ 200/404 ตามที่ควร
+
 ตอนนี้ listener HTTP ยังไม่มี route ผูกอยู่เลย ทุก request ที่เข้าทาง port 80 จึงได้ 404
 ขั้นนี้เปลี่ยนให้เป็น redirect แทน
 
 ```bash
 kubectl apply -f /root/k8s/config/gateway/https-redirect.yaml
 ```
-ทำครั้งเดียวใช้กับทุก hostname — ไม่ต้องทำซ้ำต่อ service
+**ควรเห็น:** `httproute.gateway.networking.k8s.io/https-redirect created` · ทำครั้งเดียวใช้กับทุก hostname — ไม่ต้องทำซ้ำต่อ service
 
 **ตรวจจากเครื่องทดสอบ:**
 ```bash
@@ -610,10 +652,11 @@ curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' \
 ```
 **ควรเห็น:** `301 https://echo.myhr.co.th/`
 
-**เก็บกวาดบน master01:**
+**เก็บกวาดบน master01** — ลบเฉพาะของทดสอบ Gateway และ redirect อยู่ต่อ:
 ```bash
 kubectl delete ns demo
 ```
+**ควรเห็น:** `namespace "demo" deleted` (รอ ~10 วินาที)
 
 ---
 
