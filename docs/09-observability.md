@@ -1,8 +1,11 @@
 # บทที่ 09 — Observability
 
-> **รันที่: 👑 master01**
-> **เวลาที่ใช้:** ~45 นาที
-> **ต้องผ่านบทที่ 08** — PV ทั้ง 3 ตัวต้องเป็น `Available`
+> **รันที่: 👑 master01 เกือบทั้งบท** · ยกเว้นที่บอกไว้: ค่าลับ (รหัส Grafana ข้อ 2 · รหัส SMTP ข้อ 5.1)
+> อยู่ใน `secrets.env` บน**เครื่องคุณ** ส่งขึ้นทีละค่า · เปิด Grafana ในเบราว์เซอร์ (ข้อ 4) ทำบน**เครื่องคุณ**
+> · ข้อ 7 มี `ssh` ไป worker03
+> **ลำดับ: 1 → 8 ตามลำดับ** — ข้อ 5 (ปลายทาง alert) ต้องเสร็จและยิงทดสอบผ่านก่อนข้อ 6 (rule) เสมอ
+> **เวลาที่ใช้:** ~45 นาที + รอทีม mail ตอบค่า SMTP (ถามไว้ก่อนเริ่มบท — ตาราง 5.1)
+> **ต้องผ่านบทที่ 08** — PV ทั้ง 3 ตัวต้องเป็น `Available` · และ[บท 07](07-gateway-tls.md) — ข้อ 4 ใช้ Gateway เปิด Grafana
 
 ---
 
@@ -18,6 +21,8 @@ cluster เดิมไม่มี metric ย้อนหลังเลย ท
 ---
 
 ## 1 · metrics-server
+
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** `helm` ใช้ได้ · เครื่องออก `github.io` ได้ · ไม่ต้องใช้ PV
 
 ตัวนี้ไม่เก็บข้อมูลย้อนหลัง แค่ป้อนตัวเลขปัจจุบันให้ `kubectl top` และ HPA
 **ไม่ต้องใช้ storage**
@@ -58,6 +63,11 @@ kubectl top pods -A | head
 ---
 
 ## 2 · kube-prometheus-stack
+
+**ทำที่:** 👑 master01 · ยกเว้น "ทางที่ 2" ของการแทนรหัสซึ่งรันจาก**เครื่องคุณ** (PowerShell ที่ root ของ repo)
+· **ต้องมีก่อน:** ข้อ 1 · PV `prometheus-data` และ `grafana-data` เป็น `Available` ([บท 08](08-storage.md))
+· `secrets.env` บนเครื่องคุณมี `GRAFANA_ADMIN_PASSWORD` · firewalld เปิด `9100` ทุกเครื่องและ `2381` บน master
+([บท 01 ข้อ 8](01-prepare-os.md) — ไม่งั้น target จะ `down`)
 
 ชุดนี้รวม Prometheus + Alertmanager + Grafana + node-exporter + kube-state-metrics
 มาให้ในครั้งเดียว
@@ -186,6 +196,9 @@ kill %1
 
 ## 3 · Loki + Alloy (รวม log)
 
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 2 (namespace `monitoring` และ Grafana มีแล้ว — Loki จะถูกเพิ่มเป็น
+data source ให้เอง) · PV `loki-data` เป็น `Available`
+
 pod ตายแล้ว log หายไปด้วยถ้าไม่มีที่รวม
 
 ```bash
@@ -245,6 +258,10 @@ kill %1
 ---
 
 ## 4 · เข้า Grafana
+
+**ทำที่:** ดึงรหัส · apply route · `curl` ตรวจ บน 👑 master01 — **เปิดเบราว์เซอร์ทำบนเครื่องคุณ** (หัวข้อย่อยข้างล่าง)
+· **ต้องมีก่อน:** ข้อ 2-3 ทุก pod `Running` · [บท 07](07-gateway-tls.md) จบ — Gateway `myhr-gateway` มี `ADDRESS`
+และ cert ครอบ `grafana.myhr.co.th` (wildcard ครอบ)
 
 **รหัส admin** — ตัวที่ใส่ไว้ตั้งแต่ข้อ 2:
 ```bash
@@ -321,6 +338,10 @@ ssh -L 3000:127.0.0.1:3000 root@192.168.50.101 'kubectl -n monitoring port-forwa
 
 ## 5 · 🔴 ตั้งปลายทางของ alert — ทำก่อนเขียน rule
 
+**ทำที่:** 👑 master01 ทั้งข้อ (5.1 → 5.3 ตามลำดับ) · 5.3.3 มีบล็อกที่ยิงจาก**เครื่องคุณ**เพื่อเทียบ
+· **ต้องมีก่อน:** ข้อ 2 (Alertmanager มาพร้อม chart) · **ค่า SMTP จากทีม mail ครบตามตาราง 5.1**
+— ไม่มีค่าเหล่านี้ทำข้อนี้ไม่ได้ และห้ามข้ามไปข้อ 6 · 5.4 ทำเฉพาะเมื่อ 5.3 สรุปว่าส่งตรงไม่ได้
+
 **alert ที่ไม่มีใครเห็น = ไม่มี alert** — ข้อนี้ห้ามข้าม และต้องทำ**ก่อน**ข้อ 6
 เพราะ rule ที่ apply ตอนที่ยังไม่มีปลายทาง คือ rule ที่ดังลงที่ที่ไม่มีใครอยู่
 
@@ -328,6 +349,8 @@ ssh -L 3000:127.0.0.1:3000 root@192.168.50.101 'kubectl -n monitoring port-forwa
 และการทดสอบท้ายข้อก็ยิง alert ปลอมเข้าไปตรง ๆ ไม่ต้องรอให้มีอะไรพังจริง
 
 ### 5.1 แทนค่าในไฟล์ปลายทาง
+
+**ทำที่:** 👑 master01 (ไฟล์ `/root/k8s/config/monitoring/alertmanager-config.yaml`) · ค่าที่ต้องใช้ดูตารางข้างล่าง
 
 ค่าที่ต้องเตรียมก่อน — ถามทีม infra/mail ไว้ล่วงหน้า ไม่ใช่มานั่งหาตอนทำ:
 
@@ -427,6 +450,8 @@ awk -F'"' '/^[[:space:]]*smtp_auth_password:/{print "smtp_auth_password ยา�
 
 ### 5.2 ส่งค่าให้ chart
 
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** 5.1 ขั้น B ตอบ `✓` ครบทุกช่อง
+
 🔴 **ไฟล์ values มีสองชิ้นแล้ว ต้องใส่ `-f` ทั้งคู่ทุกครั้งที่ `helm upgrade` นับจากนี้**
 ถ้าลืมชิ้นใดชิ้นหนึ่ง ค่าของไฟล์นั้นจะกลับไปเป็น default ของ chart แบบเงียบ ๆ —
 ปลายทาง alert หายไปโดยที่ทุก pod ยัง `Running` และไม่มีอะไรฟ้อง
@@ -496,6 +521,9 @@ kubectl -n monitoring logs deploy/monitoring-kube-prometheus-operator --tail=80 
 > ใช้ได้เฉพาะตอนฉุกเฉินกลางดึก แล้วต้องย้ายกลับมาใส่ `alertmanager-config.yaml` ให้เสร็จวันรุ่งขึ้น
 
 ### 5.3 ยิงของปลอมหนึ่งครั้ง — ห้ามข้าม
+
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** 5.2 `helm upgrade` จบและ Alertmanager `Running` · มีคนเปิดกล่องเมล
+`<ALERT_TO>` / `<ALERT_TO_CRITICAL>` รอดูอยู่ (ผลของข้อนี้อยู่ในกล่องเมล ไม่ใช่บนจอ)
 
 ```bash
 kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 &
@@ -628,6 +656,9 @@ foreach ($p in 25,465,587,2525) { $r = Test-NetConnection <IP ของ relay> -
 
 ### 5.4 ทางอ้อมที่ใช้ได้จริง — ตัวกลางในคลัสเตอร์
 
+**ทำที่:** 👑 master01 (5.4.1 → 5.4.4 ตามลำดับ) · **ต้องมีก่อน:** 5.3.2 สรุปแล้วว่า relay บังคับ auth และ
+พอร์ตที่ออกได้ไม่มี STARTTLS · `/root/k8s/deployments/alert-mail-relay/` อยู่บนเครื่อง · **ถ้า 5.3 ผ่านแล้ว ข้ามข้อนี้ทั้งข้อ**
+
 ใช้ข้อนี้เมื่อ 5.3.2 สรุปว่า relay บังคับ auth และพอร์ตที่ออกได้ไม่มี STARTTLS
 กุญแจของทางนี้คือ **`smtplib` ของ Python ยอมทำ AUTH LOGIN บน plaintext** —
 สิ่งที่ Alertmanager ปฏิเสธ เราจึงเอา pod เล็ก ๆ มารับ webhook แล้วส่งเมลแทน
@@ -759,6 +790,8 @@ kubectl -n monitoring delete secret alert-mail
 ---
 
 ## 6 · 🔴 Alert ขั้นต่ำที่ต้องมี
+
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 5 — test alert ถึงกล่องเมลจริงทั้ง warning และ critical
 
 chart มาพร้อม alert ของ Kubernetes พื้นฐานแล้ว แต่ **ขาดอีก 11 ข้อที่เฉพาะกับ cluster ชุดนี้**
 ซึ่งมาจากข้อจำกัดที่เราเลือกไว้เอง
@@ -960,6 +993,9 @@ kill %1
 
 ## 7 · กันไม่ให้ monitoring กิน disk จนเต็ม
 
+**ทำที่:** 👑 master01 (บรรทัด `ssh` ไป worker03 รันจากที่ไหนก็ได้ที่มี key) · **ต้องมีก่อน:** ข้อ 2-3 รันมาแล้ว
+— วันติดตั้งจดค่าเริ่มต้นไว้เป็น baseline · **กลับมาทำซ้ำหลังใช้ไป 1 สัปดาห์** จึงจะเห็นอัตราโต
+
 `/var/lib/monitoring` อยู่บน **root partition** ร่วมกับ log และ OS
 ถ้า Prometheus โตจนเต็ม node จะกลายเป็น `NotReady` ทั้งเครื่อง
 
@@ -983,6 +1019,9 @@ ssh root@192.168.50.106 'du -sh /var/lib/monitoring/* && df -h /'
 ---
 
 ## 8 · log ของ application — ใช้ยังไง และต้องบอกทีม dev ว่าอะไร
+
+**ทำที่:** อ่านและตัดสินใจ — ไม่มีคำสั่งที่เปลี่ยน cluster ยกเว้นบล็อกตรวจตัวกรอง noise (บน 👑 master01)
+· **ต้องมีก่อน:** ข้อ 3 (Loki + Alloy ทำงาน) · **ผลลัพธ์ของข้อนี้คือประกาศกฎ 3 ข้อให้ทีม dev** ไม่ใช่ของบน cluster
 
 ### เส้นทางของ log
 

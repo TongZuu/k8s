@@ -239,7 +239,7 @@ img{max-width:100%}
       <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
       <div class="top-t">
         <h1>บทที่ 09 — Observability</h1>
-        <p class="sub">รันที่: 👑 master01 · เวลาที่ใช้: ~45 นาที · ต้องผ่านบทที่ 08 — PV ทั้ง 3 ตัวต้องเป็น Available</p>
+        <p class="sub">รันที่: 👑 master01 เกือบทั้งบท · ยกเว้นที่บอกไว้: ค่าลับ (รหัส Grafana ข้อ 2 · รหัส SMTP ข้อ 5.1) · อยู่ใน secrets.env บนเครื่องคุณ ส่งขึ้นทีละค่า · เปิด Grafana ในเบราว์เซอร์ (ข้อ 4) ทำบนเครื่องคุณ · · ข้อ 7 มี ssh ไป worker03 · ลำดับ: 1 → 8 ตามลำดับ — ข้อ 5 (ปลายทาง alert) ต้องเสร็จและยิงทดสอบผ่านก่อนข้อ 6 (rule) เสมอ · เวลาที่ใช้: ~45 นาที + รอทีม mail ตอบค่า SMTP (ถามไว้ก่อนเริ่มบท — ตาราง 5.1) · ต้องผ่านบทที่ 08 — PV ทั้ง 3 ตัวต้องเป็น Available · และ[บท 07](07-gateway-tls.md) — ข้อ 4 ใช้ Gateway เปิด Grafana</p>
       </div>
       <div class="top-p">
         <span id="pcount">0/10</span>
@@ -262,6 +262,7 @@ img{max-width:100%}
 วันที่ patch จริงจะกลายเป็นวันที่ service ล่ม</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2 id="1--metrics-server">1 · metrics-server</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> <code>helm</code> ใช้ได้ · เครื่องออก <code>github.io</code> ได้ · ไม่ต้องใช้ PV</p>
 <p>ตัวนี้ไม่เก็บข้อมูลย้อนหลัง แค่ป้อนตัวเลขปัจจุบันให้ <code>kubectl top</code> และ HPA
 <strong>ไม่ต้องใช้ storage</strong></p>
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
@@ -294,6 +295,10 @@ kubectl top pods -A | head
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="2--kube-prometheus-stack">2 · kube-prometheus-stack</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · ยกเว้น &quot;ทางที่ 2&quot; ของการแทนรหัสซึ่งรันจาก<strong>เครื่องคุณ</strong> (PowerShell ที่ root ของ repo)
+· <strong>ต้องมีก่อน:</strong> ข้อ 1 · PV <code>prometheus-data</code> และ <code>grafana-data</code> เป็น <code>Available</code> (<a href="08-storage.html">บท 08</a>)
+· <code>secrets.env</code> บนเครื่องคุณมี <code>GRAFANA_ADMIN_PASSWORD</code> · firewalld เปิด <code>9100</code> ทุกเครื่องและ <code>2381</code> บน master
+(<a href="01-prepare-os.html">บท 01 ข้อ 8</a> — ไม่งั้น target จะ <code>down</code>)</p>
 <p>ชุดนี้รวม Prometheus + Alertmanager + Grafana + node-exporter + kube-state-metrics
 มาให้ในครั้งเดียว</p>
 <p><strong>🔴 แทนค่า <code>&lt;GRAFANA_ADMIN_PASSWORD&gt;</code> ก่อน ไม่งั้นรหัส admin จะเป็นข้อความนั้นตรงตัว</strong></p>
@@ -402,6 +407,8 @@ kill %1
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="3--loki--alloy-รวม-log">3 · Loki + Alloy (รวม log)</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 2 (namespace <code>monitoring</code> และ Grafana มีแล้ว — Loki จะถูกเพิ่มเป็น
+data source ให้เอง) · PV <code>loki-data</code> เป็น <code>Available</code></p>
 <p>pod ตายแล้ว log หายไปด้วยถ้าไม่มีที่รวม</p>
 <div class="cb"><pre><code class="language-bash">helm repo add grafana https://grafana.github.io/helm-charts &amp;&amp; helm repo update
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
@@ -446,6 +453,9 @@ kill %1
 เข้า Loki สักบรรทัด ซึ่งเป็นคนละปัญหา — ดู <code>kubectl -n monitoring logs ds/alloy</code></p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2 id="4--เข้า-grafana">4 · เข้า Grafana</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> ดึงรหัส · apply route · <code>curl</code> ตรวจ บน 👑 master01 — <strong>เปิดเบราว์เซอร์ทำบนเครื่องคุณ</strong> (หัวข้อย่อยข้างล่าง)
+· <strong>ต้องมีก่อน:</strong> ข้อ 2-3 ทุก pod <code>Running</code> · <a href="07-gateway-tls.html">บท 07</a> จบ — Gateway <code>myhr-gateway</code> มี <code>ADDRESS</code>
+และ cert ครอบ <code>grafana.myhr.co.th</code> (wildcard ครอบ)</p>
 <p><strong>รหัส admin</strong> — ตัวที่ใส่ไว้ตั้งแต่ข้อ 2:</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring get secret monitoring-grafana \
   -o jsonpath='{.data.admin-password}' | base64 -d; echo
@@ -504,11 +514,15 @@ curl -I --resolve "grafana.myhr.co.th:443:${GW_IP}" https://grafana.myhr.co.th
 </code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2 id="5---ตั้งปลายทางของ-alert--ทำก่อนเขียน-rule">5 · 🔴 ตั้งปลายทางของ alert — ทำก่อนเขียน rule</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 ทั้งข้อ (5.1 → 5.3 ตามลำดับ) · 5.3.3 มีบล็อกที่ยิงจาก<strong>เครื่องคุณ</strong>เพื่อเทียบ
+· <strong>ต้องมีก่อน:</strong> ข้อ 2 (Alertmanager มาพร้อม chart) · <strong>ค่า SMTP จากทีม mail ครบตามตาราง 5.1</strong>
+— ไม่มีค่าเหล่านี้ทำข้อนี้ไม่ได้ และห้ามข้ามไปข้อ 6 · 5.4 ทำเฉพาะเมื่อ 5.3 สรุปว่าส่งตรงไม่ได้</p>
 <p><strong>alert ที่ไม่มีใครเห็น = ไม่มี alert</strong> — ข้อนี้ห้ามข้าม และต้องทำ<strong>ก่อน</strong>ข้อ 6
 เพราะ rule ที่ apply ตอนที่ยังไม่มีปลายทาง คือ rule ที่ดังลงที่ที่ไม่มีใครอยู่</p>
 <p>ข้อนี้ไม่ต้องรอ rule ของเราสักข้อ — Alertmanager มาพร้อม chart ตั้งแต่ข้อ 2 แล้ว
 และการทดสอบท้ายข้อก็ยิง alert ปลอมเข้าไปตรง ๆ ไม่ต้องรอให้มีอะไรพังจริง</p>
 </div><div class="sub" data-machine="all"><h3 id="51-แทนค่าในไฟล์ปลายทาง">5.1 แทนค่าในไฟล์ปลายทาง</h3>
+<p><strong>ทำที่:</strong> 👑 master01 (ไฟล์ <code>/root/k8s/config/monitoring/alertmanager-config.yaml</code>) · ค่าที่ต้องใช้ดูตารางข้างล่าง</p>
 <p>ค่าที่ต้องเตรียมก่อน — ถามทีม infra/mail ไว้ล่วงหน้า ไม่ใช่มานั่งหาตอนทำ:</p>
 <table>
 <thead>
@@ -618,6 +632,7 @@ awk -F'"' '/^[[:space:]]*smtp_auth_password:/{print "smtp_auth_password ยา�
 คีย์ <code>SMTP_PASSWORD</code> ด้วย จะได้ไม่ต้องไปขอใหม่ตอนสร้าง cluster รอบหน้า</p>
 </blockquote>
 </div><div class="sub" data-machine="all"><h3 id="52-ส่งค่าให้-chart">5.2 ส่งค่าให้ chart</h3>
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> 5.1 ขั้น B ตอบ <code>✓</code> ครบทุกช่อง</p>
 <p>🔴 <strong>ไฟล์ values มีสองชิ้นแล้ว ต้องใส่ <code>-f</code> ทั้งคู่ทุกครั้งที่ <code>helm upgrade</code> นับจากนี้</strong>
 ถ้าลืมชิ้นใดชิ้นหนึ่ง ค่าของไฟล์นั้นจะกลับไปเป็น default ของ chart แบบเงียบ ๆ —
 ปลายทาง alert หายไปโดยที่ทุก pod ยัง <code>Running</code> และไม่มีอะไรฟ้อง</p>
@@ -700,6 +715,8 @@ kill %1
 ใช้ได้เฉพาะตอนฉุกเฉินกลางดึก แล้วต้องย้ายกลับมาใส่ <code>alertmanager-config.yaml</code> ให้เสร็จวันรุ่งขึ้น</p>
 </blockquote>
 </div><div class="sub" data-machine="all"><h3 id="53-ยิงของปลอมหนึ่งครั้ง--ห้ามข้าม">5.3 ยิงของปลอมหนึ่งครั้ง — ห้ามข้าม</h3>
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> 5.2 <code>helm upgrade</code> จบและ Alertmanager <code>Running</code> · มีคนเปิดกล่องเมล
+<code>&lt;ALERT_TO&gt;</code> / <code>&lt;ALERT_TO_CRITICAL&gt;</code> รอดูอยู่ (ผลของข้อนี้อยู่ในกล่องเมล ไม่ใช่บนจอ)</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 &amp;
 sleep 3
 curl -s -XPOST http://localhost:9093/api/v2/alerts -H 'Content-Type: application/json' -d '[{
@@ -908,6 +925,8 @@ EOF
 </tbody>
 </table>
 </div><div class="sub" data-machine="all"><h3 id="54-ทางอ้อมที่ใช้ได้จริง--ตัวกลางในคลัสเตอร์">5.4 ทางอ้อมที่ใช้ได้จริง — ตัวกลางในคลัสเตอร์</h3>
+<p><strong>ทำที่:</strong> 👑 master01 (5.4.1 → 5.4.4 ตามลำดับ) · <strong>ต้องมีก่อน:</strong> 5.3.2 สรุปแล้วว่า relay บังคับ auth และ
+พอร์ตที่ออกได้ไม่มี STARTTLS · <code>/root/k8s/deployments/alert-mail-relay/</code> อยู่บนเครื่อง · <strong>ถ้า 5.3 ผ่านแล้ว ข้ามข้อนี้ทั้งข้อ</strong></p>
 <p>ใช้ข้อนี้เมื่อ 5.3.2 สรุปว่า relay บังคับ auth และพอร์ตที่ออกได้ไม่มี STARTTLS
 กุญแจของทางนี้คือ <strong><code>smtplib</code> ของ Python ยอมทำ AUTH LOGIN บน plaintext</strong> —
 สิ่งที่ Alertmanager ปฏิเสธ เราจึงเอา pod เล็ก ๆ มารับ webhook แล้วส่งเมลแทน</p>
@@ -1087,6 +1106,7 @@ kubectl -n monitoring delete secret alert-mail
 ไม่มีใครได้รับ alert เลยโดยไม่มีอะไรฟ้อง</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2 id="6---alert-ขั้นต่ำที่ต้องมี">6 · 🔴 Alert ขั้นต่ำที่ต้องมี</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 5 — test alert ถึงกล่องเมลจริงทั้ง warning และ critical</p>
 <p>chart มาพร้อม alert ของ Kubernetes พื้นฐานแล้ว แต่ <strong>ขาดอีก 11 ข้อที่เฉพาะกับ cluster ชุดนี้</strong>
 ซึ่งมาจากข้อจำกัดที่เราเลือกไว้เอง</p>
 <blockquote>
@@ -1361,6 +1381,8 @@ kill %1
 ตั้งแต่ node ดับจนถึงข้อความที่เข้ามือคน</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2 id="7--กันไม่ให้-monitoring-กิน-disk-จนเต็ม">7 · กันไม่ให้ monitoring กิน disk จนเต็ม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 (บรรทัด <code>ssh</code> ไป worker03 รันจากที่ไหนก็ได้ที่มี key) · <strong>ต้องมีก่อน:</strong> ข้อ 2-3 รันมาแล้ว
+— วันติดตั้งจดค่าเริ่มต้นไว้เป็น baseline · <strong>กลับมาทำซ้ำหลังใช้ไป 1 สัปดาห์</strong> จึงจะเห็นอัตราโต</p>
 <p><code>/var/lib/monitoring</code> อยู่บน <strong>root partition</strong> ร่วมกับ log และ OS
 ถ้า Prometheus โตจนเต็ม node จะกลายเป็น <code>NotReady</code> ทั้งเครื่อง</p>
 <p>ค่า retention ที่ตั้งไว้ใน values:</p>
@@ -1392,7 +1414,10 @@ kill %1
 <div class="cb"><pre><code class="language-bash">ssh root@192.168.50.106 'du -sh /var/lib/monitoring/* &amp;&amp; df -h /'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2 id="8--log-ของ-application--ใช้ยังไง-และต้องบอกทีม-dev-ว่าอะไร">8 · log ของ application — ใช้ยังไง และต้องบอกทีม dev ว่าอะไร</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3 id="เส้นทางของ-log">เส้นทางของ log</h3>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="8"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-9" data-step="9" data-machines="all"><div class="step-head"><h2 id="8--log-ของ-application--ใช้ยังไง-และต้องบอกทีม-dev-ว่าอะไร">8 · log ของ application — ใช้ยังไง และต้องบอกทีม dev ว่าอะไร</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> อ่านและตัดสินใจ — ไม่มีคำสั่งที่เปลี่ยน cluster ยกเว้นบล็อกตรวจตัวกรอง noise (บน 👑 master01)
+· <strong>ต้องมีก่อน:</strong> ข้อ 3 (Loki + Alloy ทำงาน) · <strong>ผลลัพธ์ของข้อนี้คือประกาศกฎ 3 ข้อให้ทีม dev</strong> ไม่ใช่ของบน cluster</p>
+</div><div class="sub" data-machine="all"><h3 id="เส้นทางของ-log">เส้นทางของ log</h3>
 <div class="cb"><pre><code class="language-text">  app เขียน stdout/stderr
         ▼
   containerd เขียนไฟล์ /var/log/pods/&lt;ns&gt;_&lt;pod&gt;_&lt;uid&gt;/&lt;container&gt;/0.log
