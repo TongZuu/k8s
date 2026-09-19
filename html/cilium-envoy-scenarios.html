@@ -1261,9 +1261,10 @@ sleep 5 &amp;&amp; cilium connectivity test --test pod-to-pod --test echo-ingres
           หรือถูกทิ้งกลางทาง — packet เล็กไม่โดน จึงหลอกให้คิดว่าเครือข่ายปกติดี</p>
 
         <h4>วินิจฉัย — ทดสอบด้วยขนาดที่ห้าม fragment</h4>
-        <div class="cb"><pre><code># จาก pod หนึ่งไปอีก pod บนคนละ node — ping ธรรมดาผ่านแต่ขนาดใหญ่ไม่ผ่าน = MTU
-kubectl -n demo exec -it &lt;pod&gt; -- ping -M do -s 1400 &lt;ip-pod-อีก-node&gt;
-kubectl -n demo exec -it &lt;pod&gt; -- ping -M do -s 1472 &lt;ip-pod-อีก-node&gt;
+        <div class="cb"><pre><code># ไปหา pod บนอีก node — ping ธรรมดาผ่านแต่ขนาดใหญ่ไม่ผ่าน = MTU
+# ใช้ netshoot: ping ของ busybox/alpine ไม่รู้จัก -M do (ห้าม fragment)
+kubectl -n demo run mtutest --rm -it --restart=Never --image=nicolaka/netshoot -- ping -c3 -M do -s 1422 &lt;ip-pod-อีก-node&gt;   # ต้องผ่าน (1450-28)
+kubectl -n demo run mtutest --rm -it --restart=Never --image=nicolaka/netshoot -- ping -c3 -M do -s 1472 &lt;ip-pod-อีก-node&gt;   # ต้องได้ message too long — ถ้าผ่านแปลว่า pod ใช้ MTU 1500 ผิด
 
 # MTU ที่ Cilium ตรวจได้จริง
 # MTU เป็นค่าต่อ node และ "ไม่เท่ากันระหว่างเครื่อง" คือตัวปัญหาที่กำลังหา — ถามเครื่องเดียวจึงเทียบอะไรไม่ได้เลย

@@ -355,9 +355,9 @@ firewall-cmd --permanent --zone=trusted --add-source=10.246.0.0/16 && firewall-c
 
 ### 5.2 MTU — "ping ผ่าน แต่ HTTP ค้าง"
 ```bash
-kubectl -n "$NS" exec "$POD_A" -- ping -c3 -M do -s 1372 "$POD_B_IP"
+kubectl -n "$NS" run mtutest --rm -it --restart=Never --image=nicolaka/netshoot -- ping -c3 -M do -s 1422 "$POD_B_IP"
 ```
-ถ้า `ping` ธรรมดาผ่านแต่อันนี้ล้ม → **MTU ผิด**
+ถ้า `ping` ธรรมดาผ่านแต่อันนี้ล้ม → **MTU ผิด** · (ต้อง netshoot — `ping` ของ busybox/alpine ไม่มี `-M do`)
 แก้โดยตั้ง `MTU: 1450` ใน `config/cilium/values.yaml` แล้ว `helm upgrade`
 
 > อาการที่จะเจอตอนใช้จริง: HTTP request ใหญ่ ๆ ค้าง หรือ TLS handshake ล้มเป็นบางครั้ง

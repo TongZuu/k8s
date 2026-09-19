@@ -698,9 +698,9 @@ Envoy L7 proxy และ DNS proxy ของ Cilium อยู่บน host ไ�
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ไม่ต้องเอา <code>cilium_host</code> / <code>cilium_net</code> / <code>cilium_vxlan</code> เข้า <code>trusted</code> — ทดสอบแล้วว่าไม่ใช่ตัวที่ขาด</p>
 </div><div class="sub" data-machine="all"><h3 id="52-mtu--ping-ผ่าน-แต่-http-ค้าง">5.2 MTU — &quot;ping ผ่าน แต่ HTTP ค้าง&quot;</h3>
-<div class="cb"><pre><code class="language-bash">kubectl -n "$NS" exec "$POD_A" -- ping -c3 -M do -s 1372 "$POD_B_IP"
+<div class="cb"><pre><code class="language-bash">kubectl -n "$NS" run mtutest --rm -it --restart=Never --image=nicolaka/netshoot -- ping -c3 -M do -s 1422 "$POD_B_IP"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>ถ้า <code>ping</code> ธรรมดาผ่านแต่อันนี้ล้ม → <strong>MTU ผิด</strong>
+<p>ถ้า <code>ping</code> ธรรมดาผ่านแต่อันนี้ล้ม → <strong>MTU ผิด</strong> · (ต้อง netshoot — <code>ping</code> ของ busybox/alpine ไม่มี <code>-M do</code>)
 แก้โดยตั้ง <code>MTU: 1450</code> ใน <code>config/cilium/values.yaml</code> แล้ว <code>helm upgrade</code></p>
 <blockquote>
 <p>อาการที่จะเจอตอนใช้จริง: HTTP request ใหญ่ ๆ ค้าง หรือ TLS handshake ล้มเป็นบางครั้ง

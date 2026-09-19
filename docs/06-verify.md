@@ -61,11 +61,14 @@ kubectl run curltest --rm -it --restart=Never --image=curlimages/curl -- \
 
 **ทดสอบ MTU — ข้อที่ลืมกันบ่อยที่สุด:**
 ```bash
-POD=$(kubectl get pod -l app=nettest -o jsonpath='{.items[0].metadata.name}')
 TARGET=$(kubectl get pod -l app=nettest -o jsonpath='{.items[5].status.podIP}')
-kubectl exec "$POD" -- ping -c3 -M do -s 1372 "$TARGET"
+kubectl run mtutest --rm -it --restart=Never --image=nicolaka/netshoot -- ping -c3 -M do -s 1422 "$TARGET"
 ```
-**ควรเห็น:** ตอบครบ 3 packet ไม่มี `Frag needed`
+**ควรเห็น:** `3 received, 0% packet loss` · ห้ามมี `message too long` หรือ `Frag needed`
+
+> ใช้ `nicolaka/netshoot` ไม่ใช่ `exec` เข้า pod nginx — `ping` ใน image ตระกูล alpine เป็นของ busybox
+> ไม่รู้จัก `-M do` (ห้าม fragment) จะพ่น usage แล้ว `exit code 1` · `-s 1422` = MTU ของ pod 1450 − header 28
+> คือก้อนใหญ่สุดที่ต้องผ่านได้โดยไม่แตก (VXLAN ห่ออีก 50 พอดี 1500 ของ node)
 
 > ถ้าล้ม แปลว่า MTU ตั้งผิด อาการที่จะเจอตอนใช้จริงคือ
 > **"ping ผ่าน แต่ HTTP request ใหญ่ ๆ ค้าง"** หรือ **"TLS handshake ล้มเป็นบางครั้ง"**
@@ -224,7 +227,7 @@ kubectl -n kube-system get pdb
 - [ ] `cilium status` OK ทุกบรรทัด · `KubeProxyReplacement: True`
 - [ ] `cilium connectivity test` ผ่านทั้งชุด
 - [ ] DNS ตอบถูกต้อง
-- [ ] MTU test ผ่าน (`ping -M do -s 1372`)
+- [ ] MTU test ผ่าน (`ping -M do -s 1422` จาก netshoot)
 - [ ] curl เข้า LoadBalancer IP จากเครื่องในวง `192.168.50.0/24` ที่ไม่ใช่ node ได้
 - [ ] `firewall-cmd --reload` แล้ว pod ยังคุยกันได้
 

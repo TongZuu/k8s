@@ -296,11 +296,15 @@ kubectl run curltest --rm -it --restart=Never --image=curlimages/curl -- \
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>200</code></p>
 <p><strong>ทดสอบ MTU — ข้อที่ลืมกันบ่อยที่สุด:</strong></p>
-<div class="cb"><pre><code class="language-bash">POD=$(kubectl get pod -l app=nettest -o jsonpath='{.items[0].metadata.name}')
-TARGET=$(kubectl get pod -l app=nettest -o jsonpath='{.items[5].status.podIP}')
-kubectl exec "$POD" -- ping -c3 -M do -s 1372 "$TARGET"
+<div class="cb"><pre><code class="language-bash">TARGET=$(kubectl get pod -l app=nettest -o jsonpath='{.items[5].status.podIP}')
+kubectl run mtutest --rm -it --restart=Never --image=nicolaka/netshoot -- ping -c3 -M do -s 1422 "$TARGET"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> ตอบครบ 3 packet ไม่มี <code>Frag needed</code></p>
+<p><strong>ควรเห็น:</strong> <code>3 received, 0% packet loss</code> · ห้ามมี <code>message too long</code> หรือ <code>Frag needed</code></p>
+<blockquote>
+<p>ใช้ <code>nicolaka/netshoot</code> ไม่ใช่ <code>exec</code> เข้า pod nginx — <code>ping</code> ใน image ตระกูล alpine เป็นของ busybox
+ไม่รู้จัก <code>-M do</code> (ห้าม fragment) จะพ่น usage แล้ว <code>exit code 1</code> · <code>-s 1422</code> = MTU ของ pod 1450 − header 28
+คือก้อนใหญ่สุดที่ต้องผ่านได้โดยไม่แตก (VXLAN ห่ออีก 50 พอดี 1500 ของ node)</p>
+</blockquote>
 <blockquote>
 <p>ถ้าล้ม แปลว่า MTU ตั้งผิด อาการที่จะเจอตอนใช้จริงคือ
 <strong>&quot;ping ผ่าน แต่ HTTP request ใหญ่ ๆ ค้าง&quot;</strong> หรือ <strong>&quot;TLS handshake ล้มเป็นบางครั้ง&quot;</strong>
@@ -427,7 +431,7 @@ kubectl -n kube-system get pdb
 <li>[ ] <code>cilium status</code> OK ทุกบรรทัด · <code>KubeProxyReplacement: True</code></li>
 <li>[ ] <code>cilium connectivity test</code> ผ่านทั้งชุด</li>
 <li>[ ] DNS ตอบถูกต้อง</li>
-<li>[ ] MTU test ผ่าน (<code>ping -M do -s 1372</code>)</li>
+<li>[ ] MTU test ผ่าน (<code>ping -M do -s 1422</code> จาก netshoot)</li>
 <li>[ ] curl เข้า LoadBalancer IP จากเครื่องในวง <code>192.168.50.0/24</code> ที่ไม่ใช่ node ได้</li>
 <li>[ ] <code>firewall-cmd --reload</code> แล้ว pod ยังคุยกันได้</li>
 </ul>
