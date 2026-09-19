@@ -256,19 +256,23 @@ apply แล้ว `selectors` จะกลายเป็น `spec.nodeName=` �
 จึงถาม Loki ตรง ๆ ว่ามีบรรทัดไหนซ้ำไหม (`auth_enabled: false` จึงไม่ต้องใส่ header):
 
 ```bash
-kubectl -n monitoring port-forward svc/loki 3100:3100 &
+kubectl -n monitoring port-forward svc/loki 3100:3100 >/dev/null 2>&1 &
 sleep 3
 curl -s -G 'http://localhost:3100/loki/api/v1/query_range' \
   --data-urlencode 'query={namespace="kube-system", container="cilium-agent"}' \
   --data-urlencode 'limit=200' \
-  | jq -r '.data.result[].values[] | @tsv' | sort | uniq -c | awk '$1 > 1'
+  | jq -r '.data.result[].values[] | @tsv' | sort | uniq -c \
+  | awk '{n++} $1>1{d++} END{print "บรรทัดทั้งหมด " n+0 " · ซ้ำ " d+0}'
 kill %1
 ```
-**ควรเห็น: ไม่มีอะไรออกมาเลย** — แต่ละบรรทัดเข้า Loki ครั้งเดียว
+**ควรเห็น:** `บรรทัดทั้งหมด 200 · ซ้ำ 0` (เลขแรกอาจน้อยกว่า 200 ถ้า cluster เพิ่งขึ้น — ขอแค่ไม่เป็น 0)
 
-ถ้ามีบรรทัดโผล่มาโดยมีเลข **`6`** นำหน้า แปลว่า Alloy ทั้ง 6 ตัวเก็บ log ชุดเดียวกัน
-ให้กลับไปดู `NODE_NAME` ข้างบน · ถ้าไม่มีอะไรออกมา**เลยแม้แต่ผลว่าง** แปลว่ายังไม่มี log
-เข้า Loki สักบรรทัด ซึ่งเป็นคนละปัญหา — ดู `kubectl -n monitoring logs ds/alloy`
+| ได้ | แปลว่า |
+|---|---|
+| `ซ้ำ` ไม่เป็น 0 (มักเป็นทุกบรรทัด × 6) | Alloy ทั้ง 6 ตัวเก็บ log ชุดเดียวกัน → กลับไปดู `NODE_NAME` ข้างบน |
+| `บรรทัดทั้งหมด 0` | ยังไม่มี log เข้า Loki เลย — คนละปัญหา · รอ 1-2 นาทีแล้วรันซ้ำ ยัง 0 → `kubectl -n monitoring logs ds/alloy --tail=20` |
+
+> คำสั่งเดิมพิมพ์เฉพาะบรรทัดที่ซ้ำ ผลว่างจึงแปลได้ทั้ง "ผ่าน" และ "ไม่มี log" — นับให้เห็นทั้งสองค่าแทน (19 ก.ย. 2026)
 
 ---
 
