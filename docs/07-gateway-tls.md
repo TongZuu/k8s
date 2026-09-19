@@ -344,95 +344,7 @@ ssh root@192.168.50.101 'chmod 600 /root/certs/privkey.pem && ls -l /root/certs'
 
 → **ไป 3.2** — สคริปต์ที่นั่นตรวจข้างในไฟล์ให้ทั้งหมด (chain ครบ · key คู่กับ cert · ยังไม่หมดอายุ · ชื่อครอบ)
 
-> ได้ไฟล์หน้าตาอื่นมา (รอบต่ออายุ CA อาจส่งคนละแบบ) → 3.1ข ข้างล่าง · ปกติไม่ต้องอ่าน
-
----
-
-### 3.1ข · ถ้าได้ไฟล์หน้าตาอื่น — รอบต่ออายุ CA อาจส่งคนละแบบ
-
-ทุกคำสั่งในหัวข้อนี้ทำบน master01 ใน `/root/certs` (`cd /root/certs` ก่อน) · ชื่อไฟล์ในตัวอย่างเป็นชื่อสมมติ
-เปลี่ยนเป็นชื่อที่ได้มาจริง
-
-**ดูก่อนว่าได้อะไรมา** — นามสกุลไฟล์เชื่อไม่ได้ CA ตั้งชื่อกันคนละแบบ
-`.crt` อาจเป็น fullchain ทั้งชุดอยู่แล้ว หรืออาจเป็น leaf ใบเดียว หรือเป็นไบนารีก็ได้:
-
-```bash
-for f in /root/certs/*; do
-  printf '%-34s ' "$(basename "$f")"
-  first=$(head -1 "$f" 2>/dev/null | tr -d '\0')   # tr กัน warning ตอนเจอไฟล์ไบนารี
-  case "$first" in
-    *"BEGIN CERTIFICATE"*) printf '%-36s cert %s ใบ
-' "$first" "$(grep -c 'BEGIN CERTIFICATE' "$f")" ;;
-    *"-----BEGIN"*)        printf '%s
-' "$first" ;;
-    *)                     echo "ไบนารี — น่าจะเป็น DER, PFX หรือ P7B แบบ DER" ;;
-  esac
-done
-```
-
-| ที่เห็นบรรทัดแรก | คือ | ไปที่ |
-|---|---|---|
-| `BEGIN CERTIFICATE` + **cert 2 ใบขึ้นไป** | fullchain พร้อมใช้แล้ว | **ไม่ต้องแปลง** เปลี่ยนชื่อเป็น `fullchain.pem` |
-| `BEGIN CERTIFICATE` + **cert 1 ใบ** | leaf ล้วน ยังขาด intermediate | ก. ต่อ chain |
-| `BEGIN PKCS7` | บันเดิลแบบ PKCS#7 | ข. แปลง P7B |
-| `ไบนารี` | DER หรือ PFX | ค. / ง. |
-| `BEGIN ENCRYPTED PRIVATE KEY` | key มี passphrase | จ. ถอด passphrase |
-| `BEGIN RSA PRIVATE KEY` / `BEGIN EC PRIVATE KEY` | key แบบเก่า (PKCS#1) | ใช้ได้เลย · หรือ จ. เพื่อแปลงเป็น PKCS#8 |
-
----
-
-**ก. CA ส่งมาเป็นไฟล์แยก** (`cert.pem` + `intermediate.pem` / `ca-bundle.crt`) — **leaf ขึ้นก่อนเสมอ**
-```bash
-cat cert.pem intermediate.pem > /root/certs/fullchain.pem
-```
-
-**ข. บันเดิล PKCS#7** (`.p7b` / `.p7c` / `.spc`)
-```bash
-openssl pkcs7 -print_certs -in bundle.p7b   | sed -n '/BEGIN CERTIFICATE/,/END CERTIFICATE/p' > /root/certs/fullchain.pem
-```
-
-**ถ้าไฟล์ p7b เป็นไบนารี** (บรรทัดแรกอ่านไม่ออก) ให้เติม `-inform DER`:
-```bash
-openssl pkcs7 -print_certs -inform DER -in bundle.p7b   | sed -n '/BEGIN CERTIFICATE/,/END CERTIFICATE/p' > /root/certs/fullchain.pem
-```
-> `sed` ตัดบรรทัด `subject=` / `issuer=` ที่ `-print_certs` แถมมาออก เหลือเฉพาะ PEM
-> · ตรวจผลด้วย `grep -c 'BEGIN CERTIFICATE' /root/certs/fullchain.pem` ต้องได้ 2 ขึ้นไป
-
-**ค. cert เดี่ยวแบบ DER** (`.der` / `.cer` ที่เปิดแล้วเป็นไบนารี)
-```bash
-openssl x509 -inform DER -in cert.der -out /tmp/leaf.pem
-```
-แล้วต่อ chain ตามข้อ ก.
-
-**ง. `.pfx` / `.p12`** — ได้ทั้ง cert และ key ในไฟล์เดียว (จะถาม password ที่ CA ให้มา)
-```bash
-openssl pkcs12 -in myhr.pfx -clcerts -nokeys        -out /tmp/leaf.pem
-openssl pkcs12 -in myhr.pfx -cacerts -nokeys -chain -out /tmp/chain.pem
-openssl pkcs12 -in myhr.pfx -nocerts -nodes         -out /root/certs/privkey.pem
-cat /tmp/leaf.pem /tmp/chain.pem > /root/certs/fullchain.pem
-rm -f /tmp/leaf.pem /tmp/chain.pem
-```
-
-**จ. key มี passphrase หรือเป็นรูปแบบเก่า** (จะถาม passphrase ถ้ามี)
-```bash
-openssl pkey -in privkey-เดิม.pem -out /root/certs/privkey.pem
-```
-> Envoy อ่าน key ที่มี passphrase ไม่ออก และ `kubectl create secret` ก็ไม่ฟ้อง —
-> secret สร้างได้ปกติ แล้วไปตายตอน listener โหลด cert
-
-**ปิดท้ายทุกทาง — ตั้งสิทธิ์ไฟล์ แล้วไป 3.2:**
-```bash
-chmod 600 /root/certs/privkey.pem
-ls -l /root/certs
-```
-**ควรเห็น:** มี `fullchain.pem` และ `privkey.pem` ทั้งคู่ขนาดไม่เป็น 0 · บรรทัด `privkey.pem` ขึ้นต้น `-rw-------`
-
-> **chain เรียงผิดลำดับ?** (บาง CA ส่ง root ขึ้นก่อน) สคริปต์ตรวจข้างล่างจะจับได้ที่ข้อ 2
-> เพราะมันถือว่าใบแรกคือ leaf แล้ว key จะไม่ตรงกัน · ดูลำดับจริงด้วย:
-> ```
-> openssl crl2pkcs7 -nocrl -certfile /root/certs/fullchain.pem | openssl pkcs7 -print_certs -noout
-> ```
-> ใบที่ `subject` เป็นชื่อโดเมนของเรา (ไม่ใช่ชื่อ CA) ต้องอยู่บนสุด — ถ้าไม่ใช่ ให้ `cat` เรียงใหม่
+> ได้ไฟล์หน้าตาอื่นมา (รอบต่ออายุ CA อาจส่งคนละแบบ) → **ภาคผนวก ค** ท้ายบท
 
 ---
 
@@ -948,3 +860,94 @@ bash /root/k8s/config/gateway/check-cert-overlap.sh
 ---
 
 **➡️ ต่อที่ [บทที่ 08 — Storage](08-storage.md)**
+
+---
+
+## ภาคผนวก ค · ถ้ารอบต่ออายุได้ไฟล์ cert หน้าตาอื่น
+
+ข้อ 3.1 ใช้กับไฟล์ชุดที่องค์กรมีอยู่ตอนนี้ · CA อาจส่งรอบหน้ามาคนละรูปแบบ (P7B · DER · PFX · key มี passphrase)
+ภาคผนวกนี้แปลงให้เป็น `fullchain.pem` + `privkey.pem` แล้วกลับไปทำ 3.2 ต่อ
+
+ทุกคำสั่งทำบน master01 ใน `/root/certs` (`cd /root/certs` ก่อน) · ชื่อไฟล์ในตัวอย่างเป็นชื่อสมมติ
+เปลี่ยนเป็นชื่อที่ได้มาจริง
+
+**ดูก่อนว่าได้อะไรมา** — นามสกุลไฟล์เชื่อไม่ได้ CA ตั้งชื่อกันคนละแบบ
+`.crt` อาจเป็น fullchain ทั้งชุดอยู่แล้ว หรืออาจเป็น leaf ใบเดียว หรือเป็นไบนารีก็ได้:
+
+```bash
+for f in /root/certs/*; do
+  printf '%-34s ' "$(basename "$f")"
+  first=$(head -1 "$f" 2>/dev/null | tr -d '\0')   # tr กัน warning ตอนเจอไฟล์ไบนารี
+  case "$first" in
+    *"BEGIN CERTIFICATE"*) printf '%-36s cert %s ใบ
+' "$first" "$(grep -c 'BEGIN CERTIFICATE' "$f")" ;;
+    *"-----BEGIN"*)        printf '%s
+' "$first" ;;
+    *)                     echo "ไบนารี — น่าจะเป็น DER, PFX หรือ P7B แบบ DER" ;;
+  esac
+done
+```
+
+| ที่เห็นบรรทัดแรก | คือ | ไปที่ |
+|---|---|---|
+| `BEGIN CERTIFICATE` + **cert 2 ใบขึ้นไป** | fullchain พร้อมใช้แล้ว | **ไม่ต้องแปลง** เปลี่ยนชื่อเป็น `fullchain.pem` |
+| `BEGIN CERTIFICATE` + **cert 1 ใบ** | leaf ล้วน ยังขาด intermediate | ก. ต่อ chain |
+| `BEGIN PKCS7` | บันเดิลแบบ PKCS#7 | ข. แปลง P7B |
+| `ไบนารี` | DER หรือ PFX | ค. / ง. |
+| `BEGIN ENCRYPTED PRIVATE KEY` | key มี passphrase | จ. ถอด passphrase |
+| `BEGIN RSA PRIVATE KEY` / `BEGIN EC PRIVATE KEY` | key แบบเก่า (PKCS#1) | ใช้ได้เลย · หรือ จ. เพื่อแปลงเป็น PKCS#8 |
+
+---
+
+**ก. CA ส่งมาเป็นไฟล์แยก** (`cert.pem` + `intermediate.pem` / `ca-bundle.crt`) — **leaf ขึ้นก่อนเสมอ**
+```bash
+cat cert.pem intermediate.pem > /root/certs/fullchain.pem
+```
+
+**ข. บันเดิล PKCS#7** (`.p7b` / `.p7c` / `.spc`)
+```bash
+openssl pkcs7 -print_certs -in bundle.p7b   | sed -n '/BEGIN CERTIFICATE/,/END CERTIFICATE/p' > /root/certs/fullchain.pem
+```
+
+**ถ้าไฟล์ p7b เป็นไบนารี** (บรรทัดแรกอ่านไม่ออก) ให้เติม `-inform DER`:
+```bash
+openssl pkcs7 -print_certs -inform DER -in bundle.p7b   | sed -n '/BEGIN CERTIFICATE/,/END CERTIFICATE/p' > /root/certs/fullchain.pem
+```
+> `sed` ตัดบรรทัด `subject=` / `issuer=` ที่ `-print_certs` แถมมาออก เหลือเฉพาะ PEM
+> · ตรวจผลด้วย `grep -c 'BEGIN CERTIFICATE' /root/certs/fullchain.pem` ต้องได้ 2 ขึ้นไป
+
+**ค. cert เดี่ยวแบบ DER** (`.der` / `.cer` ที่เปิดแล้วเป็นไบนารี)
+```bash
+openssl x509 -inform DER -in cert.der -out /tmp/leaf.pem
+```
+แล้วต่อ chain ตามข้อ ก.
+
+**ง. `.pfx` / `.p12`** — ได้ทั้ง cert และ key ในไฟล์เดียว (จะถาม password ที่ CA ให้มา)
+```bash
+openssl pkcs12 -in myhr.pfx -clcerts -nokeys        -out /tmp/leaf.pem
+openssl pkcs12 -in myhr.pfx -cacerts -nokeys -chain -out /tmp/chain.pem
+openssl pkcs12 -in myhr.pfx -nocerts -nodes         -out /root/certs/privkey.pem
+cat /tmp/leaf.pem /tmp/chain.pem > /root/certs/fullchain.pem
+rm -f /tmp/leaf.pem /tmp/chain.pem
+```
+
+**จ. key มี passphrase หรือเป็นรูปแบบเก่า** (จะถาม passphrase ถ้ามี)
+```bash
+openssl pkey -in privkey-เดิม.pem -out /root/certs/privkey.pem
+```
+> Envoy อ่าน key ที่มี passphrase ไม่ออก และ `kubectl create secret` ก็ไม่ฟ้อง —
+> secret สร้างได้ปกติ แล้วไปตายตอน listener โหลด cert
+
+**ปิดท้ายทุกทาง — ตั้งสิทธิ์ไฟล์ แล้วกลับไปข้อ 3.2:**
+```bash
+chmod 600 /root/certs/privkey.pem
+ls -l /root/certs
+```
+**ควรเห็น:** มี `fullchain.pem` และ `privkey.pem` ทั้งคู่ขนาดไม่เป็น 0 · บรรทัด `privkey.pem` ขึ้นต้น `-rw-------`
+
+> **chain เรียงผิดลำดับ?** (บาง CA ส่ง root ขึ้นก่อน) สคริปต์ตรวจข้างล่างจะจับได้ที่ข้อ 2
+> เพราะมันถือว่าใบแรกคือ leaf แล้ว key จะไม่ตรงกัน · ดูลำดับจริงด้วย:
+> ```
+> openssl crl2pkcs7 -nocrl -certfile /root/certs/fullchain.pem | openssl pkcs7 -print_certs -noout
+> ```
+> ใบที่ `subject` เป็นชื่อโดเมนของเรา (ไม่ใช่ชื่อ CA) ต้องอยู่บนสุด — ถ้าไม่ใช่ ให้ `cat` เรียงใหม่
