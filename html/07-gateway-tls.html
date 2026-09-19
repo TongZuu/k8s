@@ -566,7 +566,7 @@ echo -n "ใน chart : "; helm get values envoy-gateway -n envoy-gateway-system
 <p><strong>ต้องมี Secret <code>myhr-public-tls</code> ให้เสร็จก่อนสร้าง Gateway</strong> เพราะ listener HTTPS ที่อ้าง
 Secret ที่ยังไม่มี จะค้างที่ <code>Programmed=False</code> แล้วขั้นที่ 4 จะตรวจไม่ผ่าน
 โดยที่สาเหตุอยู่คนละที่กับที่กำลังมอง</p>
-<p><strong>เตรียมไฟล์สองไฟล์</strong> วางไว้ที่ <code>/root/certs/</code> บน master01</p>
+<p><strong>ผลที่ข้อนี้ต้องได้</strong> — สองไฟล์นี้ที่ <code>/root/certs/</code> บน master01 แล้วกลายเป็น Secret ใน 3.2:</p>
 <table>
 <thead>
 <tr>
@@ -585,14 +585,59 @@ Secret ที่ยังไม่มี จะค้างที่ <code>Progr
 </tr>
 </tbody>
 </table>
+<hr />
+</div><div class="sub" data-machine="all"><h3 id="31--เอาไฟล์ขึ้น-master01-แล้วตั้งชื่อให้ตรง">3.1 · เอาไฟล์ขึ้น master01 แล้วตั้งชื่อให้ตรง</h3>
+<p><strong>ไฟล์ที่องค์กรมีอยู่ตอนนี้</strong> (ชุดที่ทีมโดเมนส่งมา — ตรวจของจริงแล้ว 4 ก.ย. 2026) มี 2 ไฟล์
+และ<strong>ใช้ได้เลยโดยไม่ต้องแปลง</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>ไฟล์ที่ได้มา</th>
+<th>ข้างในคือ</th>
+<th>จะกลายเป็น</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>IntermediateBundle-CrossR3-R46.crt</code></td>
+<td>cert 3 ใบต่อกันแล้ว เรียงถูก: <code>*.myhr.co.th</code> → <code>GlobalSign GCC R46 AlphaSSL CA 2025</code> → <code>GlobalSign Root R46</code></td>
+<td><code>fullchain.pem</code></td>
+</tr>
+<tr>
+<td><code>privatekey.key</code></td>
+<td>private key PKCS#8 (<code>BEGIN PRIVATE KEY</code>) ไม่มี passphrase</td>
+<td><code>privkey.pem</code></td>
+</tr>
+</tbody>
+</table>
+<p>ในเครื่องที่ใช้ทำตอนนี้ สองไฟล์นี้อยู่ในโฟลเดอร์ <code>IntermediateBundle-CrossR3-R46/</code> ข้าง ๆ repo
+(ไม่ได้อยู่ใน git — <code>.gitignore</code> กันไว้) · ถ้าเครื่องใหม่ต้องขอจากทีมโดเมนหรือ password manager ขององค์กร</p>
+<p><strong>1 · บน master01 — เตรียมที่เก็บ:</strong></p>
 <div class="cb"><pre><code class="language-bash">mkdir -p /root/certs &amp;&amp; chmod 700 /root/certs
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>แล้วจาก<strong>เครื่องคุณ</strong> ส่งไฟล์ที่ได้จาก CA ขึ้นไปทั้งชุด (ชื่อไฟล์ตามที่ได้มา ยังไม่ต้องเปลี่ยน):</p>
-<div class="cb"><pre><code class="language-bash">scp &lt;ไฟล์ที่ได้จาก CA ทุกไฟล์&gt; root@192.168.50.101:/root/certs/
+<p><strong>2 · จากเครื่องคุณ (WSL) — ส่งขึ้นไปทั้งสองไฟล์:</strong></p>
+<div class="cb"><pre><code class="language-bash">cd /mnt/d/workspace/k8s/IntermediateBundle-CrossR3-R46
+scp IntermediateBundle-CrossR3-R46.crt privatekey.key root@192.168.50.101:/root/certs/
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> ชื่อไฟล์แต่ละตัวพร้อม <code>100%</code> · ต่อจากนี้กลับมาทำบน master01</p>
+<p><strong>ควรเห็น:</strong> สองบรรทัด ชื่อไฟล์ละบรรทัด ลงท้าย <code>100%</code></p>
+<p><strong>3 · กลับมาบน master01 — ตั้งชื่อตามที่ 3.2 ต้องการ แล้วปิดสิทธิ์ key:</strong></p>
+<div class="cb"><pre><code class="language-bash">cd /root/certs
+cp IntermediateBundle-CrossR3-R46.crt fullchain.pem
+cp privatekey.key privkey.pem
+chmod 600 privkey.pem
+ls -l /root/certs
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> 4 ไฟล์ · <code>privkey.pem</code> ขึ้นต้น <code>-rw-------</code> · <code>fullchain.pem</code> ประมาณ 6 KB</p>
+<p><strong>4 · ยืนยันว่าข้างในเป็นอย่างที่คิด</strong> (กันหยิบไฟล์ผิดรุ่น):</p>
+<div class="cb"><pre><code class="language-bash">grep -c 'BEGIN CERTIFICATE' fullchain.pem; head -1 privkey.pem
+openssl x509 -in fullchain.pem -noout -subject -enddate
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>3</code> · <code>-----BEGIN PRIVATE KEY-----</code> · <code>subject=CN=*.myhr.co.th</code> · <code>notAfter=Mar 11 ... 2027</code></p>
+<p>ได้ครบ → <strong>ข้ามไป 3.2 ได้เลย</strong> · ผิดจากนี้ (เช่นได้ 1 ใบ หรือ key ขึ้นต้น <code>ENCRYPTED</code>) → ทำตามหัวข้อถัดไป</p>
 <hr />
-</div><div class="sub" data-machine="all"><h3 id="31--แปลงไฟล์ให้เป็นสองไฟล์ข้างบน">3.1 · แปลงไฟล์ให้เป็นสองไฟล์ข้างบน</h3>
+</div><div class="sub" data-machine="all"><h3 id="31ข--ถ้าได้ไฟล์หน้าตาอื่น--รอบต่ออายุ-ca-อาจส่งคนละแบบ">3.1ข · ถ้าได้ไฟล์หน้าตาอื่น — รอบต่ออายุ CA อาจส่งคนละแบบ</h3>
+<p>ทุกคำสั่งในหัวข้อนี้ทำบน master01 ใน <code>/root/certs</code> (<code>cd /root/certs</code> ก่อน) · ชื่อไฟล์ในตัวอย่างเป็นชื่อสมมติ
+เปลี่ยนเป็นชื่อที่ได้มาจริง</p>
 <p><strong>ดูก่อนว่าได้อะไรมา</strong> — นามสกุลไฟล์เชื่อไม่ได้ CA ตั้งชื่อกันคนละแบบ
 <code>.crt</code> อาจเป็น fullchain ทั้งชุดอยู่แล้ว หรืออาจเป็น leaf ใบเดียว หรือเป็นไบนารีก็ได้:</p>
 <div class="cb"><pre><code class="language-bash">for f in /root/certs/*; do
@@ -680,7 +725,7 @@ rm -f /tmp/leaf.pem /tmp/chain.pem
 <p>Envoy อ่าน key ที่มี passphrase ไม่ออก และ <code>kubectl create secret</code> ก็ไม่ฟ้อง —
 secret สร้างได้ปกติ แล้วไปตายตอน listener โหลด cert</p>
 </blockquote>
-<p><strong>ปิดท้ายทุกทาง — ตั้งสิทธิ์ไฟล์:</strong></p>
+<p><strong>ปิดท้ายทุกทาง — ตั้งสิทธิ์ไฟล์ แล้วกลับไปรันข้อ 4 ของ 3.1 ยืนยันอีกครั้ง:</strong></p>
 <div class="cb"><pre><code class="language-bash">chmod 600 /root/certs/privkey.pem
 ls -l /root/certs
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>

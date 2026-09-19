@@ -312,28 +312,65 @@ echo -n "ใน chart : "; helm get values envoy-gateway -n envoy-gateway-system
 Secret ที่ยังไม่มี จะค้างที่ `Programmed=False` แล้วขั้นที่ 4 จะตรวจไม่ผ่าน
 โดยที่สาเหตุอยู่คนละที่กับที่กำลังมอง
 
-**เตรียมไฟล์สองไฟล์** วางไว้ที่ `/root/certs/` บน master01
+**ผลที่ข้อนี้ต้องได้** — สองไฟล์นี้ที่ `/root/certs/` บน master01 แล้วกลายเป็น Secret ใน 3.2:
 
 | ไฟล์ | คือ |
 |---|---|
 | `fullchain.pem` | cert ของเรา **ต่อด้วย** intermediate ทุกใบ — เรียง leaf ขึ้นก่อนเสมอ |
 | `privkey.pem` | private key แบบ PEM **ไม่มี passphrase** |
 
+---
+
+### 3.1 · เอาไฟล์ขึ้น master01 แล้วตั้งชื่อให้ตรง
+
+**ไฟล์ที่องค์กรมีอยู่ตอนนี้** (ชุดที่ทีมโดเมนส่งมา — ตรวจของจริงแล้ว 4 ก.ย. 2026) มี 2 ไฟล์
+และ**ใช้ได้เลยโดยไม่ต้องแปลง**:
+
+| ไฟล์ที่ได้มา | ข้างในคือ | จะกลายเป็น |
+|---|---|---|
+| `IntermediateBundle-CrossR3-R46.crt` | cert 3 ใบต่อกันแล้ว เรียงถูก: `*.myhr.co.th` → `GlobalSign GCC R46 AlphaSSL CA 2025` → `GlobalSign Root R46` | `fullchain.pem` |
+| `privatekey.key` | private key PKCS#8 (`BEGIN PRIVATE KEY`) ไม่มี passphrase | `privkey.pem` |
+
+ในเครื่องที่ใช้ทำตอนนี้ สองไฟล์นี้อยู่ในโฟลเดอร์ `IntermediateBundle-CrossR3-R46/` ข้าง ๆ repo
+(ไม่ได้อยู่ใน git — `.gitignore` กันไว้) · ถ้าเครื่องใหม่ต้องขอจากทีมโดเมนหรือ password manager ขององค์กร
+
+**1 · บน master01 — เตรียมที่เก็บ:**
 ```bash
 mkdir -p /root/certs && chmod 700 /root/certs
 ```
 
-แล้วจาก**เครื่องคุณ** ส่งไฟล์ที่ได้จาก CA ขึ้นไปทั้งชุด (ชื่อไฟล์ตามที่ได้มา ยังไม่ต้องเปลี่ยน):
-
+**2 · จากเครื่องคุณ (WSL) — ส่งขึ้นไปทั้งสองไฟล์:**
 ```bash
-scp <ไฟล์ที่ได้จาก CA ทุกไฟล์> root@192.168.50.101:/root/certs/
+cd /mnt/d/workspace/k8s/IntermediateBundle-CrossR3-R46
+scp IntermediateBundle-CrossR3-R46.crt privatekey.key root@192.168.50.101:/root/certs/
 ```
+**ควรเห็น:** สองบรรทัด ชื่อไฟล์ละบรรทัด ลงท้าย `100%`
 
-**ควรเห็น:** ชื่อไฟล์แต่ละตัวพร้อม `100%` · ต่อจากนี้กลับมาทำบน master01
+**3 · กลับมาบน master01 — ตั้งชื่อตามที่ 3.2 ต้องการ แล้วปิดสิทธิ์ key:**
+```bash
+cd /root/certs
+cp IntermediateBundle-CrossR3-R46.crt fullchain.pem
+cp privatekey.key privkey.pem
+chmod 600 privkey.pem
+ls -l /root/certs
+```
+**ควรเห็น:** 4 ไฟล์ · `privkey.pem` ขึ้นต้น `-rw-------` · `fullchain.pem` ประมาณ 6 KB
+
+**4 · ยืนยันว่าข้างในเป็นอย่างที่คิด** (กันหยิบไฟล์ผิดรุ่น):
+```bash
+grep -c 'BEGIN CERTIFICATE' fullchain.pem; head -1 privkey.pem
+openssl x509 -in fullchain.pem -noout -subject -enddate
+```
+**ควรเห็น:** `3` · `-----BEGIN PRIVATE KEY-----` · `subject=CN=*.myhr.co.th` · `notAfter=Mar 11 ... 2027`
+
+ได้ครบ → **ข้ามไป 3.2 ได้เลย** · ผิดจากนี้ (เช่นได้ 1 ใบ หรือ key ขึ้นต้น `ENCRYPTED`) → ทำตามหัวข้อถัดไป
 
 ---
 
-### 3.1 · แปลงไฟล์ให้เป็นสองไฟล์ข้างบน
+### 3.1ข · ถ้าได้ไฟล์หน้าตาอื่น — รอบต่ออายุ CA อาจส่งคนละแบบ
+
+ทุกคำสั่งในหัวข้อนี้ทำบน master01 ใน `/root/certs` (`cd /root/certs` ก่อน) · ชื่อไฟล์ในตัวอย่างเป็นชื่อสมมติ
+เปลี่ยนเป็นชื่อที่ได้มาจริง
 
 **ดูก่อนว่าได้อะไรมา** — นามสกุลไฟล์เชื่อไม่ได้ CA ตั้งชื่อกันคนละแบบ
 `.crt` อาจเป็น fullchain ทั้งชุดอยู่แล้ว หรืออาจเป็น leaf ใบเดียว หรือเป็นไบนารีก็ได้:
@@ -402,7 +439,7 @@ openssl pkey -in privkey-เดิม.pem -out /root/certs/privkey.pem
 > Envoy อ่าน key ที่มี passphrase ไม่ออก และ `kubectl create secret` ก็ไม่ฟ้อง —
 > secret สร้างได้ปกติ แล้วไปตายตอน listener โหลด cert
 
-**ปิดท้ายทุกทาง — ตั้งสิทธิ์ไฟล์:**
+**ปิดท้ายทุกทาง — ตั้งสิทธิ์ไฟล์ แล้วกลับไปรันข้อ 4 ของ 3.1 ยืนยันอีกครั้ง:**
 ```bash
 chmod 600 /root/certs/privkey.pem
 ls -l /root/certs
