@@ -297,6 +297,8 @@ kubectl top pods -A | head
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="2--kube-prometheus-stack">2 · kube-prometheus-stack</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>ทำที่:</strong> 👑 master01 · ยกเว้น &quot;ทางที่ 2&quot; ของการแทนรหัสซึ่งรันจาก<strong>เครื่องคุณ</strong> (PowerShell ที่ root ของ repo)
 · <strong>ต้องมีก่อน:</strong> ข้อ 1 · PV <code>prometheus-data</code> และ <code>grafana-data</code> เป็น <code>Available</code> (<a href="08-storage.html">บท 08</a>)
+· <strong>โฟลเดอร์ <code>/var/lib/monitoring/{prometheus,loki,grafana}</code> มีอยู่บน worker03 จริง</strong> (<a href="08-storage.html">บท 08 ข้อ 1</a> —
+PV <code>Available</code> ไม่ได้พิสูจน์ข้อนี้)
 · <code>secrets.env</code> บนเครื่องคุณมี <code>GRAFANA_ADMIN_PASSWORD</code> · firewalld เปิด <code>9100</code> ทุกเครื่องและ <code>2381</code> บน master
 (<a href="01-prepare-os.html">บท 01 ข้อ 8</a> — ไม่งั้น target จะ <code>down</code>)</p>
 <p>ชุดนี้รวม Prometheus + Alertmanager + Grafana + node-exporter + kube-state-metrics
@@ -371,6 +373,10 @@ kubectl -n monitoring rollout status statefulset/"$STS" --timeout=10m
 <blockquote>
 <p>🔴 <strong>ดูแค่ <code>Bound</code> ไม่พอ</strong> — ก่อนที่ PV จะมี <code>claimRef</code> ทุกก้อน PVC สามารถขึ้น <code>Bound</code> ครบ
 ได้ทั้งที่<strong>ผูกผิดก้อน</strong> (Grafana ไปนอนบน PV 150Gi ของ Prometheus) จึงต้องดูคอลัมน์ <code>VOL</code> เสมอ</p>
+<p>ถ้า pod <code>grafana</code> / <code>prometheus-...-0</code> ค้าง <strong><code>Init:0/1</code></strong> เกิน 5 นาทีทั้งที่ PVC <code>Bound</code> ถูกก้อน:
+<code>kubectl -n monitoring describe pod prometheus-monitoring-kube-prometheus-prometheus-0 | tail -5</code>
+เห็น <code>FailedMount ... path &quot;/var/lib/monitoring/prometheus&quot; does not exist</code> = โฟลเดอร์บน worker03 ยังไม่ได้สร้าง
+(เจอจริง 20 ก.ย. 2026) → ทำ<a href="08-storage.html">บท 08 ข้อ 1</a> แล้วรอ — kubelet ลอง mount ใหม่เองทุก ~2 นาที ไม่ต้องลบ pod</p>
 <p>ถ้า PVC ค้าง <code>Pending</code> ให้ดู <code>kubectl -n monitoring describe pvc &lt;ชื่อ&gt;</code> —
 เมื่อมี <code>claimRef</code> แล้ว สาเหตุที่เหลืออยู่คือ<strong>ชื่อ PVC ไม่ตรงกับที่จองไว้</strong> ใน
 <code>config/storage/monitoring-pv.yaml</code> ให้เอาชื่อจริงจากคำสั่งข้างบนไปแก้ในไฟล์นั้น</p>

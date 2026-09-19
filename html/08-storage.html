@@ -239,7 +239,7 @@ img{max-width:100%}
       <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
       <div class="top-t">
         <h1>บทที่ 08 — Storage</h1>
-        <p class="sub">รันที่: 👑 master01 + เตรียม directory บน worker · เวลาที่ใช้: ~15 นาที · บทนี้สั้นที่สุดในชุด — และนั่นคือเจตนา</p>
+        <p class="sub">รันที่: 👑 master01 · ยกเว้นข้อ 1 ที่ ssh ไป worker03 จากเครื่องคุณ · ลำดับ: 1 → 2 — ข้อ 2 apply PV ที่ชี้โฟลเดอร์ของข้อ 1 · ไม่มีโฟลเดอร์ PV ก็ Available ได้ · แต่ pod ในบท 09 จะค้าง Init:0/1 ด้วย FailedMount ... does not exist (เจอจริง 20 ก.ย. 2026) · เวลาที่ใช้: ~15 นาที · บทนี้สั้นที่สุดในชุด — และนั่นคือเจตนา</p>
       </div>
       <div class="top-p">
         <span id="pcount">0/7</span>
@@ -247,7 +247,7 @@ img{max-width:100%}
         <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
       </div>
     </header>
-    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="🔴 ข้อสรุป: cluster นี้ไม่มี CSI และไม่มี dynamic provisioning">🔴 ข้อสรุป: cluster นี้ไม่มี CSI และไม่มี dynamic provisioning</option><option value="2" data-t="แล้ว Prometheus กับ Loki ล่ะ">แล้ว Prometheus กับ Loki ล่ะ</option><option value="3" data-t="ราคาที่ต้องยอมรับ">ราคาที่ต้องยอมรับ</option><option value="4" data-t="1 · เตรียม directory บน worker">1 · เตรียม directory บน worker</option><option value="5" data-t="2 · สร้าง StorageClass และ PV">2 · สร้าง StorageClass และ PV</option><option value="6" data-t="ถ้าวันหนึ่งต้องเปิด D8 จริง">ถ้าวันหนึ่งต้องเปิด D8 จริง</option><option value="7" data-t="✅ เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</option></select></div>
+    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="🔴 ข้อสรุป: cluster นี้ไม่มี CSI และไม่มี dynamic provisioning">🔴 ข้อสรุป: cluster นี้ไม่มี CSI และไม่มี dynamic provisioning</option><option value="2" data-t="แล้ว Prometheus กับ Loki ล่ะ">แล้ว Prometheus กับ Loki ล่ะ</option><option value="3" data-t="ราคาที่ต้องยอมรับ">ราคาที่ต้องยอมรับ</option><option value="4" data-t="1 · เตรียม directory บน worker03">1 · เตรียม directory บน worker03</option><option value="5" data-t="2 · สร้าง StorageClass และ PV">2 · สร้าง StorageClass และ PV</option><option value="6" data-t="ถ้าวันหนึ่งต้องเปิด D8 จริง">ถ้าวันหนึ่งต้องเปิด D8 จริง</option><option value="7" data-t="✅ เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</option></select></div>
   </div>
 
   <main>
@@ -321,14 +321,15 @@ img{max-width:100%}
 <p><strong>แต่ต้องรู้ตัว</strong> และเวลาทำ rolling reboot ให้ <strong>เริ่มจาก node ที่ถือ monitoring ก่อนเสมอ</strong>
 จะได้มี monitoring ครบตอนทำเครื่องที่เหลือ</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="1--เตรียม-directory-บน-worker">1 · เตรียม directory บน worker</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p>เลือก <code>k8s-worker03</code> เป็นเครื่องเก็บ monitoring — จะได้ไม่ปนกับ workload หลัก</p>
-<p><strong>⚙️ รันบน <code>k8s-worker03</code> (192.168.50.106) เท่านั้น:</strong></p>
-<div class="cb"><pre><code class="language-bash">mkdir -p /var/lib/monitoring/{prometheus,loki,grafana}
-chmod 700 /var/lib/monitoring/*
-df -h /var/lib/monitoring
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="1--เตรียม-directory-บน-worker03">1 · เตรียม directory บน worker03</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> จาก<strong>เครื่องคุณ</strong> (WSL/Git Bash ที่มี key ครบ 6 เครื่อง) — คำสั่งเดียว <code>ssh</code> เข้าไปทำให้
+· <strong>ต้องมีก่อน:</strong> <a href="06-verify.html">บท 06</a> ผ่าน · worker03 <code>Ready</code></p>
+<p>เลือก <code>k8s-worker03</code> เป็นเครื่องเก็บ monitoring — จะได้ไม่ปนกับ workload หลัก
+<strong>โฟลเดอร์ต้องอยู่บน worker03 เครื่องเดียวเท่านั้น</strong> — PV ในข้อ 2 ผูกกับเครื่องนี้ด้วย <code>nodeAffinity</code>
+สร้างบน master01 ไม่มีผลอะไร</p>
+<div class="cb"><pre><code class="language-bash">ssh root@192.168.50.106 'mkdir -p /var/lib/monitoring/{prometheus,loki,grafana} &amp;&amp; chmod 700 /var/lib/monitoring/* &amp;&amp; ls -ld /var/lib/monitoring/* &amp;&amp; df -h /var/lib/monitoring'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> พื้นที่ว่างอย่างน้อย ~200 GB บน root filesystem</p>
+<p><strong>ควรเห็น:</strong> 3 บรรทัด <code>drwx------</code> (<code>grafana</code> · <code>loki</code> · <code>prometheus</code>) แล้ว <code>df</code> ว่างอย่างน้อย ~200 GB บน root filesystem</p>
 <blockquote>
 <p>ระวัง: <code>/var/lib/containerd</code> เป็น partition แยก 100 GB แต่ <code>/var/lib/monitoring</code>
 อยู่บน <strong>root</strong> ซึ่งมี 400 GB ร่วมกับ log และ OS
@@ -430,7 +431,8 @@ PVC 150Gi   → ไม่เหลือ → Pending ตลอดกาล
 <li>[ ] <code>kubectl get storageclass</code> มีแค่ <code>local-storage</code> ตัวเดียว</li>
 <li>[ ] PV ทั้ง 3 ตัวสถานะ <code>Available</code> <strong>และคอลัมน์ <code>CLAIM</code> มีชื่อจองไว้แล้วทุกก้อน</strong></li>
 <li>[ ] รู้ว่า <strong>Alertmanager ไม่ใช้ PV</strong> (ใช้ <code>emptyDir</code> + gossip) จึงมีแค่ 3 ก้อน ไม่ใช่ 4</li>
-<li>[ ] directory บน <code>k8s-worker03</code> สร้างแล้ว และมีพื้นที่พอ</li>
+<li>[ ] directory บน <code>k8s-worker03</code> สร้างแล้ว และมีพื้นที่พอ — ตรวจจากเครื่องคุณ:
+<code>ssh root@192.168.50.106 'ls -d /var/lib/monitoring/{prometheus,loki,grafana}'</code> ต้องได้ 3 บรรทัด ไม่มี <code>No such file</code></li>
 <li>[ ] node <code>k8s-worker03</code> มี label <code>myhr.co.th/monitoring=true</code></li>
 <li>[ ] <strong>ทีม dev รู้แล้วว่า cluster นี้ไม่มี dynamic storage</strong></li>
 <li>[ ] บันทึกไว้ในเอกสารส่งมอบว่า <strong>rolling reboot ต้องเริ่มจาก worker03 เสมอ</strong></li>

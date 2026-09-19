@@ -66,6 +66,8 @@ kubectl top pods -A | head
 
 **ทำที่:** 👑 master01 · ยกเว้น "ทางที่ 2" ของการแทนรหัสซึ่งรันจาก**เครื่องคุณ** (PowerShell ที่ root ของ repo)
 · **ต้องมีก่อน:** ข้อ 1 · PV `prometheus-data` และ `grafana-data` เป็น `Available` ([บท 08](08-storage.md))
+· **โฟลเดอร์ `/var/lib/monitoring/{prometheus,loki,grafana}` มีอยู่บน worker03 จริง** ([บท 08 ข้อ 1](08-storage.md) —
+PV `Available` ไม่ได้พิสูจน์ข้อนี้)
 · `secrets.env` บนเครื่องคุณมี `GRAFANA_ADMIN_PASSWORD` · firewalld เปิด `9100` ทุกเครื่องและ `2381` บน master
 ([บท 01 ข้อ 8](01-prepare-os.md) — ไม่งั้น target จะ `down`)
 
@@ -152,6 +154,11 @@ kubectl -n monitoring get pvc -o custom-columns=NAME:.metadata.name,VOL:.spec.vo
 
 > 🔴 **ดูแค่ `Bound` ไม่พอ** — ก่อนที่ PV จะมี `claimRef` ทุกก้อน PVC สามารถขึ้น `Bound` ครบ
 > ได้ทั้งที่**ผูกผิดก้อน** (Grafana ไปนอนบน PV 150Gi ของ Prometheus) จึงต้องดูคอลัมน์ `VOL` เสมอ
+>
+> ถ้า pod `grafana` / `prometheus-...-0` ค้าง **`Init:0/1`** เกิน 5 นาทีทั้งที่ PVC `Bound` ถูกก้อน:
+> `kubectl -n monitoring describe pod prometheus-monitoring-kube-prometheus-prometheus-0 | tail -5`
+> เห็น `FailedMount ... path "/var/lib/monitoring/prometheus" does not exist` = โฟลเดอร์บน worker03 ยังไม่ได้สร้าง
+> (เจอจริง 20 ก.ย. 2026) → ทำ[บท 08 ข้อ 1](08-storage.md) แล้วรอ — kubelet ลอง mount ใหม่เองทุก ~2 นาที ไม่ต้องลบ pod
 >
 > ถ้า PVC ค้าง `Pending` ให้ดู `kubectl -n monitoring describe pvc <ชื่อ>` —
 > เมื่อมี `claimRef` แล้ว สาเหตุที่เหลืออยู่คือ**ชื่อ PVC ไม่ตรงกับที่จองไว้** ใน

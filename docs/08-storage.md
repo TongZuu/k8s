@@ -1,6 +1,8 @@
 # บทที่ 08 — Storage
 
-> **รันที่: 👑 master01 + เตรียม directory บน worker**
+> **รันที่: 👑 master01** · ยกเว้นข้อ 1 ที่ `ssh` ไป worker03 จาก**เครื่องคุณ**
+> **ลำดับ: 1 → 2** — ข้อ 2 apply PV ที่ชี้โฟลเดอร์ของข้อ 1 · ไม่มีโฟลเดอร์ PV ก็ `Available` ได้
+> แต่ pod ในบท 09 จะค้าง `Init:0/1` ด้วย `FailedMount ... does not exist` (เจอจริง 20 ก.ย. 2026)
 > **เวลาที่ใช้:** ~15 นาที
 > **บทนี้สั้นที่สุดในชุด — และนั่นคือเจตนา**
 
@@ -64,18 +66,19 @@ pod ที่ใช้ local PV **ผูกกับ node นั้นถาว�
 
 ---
 
-## 1 · เตรียม directory บน worker
+## 1 · เตรียม directory บน worker03
+
+**ทำที่:** จาก**เครื่องคุณ** (WSL/Git Bash ที่มี key ครบ 6 เครื่อง) — คำสั่งเดียว `ssh` เข้าไปทำให้
+· **ต้องมีก่อน:** [บท 06](06-verify.md) ผ่าน · worker03 `Ready`
 
 เลือก `k8s-worker03` เป็นเครื่องเก็บ monitoring — จะได้ไม่ปนกับ workload หลัก
-
-**⚙️ รันบน `k8s-worker03` (192.168.50.106) เท่านั้น:**
+**โฟลเดอร์ต้องอยู่บน worker03 เครื่องเดียวเท่านั้น** — PV ในข้อ 2 ผูกกับเครื่องนี้ด้วย `nodeAffinity`
+สร้างบน master01 ไม่มีผลอะไร
 
 ```bash
-mkdir -p /var/lib/monitoring/{prometheus,loki,grafana}
-chmod 700 /var/lib/monitoring/*
-df -h /var/lib/monitoring
+ssh root@192.168.50.106 'mkdir -p /var/lib/monitoring/{prometheus,loki,grafana} && chmod 700 /var/lib/monitoring/* && ls -ld /var/lib/monitoring/* && df -h /var/lib/monitoring'
 ```
-**ควรเห็น:** พื้นที่ว่างอย่างน้อย ~200 GB บน root filesystem
+**ควรเห็น:** 3 บรรทัด `drwx------` (`grafana` · `loki` · `prometheus`) แล้ว `df` ว่างอย่างน้อย ~200 GB บน root filesystem
 
 > ระวัง: `/var/lib/containerd` เป็น partition แยก 100 GB แต่ `/var/lib/monitoring`
 > อยู่บน **root** ซึ่งมี 400 GB ร่วมกับ log และ OS
@@ -176,7 +179,8 @@ PVC 150Gi   → ไม่เหลือ → Pending ตลอดกาล
 - [ ] `kubectl get storageclass` มีแค่ `local-storage` ตัวเดียว
 - [ ] PV ทั้ง 3 ตัวสถานะ `Available` **และคอลัมน์ `CLAIM` มีชื่อจองไว้แล้วทุกก้อน**
 - [ ] รู้ว่า **Alertmanager ไม่ใช้ PV** (ใช้ `emptyDir` + gossip) จึงมีแค่ 3 ก้อน ไม่ใช่ 4
-- [ ] directory บน `k8s-worker03` สร้างแล้ว และมีพื้นที่พอ
+- [ ] directory บน `k8s-worker03` สร้างแล้ว และมีพื้นที่พอ — ตรวจจากเครื่องคุณ:
+      `ssh root@192.168.50.106 'ls -d /var/lib/monitoring/{prometheus,loki,grafana}'` ต้องได้ 3 บรรทัด ไม่มี `No such file`
 - [ ] node `k8s-worker03` มี label `myhr.co.th/monitoring=true`
 - [ ] **ทีม dev รู้แล้วว่า cluster นี้ไม่มี dynamic storage**
 - [ ] บันทึกไว้ในเอกสารส่งมอบว่า **rolling reboot ต้องเริ่มจาก worker03 เสมอ**
