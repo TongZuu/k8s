@@ -276,12 +276,26 @@ kubectl apply -f /root/k8s/config/gateway/gatewayclass.yaml   && kubectl get gat
 | `No resources found` | CRD ลงแล้ว แต่ `apply` ไม่ได้สร้าง GatewayClass — ดู error ของ `apply` |
 | `the server doesn't have a resource type` | **CRD ยังไม่ได้ลง** — ย้อนกลับไปต้นขั้นที่ 2 |
 
-**ถ้า `ACCEPTED` ว่างหรือเป็น `False`:**
+**ถ้า `ACCEPTED` ยังว่างหรือเป็น `False` เกิน 30 วินาที** — GatewayClass เป็นแค่ป้ายที่เขียนว่า
+"ให้ controller ชื่อนี้มาดูแล" คนที่มาอ่านป้ายแล้วประทับ `True` คือ pod `envoy-gateway` จากข้อ 2
+ไม่ถูกประทับมีแค่ 2 สาเหตุ ตรวจตามลำดับ:
+
+**ก. ไม่มีใครมาอ่านป้าย — controller ยังไม่ทำงาน:**
 ```bash
-kubectl describe gatewayclass eg | tail -15
-helm get values envoy-gateway -n envoy-gateway-system -a | grep -i controllerName
+kubectl -n envoy-gateway-system get pods
 ```
-แปลว่า controller ยังไม่ขึ้น หรือ `controllerName` ในไฟล์ไม่ตรงกับที่ chart ตั้งไว้
+**ควรเห็น:** pod `envoy-gateway-...` เป็น `Running` `1/1` · ถ้าเป็น `ImagePullBackOff`/`CrashLoopBackOff`
+ปัญหาอยู่ที่ข้อ 2 ไม่ใช่ที่ไฟล์นี้ — ดู `kubectl -n envoy-gateway-system logs deploy/envoy-gateway | tail -20`
+
+**ข. controller ทำงานอยู่ แต่ชื่อบนป้ายไม่ใช่ชื่อมัน** — เทียบสองบรรทัดนี้ต้องเท่ากันเป๊ะ:
+```bash
+echo -n "ในไฟล์   : "; kubectl get gatewayclass eg -o jsonpath='{.spec.controllerName}{"\n"}'
+echo -n "ใน chart : "; helm get values envoy-gateway -n envoy-gateway-system -a | grep -i controllerName
+```
+**ควรเห็น:** ทั้งคู่เป็น `gateway.envoyproxy.io/gatewayclass-controller` · ไม่เท่ากัน = มีคนแก้ค่าใดค่าหนึ่ง
+ให้แก้ `controllerName` ใน `gatewayclass.yaml` ให้ตรงกับของ chart แล้ว `apply` ใหม่ (chart เป็นฝ่ายกำหนดชื่อ)
+
+ถ้าทั้ง ก. และ ข. ปกติแต่ยังไม่ `True`: `kubectl describe gatewayclass eg | tail -15` — บรรทัด `Message` บอกเหตุผลตรง ๆ
 
 > ขั้นนี้สร้าง namespace `envoy-gateway-system` ซึ่งขั้นที่ 3 ต้องใช้เก็บ Secret ของ cert
 > จึงต้องทำก่อน ไม่ใช่หลัง

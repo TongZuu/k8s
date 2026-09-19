@@ -539,11 +539,21 @@ kubectl apply -f /root/k8s/config/gateway/gatewayclass.yaml   &amp;&amp; kubectl
 </tr>
 </tbody>
 </table>
-<p><strong>ถ้า <code>ACCEPTED</code> ว่างหรือเป็น <code>False</code>:</strong></p>
-<div class="cb"><pre><code class="language-bash">kubectl describe gatewayclass eg | tail -15
-helm get values envoy-gateway -n envoy-gateway-system -a | grep -i controllerName
+<p><strong>ถ้า <code>ACCEPTED</code> ยังว่างหรือเป็น <code>False</code> เกิน 30 วินาที</strong> — GatewayClass เป็นแค่ป้ายที่เขียนว่า
+&quot;ให้ controller ชื่อนี้มาดูแล&quot; คนที่มาอ่านป้ายแล้วประทับ <code>True</code> คือ pod <code>envoy-gateway</code> จากข้อ 2
+ไม่ถูกประทับมีแค่ 2 สาเหตุ ตรวจตามลำดับ:</p>
+<p><strong>ก. ไม่มีใครมาอ่านป้าย — controller ยังไม่ทำงาน:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl -n envoy-gateway-system get pods
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>แปลว่า controller ยังไม่ขึ้น หรือ <code>controllerName</code> ในไฟล์ไม่ตรงกับที่ chart ตั้งไว้</p>
+<p><strong>ควรเห็น:</strong> pod <code>envoy-gateway-...</code> เป็น <code>Running</code> <code>1/1</code> · ถ้าเป็น <code>ImagePullBackOff</code>/<code>CrashLoopBackOff</code>
+ปัญหาอยู่ที่ข้อ 2 ไม่ใช่ที่ไฟล์นี้ — ดู <code>kubectl -n envoy-gateway-system logs deploy/envoy-gateway | tail -20</code></p>
+<p><strong>ข. controller ทำงานอยู่ แต่ชื่อบนป้ายไม่ใช่ชื่อมัน</strong> — เทียบสองบรรทัดนี้ต้องเท่ากันเป๊ะ:</p>
+<div class="cb"><pre><code class="language-bash">echo -n "ในไฟล์   : "; kubectl get gatewayclass eg -o jsonpath='{.spec.controllerName}{"\n"}'
+echo -n "ใน chart : "; helm get values envoy-gateway -n envoy-gateway-system -a | grep -i controllerName
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ทั้งคู่เป็น <code>gateway.envoyproxy.io/gatewayclass-controller</code> · ไม่เท่ากัน = มีคนแก้ค่าใดค่าหนึ่ง
+ให้แก้ <code>controllerName</code> ใน <code>gatewayclass.yaml</code> ให้ตรงกับของ chart แล้ว <code>apply</code> ใหม่ (chart เป็นฝ่ายกำหนดชื่อ)</p>
+<p>ถ้าทั้ง ก. และ ข. ปกติแต่ยังไม่ <code>True</code>: <code>kubectl describe gatewayclass eg | tail -15</code> — บรรทัด <code>Message</code> บอกเหตุผลตรง ๆ</p>
 <blockquote>
 <p>ขั้นนี้สร้าง namespace <code>envoy-gateway-system</code> ซึ่งขั้นที่ 3 ต้องใช้เก็บ Secret ของ cert
 จึงต้องทำก่อน ไม่ใช่หลัง</p>
