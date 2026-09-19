@@ -185,7 +185,7 @@ kubectl -n monitoring get pods
 kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &
 sleep 3
 curl -s 'http://localhost:9090/api/v1/targets?state=active' | jq -r '.data.activeTargets[] | "\(.health)  \(.labels.job)"' | sort | uniq -c
-kill %1
+kill %%
 ```
 **ควรเห็น:** ทุกบรรทัดเป็น `up`
 
@@ -194,7 +194,7 @@ kill %1
 kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &
 sleep 3
 curl -s 'http://localhost:9090/api/v1/targets?state=active' | jq -r '.data.activeTargets[] | select(.health=="down") | "\(.labels.job)  \(.scrapeUrl)  \(.lastError)"' | sort -u
-kill %1
+kill %%
 ```
 
 > 🔴 **`lastError` แยกสองสาเหตุออกจากกันได้ทันที**
@@ -263,7 +263,7 @@ curl -s -G 'http://localhost:3100/loki/api/v1/query_range' \
   --data-urlencode 'limit=200' \
   | jq -r '.data.result[].values[] | @tsv' | sort | uniq -c \
   | awk '{n++} $1>1{d++} END{print "บรรทัดทั้งหมด " n+0 " · ซ้ำ " d+0}'
-kill %1
+kill %%
 ```
 **ควรเห็น:** `บรรทัดทั้งหมด 200 · ซ้ำ 0` (เลขแรกอาจน้อยกว่า 200 ถ้า cluster เพิ่งขึ้น — ขอแค่ไม่เป็น 0)
 
@@ -511,7 +511,7 @@ sync เข้า pod ก่อน config-reloader ถึงจะเห็น �
 kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 &
 sleep 45
 curl -s localhost:9093/api/v2/receivers | jq -r '.[].name'
-kill %1
+kill %%
 ```
 **ควรเห็น:** `null` · `myhr-default` · `myhr-critical`
 
@@ -551,7 +551,7 @@ curl -s -XPOST http://localhost:9093/api/v2/alerts -H 'Content-Type: application
   "labels": {"alertname":"TestAlert","severity":"warning"},
   "annotations": {"summary":"ทดสอบว่า alert ส่งถึงจริง"}
 }]'
-kill %1
+kill %%
 ```
 
 ทดสอบเส้นทาง critical อีกหนึ่งฉบับ (คนละปลายทางกัน ถ้าทีมแยกกลุ่ม on-call ไว้):
@@ -562,7 +562,7 @@ curl -s -XPOST http://localhost:9093/api/v2/alerts -H 'Content-Type: application
   "labels": {"alertname":"TestAlert","severity":"critical"},
   "annotations": {"summary":"ทดสอบเส้นทาง critical"}
 }]'
-kill %1
+kill %%
 ```
 
 **ต้องเห็นข้อความจริงเข้ามาที่ปลายทางทั้งสองฉบับ** ถ้าไม่เข้าให้แก้จนกว่าจะเข้า —
@@ -990,7 +990,7 @@ kubectl -n monitoring get prometheusrule
 kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &
 sleep 3
 curl -s 'http://localhost:9090/api/v1/rules' | jq -r '.data.groups[].name' | sort -u
-kill %1
+kill %%
 ```
 
 **ดูว่า alert เรื่อง node ตัวไหนโหลดอยู่จริง และตั้ง `for:` ไว้กี่วินาที:**
@@ -1000,7 +1000,7 @@ sleep 3
 curl -s 'http://localhost:9090/api/v1/rules' \
   | jq -r '.data.groups[].rules[]? | select(.type=="alerting") | "\(.duration)s\t\(.name)"' \
   | grep -iE 'node|kubelet|target|cilium|alloy' | sort -n
-kill %1
+kill %%
 ```
 
 **ซ้อมของจริงหนึ่งรอบ ตอนที่ยังไม่มี workload:** ปิด worker01 ทิ้งไว้ ~20 นาที
@@ -1079,7 +1079,7 @@ ssh root@192.168.50.106 'du -sh /var/lib/monitoring/* && df -h /'
 kubectl -n monitoring port-forward ds/alloy 12345:12345 &
 sleep 3
 curl -s http://localhost:12345/metrics | grep loki_process_dropped_lines_total
-kill %1
+kill %%
 ```
 **ควรเห็น:** ตัวเลขของ `reason="healthcheck_noise"` โตช้า ๆ สม่ำเสมอ ถ้าโตพุ่งกว่าปริมาณ
 healthcheck ที่ควรจะมี แปลว่า regex กว้างเกินไปและกำลังกิน log จริงอยู่

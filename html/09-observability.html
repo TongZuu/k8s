@@ -398,14 +398,14 @@ local PV จะถูกตรึงไว้ที่ worker03 ทั้งค�
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &amp;
 sleep 3
 curl -s 'http://localhost:9090/api/v1/targets?state=active' | jq -r '.data.activeTargets[] | "\(.health)  \(.labels.job)"' | sort | uniq -c
-kill %1
+kill %%
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ทุกบรรทัดเป็น <code>up</code></p>
 <p><strong>ถ้ามี <code>down</code> เอาสาเหตุจริงมาก่อน อย่าเดา:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &amp;
 sleep 3
 curl -s 'http://localhost:9090/api/v1/targets?state=active' | jq -r '.data.activeTargets[] | select(.health=="down") | "\(.labels.job)  \(.scrapeUrl)  \(.lastError)"' | sort -u
-kill %1
+kill %%
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
 <p>🔴 <strong><code>lastError</code> แยกสองสาเหตุออกจากกันได้ทันที</strong>
@@ -458,7 +458,7 @@ curl -s -G 'http://localhost:3100/loki/api/v1/query_range' \
   --data-urlencode 'limit=200' \
   | jq -r '.data.result[].values[] | @tsv' | sort | uniq -c \
   | awk '{n++} $1&gt;1{d++} END{print "บรรทัดทั้งหมด " n+0 " · ซ้ำ " d+0}'
-kill %1
+kill %%
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>บรรทัดทั้งหมด 200 · ซ้ำ 0</code> (เลขแรกอาจน้อยกว่า 200 ถ้า cluster เพิ่งขึ้น — ขอแค่ไม่เป็น 0)</p>
 <table>
@@ -700,7 +700,7 @@ sync เข้า pod ก่อน config-reloader ถึงจะเห็น �
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 &amp;
 sleep 45
 curl -s localhost:9093/api/v2/receivers | jq -r '.[].name'
-kill %1
+kill %%
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>null</code> · <code>myhr-default</code> · <code>myhr-critical</code></p>
 <p><strong>ถ้าได้ <code>null</code> มาตัวเดียว</strong> อย่าเพิ่งไปแก้บรรทัด <code>-f</code> — มันเป็นได้สองเรื่องคนละเรื่อง
@@ -754,7 +754,7 @@ curl -s -XPOST http://localhost:9093/api/v2/alerts -H 'Content-Type: application
   "labels": {"alertname":"TestAlert","severity":"warning"},
   "annotations": {"summary":"ทดสอบว่า alert ส่งถึงจริง"}
 }]'
-kill %1
+kill %%
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ทดสอบเส้นทาง critical อีกหนึ่งฉบับ (คนละปลายทางกัน ถ้าทีมแยกกลุ่ม on-call ไว้):</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 &amp;
@@ -763,7 +763,7 @@ curl -s -XPOST http://localhost:9093/api/v2/alerts -H 'Content-Type: application
   "labels": {"alertname":"TestAlert","severity":"critical"},
   "annotations": {"summary":"ทดสอบเส้นทาง critical"}
 }]'
-kill %1
+kill %%
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ต้องเห็นข้อความจริงเข้ามาที่ปลายทางทั้งสองฉบับ</strong> ถ้าไม่เข้าให้แก้จนกว่าจะเข้า —
 ห้ามเดินไปข้อ 6 ก่อนที่เมลจะถึงมือคน · ของปลอมจะหายเองใน ~5 นาที (<code>resolve_timeout</code>)
@@ -1396,7 +1396,7 @@ series ของ node ที่ยังอยู่ พอ node หายทั
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &amp;
 sleep 3
 curl -s 'http://localhost:9090/api/v1/rules' | jq -r '.data.groups[].name' | sort -u
-kill %1
+kill %%
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ดูว่า alert เรื่อง node ตัวไหนโหลดอยู่จริง และตั้ง <code>for:</code> ไว้กี่วินาที:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 &amp;
@@ -1404,7 +1404,7 @@ sleep 3
 curl -s 'http://localhost:9090/api/v1/rules' \
   | jq -r '.data.groups[].rules[]? | select(.type=="alerting") | "\(.duration)s\t\(.name)"' \
   | grep -iE 'node|kubelet|target|cilium|alloy' | sort -n
-kill %1
+kill %%
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ซ้อมของจริงหนึ่งรอบ ตอนที่ยังไม่มี workload:</strong> ปิด worker01 ทิ้งไว้ ~20 นาที
 แล้วดูว่า alert ดังตามตารางข้างบนจริงไหม ถ้ามีตัวไหนไม่ดังแปลว่า rule นั้นไม่ได้โหลด
@@ -1495,7 +1495,7 @@ kill %1
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward ds/alloy 12345:12345 &amp;
 sleep 3
 curl -s http://localhost:12345/metrics | grep loki_process_dropped_lines_total
-kill %1
+kill %%
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> ตัวเลขของ <code>reason=&quot;healthcheck_noise&quot;</code> โตช้า ๆ สม่ำเสมอ ถ้าโตพุ่งกว่าปริมาณ
 healthcheck ที่ควรจะมี แปลว่า regex กว้างเกินไปและกำลังกิน log จริงอยู่</p>

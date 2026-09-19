@@ -669,7 +669,7 @@ kubectl -n "$NS" get pod "$POD" -o jsonpath='{.spec.nodeName}'; echo
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward ds/alloy 12345:12345 &amp;
 sleep 3
 curl -s http://localhost:12345/metrics | grep loki_process_dropped_lines_total
-kill %1
+kill %%
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>ตัวเลข <code>reason=&quot;healthcheck_noise&quot;</code> ต้องโตช้า ๆ สม่ำเสมอ ถ้าพุ่งแปลว่า regex กว้างเกินไป</p>
 <hr />

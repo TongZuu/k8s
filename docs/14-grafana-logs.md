@@ -335,7 +335,7 @@ sum by (namespace, app) (rate({namespace=~"myhr-.+"}[5m]))
 kubectl -n monitoring port-forward ds/alloy 12345:12345 &
 sleep 3
 curl -s http://localhost:12345/metrics | grep loki_process_dropped_lines_total
-kill %1
+kill %%
 ```
 ตัวเลข `reason="healthcheck_noise"` ต้องโตช้า ๆ สม่ำเสมอ ถ้าพุ่งแปลว่า regex กว้างเกินไป
 
