@@ -304,7 +304,7 @@ echo -n "ใน chart : "; helm get values envoy-gateway -n envoy-gateway-system
 
 ## 3 · ใส่ public cert
 
-**ทำที่:** 👑 master01 · ไฟล์ cert/key ส่งขึ้นมาจาก**เครื่องคุณ**ด้วย `scp` (บล็อกแรกข้างล่าง)
+**ทำที่:** 3.1 จาก**เครื่องคุณ** (`scp` ขึ้น master01) · 3.2 บน 👑 master01
 · **ต้องมีก่อน:** ข้อ 2 จบ (namespace `envoy-gateway-system` มีแล้ว — Secret ต้องอยู่ที่นั่น)
 · ได้ไฟล์ cert `*.myhr.co.th` + private key จากทีมที่ดูแลโดเมนแล้ว (ไม่มี = หยุดรอ ทำข้อ 4 ต่อไม่ได้)
 
@@ -321,49 +321,30 @@ Secret ที่ยังไม่มี จะค้างที่ `Programmed
 
 ---
 
-### 3.1 · เอาไฟล์ขึ้น master01 แล้วตั้งชื่อให้ตรง
+### 3.1 · เอาไฟล์ขึ้น master01
 
-**ไฟล์ที่องค์กรมีอยู่ตอนนี้** (ชุดที่ทีมโดเมนส่งมา — ตรวจของจริงแล้ว 4 ก.ย. 2026) มี 2 ไฟล์
-และ**ใช้ได้เลยโดยไม่ต้องแปลง**:
+ไฟล์ที่องค์กรมี (ตรวจของจริงแล้ว 4 ก.ย. 2026) **ใช้ได้เลย ไม่ต้องแปลง** — แค่ส่งขึ้นไปเป็นชื่อที่ 3.2 ใช้:
 
-| ไฟล์ที่ได้มา | ข้างในคือ | จะกลายเป็น |
-|---|---|---|
-| `IntermediateBundle-CrossR3-R46.crt` | cert 3 ใบต่อกันแล้ว เรียงถูก: `*.myhr.co.th` → `GlobalSign GCC R46 AlphaSSL CA 2025` → `GlobalSign Root R46` | `fullchain.pem` |
-| `privatekey.key` | private key PKCS#8 (`BEGIN PRIVATE KEY`) ไม่มี passphrase | `privkey.pem` |
+| ไฟล์ที่มี | ส่งขึ้นเป็น |
+|---|---|
+| `IntermediateBundle-CrossR3-R46.crt` (chain ครบ 3 ใบ leaf อยู่บน) | `fullchain.pem` |
+| `privatekey.key` (ไม่มี passphrase) | `privkey.pem` |
 
-ในเครื่องที่ใช้ทำตอนนี้ สองไฟล์นี้อยู่ในโฟลเดอร์ `IntermediateBundle-CrossR3-R46/` ข้าง ๆ repo
-(ไม่ได้อยู่ใน git — `.gitignore` กันไว้) · ถ้าเครื่องใหม่ต้องขอจากทีมโดเมนหรือ password manager ขององค์กร
+อยู่ในโฟลเดอร์ `IntermediateBundle-CrossR3-R46/` ข้าง repo บนเครื่องที่ใช้ทำ (ไม่อยู่ใน git)
 
-**1 · บน master01 — เตรียมที่เก็บ:**
+**จากเครื่องคุณ** — Git Bash ใช้ path `/d/...` · WSL ใช้ `/mnt/d/...`:
 ```bash
-mkdir -p /root/certs && chmod 700 /root/certs
+cd /d/workspace/k8s/IntermediateBundle-CrossR3-R46
+ssh root@192.168.50.101 'mkdir -p /root/certs && chmod 700 /root/certs'
+scp IntermediateBundle-CrossR3-R46.crt root@192.168.50.101:/root/certs/fullchain.pem
+scp privatekey.key               root@192.168.50.101:/root/certs/privkey.pem
+ssh root@192.168.50.101 'chmod 600 /root/certs/privkey.pem && ls -l /root/certs'
 ```
+**ควรเห็น:** `100%` สองบรรทัด · แล้ว `ls` มี 2 ไฟล์ `privkey.pem` ขึ้นต้น `-rw-------`
 
-**2 · จากเครื่องคุณ (WSL) — ส่งขึ้นไปทั้งสองไฟล์:**
-```bash
-cd /mnt/d/workspace/k8s/IntermediateBundle-CrossR3-R46
-scp IntermediateBundle-CrossR3-R46.crt privatekey.key root@192.168.50.101:/root/certs/
-```
-**ควรเห็น:** สองบรรทัด ชื่อไฟล์ละบรรทัด ลงท้าย `100%`
+→ **ไป 3.2** — สคริปต์ที่นั่นตรวจข้างในไฟล์ให้ทั้งหมด (chain ครบ · key คู่กับ cert · ยังไม่หมดอายุ · ชื่อครอบ)
 
-**3 · กลับมาบน master01 — ตั้งชื่อตามที่ 3.2 ต้องการ แล้วปิดสิทธิ์ key:**
-```bash
-cd /root/certs
-cp IntermediateBundle-CrossR3-R46.crt fullchain.pem
-cp privatekey.key privkey.pem
-chmod 600 privkey.pem
-ls -l /root/certs
-```
-**ควรเห็น:** 4 ไฟล์ · `privkey.pem` ขึ้นต้น `-rw-------` · `fullchain.pem` ประมาณ 6 KB
-
-**4 · ยืนยันว่าข้างในเป็นอย่างที่คิด** (กันหยิบไฟล์ผิดรุ่น):
-```bash
-grep -c 'BEGIN CERTIFICATE' fullchain.pem; head -1 privkey.pem
-openssl x509 -in fullchain.pem -noout -subject -enddate
-```
-**ควรเห็น:** `3` · `-----BEGIN PRIVATE KEY-----` · `subject=CN=*.myhr.co.th` · `notAfter=Mar 11 ... 2027`
-
-ได้ครบ → **ข้ามไป 3.2 ได้เลย** · ผิดจากนี้ (เช่นได้ 1 ใบ หรือ key ขึ้นต้น `ENCRYPTED`) → ทำตามหัวข้อถัดไป
+> ได้ไฟล์หน้าตาอื่นมา (รอบต่ออายุ CA อาจส่งคนละแบบ) → 3.1ข ข้างล่าง · ปกติไม่ต้องอ่าน
 
 ---
 
@@ -439,7 +420,7 @@ openssl pkey -in privkey-เดิม.pem -out /root/certs/privkey.pem
 > Envoy อ่าน key ที่มี passphrase ไม่ออก และ `kubectl create secret` ก็ไม่ฟ้อง —
 > secret สร้างได้ปกติ แล้วไปตายตอน listener โหลด cert
 
-**ปิดท้ายทุกทาง — ตั้งสิทธิ์ไฟล์ แล้วกลับไปรันข้อ 4 ของ 3.1 ยืนยันอีกครั้ง:**
+**ปิดท้ายทุกทาง — ตั้งสิทธิ์ไฟล์ แล้วไป 3.2:**
 ```bash
 chmod 600 /root/certs/privkey.pem
 ls -l /root/certs
