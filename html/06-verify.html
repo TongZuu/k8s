@@ -239,7 +239,7 @@ img{max-width:100%}
       <button class="burger" id="burger" type="button" aria-label="เมนู">☰</button>
       <div class="top-t">
         <h1>บทที่ 06 — ตรวจรับระบบ</h1>
-        <p class="sub">รันที่: 👑 master01 · เวลาที่ใช้: ~40 นาที · ทำหลังบทที่ 05 เสร็จ และทำซ้ำอีกครั้งก่อนรับ workload จริง</p>
+        <p class="sub">รันที่: 👑 master01 เป็นหลัก · ยกเว้น 3 จุดที่บอกไว้: หน้าต่างเฝ้า kubectl ในข้อ 4 ต้องอยู่บน · master02 (เพราะจะปิด master01) · dnf/reboot ในข้อ 6 ทำบนเครื่องที่กำลังซ้อม · · scp ในข้อ 7 ทำจากเครื่องคุณ · ลำดับ: 1 → 7 ตามลำดับ — ข้อ 4-6 ทำให้เครื่องดับทีละเครื่อง ต้องรอกลับ Ready ครบก่อนไปข้อถัดไปเสมอ · เวลาที่ใช้: ~40 นาที + รอเครื่อง reboot ในข้อ 6 (~3 นาที × 6) · ทำหลังบทที่ 05 เสร็จ และทำซ้ำอีกครั้งก่อนรับ workload จริง</p>
       </div>
       <div class="top-p">
         <span id="pcount">0/9</span>
@@ -247,7 +247,7 @@ img{max-width:100%}
         <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
       </div>
     </header>
-    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="1 · สุขภาพพื้นฐาน">1 · สุขภาพพื้นฐาน</option><option value="2" data-t="2 · DNS">2 · DNS</option><option value="3" data-t="3 · pod คุยข้าม node">3 · pod คุยข้าม node</option><option value="4" data-t="4 · 🔴 ทดสอบ master ตาย">4 · 🔴 ทดสอบ master ตาย</option><option value="5" data-t="5 · 🔴 ซ้อม rolling reboot">5 · 🔴 ซ้อม rolling reboot</option><option value="6" data-t="6 · ซ้อม etcd backup และ restore">6 · ซ้อม etcd backup และ restore</option><option value="7" data-t="7 · ปิดช่องว่างที่ kubeadm ทิ้งไว้">7 · ปิดช่องว่างที่ kubeadm ทิ้งไว้</option><option value="8" data-t="✅ เช็กลิสต์ตรวจรับ">✅ เช็กลิสต์ตรวจรับ</option><option value="9" data-t="ยังไม่ได้ทำในชุดนี้">ยังไม่ได้ทำในชุดนี้</option></select></div>
+    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="1 · สุขภาพพื้นฐาน">1 · สุขภาพพื้นฐาน</option><option value="2" data-t="2 · DNS">2 · DNS</option><option value="3" data-t="3 · pod คุยข้าม node">3 · pod คุยข้าม node</option><option value="4" data-t="4 · 🔴 ทดสอบ master ตาย">4 · 🔴 ทดสอบ master ตาย</option><option value="5" data-t="5 · ปิดช่องว่างที่ kubeadm ทิ้งไว้ — ก่อนซ้อม drain">5 · ปิดช่องว่างที่ kubeadm ทิ้งไว้ — ก่อนซ้อม drain</option><option value="6" data-t="6 · 🔴 ซ้อม rolling reboot">6 · 🔴 ซ้อม rolling reboot</option><option value="7" data-t="7 · ซ้อม etcd backup และ restore">7 · ซ้อม etcd backup และ restore</option><option value="8" data-t="✅ เช็กลิสต์ตรวจรับ">✅ เช็กลิสต์ตรวจรับ</option><option value="9" data-t="ยังไม่ได้ทำในชุดนี้">ยังไม่ได้ทำในชุดนี้</option></select></div>
   </div>
 
   <main>
@@ -257,6 +257,7 @@ img{max-width:100%}
 </div>
     
     <section class="step" id="step-1" data-step="1" data-machines="all"><div class="step-head"><h2 id="1--สุขภาพพื้นฐาน">1 · สุขภาพพื้นฐาน</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> <a href="05-cilium.html">บท 05</a> ผ่านเกณฑ์ท้ายบทครบ · ลบของทดสอบ <code>lbtest</code> แล้ว</p>
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
 
 kubectl get nodes -o wide
@@ -275,6 +276,7 @@ kubectl -n kube-system get deploy,ds
 <p><strong>ควรเห็น:</strong> ทุกบรรทัดเป็น <code>ok</code> และปิดท้าย <code>readyz check passed</code></p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="1"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-2" data-step="2" data-machines="all"><div class="step-head"><h2 id="2--dns">2 · DNS</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 1 ผ่าน · node ดึง image จากอินเทอร์เน็ตได้ (<code>busybox</code>)</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n kube-system get deploy coredns
 kubectl run dnstest --rm -it --restart=Never --image=busybox:1.36 -- \
   nslookup kubernetes.default.svc.cluster.local
@@ -282,10 +284,12 @@ kubectl run dnstest --rm -it --restart=Never --image=busybox:1.36 -- \
 <p><strong>ควรเห็น:</strong> ตอบกลับด้วย IP ในช่วง <code>10.247.0.0/16</code></p>
 <blockquote>
 <p>CoreDNS ที่ kubeadm ลงให้มาแค่ 2 replica และ <strong>ไม่มี PodDisruptionBudget</strong>
-ซึ่งเป็นปัญหาโดยตรงกับเรา เพราะต้อง drain node ทุก 1-2 เดือน — แก้ในขั้นที่ 7</p>
+ซึ่งเป็นปัญหาโดยตรงกับเรา เพราะต้อง drain node ทุก 1-2 เดือน — แก้ในข้อ 5 ก่อนซ้อม drain ในข้อ 6</p>
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="2"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-3" data-step="3" data-machines="all"><div class="step-head"><h2 id="3--pod-คุยข้าม-node">3 · pod คุยข้าม node</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 2 ผ่าน · node ดึง <code>nginx:alpine</code> · <code>curlimages/curl</code> ·
+<code>nicolaka/netshoot</code> ได้ (ตัวสุดท้าย ~300MB ดึงครั้งแรกรอสักครู่) · จบข้อนี้ต้องลบ <code>nettest</code> ทิ้งก่อนไปข้อ 4</p>
 <div class="cb"><pre><code class="language-bash">kubectl create deployment nettest --image=nginx:alpine --replicas=6
 kubectl expose deployment nettest --port=80
 kubectl get pods -l app=nettest -o wide     # ต้องกระจายหลาย node
@@ -314,8 +318,13 @@ kubectl run mtutest --rm -it --restart=Never --image=nicolaka/netshoot -- ping -
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="4---ทดสอบ-master-ตาย">4 · 🔴 ทดสอบ master ตาย</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p>พิสูจน์ว่า HA ที่ทำมาทั้งบทที่ 03 ใช้ได้จริงตอน node หายไปทั้งเครื่อง</p>
-<p><strong>เปิดหน้าต่างที่ 2 ค้างไว้:</strong></p>
+<p><strong>ทำที่:</strong> หน้าต่างเฝ้า <code>kubectl</code> และ <code>etcdctl</code> บน <strong>👑 master02</strong> (มี kubeconfig จาก<a href="04-create-cluster.html">บท 04 ข้อ 4.2</a>)
+— <strong>ห้าม</strong>เปิดบน master01 เพราะเครื่องที่จะปิดคือ master01 หน้าต่างจะดับไปด้วย · การปิดเครื่องทำจาก <strong>vCenter</strong>
+· <strong>ต้องมีก่อน:</strong> ข้อ 3 จบและลบ <code>nettest</code> แล้ว · VIP อยู่ที่ master01 (<code>ip -4 addr show ens192 | grep 192.168.50.100</code>
+บน master01 ต้องได้ 1 บรรทัด — ถ้าอยู่เครื่องอื่น ให้ปิดเครื่องนั้นแทนและเฝ้าจาก master ที่เหลือ)</p>
+<p>พิสูจน์ว่า HA ที่ทำมาทั้งบทที่ 03 ใช้ได้จริงตอน node หายไปทั้งเครื่อง — <a href="03-ha-layer.html">บท 03 ข้อ 5.4</a>
+พิสูจน์แค่หยุด service ข้อนี้ดึงปลั๊กทั้งเครื่อง</p>
+<p><strong>1 · บน master02 — เปิดหน้าต่างเฝ้าค้างไว้:</strong></p>
 <div class="cb"><pre><code class="language-bash">while true; do
   printf '%s ' "$(date +%T)"
   kubectl get --raw='/healthz' 2&gt;&amp;1 | head -c 40
@@ -323,14 +332,15 @@ kubectl run mtutest --rm -it --restart=Never --image=nicolaka/netshoot -- ping -
   sleep 1
 done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ปิด master ที่ถือ VIP อยู่ (shutdown จริงจาก vCenter ไม่ใช่แค่หยุด service):</strong></p>
-<p><strong>ควรเห็น:</strong></p>
+<p><strong>2 · จาก vCenter — Power Off master01</strong> (ปิดจริง ไม่ใช่ <code>systemctl stop</code> — keepalived ต้องหายไปพร้อมเครื่อง):</p>
+<p><strong>ควรเห็นในหน้าต่างเฝ้า:</strong></p>
 <ul>
 <li><code>kubectl</code> สะดุดไม่เกิน <strong>2-3 วินาที</strong> แล้วกลับมาทำงานต่อ</li>
 <li>VIP ย้ายไป master อีกตัว</li>
 <li><code>kubectl get nodes</code> เห็นเครื่องนั้นเป็น <code>NotReady</code> ภายใน ~40 วินาที</li>
 <li><strong>pod บน worker ทั้งหมดยังทำงานปกติ</strong></li>
 </ul>
+<p><strong>3 · บน master02 (หน้าต่างใหม่) — etcd ต้องยังมี quorum:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec -it etcd-k8s-master02 -- etcdctl \
   --endpoints=https://127.0.0.1:2379 \
   --cacert=/etc/kubernetes/pki/etcd/ca.crt \
@@ -339,62 +349,17 @@ done
   endpoint status --cluster -w table
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> 2 ใน 3 member ตอบ และยังมี leader — <strong>quorum ยังอยู่</strong></p>
-<p><strong>เปิดเครื่องกลับ</strong> แล้วตรวจว่ากลับเข้า cluster เองภายใน ~2 นาที โดยไม่ต้องสั่งอะไร</p>
+<p><strong>4 · จาก vCenter — Power On master01</strong> แล้วดูจาก master02 ว่ากลับเข้า cluster เองภายใน ~2 นาที
+โดยไม่ต้องสั่งอะไร: <code>kubectl get nodes</code> เป็น <code>Ready</code> ครบ 3 master · VIP กลับมาที่ master01 เอง
+(keepalived ตั้ง preempt ไว้ priority 110 ชนะ) — ปิดหน้าต่างเฝ้าได้ (Ctrl-C)</p>
 <blockquote>
 <p>⚠️ <strong>ห้ามปิด master 2 ตัวพร้อมกัน</strong> — จะเสีย quorum และ cluster จะหยุดทันที
 ถ้าอยากทดสอบข้อนี้ ให้ทำใน lab เท่านั้น และเตรียม etcd snapshot ไว้ก่อน</p>
 </blockquote>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2 id="5---ซ้อม-rolling-reboot">5 · 🔴 ซ้อม rolling reboot</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p><strong>นี่คือข้อที่สำคัญที่สุดของบทนี้</strong> เพราะไม่มี Ksplice จึงต้องทำแบบนี้ทุก 1-2 เดือนตลอดอายุ cluster
-ต้องพิสูจน์ตอนที่ยังไม่มี workload ไม่ใช่มาลองครั้งแรกตอนมี CVE จริง</p>
-<p>ทำทีละเครื่อง เริ่มจาก worker แล้วค่อยขึ้น master:</p>
-<div class="cb"><pre><code class="language-bash">NODE=k8s-worker01
-
-kubectl cordon "$NODE"
-kubectl drain "$NODE" --ignore-daemonsets --delete-emptydir-data --timeout=300s
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>node/k8s-worker01 drained</code> ภายในเวลาที่กำหนด</p>
-<blockquote>
-<p>ถ้า drain <strong>ค้าง</strong> สาเหตุคือ PDB ที่ตั้งไว้ทำให้ evict ไม่ได้ หรือมี pod ที่ไม่มีเจ้าของ
-ดูว่าค้างที่อะไร: <code>kubectl get pods -o wide --field-selector spec.nodeName=$NODE</code></p>
-</blockquote>
-<div class="cb"><pre><code class="language-bash"># บนเครื่องนั้น
-dnf versionlock delete kernel-uek kernel-uek-core kernel-uek-modules
-dnf update -y
-dnf versionlock add kernel-uek kernel-uek-core kernel-uek-modules   # ล็อกกลับทันที
-reboot
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>หลังเครื่องกลับมา:</p>
-<div class="cb"><pre><code class="language-bash">uname -r                        # ต้องตรงกับที่ตั้งใจ
-kubectl uncordon "$NODE"
-kubectl get nodes               # ต้องกลับเป็น Ready
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ทำซ้ำจนครบทั้ง 6 เครื่อง</strong> — master ทำหลังสุดและทีละตัวเท่านั้น</p>
-<p><strong>หลังจบ ให้อัปเดตเลข kernel ใน <code>versions.env</code> ถ้ามีการเปลี่ยน</strong></p>
-<hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2 id="6--ซ้อม-etcd-backup-และ-restore">6 · ซ้อม etcd backup และ restore</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p>backup ที่ไม่เคยกู้สำเร็จ = ไม่มี backup</p>
-<div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec -it etcd-k8s-master01 -- etcdctl \
-  --endpoints=https://127.0.0.1:2379 \
-  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-  --cert=/etc/kubernetes/pki/etcd/server.crt \
-  --key=/etc/kubernetes/pki/etcd/server.key \
-  snapshot save /var/lib/etcd/snapshot-test.db
-
-kubectl -n kube-system exec -it etcd-k8s-master01 -- \
-  etcdutl --write-out=table snapshot status /var/lib/etcd/snapshot-test.db
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> ตาราง hash / revision / total size</p>
-<p><strong>คัดลอกออกนอก cluster ทันที</strong> — snapshot ที่อยู่บนเครื่องเดียวกับ etcd ไม่ช่วยอะไรตอนเครื่องพัง</p>
-<div class="cb"><pre><code class="language-bash">sha256sum /var/lib/etcd/snapshot-test.db    # เก็บ checksum ไว้ด้วย
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<blockquote>
-<p><strong>ซ้อม restore จริงต้องทำใน lab</strong> ไม่ใช่บน production
-จดเวลาที่ใช้จริงลงคู่มือเป็น RTO baseline — บทที่ 12 จะเป็นตัว runbook เต็ม</p>
-</blockquote>
-<hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2 id="7--ปิดช่องว่างที่-kubeadm-ทิ้งไว้">7 · ปิดช่องว่างที่ kubeadm ทิ้งไว้</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="4"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-5" data-step="5" data-machines="all"><div class="step-head"><h2 id="5--ปิดช่องว่างที่-kubeadm-ทิ้งไว้--ก่อนซ้อม-drain">5 · ปิดช่องว่างที่ kubeadm ทิ้งไว้ — ก่อนซ้อม drain</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 4 จบ master01 กลับ <code>Ready</code> · ต้องทำ<strong>ก่อน</strong>ข้อ 6
+ไม่งั้น drain เครื่องที่ CoreDNS อยู่ทั้ง 2 ตัว DNS จะดับทั้ง cluster</p>
 <p>kubeadm ลง CoreDNS มาแค่ 2 replica และ<strong>ไม่มี PDB</strong> ซึ่งจะทำให้ DNS ดับตอน drain</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n kube-system patch deploy coredns -p '{"spec":{"replicas":3}}'
 
@@ -416,6 +381,64 @@ kubectl -n kube-system get pdb
 <p><strong>ควรเห็น:</strong> <code>coredns   minAvailable 2   ALLOWED DISRUPTIONS 1</code></p>
 <blockquote>
 <p><strong>ไฟล์นี้ต้องเก็บลง git ด้วย</strong> ไม่ใช่ apply แล้วจบ — เราไม่มี GitOps มาบังคับให้</p>
+</blockquote>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2 id="6---ซ้อม-rolling-reboot">6 · 🔴 ซ้อม rolling reboot</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> <code>kubectl</code> (cordon/drain/uncordon) บน 👑 master01 — <strong>ยกเว้นรอบที่ซ้อม master01 เอง
+ให้สั่งจาก master02</strong> · บล็อก <code>dnf</code> + <code>reboot</code> ทำ<strong>บนเครื่องที่กำลังซ้อม</strong> (ssh เข้าไป)
+· <strong>ต้องมีก่อน:</strong> ข้อ 5 (PDB ของ CoreDNS มีแล้ว) · <code>kubectl get nodes</code> <code>Ready</code> ครบ 6 · ทำ<strong>ทีละเครื่อง</strong>
+รอกลับ <code>Ready</code> ก่อนเริ่มเครื่องถัดไป</p>
+<p><strong>นี่คือข้อที่สำคัญที่สุดของบทนี้</strong> เพราะไม่มี Ksplice จึงต้องทำแบบนี้ทุก 1-2 เดือนตลอดอายุ cluster
+ต้องพิสูจน์ตอนที่ยังไม่มี workload ไม่ใช่มาลองครั้งแรกตอนมี CVE จริง</p>
+<p>ทำทีละเครื่อง เริ่มจาก worker แล้วค่อยขึ้น master:</p>
+<div class="cb"><pre><code class="language-bash">NODE=k8s-worker01
+
+kubectl cordon "$NODE"
+kubectl drain "$NODE" --ignore-daemonsets --delete-emptydir-data --timeout=300s
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>node/k8s-worker01 drained</code> ภายในเวลาที่กำหนด</p>
+<blockquote>
+<p>ถ้า drain <strong>ค้าง</strong> สาเหตุคือ PDB ที่ตั้งไว้ทำให้ evict ไม่ได้ หรือมี pod ที่ไม่มีเจ้าของ
+ดูว่าค้างที่อะไร: <code>kubectl get pods -o wide --field-selector spec.nodeName=$NODE</code></p>
+</blockquote>
+<div class="cb"><pre><code class="language-bash"># ssh เข้าเครื่องนั้น
+dnf versionlock delete kernel-uek kernel-uek-core kernel-uek-modules
+dnf update -y
+dnf versionlock add kernel-uek kernel-uek-core kernel-uek-modules   # ล็อกกลับทันที
+reboot
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>หลังเครื่องกลับมา:</p>
+<div class="cb"><pre><code class="language-bash">uname -r                        # ต้องตรงกับที่ตั้งใจ
+kubectl uncordon "$NODE"
+kubectl get nodes               # ต้องกลับเป็น Ready
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ทำซ้ำจนครบทั้ง 6 เครื่อง</strong> — master ทำหลังสุดและทีละตัวเท่านั้น</p>
+<p><strong>หลังจบ ให้อัปเดตเลข kernel ใน <code>versions.env</code> ถ้ามีการเปลี่ยน</strong></p>
+<hr />
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2 id="7--ซ้อม-etcd-backup-และ-restore">7 · ซ้อม etcd backup และ restore</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 👑 master01 · <code>scp</code> คัดลอก snapshot ออกทำจาก<strong>เครื่องคุณ</strong> · <strong>ต้องมีก่อน:</strong> ข้อ 6 จบ
+ครบ 6 เครื่อง <code>Ready</code> (snapshot ต้องเป็นสภาพหลังซ้อม ไม่ใช่ระหว่างซ้อม)</p>
+<p>backup ที่ไม่เคยกู้สำเร็จ = ไม่มี backup</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system exec -it etcd-k8s-master01 -- etcdctl \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key \
+  snapshot save /var/lib/etcd/snapshot-test.db
+
+kubectl -n kube-system exec -it etcd-k8s-master01 -- \
+  etcdutl --write-out=table snapshot status /var/lib/etcd/snapshot-test.db
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> ตาราง hash / revision / total size</p>
+<p><strong>คัดลอกออกนอก cluster ทันที</strong> — snapshot ที่อยู่บนเครื่องเดียวกับ etcd ไม่ช่วยอะไรตอนเครื่องพัง</p>
+<div class="cb"><pre><code class="language-bash">sha256sum /var/lib/etcd/snapshot-test.db    # เก็บ checksum ไว้ด้วย
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>จาก<strong>เครื่องคุณ</strong> (WSL):</p>
+<div class="cb"><pre><code class="language-bash">scp root@192.168.50.101:/var/lib/etcd/snapshot-test.db ~/etcd-snapshot-$(date +%F).db
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<blockquote>
+<p><strong>ซ้อม restore จริงต้องทำใน lab</strong> ไม่ใช่บน production
+จดเวลาที่ใช้จริงลงคู่มือเป็น RTO baseline — บทที่ 12 จะเป็นตัว runbook เต็ม</p>
 </blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2 id="-เช็กลิสต์ตรวจรับ">✅ เช็กลิสต์ตรวจรับ</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all"><h3 id="ระบบพื้นฐาน">ระบบพื้นฐาน</h3>
