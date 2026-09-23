@@ -151,41 +151,35 @@ awk '$1=="secret:"{print "secret ยาว " length($2) " ตัว"}' /etc/kube
 
 ### 1.3 เปิดใช้ — ทำทีละเครื่อง
 
-**🎩 บนแต่ละ master ทีละตัว** แก้ `/etc/kubernetes/manifests/kube-apiserver.yaml`:
+**ทำที่:** 🎩 ssh เข้า master ทีละเครื่อง (master01 → 02 → 03) · **ต้องมีก่อน:** 1.2 เสร็จบนเครื่องนั้น
+(`/etc/kubernetes/enc/encryption-config.yaml` มี key แล้ว — apiserver จะอ่านไฟล์นี้ตอนเริ่ม)
 
+บล็อกเดียวจบ ไม่ต้องเปิดไฟล์แก้ — เติม flag 1 บรรทัด + mount + volume ลง manifest ของ apiserver
+(สำรองไฟล์เดิมไว้ก่อน · รันซ้ำได้ ถ้าเติมไปแล้วจะไม่เติมซ้ำ):
 ```bash
-\cp -f /etc/kubernetes/manifests/kube-apiserver.yaml /root/k8s/kube-apiserver.yaml.bak
+M=/etc/kubernetes/manifests/kube-apiserver.yaml
+if grep -q encryption-provider-config "$M"; then echo "เติมไว้แล้ว ไม่แก้ซ้ำ"; else
+  \cp -f "$M" /root/k8s/kube-apiserver.yaml.bak
+  sed -i -e '/^    - kube-apiserver$/a\    - --encryption-provider-config=/etc/kubernetes/enc/encryption-config.yaml' \
+         -e '/^    volumeMounts:$/a\    - mountPath: /etc/kubernetes/enc\n      name: enc\n      readOnly: true' \
+         -e '/^  volumes:$/a\  - hostPath:\n      path: /etc/kubernetes/enc\n      type: DirectoryOrCreate\n    name: enc' "$M"
+fi
+grep -c -e 'encryption-provider-config' -e 'path: /etc/kubernetes/enc' -e 'mountPath: /etc/kubernetes/enc' "$M"
 ```
+**ควรเห็น:** `3` (flag · volume · mount ครบ) — ได้น้อยกว่านี้ให้เอาไฟล์สำรองคืน
+`\cp -f /root/k8s/kube-apiserver.yaml.bak "$M"` แล้วส่งผล `grep -n 'kube-apiserver$\|volumeMounts:\|volumes:' "$M"` มาดู
 
-เพิ่มใน `spec.containers[0].command`:
-```yaml
-    - --encryption-provider-config=/etc/kubernetes/enc/encryption-config.yaml
-```
-
-เพิ่มใน `volumeMounts`:
-```yaml
-    - name: enc
-      mountPath: /etc/kubernetes/enc
-      readOnly: true
-```
-
-เพิ่มใน `volumes`:
-```yaml
-  - name: enc
-    hostPath:
-      path: /etc/kubernetes/enc
-      type: DirectoryOrCreate
-```
-
-kubelet จะเห็นไฟล์เปลี่ยนแล้ว restart apiserver ให้เอง — **รอให้ขึ้นก่อนไปเครื่องถัดไป:**
+kubelet เห็นไฟล์เปลี่ยนแล้ว restart apiserver ของเครื่องนี้ให้เอง — **รอให้ขึ้นก่อนไปเครื่องถัดไป**
+(ถามที่ `127.0.0.1` ของเครื่องนี้ ไม่ใช่ผ่าน VIP ซึ่งอาจไปตอบจาก master เครื่องอื่น):
 ```bash
-crictl ps | grep kube-apiserver
-kubectl get --raw='/healthz'
+sleep 10; until curl -sk https://127.0.0.1:6443/healthz | grep -q ok; do sleep 3; done; echo "apiserver ของ $(hostname) ok"
 ```
-**ควรเห็น:** `ok`
+**ควรเห็น:** `apiserver ของ k8s-masterXX ok` ภายใน ~1 นาที · ค้างเกิน 3 นาที = apiserver ไม่ขึ้น
+ดู `crictl ps -a | grep kube-apiserver` และ `crictl logs $(crictl ps -a --name kube-apiserver -q | head -1) 2>&1 | tail -5`
+— ส่วนใหญ่คือไฟล์ของ 1.2 ยังมี `<ENCRYPTION_KEY_BASE64>` หรือ key ไม่ใช่ 32 byte
 
 > ⚠️ **ห้ามทำพร้อมกันทั้ง 3 เครื่อง** ถ้า apiserver ล้มพร้อมกันหมด cluster จะเข้าไม่ได้เลย
-> ทำทีละตัวแล้วรอ `/healthz` ผ่านก่อนเสมอ
+> ทำทีละตัวแล้วรอ `ok` ก่อนเสมอ
 
 ### 1.4 เข้ารหัส Secret ที่มีอยู่แล้ว
 
