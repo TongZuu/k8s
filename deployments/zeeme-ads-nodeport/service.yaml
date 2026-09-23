@@ -1,0 +1,36 @@
+# =============================================================================
+#  zeeme-ads — Service แบบ NodePort (myhr-prod)
+# =============================================================================
+#  ใช้แทน ../zeeme-ads/service.yaml (ClusterIP + Gateway) — เลือกชุดใดชุดหนึ่ง ห้าม apply ทั้งคู่
+#  ชื่อ Service เดียวกัน (zeeme-ads) apply ชุดไหนทีหลังก็ทับชุดก่อน
+#
+#  client เข้าทาง  http://<IP ของ worker>:30100   — worker เท่านั้น
+#  (firewalld เปิดช่วง 30000-32767 ไว้แค่บน worker · บทที่ 01 ข้อ 8)
+#
+#  externalTrafficPolicy: Local
+#    · คง IP จริงของ client ไว้ — networkpolicy.yaml กรองด้วย ipBlock ของ client ได้
+#      (ถ้าเป็น Cluster, Cilium จะเปลี่ยนต้นทางเป็น IP ของ node ตอนส่งข้ามเครื่อง
+#       policy จะไม่ match แล้วถูกทิ้งเงียบ ๆ)
+#    · แลกกับ: worker ที่ไม่มี pod ของ zeeme-ads จะไม่ตอบ — 8 replica กระจาย 3/3/2
+#      ครบทุก worker อยู่แล้ว
+# =============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: zeeme-ads
+  namespace: myhr-prod
+  labels:
+    app.kubernetes.io/name: zeeme-ads
+    app.kubernetes.io/part-of: myhr
+spec:
+  type: NodePort
+  externalTrafficPolicy: Local
+  selector:
+    app.kubernetes.io/name: zeeme-ads
+  ports:
+    - name: http
+      port: 80
+      targetPort: http         # = containerPort 8100
+      nodePort: 30100          # ล็อกไว้ — ไม่ใส่จะได้เลขสุ่มทุกครั้งที่สร้าง Service ใหม่
+                               # ถ้า client เดิมใช้เลขอื่นอยู่ เปลี่ยนเป็นเลขนั้น (30000-32767)

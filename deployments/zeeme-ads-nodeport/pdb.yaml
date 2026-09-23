@@ -1,0 +1,25 @@
+# =============================================================================
+#  🔴 PodDisruptionBudget — ห้ามขาด
+# =============================================================================
+#  cluster นี้ไม่มี Ksplice จึงต้อง drain ทุก node ทุก 1-2 เดือน (บทที่ 12)
+#  ไม่มี PDB = kubectl drain ไล่ pod ออกได้ไม่จำกัดจำนวน
+#  replica 8 ตัวก็ดับพร้อมกันได้ถ้าบังเอิญกองอยู่ node เดียว
+#
+#  ⚠️ ใช้ % แทนตัวเลขตายตัว เพราะเพดานต้อง "น้อยกว่า" replicas เสมอ
+#     ถ้าเขียนเป็นตัวเลขแล้ววันหลังมีคนลด replicas ลงมาเท่ากันหรือต่ำกว่า
+#     drain จะค้างตลอดกาลโดยไม่มี error ให้เห็น
+#     50% ของ 8 = ต้องเหลือพร้อมใช้ 4 ตัวเสมอ ระหว่าง drain
+# =============================================================================
+
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: zeeme-ads
+  namespace: myhr-prod
+  labels:
+    app.kubernetes.io/name: zeeme-ads
+spec:
+  minAvailable: 50%
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: zeeme-ads

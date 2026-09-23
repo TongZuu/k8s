@@ -1,0 +1,168 @@
+# =============================================================================
+#  zeeme-ads — Deployment (myhr-prod)
+# =============================================================================
+#  แปลงจาก deployment.yml ของเดิมตามแม่แบบ config/app/deployment-template.yaml
+#  และบทที่ 11 หัวข้อ 2 · ผ่าน PSA restricted และผ่าน validate-manifests.sh ทั้ง 6 ข้อ
+#
+#  ของเดิมที่หายไปแล้ว: runAsUser: 0 · ไม่มี resources · ไม่มี probe · ไม่มี PDB ·
+#  ไม่มี topology spread
+#  ⚠️ ชุด nodeport: เนื้อไฟล์ (ใต้หัวนี้) เหมือน ../zeeme-ads/deployment.yaml — แก้ที่หนึ่งต้องแก้อีกที่ด้วย
+# =============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zeeme-ads
+  namespace: myhr-prod
+  labels:
+    app.kubernetes.io/name: zeeme-ads
+    app.kubernetes.io/part-of: myhr
+spec:
+  # ของเดิม 8 ตัว — คงไว้เท่าเดิมเพื่อไม่ให้ capacity ตกตอนย้าย
+  # 8 ตัวบน worker 3 เครื่องกระจายเป็น 3/3/2 ตาม maxSkew: 1
+  # ถ้าจะเปลี่ยนตัวเลข ดู PDB ใน pdb.yaml ด้วย (ใช้ % จึงเลื่อนตามให้เอง)
+  replicas: 8
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0        # ห้ามลดจำนวน pod ที่พร้อมใช้ระหว่าง deploy
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: zeeme-ads
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: zeeme-ads
+        app.kubernetes.io/part-of: myhr
+    spec:
+      # ของกลาง — แค่อ้างถึง ไม่ได้สร้างที่นี่
+      # Secret ตัวนี้สร้างด้วยคำสั่งในบทที่ 10 และไม่มีไฟล์ต้นฉบับใน git โดยตั้งใจ
+      imagePullSecrets:
+        - name: regcred          # account ที่ pull ได้อย่างเดียว (บทที่ 10)
+
+      # --- กระจาย replica ข้าม node -------------------------------------
+      # ของเดิมไม่มีข้อนี้ — replica 8 ตัวกองบน node เดียวได้ และ drain เครื่องนั้น
+      # ก็คือ service ดับทั้งที่ตัวเลข replica ดูเยอะ
+      #
+      # 🔴 nodeTaintsPolicy: Honor ห้ามเอาออก — ไม่มีบรรทัดนี้จะรันได้แค่ 3 pod ตลอดกาล
+      #    (worker ละตัว) ไม่ว่าจะตั้ง replicas เท่าไหร่ก็ตาม
+      #
+      #    ค่าเริ่มต้นคือ Ignore ซึ่งนับ *ทุก* node เป็น domain รวม master 3 เครื่องที่มี
+      #    taint node-role.kubernetes.io/control-plane และ pod นี้ไม่มี toleration
+      #    master จึงเป็น domain ที่มี 0 pod ค้างอยู่ตลอด พอวาง pod ตัวที่ 2 ลง worker ใด
+      #    domain นั้นเป็น 2 เทียบ master ที่เป็น 0 → skew = 2 เกิน maxSkew: 1 → ถูกปฏิเสธ
+      #    แต่จะไปลง master ก็ไม่ได้เพราะติด taint = ค้าง Pending
+      #    (เจอจริง 2026-09-09: 3 Running + 5 Pending ทั้งที่ quota เหลือเฟือ)
+      #
+      #    Honor = ตัด node ที่ pod ทน taint ไม่ได้ออกจากการนับ domain เหลือ 3 worker
+      #    → 8 pod ลงเป็น 3/3/2 · และช่วยตอน drain ด้วย เพราะ node ที่ถูก cordon
+      #    ได้ taint node.kubernetes.io/unschedulable จึงถูกตัดออกเหมือนกัน
+      #    ตัวที่กันไม่ให้ service ดับระหว่าง drain คือ PDB ไม่ใช่ข้อจำกัดนี้
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          nodeTaintsPolicy: Honor
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: zeeme-ads
+
+      # --- security context ระดับ pod — จำเป็นสำหรับ PSA restricted -------
+      # ⚠️ ของเดิมรันเป็น root (runAsUser: 0) ถ้า image สร้าง user 10001 ไว้ไม่ได้
+      #    หรือ process ต้องเขียนไฟล์นอก /tmp pod จะขึ้นไม่ได้ — ดูวิธีตรวจในบทที่ 11 หัวข้อ 4
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: zeeme-ads
+          # 🔴 ยังเป็น tag เปล่า ๆ ตามของเดิม — tag ถูกเขียนทับได้
+          #    pin ด้วย digest ก่อนขึ้น prod จริง หา digest ได้จาก:
+          #      skopeo inspect docker://registry.myhr.co.th/zeeme-ads-service:0.0.9 | jq -r .Digest
+          #    แล้วเขียนเป็น  ...:0.0.9@sha256:<digest>
+          image: registry.myhr.co.th/zeeme-ads-service:0.0.9
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 8100      # พอร์ตจริงของ service ตัวนี้ ไม่ใช่ 8080 ในแม่แบบ
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+
+          # readOnlyRootFilesystem ทำให้เขียน /tmp ไม่ได้ Spring Boot ต้องการที่เขียนชั่วคราว
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
+          # --- resources ---------------------------------------------------
+          # ⚠️ ของเดิมไม่มีเลย ตัวเลขนี้จึงเป็นค่าตั้งต้น ไม่ใช่ค่าที่วัดมา
+          #    ดูของจริงหลัง deploy 24 ชม. แล้วปรับ:
+          #      kubectl -n myhr-prod top pod -l app.kubernetes.io/name=zeeme-ads
+          #    8 replica × 512Mi = 4Gi ของ quota 57Gi ใน myhr-prod
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              # ตั้งใจไม่ใส่ limits.cpu — throttling ทำให้ latency แย่โดยไม่ช่วยอะไร
+              memory: 1Gi
+
+          # --- probes ทั้ง 3 ตัว — เป็น tcpSocket ไม่ใช่ httpGet ------------------
+          # 🔴 อย่าเปลี่ยนกลับไปเป็น /actuator/health/* จนกว่าจะยืนยันได้ว่ามันเปิดจริง
+          #
+          # เคยตั้งเป็น httpGet /actuator/health/readiness แล้วพังจริงเมื่อ 2026-09-09:
+          # app ตอบ HTTP 403 Forbidden (ไม่ใช่ 404) เพราะ Spring Security กั้น /actuator ไว้
+          # kubelet ยิง probe แบบไม่มี credential จึงได้ 403 → นับเป็น fail →
+          # startupProbe fail ครบ 30 ครั้ง (150 วิ) → kubelet ฆ่า container แล้ววนใหม่
+          # ผลคือ 0/8 ready ตลอด และ client ได้ error เพราะไม่มี endpoint ให้ Envoy ส่งต่อ
+          #
+          # manifest ของเดิม (old/deployment.yml) ไม่มี probe เลยสักตัว จึงไม่เคยมีใครรู้
+          #
+          # tcpSocket เช็กแค่ว่า Tomcat bind พอร์ต 8100 แล้ว — อ่อนกว่า health check จริง
+          # แต่ยังกันสองอย่างที่สำคัญที่สุดไว้ได้ คือไม่ส่ง traffic เข้า pod ที่ยังบูตไม่เสร็จ
+          # และไม่ฆ่า pod ที่เริ่มช้า
+          #
+          # ⬜ ค้างไว้: ให้ dev ยกเว้น /actuator/health/** ใน Spring Security แล้วค่อยเปลี่ยน
+          #    กลับเป็น httpGet ซึ่งบอกได้ว่า "app พร้อมจริง" ไม่ใช่แค่ "พอร์ตเปิด"
+          startupProbe:
+            tcpSocket:
+              port: http
+            failureThreshold: 30
+            periodSeconds: 5        # ให้เวลาเริ่มได้สูงสุด 150 วินาที
+
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 20
+            failureThreshold: 3
+
+          env:
+            - name: TZ
+              value: "Asia/Bangkok"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+      # ให้เวลา pod ปิดงานที่ค้างก่อนถูกฆ่า — สำคัญตอน drain
+      terminationGracePeriodSeconds: 45

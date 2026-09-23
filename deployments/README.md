@@ -22,7 +22,8 @@ k8s/
 │   └── (Secret ไม่มีไฟล์ที่นี่ — มีรหัสจริง สร้างด้วยคำสั่ง)
 │
 └── deployments/                     ← ของ service · เพิ่มได้เรื่อย ๆ
-    ├── zeeme-ads/                       deployment · service · pdb · httproute
+    ├── zeeme-ads/                       deployment · service · pdb · httproute  (เข้าผ่าน Gateway)
+    ├── zeeme-ads-nodeport/              ทางเลือกแทนชุดบน — NodePort 30100 · ใช้ชุดใดชุดหนึ่ง
     └── zeeme-hr/                        service ตัวถัดไป หน้าตาเดียวกัน
 ```
 

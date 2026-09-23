@@ -1,0 +1,30 @@
+# =============================================================================
+#  เปิดให้ client นอก cluster เข้า zeeme-ads ทาง NodePort (myhr-prod)
+# =============================================================================
+#  myhr-prod ปิดขาเข้าทั้งหมดด้วย default-deny (บทที่ 10) · allow-from-gateway เปิดให้
+#  แค่ Gateway — traffic จาก NodePort จึงถูกทิ้งเงียบ ๆ ถ้าไม่มีไฟล์นี้
+#
+#  🔴 แทน <CLIENT_CIDR> ก่อน apply — วง IP ของเครื่องที่ต้องเรียก zeeme-ads
+#     เช่น 10.212.0.0/16 · หลายวงให้เพิ่มบรรทัด ipBlock
+#     ห้ามใส่ 0.0.0.0/0 — เท่ากับเปิดให้ทุกเครื่องที่วิ่งถึง worker ได้
+# =============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-zeeme-ads-nodeport
+  namespace: myhr-prod
+  labels:
+    app.kubernetes.io/name: zeeme-ads
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: zeeme-ads
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: <CLIENT_CIDR>
+      ports:
+        - protocol: TCP
+          port: 8100           # พอร์ตของ container ไม่ใช่ 30100 — policy ดูที่ปลายทางจริงหลังแปลงแล้ว
