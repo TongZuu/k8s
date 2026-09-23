@@ -1,0 +1,31 @@
+# =============================================================================
+#  zeeme-ads — ค่า config ของ prod (namespace myhr-prod)
+# =============================================================================
+#  deployment.yaml ดึงทุก key ในนี้เข้าเป็น environment variable ด้วย envFrom
+#  Spring Boot อ่าน env ทับค่าใน application.properties ของ jar ให้เอง
+#  (relaxed binding: SPRING_DATASOURCE_URL = spring.datasource.url)
+#
+#  ตั้งชื่อ key:  property ใน application.properties → ตัวใหญ่ · จุดกับขีด → _
+#      spring.datasource.url        →  SPRING_DATASOURCE_URL
+#      app.ads.page-size            →  APP_ADS_PAGESIZE     (ขีด - ตัดทิ้ง)
+#
+#  🔴 ห้ามใส่รหัสผ่าน / token — ConfigMap ไม่ได้เข้ารหัส และ dev role อ่านได้
+#     รหัสมาจาก Secret zeeme-ads-db (ดู env ใน deployment.yaml)
+#  🔴 แก้แล้วต้อง rollout restart — env ถูกอ่านตอน container เริ่มเท่านั้น
+#
+#  ค่าข้างล่างเป็น "ตัวอย่าง" — เปลี่ยนเป็น key จริงของ zeeme-ads
+# =============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zeeme-ads-config
+  namespace: myhr-prod
+  labels:
+    app.kubernetes.io/name: zeeme-ads
+data:
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://192.168.30.10:5432/zeeme_ads"
+  SPRING_DATASOURCE_USERNAME: "zeeme_ads"
+  LOGGING_LEVEL_ROOT: "INFO"
+  APP_ADS_PAGESIZE: "20"
+  APP_ADS_CACHETTLSECONDS: "300"
