@@ -383,12 +383,11 @@ Alertmanager ไม่ยอมส่งรหัสบนช่องไม่�
 
 **จากเครื่องคุณ** ที่ root ของ repo (Git Bash — WSL ใช้ `/mnt/d/...`):
 ```bash
-cd /d/workspace/k8s
-ssh root@192.168.50.101 'mkdir -p /root/k8s/deployments /root/k8s/config/monitoring'
-scp -r deployments/alert-mail-relay root@192.168.50.101:/root/k8s/deployments/
-scp config/monitoring/alertmanager-config.yaml root@192.168.50.101:/root/k8s/config/monitoring/
-ssh root@192.168.50.101 'grep -E "smtp_host|mail_from" /root/k8s/deployments/alert-mail-relay/alert-mail-relay.yaml; grep -c alert-mail-relay /root/k8s/config/monitoring/alertmanager-config.yaml'
+cd /d/workspace/k8s && tar cf - deployments/alert-mail-relay config/monitoring/alertmanager-config.yaml \
+  | ssh root@192.168.50.101 'tar xf - -C /root/k8s && grep -E "smtp_host|mail_from" /root/k8s/deployments/alert-mail-relay/alert-mail-relay.yaml && grep -c alert-mail-relay /root/k8s/config/monitoring/alertmanager-config.yaml'
 ```
+(ssh ครั้งเดียว — ถ้าเครื่องคุณยังไม่มี key ไป master01 จะถามรหัสแค่รอบเดียว · ทำ key ครั้งเดียวจบ:
+`ssh-copy-id root@192.168.50.101` แล้วไม่ถามอีก)
 **ควรเห็น:** `smtp_host = mail.myhr.in.th` · `mail_from = myhr-notification@myhr.in.th` · แล้วเลขไม่เป็น `0`
 (= config ชี้ webhook มาที่ตัวกลาง) · ได้ `mail.example.co.th` หรือ `<ALERT_FROM>` = ไฟล์บนเครื่องคุณยังเก่า `git pull` ก่อน
 
