@@ -545,7 +545,7 @@ curl -I --resolve "grafana.myhr.co.th:443:${GW_IP}" https://grafana.myhr.co.th
 </code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="5"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-6" data-step="6" data-machines="all"><div class="step-head"><h2 id="5---ตั้งปลายทางของ-alert--ทำก่อนเขียน-rule">5 · 🔴 ตั้งปลายทางของ alert — ทำก่อนเขียน rule</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p><strong>ทำที่:</strong> 👑 master01 ทั้งข้อ (5.1 → 5.4 ตามลำดับ) · <strong>ต้องมีก่อน:</strong> ข้อ 2 (Alertmanager มาพร้อม chart)
+<p><strong>ทำที่:</strong> 5.0 จาก<strong>เครื่องคุณ</strong> · 5.1 → 5.4 บน 👑 master01 ตามลำดับ · <strong>ต้องมีก่อน:</strong> ข้อ 2 (Alertmanager มาพร้อม chart)
 · user/รหัส SMTP ของบัญชี <code>myhr-notification@myhr.in.th</code> (อยู่ใน <code>secrets.env</code> หรือที่เก็บ secret ขององค์กร)
 · ที่อยู่ผู้รับ alert ทั่วไป และผู้รับ critical (ใช้ที่อยู่เดียวกันก็ได้ถ้ายังไม่มีกลุ่ม on-call)</p>
 <p><strong>alert ที่ไม่มีใครเห็น = ไม่มี alert</strong> — ข้อนี้ต้องจบ<strong>ก่อน</strong>ข้อ 6 เพราะ rule ที่ไม่มีปลายทางก็ดังลงที่ว่าง</p>
@@ -558,6 +558,21 @@ Alertmanager ไม่ยอมส่งรหัสบนช่องไม่�
 ส่วน <code>alertmanager-config.yaml</code> ชี้ webhook มาที่ตัวกลางไว้แล้ว · เหลือแค่รหัสกับผู้รับ</p>
 <blockquote>
 <p>วันที่ได้พอร์ตที่มี STARTTLS และจะเลิกใช้ตัวกลาง → <strong>ภาคผนวก · ส่งเมลตรงจาก Alertmanager</strong> ท้ายบท</p>
+</blockquote>
+</div><div class="sub" data-machine="all"><h3 id="50-ส่งไฟล์ของตัวกลางขึ้น-master01--จากเครื่องคุณ">5.0 ส่งไฟล์ของตัวกลางขึ้น master01 — จากเครื่องคุณ</h3>
+<p><code>deployments/</code> <strong>ไม่ได้อยู่ในชุดที่ sync ตอน<a href="00-overview.html">บท 00</a></strong> (ชุดนั้นมีแค่ <code>versions.env</code> กับ <code>config/</code>)
+จึงต้องส่งเองก่อน 5.2 · ส่ง <code>alertmanager-config.yaml</code> ไปพร้อมกันด้วย เผื่อบนเครื่องยังเป็นชุดเก่า</p>
+<p><strong>จากเครื่องคุณ</strong> ที่ root ของ repo (Git Bash — WSL ใช้ <code>/mnt/d/...</code>):</p>
+<div class="cb"><pre><code class="language-bash">cd /d/workspace/k8s
+ssh root@192.168.50.101 'mkdir -p /root/k8s/deployments /root/k8s/config/monitoring'
+scp -r deployments/alert-mail-relay root@192.168.50.101:/root/k8s/deployments/
+scp config/monitoring/alertmanager-config.yaml root@192.168.50.101:/root/k8s/config/monitoring/
+ssh root@192.168.50.101 'grep -E "smtp_host|mail_from" /root/k8s/deployments/alert-mail-relay/alert-mail-relay.yaml; grep -c alert-mail-relay /root/k8s/config/monitoring/alertmanager-config.yaml'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>smtp_host = mail.myhr.in.th</code> · <code>mail_from = myhr-notification@myhr.in.th</code> · แล้วเลขไม่เป็น <code>0</code>
+(= config ชี้ webhook มาที่ตัวกลาง) · ได้ <code>mail.example.co.th</code> หรือ <code>&lt;ALERT_FROM&gt;</code> = ไฟล์บนเครื่องคุณยังเก่า <code>git pull</code> ก่อน</p>
+<blockquote>
+<p>🔴 ส่งซ้ำ<strong>หลัง</strong> 5.2 จะทับผู้รับที่กรอกไว้บน master01 กลับเป็น <code>&lt;ALERT_TO&gt;</code> — ต้องทำ 5.2 ใหม่</p>
 </blockquote>
 </div><div class="sub" data-machine="all"><h3 id="51-เก็บ-userรหัส-smtp-ลง-secret">5.1 เก็บ user/รหัส SMTP ลง Secret</h3>
 <p>รหัสอยู่ใน Secret เท่านั้น — ไม่อยู่ในไฟล์ในrepo และไม่ผ่าน helm values:</p>

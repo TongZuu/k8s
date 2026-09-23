@@ -357,7 +357,7 @@ ssh -L 3000:127.0.0.1:3000 root@192.168.50.101 'kubectl -n monitoring port-forwa
 
 ## 5 · 🔴 ตั้งปลายทางของ alert — ทำก่อนเขียน rule
 
-**ทำที่:** 👑 master01 ทั้งข้อ (5.1 → 5.4 ตามลำดับ) · **ต้องมีก่อน:** ข้อ 2 (Alertmanager มาพร้อม chart)
+**ทำที่:** 5.0 จาก**เครื่องคุณ** · 5.1 → 5.4 บน 👑 master01 ตามลำดับ · **ต้องมีก่อน:** ข้อ 2 (Alertmanager มาพร้อม chart)
 · user/รหัส SMTP ของบัญชี `myhr-notification@myhr.in.th` (อยู่ใน `secrets.env` หรือที่เก็บ secret ขององค์กร)
 · ที่อยู่ผู้รับ alert ทั่วไป และผู้รับ critical (ใช้ที่อยู่เดียวกันก็ได้ถ้ายังไม่มีกลุ่ม on-call)
 
@@ -375,6 +375,24 @@ Alertmanager ไม่ยอมส่งรหัสบนช่องไม่�
 ส่วน `alertmanager-config.yaml` ชี้ webhook มาที่ตัวกลางไว้แล้ว · เหลือแค่รหัสกับผู้รับ
 
 > วันที่ได้พอร์ตที่มี STARTTLS และจะเลิกใช้ตัวกลาง → **ภาคผนวก · ส่งเมลตรงจาก Alertmanager** ท้ายบท
+
+### 5.0 ส่งไฟล์ของตัวกลางขึ้น master01 — จากเครื่องคุณ
+
+`deployments/` **ไม่ได้อยู่ในชุดที่ sync ตอน[บท 00](00-overview.md)** (ชุดนั้นมีแค่ `versions.env` กับ `config/`)
+จึงต้องส่งเองก่อน 5.2 · ส่ง `alertmanager-config.yaml` ไปพร้อมกันด้วย เผื่อบนเครื่องยังเป็นชุดเก่า
+
+**จากเครื่องคุณ** ที่ root ของ repo (Git Bash — WSL ใช้ `/mnt/d/...`):
+```bash
+cd /d/workspace/k8s
+ssh root@192.168.50.101 'mkdir -p /root/k8s/deployments /root/k8s/config/monitoring'
+scp -r deployments/alert-mail-relay root@192.168.50.101:/root/k8s/deployments/
+scp config/monitoring/alertmanager-config.yaml root@192.168.50.101:/root/k8s/config/monitoring/
+ssh root@192.168.50.101 'grep -E "smtp_host|mail_from" /root/k8s/deployments/alert-mail-relay/alert-mail-relay.yaml; grep -c alert-mail-relay /root/k8s/config/monitoring/alertmanager-config.yaml'
+```
+**ควรเห็น:** `smtp_host = mail.myhr.in.th` · `mail_from = myhr-notification@myhr.in.th` · แล้วเลขไม่เป็น `0`
+(= config ชี้ webhook มาที่ตัวกลาง) · ได้ `mail.example.co.th` หรือ `<ALERT_FROM>` = ไฟล์บนเครื่องคุณยังเก่า `git pull` ก่อน
+
+> 🔴 ส่งซ้ำ**หลัง** 5.2 จะทับผู้รับที่กรอกไว้บน master01 กลับเป็น `<ALERT_TO>` — ต้องทำ 5.2 ใหม่
 
 ### 5.1 เก็บ user/รหัส SMTP ลง Secret
 
