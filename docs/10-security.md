@@ -457,22 +457,44 @@ done
 
 ### 3.4 ดู flow จริงด้วย Hubble เพื่อรู้ว่าต้องเปิดเส้นไหนบ้าง
 
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** 3.3 ได้ `exit=28` (policy ทำงานแล้ว)
+
+**ทำไมต้องดู** — 3.3 บอกแค่ว่า "ตก" · Hubble บอกว่า **ตกที่ไหน ไปหาใคร พอร์ตอะไร เพราะ policy**
+ซึ่งเป็นข้อมูลเดียวกับที่ต้องใช้เขียน rule เปิดทาง เวลาแอปจริงโดนบล็อกก็ใช้วิธีนี้หาว่าต้องเปิดอะไร
+
+**ยิงแล้วดูทันทีในบล็อกเดียว** — Hubble จำ flow ไว้ในหน่วยความจำของ agent เครื่องที่ pod รันอยู่
+และถูกทับภายในไม่กี่นาที (ถ้ายิงไว้นานแล้วค่อยมาดู จะได้ผลว่างทุกเครื่อง):
 ```bash
+kubectl -n myhr-prod run nptest --rm -i --restart=Never --image=curlimages/curl --overrides="$NPPOD"
 for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
-  echo "== $p"
   kubectl -n kube-system exec "$p" -c cilium-agent -- \
-    hubble observe --namespace myhr-prod --verdict DROPPED --last 20
+    hubble observe --namespace myhr-prod --verdict DROPPED --since 2m 2>/dev/null
 done
 ```
-นี่คือวิธีที่ถูกต้องในการเขียน policy — **ดูของจริงว่าอะไรถูก drop แล้วเปิดเฉพาะเส้นนั้น**
-ไม่ใช่เดาเอาจากเอกสาร · ควรเห็น flow ของ `nptest` โผล่เป็น `DROPPED`
-ซึ่งเป็นหลักฐานชิ้นที่สองว่า policy ทำงานจริง ไม่ใช่ pod ต่อไม่ได้ด้วยเหตุอื่น
+(`$NPPOD` คือตัวแปรจากข้อ 3.1 — shell ใหม่ให้รันบรรทัด `NPPOD='...'` ก่อน)
 
-> 🔴 **ต้องวนถามทุก agent ห้ามใช้ `ds/cilium` เฉย ๆ** — flow เก็บอยู่ใน ring buffer ของ
-> agent บน **เครื่องที่ pod นั้นรัน** เท่านั้น ส่วน `exec ds/cilium` ได้ agent ตัวเดียว
-> ที่ Kubernetes เลือกให้ (มักเป็นตัวบน master) ถามผิดเครื่องจะได้ผลว่างเปล่า
-> แล้วเข้าใจผิดว่าไม่มี flow ถูก drop · ถ้ายังว่าง ให้ยิง pod ทดสอบใหม่แล้วรันทันที
-> เพราะ ring buffer มีขนาดจำกัด ของเก่าถูกทับได้
+**ควรเห็น:** `http=000 exit=28` ตามด้วยบรรทัด DROPPED 1-3 บรรทัด หน้าตาประมาณนี้:
+```
+Sep 24 10:15:02.341: myhr-prod/nptest:48212 (ID:31807) <> 192.168.50.101:6443 (kube-apiserver) Policy denied DROPPED (TCP Flags: SYN)
+```
+
+**อ่านยังไง** — แต่ละบรรทัดคือ packet หนึ่งตัวที่ถูกทิ้ง:
+
+| ส่วน | ตัวอย่าง | บอกอะไร |
+|---|---|---|
+| ต้นทาง | `myhr-prod/nptest:48212` | pod ไหนเป็นคนส่ง (namespace/ชื่อ pod) |
+| ปลายทาง | `192.168.50.101:6443 (kube-apiserver)` | ส่งไปหาใคร พอร์ตอะไร · ในวงเล็บคือ Cilium รู้จักว่าเป็นอะไร (`world` = อินเทอร์เน็ต) |
+| เหตุผล | `Policy denied DROPPED` | ถูกทิ้งเพราะ NetworkPolicy — **ไม่ใช่** network เสีย |
+| `TCP Flags: SYN` | | ตายตั้งแต่ขอเปิด connection ปลายทางไม่เคยได้รับ |
+
+ใช้กับแอปจริง: ถ้าต้องให้ `myhr-prod` ต่อ `192.168.50.101:6443` ได้ ก็เขียน egress rule ไปที่ IP/พอร์ตนั้น
+(ดูรูปแบบใน `allow-egress-to-registry` ของ [`allow-dns.yaml`](../config/security/allow-dns.yaml)) แล้วยิงซ้ำ
+บรรทัดนั้นต้องหายไป · **สำหรับการติดตั้งตอนนี้ไม่ต้องเปิดอะไร** — บรรทัดนี้คือหลักฐานว่าปิดได้จริง
+
+| ได้อะไร | แปลว่า |
+|---|---|
+| `exit=28` แต่ไม่มีบรรทัด DROPPED เลย | Hubble เครื่องนั้นไม่ทำงาน → เช็กข้างล่าง |
+| บรรทัดขึ้น `... to-stack FORWARDED` / ไม่มี `Policy denied` | policy ยังไม่ถูกบังคับใช้ → กลับข้อ 3.2 |
 
 **เช็กว่า Hubble ทำงานอยู่จริง:**
 ```bash
