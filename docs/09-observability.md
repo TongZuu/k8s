@@ -383,10 +383,20 @@ ssh -L 3000:127.0.0.1:3000 root@192.168.50.101 'kubectl -n monitoring port-forwa
 
 **ขั้น A — ตัดสินก่อนว่า relay ต้องล็อกอินไหม** ไม่แน่ใจให้ถามทีม mail
 หรือดูว่า relay ประกาศ `AUTH` ไว้หรือเปล่า (ประกาศ ≠ บังคับ แต่ถ้าไม่ประกาศเลยแปลว่าไม่ต้องแน่ ๆ):
+**ใส่ชื่อ relay จริงที่ได้จากทีม mail ก่อน** (ไม่ใช่ `mail.example.co.th` — นั่นคือตัวอย่าง) · ค่า `H` กับ `P`
+ใช้ต่อในทุกคำสั่งทดสอบของข้อ 5 ถ้าเปิด shell ใหม่ต้องรันบรรทัดนี้ซ้ำ:
 ```bash
-H=mail.example.co.th; P=25
-exec 3<>/dev/tcp/${H}/${P} && printf 'EHLO myhr\r\nQUIT\r\n' >&3 && timeout 5 grep -iE '250[ -](AUTH|STARTTLS)' <&3; exec 3<&-
+read -rp 'SMTP relay host (จากทีม mail): ' H; read -rp 'port [25]: ' P; P=${P:-25}; getent hosts "$H" || echo "❌ resolve $H ไม่ได้ — ชื่อผิดหรือ DNS ไม่รู้จัก"
 ```
+**ควรเห็น:** IP ของ relay หนึ่งบรรทัด · ได้ `❌` = ชื่อผิด ถามทีม mail ใหม่ (ห้ามไปต่อ)
+
+แล้วถาม relay ว่าประกาศอะไร — ยิงจาก pod เพราะเป็นเส้นทางเดียวกับที่ Alertmanager ใช้:
+```bash
+kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
+  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" "$1"' "$H" "$P" | grep -iE '^2|AUTH|STARTTLS'
+```
+**ควรเห็น:** บรรทัด `220 ...` ตามด้วย `250-...` หลายบรรทัด · มี `AUTH` = relay รับล็อกอิน · ไม่มีเลย = ไม่ต้องล็อกอิน (A-ก)
+· ไม่มีอะไรออกมาเลย = ต่อไม่ติด → 5.3.3
 
 **A-ก · relay ไม่ต้องล็อกอิน** — ปิดสองบรรทัด auth ทิ้งไปเลย
 ```bash
@@ -593,7 +603,7 @@ kubectl -n monitoring logs sts/alertmanager-monitoring-kube-prometheus-alertmana
 Alertmanager ใช้ และ **ห้ามใส่ `-it`** เพราะ TTY จะกลืน output ของ pipe จนเห็นแต่บรรทัด `220`:
 ```bash
 kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
-  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 mail.example.co.th 25'
+  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" "$1"' "$H" "$P"
 ```
 
 | relay ประกาศ | แปลว่า | ทางแก้ |
@@ -606,7 +616,7 @@ kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybo
 จึงไม่มีเมลออกไปจริงสักฉบับ (แทน `<...>` ด้วยที่อยู่จริงก่อนรัน):
 ```bash
 kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
-  sh -c '(printf "EHLO myhr\r\n"; sleep 2; printf "MAIL FROM:<ผู้ส่ง>\r\n"; sleep 2; printf "RCPT TO:<ปลายทาง>\r\n"; sleep 3; printf "QUIT\r\n"; sleep 1) | nc -w 15 mail.example.co.th 25'
+  sh -c '(printf "EHLO myhr\r\n"; sleep 2; printf "MAIL FROM:<ผู้ส่ง>\r\n"; sleep 2; printf "RCPT TO:<ปลายทาง>\r\n"; sleep 3; printf "QUIT\r\n"; sleep 1) | nc -w 15 "$0" "$1"' "$H" "$P"
 ```
 
 | บรรทัดหลัง `RCPT TO` | แปลว่า | ทางแก้ |
@@ -639,7 +649,7 @@ Alertmanager ส่งตรงไม่ได้แน่นอนในสภ�
 **พอได้ 587 มาแล้ว อย่าเพิ่งเชื่อว่ามี STARTTLS** ตรวจก่อนหนึ่งครั้ง:
 ```bash
 kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
-  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 mail.example.co.th 587'
+  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" 587' "$H"
 ```
 เห็น `250-STARTTLS` แล้วค่อยกลับไปทำ 5.1 ขั้น A-ข ด้วยพอร์ต 587
 
@@ -709,7 +719,7 @@ s.sendmail(user, [to], msg.encode("utf-8")); s.quit()
 print("=== SENT OK")
 EOF
 read -rp 'SMTP user: ' SU; read -rsp 'SMTP password: ' SP; echo; read -rp 'send to: ' TO
-SMTP_HOST=mail.example.co.th SMTP_USER="$SU" SMTP_PASS="$SP" SMTP_TO="$TO" python3 /root/smtp25-test.py
+SMTP_HOST="$H" SMTP_USER="$SU" SMTP_PASS="$SP" SMTP_TO="$TO" python3 /root/smtp25-test.py
 unset SU SP TO; rm -f /root/smtp25-test.py
 ```
 

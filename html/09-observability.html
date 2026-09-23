@@ -586,10 +586,18 @@ curl -I --resolve "grafana.myhr.co.th:443:${GW_IP}" https://grafana.myhr.co.th
 </tbody>
 </table>
 <p><strong>ขั้น A — ตัดสินก่อนว่า relay ต้องล็อกอินไหม</strong> ไม่แน่ใจให้ถามทีม mail
-หรือดูว่า relay ประกาศ <code>AUTH</code> ไว้หรือเปล่า (ประกาศ ≠ บังคับ แต่ถ้าไม่ประกาศเลยแปลว่าไม่ต้องแน่ ๆ):</p>
-<div class="cb"><pre><code class="language-bash">H=mail.example.co.th; P=25
-exec 3&lt;&gt;/dev/tcp/${H}/${P} &amp;&amp; printf 'EHLO myhr\r\nQUIT\r\n' &gt;&amp;3 &amp;&amp; timeout 5 grep -iE '250[ -](AUTH|STARTTLS)' &lt;&amp;3; exec 3&lt;&amp;-
+หรือดูว่า relay ประกาศ <code>AUTH</code> ไว้หรือเปล่า (ประกาศ ≠ บังคับ แต่ถ้าไม่ประกาศเลยแปลว่าไม่ต้องแน่ ๆ):
+<strong>ใส่ชื่อ relay จริงที่ได้จากทีม mail ก่อน</strong> (ไม่ใช่ <code>mail.example.co.th</code> — นั่นคือตัวอย่าง) · ค่า <code>H</code> กับ <code>P</code>
+ใช้ต่อในทุกคำสั่งทดสอบของข้อ 5 ถ้าเปิด shell ใหม่ต้องรันบรรทัดนี้ซ้ำ:</p>
+<div class="cb"><pre><code class="language-bash">read -rp 'SMTP relay host (จากทีม mail): ' H; read -rp 'port [25]: ' P; P=${P:-25}; getent hosts "$H" || echo "❌ resolve $H ไม่ได้ — ชื่อผิดหรือ DNS ไม่รู้จัก"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> IP ของ relay หนึ่งบรรทัด · ได้ <code>❌</code> = ชื่อผิด ถามทีม mail ใหม่ (ห้ามไปต่อ)</p>
+<p>แล้วถาม relay ว่าประกาศอะไร — ยิงจาก pod เพราะเป็นเส้นทางเดียวกับที่ Alertmanager ใช้:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
+  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" "$1"' "$H" "$P" | grep -iE '^2|AUTH|STARTTLS'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> บรรทัด <code>220 ...</code> ตามด้วย <code>250-...</code> หลายบรรทัด · มี <code>AUTH</code> = relay รับล็อกอิน · ไม่มีเลย = ไม่ต้องล็อกอิน (A-ก)
+· ไม่มีอะไรออกมาเลย = ต่อไม่ติด → 5.3.3</p>
 <p><strong>A-ก · relay ไม่ต้องล็อกอิน</strong> — ปิดสองบรรทัด auth ทิ้งไปเลย</p>
 <div class="cb"><pre><code class="language-bash">cd /root/k8s/config/monitoring
 sed -i -E 's|^([[:space:]]*)(smtp_auth_)|\1# \2|' alertmanager-config.yaml
@@ -814,7 +822,7 @@ kill %%
 <p>ดูว่า relay ประกาศอะไรบ้างบนพอร์ตที่ต่อได้จริง — <strong>รันจาก pod</strong> เพราะนั่นคือเส้นทางที่
 Alertmanager ใช้ และ <strong>ห้ามใส่ <code>-it</code></strong> เพราะ TTY จะกลืน output ของ pipe จนเห็นแต่บรรทัด <code>220</code>:</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
-  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 mail.example.co.th 25'
+  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" "$1"' "$H" "$P"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <table>
 <thead>
@@ -845,7 +853,7 @@ Alertmanager ใช้ และ <strong>ห้ามใส่ <code>-it</code><
 <p><strong>ทดสอบว่า relay บังคับ auth จริงไหม</strong> — คุยถึงขั้น <code>RCPT TO</code> แต่ไม่ส่ง <code>DATA</code>
 จึงไม่มีเมลออกไปจริงสักฉบับ (แทน <code>&lt;...&gt;</code> ด้วยที่อยู่จริงก่อนรัน):</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
-  sh -c '(printf "EHLO myhr\r\n"; sleep 2; printf "MAIL FROM:&lt;ผู้ส่ง&gt;\r\n"; sleep 2; printf "RCPT TO:&lt;ปลายทาง&gt;\r\n"; sleep 3; printf "QUIT\r\n"; sleep 1) | nc -w 15 mail.example.co.th 25'
+  sh -c '(printf "EHLO myhr\r\n"; sleep 2; printf "MAIL FROM:&lt;ผู้ส่ง&gt;\r\n"; sleep 2; printf "RCPT TO:&lt;ปลายทาง&gt;\r\n"; sleep 3; printf "QUIT\r\n"; sleep 1) | nc -w 15 "$0" "$1"' "$H" "$P"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <table>
 <thead>
@@ -912,7 +920,7 @@ grep -E '^[[:space:]]*smtp_' alertmanager-config.yaml
 </table>
 <p><strong>พอได้ 587 มาแล้ว อย่าเพิ่งเชื่อว่ามี STARTTLS</strong> ตรวจก่อนหนึ่งครั้ง:</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
-  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 mail.example.co.th 587'
+  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" 587' "$H"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p>เห็น <code>250-STARTTLS</code> แล้วค่อยกลับไปทำ 5.1 ขั้น A-ข ด้วยพอร์ต 587</p>
 <h4 id="533-ต่อพอร์ตไม่ได้--แยกก่อนว่าใครดรอป">5.3.3 ต่อพอร์ตไม่ได้ — แยกก่อนว่าใครดรอป</h4>
@@ -1007,7 +1015,7 @@ s.sendmail(user, [to], msg.encode("utf-8")); s.quit()
 print("=== SENT OK")
 EOF
 read -rp 'SMTP user: ' SU; read -rsp 'SMTP password: ' SP; echo; read -rp 'send to: ' TO
-SMTP_HOST=mail.example.co.th SMTP_USER="$SU" SMTP_PASS="$SP" SMTP_TO="$TO" python3 /root/smtp25-test.py
+SMTP_HOST="$H" SMTP_USER="$SU" SMTP_PASS="$SP" SMTP_TO="$TO" python3 /root/smtp25-test.py
 unset SU SP TO; rm -f /root/smtp25-test.py
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <blockquote>
