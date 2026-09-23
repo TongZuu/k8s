@@ -6,7 +6,9 @@
 #
 #  ของเดิมที่หายไปแล้ว: runAsUser: 0 · ไม่มี resources · ไม่มี probe · ไม่มี PDB ·
 #  ไม่มี topology spread
-#  ⚠️ ชุด nodeport: เนื้อไฟล์ (ใต้หัวนี้) เหมือน ../zeeme-ads/deployment.yaml — แก้ที่หนึ่งต้องแก้อีกที่ด้วย
+#  ⚠️ ชุด nodeport: เหมือน ../zeeme-ads/deployment.yaml ยกเว้นส่วน "ConfigMap" 3 จุด
+#     (volumeMounts /config · env SPRING_CONFIG_ADDITIONAL_LOCATION + DB_PASSWORD · volumes)
+#     แก้ส่วนอื่นที่หนึ่งต้องแก้อีกที่ด้วย
 # =============================================================================
 
 apiVersion: apps/v1
@@ -105,6 +107,10 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            # ConfigMap → /config/application.properties (อ่านอย่างเดียว)
+            - name: app-config
+              mountPath: /config
+              readOnly: true
 
           # --- resources ---------------------------------------------------
           # ⚠️ ของเดิมไม่มีเลย ตัวเลขนี้จึงเป็นค่าตั้งต้น ไม่ใช่ค่าที่วัดมา
@@ -159,10 +165,22 @@ spec:
               value: "Asia/Bangkok"
             - name: SPRING_PROFILES_ACTIVE
               value: "prod"
+            # ให้ Spring อ่าน /config/application.properties ทับค่าใน jar (Spring Boot 2.x ขึ้นไป)
+            - name: SPRING_CONFIG_ADDITIONAL_LOCATION
+              value: "file:/config/"
+            # รหัสฐานข้อมูล — มาจาก Secret ไม่อยู่ใน ConfigMap · properties อ้างด้วย ${DB_PASSWORD}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: zeeme-ads-db
+                  key: password
 
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: app-config
+          configMap:
+            name: zeeme-ads-config
 
       # ให้เวลา pod ปิดงานที่ค้างก่อนถูกฆ่า — สำคัญตอน drain
       terminationGracePeriodSeconds: 45

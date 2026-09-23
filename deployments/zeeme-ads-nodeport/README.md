@@ -12,7 +12,8 @@
 
 | ไฟล์ | คือ |
 |---|---|
-| `deployment.yaml` | **สำเนาของ `../zeeme-ads/deployment.yaml`** (8 replica · กระจาย 3/3/2) — แก้ image ต้องแก้ทั้งสองที่ |
+| `deployment.yaml` | สำเนาของ `../zeeme-ads/deployment.yaml` (8 replica · กระจาย 3/3/2) **+ mount ConfigMap และรหัส DB จาก Secret** — แก้ image ต้องแก้ทั้งสองที่ |
+| `configmap.yaml` | **แทน `application.properties`** — ค่าที่ต่างกันต่อ environment · ค่าในไฟล์เป็นตัวอย่าง ต้องแก้เป็น key จริงก่อน |
 | `pdb.yaml` | สำเนาของ `../zeeme-ads/pdb.yaml` — `minAvailable: 50%` |
 | `service.yaml` | **NodePort `30100` → 8100** · `externalTrafficPolicy: Local` |
 | `networkpolicy.yaml` | เปิดขาเข้าพอร์ต 8100 ให้วง IP ของ client · **มี `<CLIENT_CIDR>` ต้องแทนก่อน** |
@@ -26,7 +27,7 @@
 ```bash
 cd /d/workspace/k8s && tar cf - deployments/zeeme-ads-nodeport | ssh root@192.168.50.101 'tar xf - -C /root/k8s && ls /root/k8s/deployments/zeeme-ads-nodeport'
 ```
-**ควรเห็น:** `README.md  deployment.yaml  networkpolicy.yaml  pdb.yaml  service.yaml`
+**ควรเห็น:** `README.md  configmap.yaml  deployment.yaml  networkpolicy.yaml  pdb.yaml  service.yaml`
 
 ## 2 · ตรวจของกลาง และตอบ 2 ค่า
 
@@ -55,7 +56,7 @@ ssh root@192.168.50.104 'echo $SSH_CLIENT' | cut -d' ' -f1
 > คำถามเรื่อง actuator และชื่อ Service เดิม (`zeeme-ads-service`) ใน
 > [`../zeeme-ads/README.md` ข้อ A2](../zeeme-ads/README.md) ใช้กับชุดนี้ด้วยเหมือนกัน — ตอบก่อน apply
 
-## 3 · ใส่วง IP ของ client แล้ว apply
+## 3 · ใส่วง IP ของ client · สร้าง Secret รหัส DB · แล้ว apply
 
 **ทำที่:** 👑 master01
 
@@ -66,6 +67,16 @@ grep -c '<CLIENT_CIDR>' networkpolicy.yaml; grep -n 'cidr:' networkpolicy.yaml
 ```
 **ควรเห็น:** `0` แล้ว `cidr: <วงที่พิมพ์>` · ได้ `1` = ยังไม่ได้แทน ห้าม apply (apiserver จะปฏิเสธไฟล์ทั้งไฟล์)
 
+**สร้าง Secret รหัสฐานข้อมูล** — ต้องมีก่อน apply ไม่งั้น pod ค้าง `CreateContainerConfigError`
+(รหัสไม่อยู่ในไฟล์ใด ๆ ใน repo · พิมพ์ทางแป้นพิมพ์):
+```bash
+read -rsp 'รหัส DB ของ zeeme-ads: ' P; echo " (รับมา ${#P} ตัว)"
+kubectl -n myhr-prod create secret generic zeeme-ads-db --from-literal=password="$P" --dry-run=client -o yaml | kubectl apply -f -; unset P
+```
+**ควรเห็น:** `(รับมา N ตัว)` ที่ N ไม่เป็น 0 · แล้ว `secret/zeeme-ads-db created`
+
+**แก้ `configmap.yaml` ให้เป็นค่าจริงของ zeeme-ads** (ค่าที่ให้มาเป็นตัวอย่าง — ดูหัวข้อ "ConfigMap" ข้างล่าง) แล้ว:
+
 ```bash
 kubectl apply -f . && kubectl -n myhr-prod rollout status deploy/zeeme-ads --timeout=5m
 kubectl -n myhr-prod get svc zeeme-ads
@@ -73,6 +84,43 @@ kubectl -n myhr-prod get pod -l app.kubernetes.io/name=zeeme-ads -o wide | awk '
 ```
 **ควรเห็น:** `successfully rolled out` · Service `TYPE=NodePort` `PORT(S)=80:30100/TCP` ·
 แล้วจำนวน pod ต่อ worker `3 / 3 / 2` (ครบทั้ง 3 worker — ถ้า worker ไหนไม่มี pod เครื่องนั้นจะไม่ตอบ NodePort)
+
+## ConfigMap — แทน `application.properties` ใน jar
+
+**ทำงานยังไง** — `configmap.yaml` ถูก mount เป็นไฟล์ `/config/application.properties` ใน pod และ env
+`SPRING_CONFIG_ADDITIONAL_LOCATION=file:/config/` บอก Spring Boot ให้อ่านไฟล์นั้นเพิ่ม **ทับ**ค่าใน jar:
+
+```
+jar: application.properties        server.port=8100   app.ads.page-size=10   spring.datasource.url=jdbc:...dev
+ConfigMap: /config/application.properties         app.ads.page-size=20   spring.datasource.url=jdbc:...prod
+ผลที่แอปเห็น:                       server.port=8100   app.ads.page-size=20   spring.datasource.url=jdbc:...prod
+```
+key ที่ไม่อยู่ใน ConfigMap ใช้ค่าใน jar เหมือนเดิม — **ใส่เฉพาะค่าที่ต่างกันต่อ environment** (DB · URL ของ service อื่น · ขนาด pool)
+
+**รหัสผ่านห้ามอยู่ใน ConfigMap** — ไม่ได้เข้ารหัส และ dev role อ่าน configmap ได้ · เขียนเป็น `${DB_PASSWORD}`
+ใน properties แล้วค่าจริงมาจาก Secret `zeeme-ads-db` ทาง env (Spring แทนค่า `${...}` จาก environment ให้เอง)
+· รหัสตัวอื่นทำแบบเดียวกัน: เพิ่ม key ใน Secret + เพิ่ม env ใน `deployment.yaml` + อ้าง `${ชื่อ}` ใน properties
+
+**แก้ค่าทีหลัง** — Spring อ่าน properties ตอนเริ่มเท่านั้น apply อย่างเดียว pod ไม่เห็นค่าใหม่:
+```bash
+cd /root/k8s/deployments/zeeme-ads-nodeport
+kubectl apply -f configmap.yaml && kubectl -n myhr-prod rollout restart deploy/zeeme-ads && kubectl -n myhr-prod rollout status deploy/zeeme-ads --timeout=5m
+```
+**ควรเห็น:** `configmap/zeeme-ads-config configured` → `restarted` → `successfully rolled out`
+(restart ทีละตัวตาม `maxUnavailable: 0` — service ไม่ดับ)
+
+**ดูว่า pod เห็นไฟล์อะไรจริง:**
+```bash
+kubectl -n myhr-prod exec deploy/zeeme-ads -- cat /config/application.properties
+```
+(บัญชีที่ใช้ต้องมีสิทธิ์ `exec` — dev role ไม่มี · ใช้บน master01 ด้วย admin)
+
+| อาการ | แปลว่า |
+|---|---|
+| pod ค้าง `CreateContainerConfigError` | Secret `zeeme-ads-db` ยังไม่มี — สร้างตามข้อ 3 |
+| log ของแอปขึ้น `Could not resolve placeholder 'DB_PASSWORD'` | env `DB_PASSWORD` ไม่ถึง container — ตรวจชื่อ Secret/key ใน `deployment.yaml` |
+| แก้ ConfigMap แล้วค่าไม่เปลี่ยน | ยังไม่ได้ `rollout restart` |
+| แอปไม่อ่านไฟล์เลย (ค่ายังเป็นของ jar) | แอปเป็น Spring Boot 1.x ซึ่งไม่รู้จัก `SPRING_CONFIG_ADDITIONAL_LOCATION` — ใช้ `SPRING_CONFIG_LOCATION=classpath:/,file:/config/` แทน |
 
 ## 4 · ทดสอบจากเครื่อง client จริง
 
@@ -106,3 +154,6 @@ kubectl -n myhr-prod delete netpol allow-zeeme-ads-nodeport
 kubectl apply -f /root/k8s/deployments/zeeme-ads/
 ```
 Service `zeeme-ads` จะถูกทับกลับเป็น ClusterIP — client ที่ยังยิง `:30100` จะเข้าไม่ได้ทันที แจ้งก่อนทำ
+
+⚠️ `deployment.yaml` ของชุด Gateway **ยังไม่มี** ConfigMap/Secret — apply กลับแล้วแอปจะกลับไปใช้ค่าใน jar
+ถ้าจะใช้ ConfigMap กับชุด Gateway ด้วย ให้ยกส่วน "ConfigMap" 3 จุดใน `deployment.yaml` นี้ไปใส่ที่นั่นก่อน

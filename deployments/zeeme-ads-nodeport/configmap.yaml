@@ -1,0 +1,44 @@
+# =============================================================================
+#  zeeme-ads — ConfigMap แทน application.properties (myhr-prod)
+# =============================================================================
+#  ใช้แทนการแก้ application.properties ใน jar แล้ว build image ใหม่
+#  deployment.yaml mount ไฟล์นี้ไว้ที่ /config/application.properties และตั้ง
+#    SPRING_CONFIG_ADDITIONAL_LOCATION=file:/config/
+#  Spring Boot จึงอ่านไฟล์นี้ "ทับ" ค่าใน application.properties ที่อยู่ใน jar
+#  — key ที่ไม่ได้ใส่ที่นี่ ใช้ค่าเดิมใน jar ตามปกติ · ใส่เฉพาะที่ต่างกันต่อ environment
+#
+#  🔴 ห้ามใส่รหัสผ่าน / token ลงไฟล์นี้ — ConfigMap ไม่ถูกเข้ารหัส ใครดู pod ได้ก็อ่านได้
+#     (dev role ในบทที่ 10 อ่าน configmap ได้) · รหัสให้เขียนเป็น ${ชื่อตัวแปร}
+#     แล้วส่งค่าจริงมาจาก Secret ทาง env (ดู env ใน deployment.yaml)
+#
+#  🔴 แก้ไฟล์นี้แล้ว pod ไม่อ่านใหม่เอง — Spring อ่าน properties ตอนเริ่มเท่านั้น
+#     apply แล้วต้อง:  kubectl -n myhr-prod rollout restart deploy/zeeme-ads
+#
+#  ค่าข้างล่างเป็น "ตัวอย่าง" — เปลี่ยนเป็น key จริงของ zeeme-ads (ดูจาก
+#  src/main/resources/application.properties ใน repo ของ service)
+# =============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zeeme-ads-config
+  namespace: myhr-prod
+  labels:
+    app.kubernetes.io/name: zeeme-ads
+data:
+  application.properties: |
+    # --- เขียนเหมือน application.properties ปกติทุกอย่าง ----------------------
+    server.port=8100
+
+    # ฐานข้อมูล — URL/user ใส่ตรงได้ · รหัสอ่านจาก env ที่มาจาก Secret
+    spring.datasource.url=jdbc:postgresql://192.168.30.10:5432/zeeme_ads
+    spring.datasource.username=zeeme_ads
+    spring.datasource.password=${DB_PASSWORD}
+
+    # log เป็น stdout ตามกฎของบทที่ 09 (Alloy เก็บจาก stdout เท่านั้น)
+    logging.level.root=INFO
+    logging.level.com.myhr=INFO
+
+    # ค่าเฉพาะของแอป
+    app.ads.page-size=20
+    app.ads.cache-ttl-seconds=300
