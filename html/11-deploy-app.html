@@ -404,6 +404,70 @@ pod ที่ไม่ประกาศ requests นับเป็น 0 ทั
 ถ้าคุม <code>requests</code> ดีแล้ว ส่วน <code>limits.memory</code> <strong>ต้องมี</strong> เพราะ memory ไม่มี throttling
 มีแต่ OOM kill</p>
 </blockquote>
+</div><div class="sub" data-machine="all"><h3 id="กระจาย-replica-ข้าม-node--แถว-anti-affinity-ในตารางข้างบน">กระจาย replica ข้าม node — แถว anti-affinity ในตารางข้างบน</h3>
+<p><strong>ปัญหาของเดิม</strong> — <code>zeeme-ads</code> ตั้ง <code>replicas: 8</code> แต่ไม่ได้บอก scheduler ว่าให้กระจาย scheduler วาง pod
+ตามว่าเครื่องไหนว่างตอนนั้น ซึ่งหลายครั้งซ้อนกันเป็นกลุ่ม:</p>
+<div class="cb"><pre><code class="language-text">worker01: ■■■■■■   worker02: ■■   worker03: (ว่าง)
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>drain worker01 เพื่อ patch kernel (ทำทุก 1-2 เดือน) → pod 6 ใน 8 ตัวหายพร้อมกัน ·
+<strong>replica เยอะแต่กองเครื่องเดียว = ไร้ความหมาย</strong> เพราะเครื่องนั้นดับเมื่อไหร่ก็ดับหมด</p>
+<p><strong>แม่แบบใหม่ใส่ <code>topologySpreadConstraints</code></strong> (<a href="../config/app/deployment-template.yaml"><code>deployment-template.yaml</code></a>):</p>
+<div class="cb"><pre><code class="language-yaml">topologySpreadConstraints:
+  - maxSkew: 1                           # แต่ละเครื่องมี pod ต่างกันได้ไม่เกิน 1 ตัว
+    topologyKey: kubernetes.io/hostname  # นับแยกทีละเครื่อง (node)
+    whenUnsatisfiable: DoNotSchedule     # วางแล้วเกิน maxSkew = ไม่วาง (รอ)
+    nodeTaintsPolicy: Honor              # 🔴 ห้ามเอาออก — ไม่นับ master และเครื่องที่ถูก cordon
+    labelSelector:                       # นับเฉพาะ pod ของแอปนี้
+      matchLabels:
+        app.kubernetes.io/name: &lt;ชื่อแอป&gt;
+</code></pre><div class="cb-bar"><span class="cb-lang">yaml</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<table>
+<thead>
+<tr>
+<th>บรรทัด</th>
+<th>ทำอะไร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>maxSkew: 1</code></td>
+<td>เครื่องที่มีมากสุดกับน้อยสุดต่างกันได้ไม่เกิน 1 ตัว — บังคับให้ &quot;ซ้อนอย่างสม่ำเสมอ&quot;</td>
+</tr>
+<tr>
+<td><code>topologyKey: kubernetes.io/hostname</code></td>
+<td>หน่วยที่ใช้นับคือเครื่อง (ถ้าวันหนึ่งมีหลาย rack/zone เปลี่ยนเป็น zone ได้)</td>
+</tr>
+<tr>
+<td><code>whenUnsatisfiable: DoNotSchedule</code></td>
+<td>ถ้าวางแล้วไม่สมดุล ให้ pod รอ <code>Pending</code> ดีกว่าวางซ้อน · อีกค่า <code>ScheduleAnyway</code> = พยายามกระจายแต่ไม่บังคับ</td>
+</tr>
+<tr>
+<td><code>nodeTaintsPolicy: Honor</code></td>
+<td>นับเฉพาะเครื่องที่ pod วางได้จริง — <strong>ไม่มีบรรทัดนี้ รันได้แค่ 3 pod ตลอดกาล</strong> (ดูข้างล่าง)</td>
+</tr>
+<tr>
+<td><code>labelSelector</code></td>
+<td>นับเฉพาะ pod ของแอปตัวเอง ไม่เอา pod แอปอื่นมาคิด</td>
+</tr>
+</tbody>
+</table>
+<p>ผลบน worker 3 เครื่อง:</p>
+<div class="cb"><pre><code class="language-text">replicas 3 → worker01: ■    worker02: ■    worker03: ■
+replicas 8 → worker01: ■■■  worker02: ■■■  worker03: ■■
+</code></pre><div class="cb-bar"><span class="cb-lang">text</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>เครื่องไหนดับหรือถูก drain ก็เสียแค่ส่วนของเครื่องนั้น ที่เหลือให้บริการต่อ</p>
+<blockquote>
+<p>🔴 <strong>ทำไม <code>nodeTaintsPolicy: Honor</code> ห้ามขาด (เจอจริง 9 ก.ย. 2026: 3 Running + 5 Pending)</strong>
+ค่าเริ่มต้นนับ<strong>ทุก</strong> node รวม master 3 เครื่องที่ pod แอปวางไม่ได้ (ติด taint control-plane)
+master จึงถูกนับเป็นเครื่องที่มี 0 ตัวตลอดไป · พอ worker ใดมี pod ตัวที่ 2 → ต่างจาก master 2 ตัว
+เกิน <code>maxSkew: 1</code> → ถูกปฏิเสธ แต่ไปลง master ก็ไม่ได้ → ค้าง <code>Pending</code> · <code>Honor</code> ตัดเครื่องที่ pod
+ทน taint ไม่ได้ออกจากการนับ รวมถึงเครื่องที่ถูก cordon ตอน drain ด้วย</p>
+</blockquote>
+<p><strong>ทำไมไม่ใช้ anti-affinity</strong> (ชื่อในคอลัมน์ซ้ายของตาราง) — anti-affinity แบบเคร่งคือ &quot;ห้ามวางคู่กับ pod
+แอปเดียวกัน&quot; ใช้ได้ดีเมื่อ replica ≤ จำนวนเครื่อง แต่ replica ที่ 4 ขึ้นไปบน 3 worker จะวางไม่ลงเลย ·
+spread constraint ยอมให้ซ้อนได้แต่บังคับให้ซ้อนเท่า ๆ กัน จึงใช้ได้กับทุกจำนวน</p>
+<p><strong>คู่กับ PDB เสมอ</strong> — spread บอกว่า pod <strong>อยู่ที่ไหน</strong> · PDB บอกว่าตอน drain <strong>ห้ามไล่ออกพร้อมกันเกินกี่ตัว</strong>
+ต้องมีทั้งคู่ถึงจะ drain ได้โดย service ไม่ดับ</p>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="3"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-4" data-step="4" data-machines="all"><div class="step-head"><h2 id="3--deploy">3 · Deploy</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <div class="cb"><pre><code class="language-bash">kubectl apply -f zeeme-ads.yaml

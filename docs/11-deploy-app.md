@@ -86,6 +86,59 @@ sed -i 's/APPNAME/zeeme-ads/g' ./zeeme-ads.yaml
 > ถ้าคุม `requests` ดีแล้ว ส่วน `limits.memory` **ต้องมี** เพราะ memory ไม่มี throttling
 > มีแต่ OOM kill
 
+### กระจาย replica ข้าม node — แถว anti-affinity ในตารางข้างบน
+
+**ปัญหาของเดิม** — `zeeme-ads` ตั้ง `replicas: 8` แต่ไม่ได้บอก scheduler ว่าให้กระจาย scheduler วาง pod
+ตามว่าเครื่องไหนว่างตอนนั้น ซึ่งหลายครั้งซ้อนกันเป็นกลุ่ม:
+
+```
+worker01: ■■■■■■   worker02: ■■   worker03: (ว่าง)
+```
+drain worker01 เพื่อ patch kernel (ทำทุก 1-2 เดือน) → pod 6 ใน 8 ตัวหายพร้อมกัน ·
+**replica เยอะแต่กองเครื่องเดียว = ไร้ความหมาย** เพราะเครื่องนั้นดับเมื่อไหร่ก็ดับหมด
+
+**แม่แบบใหม่ใส่ `topologySpreadConstraints`** ([`deployment-template.yaml`](../config/app/deployment-template.yaml)):
+
+```yaml
+topologySpreadConstraints:
+  - maxSkew: 1                           # แต่ละเครื่องมี pod ต่างกันได้ไม่เกิน 1 ตัว
+    topologyKey: kubernetes.io/hostname  # นับแยกทีละเครื่อง (node)
+    whenUnsatisfiable: DoNotSchedule     # วางแล้วเกิน maxSkew = ไม่วาง (รอ)
+    nodeTaintsPolicy: Honor              # 🔴 ห้ามเอาออก — ไม่นับ master และเครื่องที่ถูก cordon
+    labelSelector:                       # นับเฉพาะ pod ของแอปนี้
+      matchLabels:
+        app.kubernetes.io/name: <ชื่อแอป>
+```
+
+| บรรทัด | ทำอะไร |
+|---|---|
+| `maxSkew: 1` | เครื่องที่มีมากสุดกับน้อยสุดต่างกันได้ไม่เกิน 1 ตัว — บังคับให้ "ซ้อนอย่างสม่ำเสมอ" |
+| `topologyKey: kubernetes.io/hostname` | หน่วยที่ใช้นับคือเครื่อง (ถ้าวันหนึ่งมีหลาย rack/zone เปลี่ยนเป็น zone ได้) |
+| `whenUnsatisfiable: DoNotSchedule` | ถ้าวางแล้วไม่สมดุล ให้ pod รอ `Pending` ดีกว่าวางซ้อน · อีกค่า `ScheduleAnyway` = พยายามกระจายแต่ไม่บังคับ |
+| `nodeTaintsPolicy: Honor` | นับเฉพาะเครื่องที่ pod วางได้จริง — **ไม่มีบรรทัดนี้ รันได้แค่ 3 pod ตลอดกาล** (ดูข้างล่าง) |
+| `labelSelector` | นับเฉพาะ pod ของแอปตัวเอง ไม่เอา pod แอปอื่นมาคิด |
+
+ผลบน worker 3 เครื่อง:
+```
+replicas 3 → worker01: ■    worker02: ■    worker03: ■
+replicas 8 → worker01: ■■■  worker02: ■■■  worker03: ■■
+```
+เครื่องไหนดับหรือถูก drain ก็เสียแค่ส่วนของเครื่องนั้น ที่เหลือให้บริการต่อ
+
+> 🔴 **ทำไม `nodeTaintsPolicy: Honor` ห้ามขาด (เจอจริง 9 ก.ย. 2026: 3 Running + 5 Pending)**
+> ค่าเริ่มต้นนับ**ทุก** node รวม master 3 เครื่องที่ pod แอปวางไม่ได้ (ติด taint control-plane)
+> master จึงถูกนับเป็นเครื่องที่มี 0 ตัวตลอดไป · พอ worker ใดมี pod ตัวที่ 2 → ต่างจาก master 2 ตัว
+> เกิน `maxSkew: 1` → ถูกปฏิเสธ แต่ไปลง master ก็ไม่ได้ → ค้าง `Pending` · `Honor` ตัดเครื่องที่ pod
+> ทน taint ไม่ได้ออกจากการนับ รวมถึงเครื่องที่ถูก cordon ตอน drain ด้วย
+
+**ทำไมไม่ใช้ anti-affinity** (ชื่อในคอลัมน์ซ้ายของตาราง) — anti-affinity แบบเคร่งคือ "ห้ามวางคู่กับ pod
+แอปเดียวกัน" ใช้ได้ดีเมื่อ replica ≤ จำนวนเครื่อง แต่ replica ที่ 4 ขึ้นไปบน 3 worker จะวางไม่ลงเลย ·
+spread constraint ยอมให้ซ้อนได้แต่บังคับให้ซ้อนเท่า ๆ กัน จึงใช้ได้กับทุกจำนวน
+
+**คู่กับ PDB เสมอ** — spread บอกว่า pod **อยู่ที่ไหน** · PDB บอกว่าตอน drain **ห้ามไล่ออกพร้อมกันเกินกี่ตัว**
+ต้องมีทั้งคู่ถึงจะ drain ได้โดย service ไม่ดับ
+
+
 ---
 
 ## 3 · Deploy

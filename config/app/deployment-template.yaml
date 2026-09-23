@@ -43,12 +43,13 @@ spec:
 
       # --- กระจาย replica ข้าม node -------------------------------------
       # ถ้าทุก replica อยู่ node เดียวกัน drain เครื่องนั้น = service ดับ
-      # ทั้งที่มี replica 2 ตัว
+      # ทั้งที่มี replica หลายตัว · อธิบายเต็มในบทที่ 11 หัวข้อ "กระจาย replica"
       topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
+        - maxSkew: 1                           # แต่ละเครื่องมี pod ต่างกันได้ไม่เกิน 1 ตัว
+          topologyKey: kubernetes.io/hostname  # นับแยกทีละเครื่อง (node)
+          whenUnsatisfiable: DoNotSchedule     # วางแล้วเกิน maxSkew = ไม่วาง (รอ)
+          nodeTaintsPolicy: Honor              # 🔴 ห้ามเอาออก — ไม่นับ master และเครื่องที่ถูก cordon
+          labelSelector:                       # นับเฉพาะ pod ของแอปนี้
             matchLabels:
               app.kubernetes.io/name: APPNAME
 
