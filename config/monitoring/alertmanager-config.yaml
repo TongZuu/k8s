@@ -17,7 +17,7 @@
 #
 #  ไฟล์นี้ไม่มีค่าที่ต้องแทนแล้ว — ปลายทางเมลทั้งหมดย้ายไปตั้งที่
 #  deployments/alert-mail-relay/alert-mail-relay.yaml และ Secret `alert-mail`
-#  (ที่อยู่ผู้รับอยู่ใน Deployment · user/รหัสอยู่ใน Secret) — บท 09 ข้อ 5.4
+#  (ที่อยู่ผู้รับอยู่ใน Deployment · user/รหัสอยู่ใน Secret) — บท 09 ข้อ 5
 # =============================================================================
 
 alertmanager:
@@ -31,7 +31,7 @@ alertmanager:
       #  Alertmanager ปฏิเสธการส่งรหัสผ่านบนช่องไม่เข้ารหัส จึงส่งตรงไม่ได้
       #  ตอนนี้ส่งผ่าน alert-mail-relay แทน (deployments/alert-mail-relay/)
       #  วันที่ได้พอร์ต 587 หรือได้ allow-list ให้เปิดสามบรรทัดนี้กลับ
-      #  แล้วสลับ webhook_configs ข้างล่างกลับเป็น email_configs — ดูบท 09 ข้อ 5.4
+      #  แล้วสลับ webhook_configs ข้างล่างกลับเป็น email_configs — ดูภาคผนวกท้ายบท 09
       # smtp_smarthost: "mail.myhr.in.th:587"
       # smtp_from: "myhr-notification@myhr.in.th"
       # smtp_require_tls: true

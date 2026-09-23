@@ -1,10 +1,10 @@
 # บทที่ 09 — Observability
 
-> **รันที่: 👑 master01 เกือบทั้งบท** · ยกเว้นที่บอกไว้: ค่าลับ (รหัส Grafana ข้อ 2 · รหัส SMTP ข้อ 5.1)
+> **รันที่: 👑 master01 เกือบทั้งบท** · ยกเว้นที่บอกไว้: ค่าลับ (รหัส Grafana ข้อ 2 · รหัส SMTP ข้อ 5.1 พิมพ์ทางแป้นพิมพ์)
 > อยู่ใน `secrets.env` บน**เครื่องคุณ** ส่งขึ้นทีละค่า · เปิด Grafana ในเบราว์เซอร์ (ข้อ 4) ทำบน**เครื่องคุณ**
 > · ข้อ 7 มี `ssh` ไป worker03
 > **ลำดับ: 1 → 8 ตามลำดับ** — ข้อ 5 (ปลายทาง alert) ต้องเสร็จและยิงทดสอบผ่านก่อนข้อ 6 (rule) เสมอ
-> **เวลาที่ใช้:** ~45 นาที + รอทีม mail ตอบค่า SMTP (ถามไว้ก่อนเริ่มบท — ตาราง 5.1)
+> **เวลาที่ใช้:** ~45 นาที · เตรียมรหัส SMTP ของ `myhr-notification` กับที่อยู่ผู้รับ alert ไว้ก่อนเริ่มบท
 > **ต้องผ่านบทที่ 08** — PV ทั้ง 3 ตัวต้องเป็น `Available` · และ[บท 07](07-gateway-tls.md) — ข้อ 4 ใช้ Gateway เปิด Grafana
 
 ---
@@ -357,134 +357,57 @@ ssh -L 3000:127.0.0.1:3000 root@192.168.50.101 'kubectl -n monitoring port-forwa
 
 ## 5 · 🔴 ตั้งปลายทางของ alert — ทำก่อนเขียน rule
 
-**ทำที่:** 👑 master01 ทั้งข้อ (5.1 → 5.3 ตามลำดับ) · 5.3.3 มีบล็อกที่ยิงจาก**เครื่องคุณ**เพื่อเทียบ
-· **ต้องมีก่อน:** ข้อ 2 (Alertmanager มาพร้อม chart) · **ค่า SMTP จากทีม mail ครบตามตาราง 5.1**
-— ไม่มีค่าเหล่านี้ทำข้อนี้ไม่ได้ และห้ามข้ามไปข้อ 6 · 5.4 ทำเฉพาะเมื่อ 5.3 สรุปว่าส่งตรงไม่ได้
+**ทำที่:** 👑 master01 ทั้งข้อ (5.1 → 5.4 ตามลำดับ) · **ต้องมีก่อน:** ข้อ 2 (Alertmanager มาพร้อม chart)
+· user/รหัส SMTP ของบัญชี `myhr-notification@myhr.in.th` (อยู่ใน `secrets.env` หรือที่เก็บ secret ขององค์กร)
+· ที่อยู่ผู้รับ alert ทั่วไป และผู้รับ critical (ใช้ที่อยู่เดียวกันก็ได้ถ้ายังไม่มีกลุ่ม on-call)
 
-**alert ที่ไม่มีใครเห็น = ไม่มี alert** — ข้อนี้ห้ามข้าม และต้องทำ**ก่อน**ข้อ 6
-เพราะ rule ที่ apply ตอนที่ยังไม่มีปลายทาง คือ rule ที่ดังลงที่ที่ไม่มีใครอยู่
+**alert ที่ไม่มีใครเห็น = ไม่มี alert** — ข้อนี้ต้องจบ**ก่อน**ข้อ 6 เพราะ rule ที่ไม่มีปลายทางก็ดังลงที่ว่าง
 
-ข้อนี้ไม่ต้องรอ rule ของเราสักข้อ — Alertmanager มาพร้อม chart ตั้งแต่ข้อ 2 แล้ว
-และการทดสอบท้ายข้อก็ยิง alert ปลอมเข้าไปตรง ๆ ไม่ต้องรอให้มีอะไรพังจริง
+**เส้นทางที่ใช้ — ชุดเดียวกับที่ใช้ได้จริงรอบก่อน:**
 
-### 5.1 แทนค่าในไฟล์ปลายทาง
-
-**ทำที่:** 👑 master01 (ไฟล์ `/root/k8s/config/monitoring/alertmanager-config.yaml`) · ค่าที่ต้องใช้ดูตารางข้างล่าง
-
-ค่าที่ต้องเตรียมก่อน — ถามทีม infra/mail ไว้ล่วงหน้า ไม่ใช่มานั่งหาตอนทำ:
-
-| ค่าที่ต้องแทน | คืออะไร |
-|---|---|
-| `<SMTP_HOST>` · `<SMTP_PORT>` | mail relay ภายในองค์กร · พอร์ต 25 มักไม่ต้องล็อกอิน · 587 เกือบทุกครั้งต้อง |
-| `<ALERT_FROM>` | ที่อยู่ผู้ส่ง เช่น `k8s-alert@บริษัท` — ต้องเป็นที่อยู่ที่ relay ยอมให้ส่ง |
-| `<ALERT_TO>` | ปลายทางของ alert ทั่วไป — ควรเป็น distribution list ไม่ใช่เมลคนเดียว |
-| `<ALERT_TO_CRITICAL>` | ปลายทางของ critical · ถ้ายังไม่มีกลุ่ม on-call ใส่ค่าเดียวกับข้างบนไปก่อน |
-| `<SMTP_USER>` · `<SMTP_PASSWORD>` | **เฉพาะเมื่อ relay ต้องล็อกอิน** — ตัดสินใจที่ขั้น A ข้างล่าง |
-
-**ขั้น A — ตัดสินก่อนว่า relay ต้องล็อกอินไหม** ไม่แน่ใจให้ถามทีม mail
-หรือดูว่า relay ประกาศ `AUTH` ไว้หรือเปล่า (ประกาศ ≠ บังคับ แต่ถ้าไม่ประกาศเลยแปลว่าไม่ต้องแน่ ๆ):
-**ใส่ชื่อ relay จริงที่ได้จากทีม mail ก่อน** (ไม่ใช่ `mail.example.co.th` — นั่นคือตัวอย่าง) · ค่า `H` กับ `P`
-ใช้ต่อในทุกคำสั่งทดสอบของข้อ 5 ถ้าเปิด shell ใหม่ต้องรันบรรทัดนี้ซ้ำ:
-```bash
-read -rp 'SMTP relay host (จากทีม mail): ' H; read -rp 'port [25]: ' P; P=${P:-25}; getent hosts "$H" || echo "❌ resolve $H ไม่ได้ — ชื่อผิดหรือ DNS ไม่รู้จัก"
 ```
-**ควรเห็น:** IP ของ relay หนึ่งบรรทัด · ได้ `❌` = ชื่อผิด ถามทีม mail ใหม่ (ห้ามไปต่อ)
-
-แล้วถาม relay ว่าประกาศอะไร — ยิงจาก pod เพราะเป็นเส้นทางเดียวกับที่ Alertmanager ใช้:
-```bash
-kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
-  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" "$1"' "$H" "$P" | grep -iE '^2|AUTH|STARTTLS'
-```
-**ควรเห็น:** บรรทัด `220 ...` ตามด้วย `250-...` หลายบรรทัด · มี `AUTH` = relay รับล็อกอิน · ไม่มีเลย = ไม่ต้องล็อกอิน (A-ก)
-· ไม่มีอะไรออกมาเลย = ต่อไม่ติด → 5.3.3
-
-**A-ก · relay ไม่ต้องล็อกอิน** — ปิดสองบรรทัด auth ทิ้งไปเลย
-```bash
-cd /root/k8s/config/monitoring
-sed -i -E 's|^([[:space:]]*)(smtp_auth_)|\1# \2|' alertmanager-config.yaml
-grep -cE '^[[:space:]]*smtp_auth_' alertmanager-config.yaml
-```
-**ควรเห็น:** `0`
-
-> 🔴 **ห้ามปล่อยสองบรรทัดนั้นเปิดไว้ทั้งที่ยังเป็น `<SMTP_USER>`** — Alertmanager จะโหลด
-> config ไม่ผ่าน แล้ว**ถอยไปใช้ config เดิมของ chart** ผลคือหน้า `/api/v2/receivers`
-> ตอบ `null` มาตัวเดียว ทั้งที่ `helm upgrade` สำเร็จและ pod ยัง `Running` ทุกตัว
-
-**A-ข · relay ต้องล็อกอิน** — เปิด auth แล้วบังคับ TLS กับพอร์ตให้ถูกในทีเดียว
-```bash
-cd /root/k8s/config/monitoring
-read -rp 'พอร์ตที่ใช้กับ auth [587]: ' SPORT; SPORT=${SPORT:-587}
-sed -i -E "s|^([[:space:]]*)#[[:space:]]*(smtp_auth_)|\1\2|" alertmanager-config.yaml
-sed -i -E -e "s|(smtp_smarthost: \"[^\"]*):[0-9]+\"|\1:${SPORT}\"|" \
-          -e 's|smtp_require_tls: false|smtp_require_tls: true|' alertmanager-config.yaml
-grep -E 'smtp_(smarthost|require_tls)' alertmanager-config.yaml
-```
-**ควรเห็น:** พอร์ตเป็นเลขที่กรอก และ `smtp_require_tls: true`
-
-> 🔴 **เปิด auth แล้วต้องเปิด TLS เสมอ** — ไลบรารีที่ Alertmanager ใช้ปฏิเสธการส่งรหัสผ่าน
-> บนช่องที่ไม่เข้ารหัส ถ้าทิ้ง `smtp_require_tls: false` ไว้จะได้ error ทำนอง
-> `unencrypted connection` แล้วเมลไม่ออกเลย
->
-> **แต่ TLS ไม่ได้ผูกกับพอร์ต 587** — `require_tls` คือ STARTTLS ซึ่ง relay หลายเจ้าก็ให้บน 25
-> ตัวตัดสินคือ relay ประกาศ `STARTTLS` บนพอร์ตนั้นหรือเปล่า ไม่ใช่เลขพอร์ต
-> ถ้าองค์กรบล็อก 587 ขาออก (เจอบ่อยเมื่อ relay อยู่นอกวง) ให้ลอง 25 ที่มี STARTTLS ก่อน
-
-**ขั้น B — แทนค่าทุกช่องที่เหลือ** บล็อกนี้ **รันซ้ำได้ไม่จำกัด** ถามเฉพาะช่องที่ยังว่างจริง
-ช่องที่เต็มแล้วจะขึ้น `✓ ... ไม่ถาม` และไม่แตะไฟล์ (ถ้าเลือก A-ก มันจะไม่ถาม user/password ให้เอง)
-```bash
-cd /root/k8s/config/monitoring
-for V in SMTP_HOST SMTP_PORT ALERT_FROM ALERT_TO ALERT_TO_CRITICAL SMTP_USER SMTP_PASSWORD; do
-    if grep -v '^[[:space:]]*#' alertmanager-config.yaml | grep -q "<${V}>"; then
-        if [ "$V" = SMTP_PASSWORD ]; then
-            read -rsp "ค่าของ ${V}: " NEW; echo " (รับมา ${#NEW} ตัว)"
-        else
-            read -rp "ค่าของ ${V}: " NEW
-        fi
-        if [ -n "$NEW" ]; then
-            sed -i "s|<${V}>|${NEW}|" alertmanager-config.yaml; echo "  ✓ แทน ${V} แล้ว"
-        else
-            echo "  ⚠ ข้าม ${V} — ค่าว่าง ยังต้องกลับมาทำ"
-        fi
-    else
-        echo "✓ ${V} แทนไปแล้ว ไม่ถาม"
-    fi
-done
-unset NEW
-chmod 600 alertmanager-config.yaml
+Alertmanager ──webhook──▶ alert-mail-relay (pod ใน monitoring) ──SMTP AUTH พอร์ต 25──▶ mail.myhr.in.th ──▶ กล่องเมล
 ```
 
-> **ทำไมต้องเป็น loop ไม่ใช่ `read` เรียงกันแล้ว `sed` ทีเดียว** — แบบเรียงกันจะถามครบทุกช่อง
-> ทุกครั้งที่รัน แล้ว `sed` ไปไม่เจอ placeholder ที่รอบก่อนกินไปแล้ว
-> กลายเป็น "พิมพ์แล้วไม่มีอะไรเปลี่ยน" ซึ่งชวนให้เข้าใจว่าคำสั่งพัง
-> ขั้นตอนที่คนต้องรันซ้ำตอนตีสอง ต้องรันซ้ำได้จริง
+ส่งตรงจาก Alertmanager ไม่ได้ เพราะ relay ขององค์กรบังคับล็อกอินและพอร์ต 25 ไม่มี STARTTLS —
+Alertmanager ไม่ยอมส่งรหัสบนช่องไม่เข้ารหัส · `alert-mail-relay` (Python `smtplib`) ส่งแทน
+ค่า relay กับผู้ส่งตั้งไว้ในrepoแล้ว ([`alert-mail-relay.yaml`](../deployments/alert-mail-relay/alert-mail-relay.yaml))
+ส่วน `alertmanager-config.yaml` ชี้ webhook มาที่ตัวกลางไว้แล้ว · เหลือแค่รหัสกับผู้รับ
 
-**ตรวจผลก่อนไปข้อ 5.2:**
+> วันที่ได้พอร์ตที่มี STARTTLS และจะเลิกใช้ตัวกลาง → **ภาคผนวก · ส่งเมลตรงจาก Alertmanager** ท้ายบท
+
+### 5.1 เก็บ user/รหัส SMTP ลง Secret
+
+รหัสอยู่ใน Secret เท่านั้น — ไม่อยู่ในไฟล์ในrepo และไม่ผ่าน helm values:
 ```bash
-cd /root/k8s/config/monitoring
-grep -v '^[[:space:]]*#' alertmanager-config.yaml | grep -c '<[A-Z_]*>'
-grep -E '^[[:space:]]*smtp_(smarthost|from|require_tls|auth_username)' alertmanager-config.yaml
-awk -F'"' '/^[[:space:]]*smtp_auth_password:/{print "smtp_auth_password ยาว " length($2) " ตัว"}' alertmanager-config.yaml
+read -rp 'SMTP user: ' SU; read -rsp 'SMTP password: ' SP; echo " (รับมา ${#SP} ตัว)"
+kubectl -n monitoring create secret generic alert-mail \
+  --from-literal=SMTP_USER="$SU" --from-literal=SMTP_PASS="$SP" \
+  --dry-run=client -o yaml | kubectl apply -f -
+unset SU SP
 ```
+**ควรเห็น:** `(รับมา N ตัว)` ที่ N ไม่เป็น 0 · แล้ว `secret/alert-mail created`
 
-**ควรเห็น:** บรรทัดแรกเป็น `0` · ค่าที่ตั้งไว้ตรงกับที่ทีม mail ให้มา ·
-ถ้าเลือก A-ข ต้องเห็น `smtp_require_tls: true` และ `smtp_auth_password ยาว N ตัว` (N ตรงกับที่พิมพ์)
-· ถ้าเลือก A-ก สองบรรทัดสุดท้ายต้องไม่มีอะไรออกมาเลย
+### 5.2 ใส่ผู้รับ แล้ว deploy ตัวกลาง
 
-> ที่ต้องตัดบรรทัดคอมเมนต์ออกก่อนนับ `<...>` เพราะในไฟล์ยังมี `<TEAMS_WEBHOOK_URL>`
-> ค้างอยู่ในคอมเมนต์ของทางเลือก Teams ที่ยังไม่ได้เปิดใช้ — ปกติ ไม่ต้องแทน
->
-> **รหัส SMTP จะไปอยู่ในไฟล์บน master01 และใน secret ของ helm release** — ห้ามแทนค่าลงไฟล์
-> ชุดที่อยู่ใน repo บนเครื่องคุณ เพราะไฟล์นั้นถูก commit · จดไว้ที่ `secrets.env`
-> คีย์ `SMTP_PASSWORD` ด้วย จะได้ไม่ต้องไปขอใหม่ตอนสร้าง cluster รอบหน้า
+```bash
+cd /root/k8s/deployments/alert-mail-relay
+read -rp 'ผู้รับ alert ทั่วไป (คั่นด้วย , ได้): ' TO; read -rp 'ผู้รับ critical [เหมือนข้างบน]: ' TOC; TOC=${TOC:-$TO}
+sed -i "s|<ALERT_TO>|$TO|; s|<ALERT_TO_CRITICAL>|$TOC|" alert-mail-relay.yaml
+grep -nE 'smtp_host|smtp_port|mail_from|to_default|to_critical' alert-mail-relay.yaml
+kubectl apply -f alert-mail-relay.yaml && kubectl -n monitoring rollout status deploy/alert-mail-relay --timeout=180s
+```
+**ควรเห็น:** `smtp_host = mail.myhr.in.th` · `smtp_port = 25` · `mail_from = myhr-notification@myhr.in.th`
+· `to_default` / `to_critical` เป็นที่อยู่ที่พิมพ์ (ไม่มี `<...>` เหลือ) · ปิดท้าย `successfully rolled out`
+(ครั้งแรกรอดึง image `python:3.12-alpine`)
 
-### 5.2 ส่งค่าให้ chart
+> ต้องแก้ผู้รับทีหลัง: แก้ `to_*` ในไฟล์นี้แล้ว `kubectl apply` ซ้ำ — ตัวกลางอ่านค่าใหม่ทุก alert
+> ไม่ต้อง restart (kubelet sync ไฟล์ราว 1 นาที)
 
-**ทำที่:** 👑 master01 · **ต้องมีก่อน:** 5.1 ขั้น B ตอบ `✓` ครบทุกช่อง
+### 5.3 ชี้ Alertmanager มาที่ตัวกลาง
 
-🔴 **ไฟล์ values มีสองชิ้นแล้ว ต้องใส่ `-f` ทั้งคู่ทุกครั้งที่ `helm upgrade` นับจากนี้**
-ถ้าลืมชิ้นใดชิ้นหนึ่ง ค่าของไฟล์นั้นจะกลับไปเป็น default ของ chart แบบเงียบ ๆ —
-ปลายทาง alert หายไปโดยที่ทุก pod ยัง `Running` และไม่มีอะไรฟ้อง
-
+🔴 **นับจากนี้ `helm upgrade` ของ `monitoring` ต้องมี `-f` สองไฟล์และ `--version` ทุกครั้ง** —
+ลืมไฟล์ที่สอง ปลายทาง alert หายเงียบ ๆ · ลืม `--version` = อัป chart ทั้งชุดโดยไม่ตั้งใจ
 ```bash
 set -a && source /root/k8s/versions.env && set +a
 helm upgrade monitoring prometheus-community/kube-prometheus-stack \
@@ -493,6 +416,50 @@ helm upgrade monitoring prometheus-community/kube-prometheus-stack \
   -f /root/k8s/config/monitoring/kube-prometheus-values.yaml \
   -f /root/k8s/config/monitoring/alertmanager-config.yaml
 ```
+**ควรเห็น:** `STATUS: deployed` และ `REVISION` เพิ่มขึ้น 1
+
+**ตรวจว่า Alertmanager รับ config ใหม่จริง** — ต้องรอ ~45 วินาทีให้ secret sync เข้า pod ก่อน:
+```bash
+kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 >/dev/null 2>&1 &
+sleep 45
+curl -s localhost:9093/api/v2/receivers | jq -r '.[].name'
+kill %%
+```
+**ควรเห็น:** `null` · `myhr-default` · `myhr-critical` — ได้ `null` ตัวเดียว = ยังใช้ config ตั้งต้นของ chart
+→ ตาราง "ถ้าไม่ผ่าน" ท้ายข้อ
+
+### 5.4 ยิง alert ปลอม — ห้ามข้าม
+
+มีคนเปิดกล่องเมลผู้รับรอดูอยู่ — ผลของข้อนี้อยู่ในกล่องเมล ไม่ใช่บนจอ:
+```bash
+kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 >/dev/null 2>&1 &
+sleep 3
+for SEV in warning critical; do
+  curl -s -XPOST http://localhost:9093/api/v2/alerts -H 'Content-Type: application/json' \
+    -d "[{\"labels\":{\"alertname\":\"TestAlert\",\"severity\":\"$SEV\"},\"annotations\":{\"summary\":\"ทดสอบเส้นทาง $SEV\"}}]"
+done
+kill %%
+sleep 40; kubectl -n monitoring logs deploy/alert-mail-relay --tail=10
+```
+**ควรเห็น:** log ของตัวกลางมี `ส่งแล้ว: [k8s FIRING ...] -> to=default` และ `-> to=critical`
+· **แล้วเมลเข้ากล่องทั้งสองฉบับ** (ดู junk ด้วย) · ของปลอมหายเองใน ~5 นาที ไม่ต้องลบ
+
+**ห้ามไปข้อ 6 ก่อนเมลถึงมือคน**
+
+---
+
+### ถ้าข้อ 5 ไม่ผ่าน
+
+| เห็นอะไร | แปลว่า / แก้ |
+|---|---|
+| 5.2 `grep` ยังเห็น `<ALERT_TO>` | `sed` ไม่ได้แทน (ค่าที่พิมพ์ว่าง) — รันบล็อก 5.2 ซ้ำ |
+| 5.3 ได้ `null` ตัวเดียว | `helm -n monitoring get values monitoring \| grep -c myhr-default` — `0` = ไม่ได้ใส่ `-f` ไฟล์ที่สอง upgrade ใหม่ · ไม่เป็น 0 = config ถูกปฏิเสธ ดู `kubectl -n monitoring logs deploy/monitoring-kube-prometheus-operator --tail=80 \| grep -iE 'alertmanager\|error'` |
+| 5.4 log ตัวกลางว่าง ไม่มี `ส่งแล้ว` เลย | Alertmanager ยังไม่เรียกมา — ยังใช้ config ตั้งต้น กลับไปตรวจ 5.3 |
+| `ส่งไม่ผ่าน: SMTPAuthenticationError` | user/รหัสใน Secret ผิด — ทำ 5.1 ซ้ำ (apply ทับได้) แล้วยิง 5.4 ใหม่ |
+| `ส่งไม่ผ่าน: TimeoutError` / `ConnectionRefused` | pod ต่อ `mail.myhr.in.th:25` ไม่ได้ — ภาคผนวกท้ายบท หัวข้อ "ต่อพอร์ตไม่ได้" |
+| `ไม่มีผู้รับสำหรับ to=...` | `to_default` ว่าง — ทำ 5.2 ซ้ำ |
+| log ขึ้น `ส่งแล้ว` แต่เมลไม่เข้า | relay รับแล้วแต่ปลายทางกรองทิ้ง (junk / นโยบายเมล) — ตามที่ทีม mail ไม่ใช่ที่ cluster |
+| `helm upgrade` ล้มด้วย `no such host` | ดาวน์โหลด chart ไม่ได้ (DNS สะดุด) ไม่เกี่ยวกับ config — ลองซ้ำ หรือใช้ chart ที่ `helm pull` เก็บไว้ (ดูหมายเหตุข้างล่าง) |
 
 > 🔴 **`--version` ต้องมีทุกครั้ง** — `helm upgrade` ที่ไม่ระบุเวอร์ชันจะคว้า chart
 > **รุ่นล่าสุดใน repo** มาใช้ กลายเป็นอัป chart ทั้งชุดพ่วงไปกับการแก้ค่าเล็ก ๆ
@@ -514,307 +481,8 @@ helm upgrade monitoring prometheus-community/kube-prometheus-stack \
 > helm upgrade monitoring /root/k8s/dl/kube-prometheus-stack-${KUBE_PROM_STACK_CHART}.tgz -n monitoring -f /root/k8s/config/monitoring/kube-prometheus-values.yaml -f /root/k8s/config/monitoring/alertmanager-config.yaml
 > ```
 
-**ตรวจว่า Alertmanager รับ config ใหม่ไปจริง** (ไม่ใช่แค่ helm บอกว่า upgraded)
-— 🔴 **ต้องรออย่างน้อย ~45 วินาที** ก่อนเช็ค · secret ที่ helm เขียนต้องรอ kubelet
-sync เข้า pod ก่อน config-reloader ถึงจะเห็น เช็คเร็วกว่านั้นจะได้ผลของ config เดิม:
-```bash
-kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 &
-sleep 45
-curl -s localhost:9093/api/v2/receivers | jq -r '.[].name'
-kill %%
-```
-**ควรเห็น:** `null` · `myhr-default` · `myhr-critical`
-
-**ถ้าได้ `null` มาตัวเดียว** อย่าเพิ่งไปแก้บรรทัด `-f` — มันเป็นได้สองเรื่องคนละเรื่อง
-แยกด้วยคำสั่งนี้ก่อน (ดูว่า release ถือค่าอะไรอยู่จริง):
-```bash
-helm -n monitoring get values monitoring | sed -n '/^alertmanager:/,/^[a-z]/p' | head -40
-```
-
-| ที่เห็นจาก `get values` | แปลว่า | ทำอะไรต่อ |
-|---|---|---|
-| ไม่มี `myhr-default` เลย | helm ไม่ได้กินไฟล์ที่สองจริง | ย้อนไปดูบรรทัด `-f` แล้ว upgrade ใหม่ |
-| มีครบ แต่ยังเห็น `<SMTP_USER>` / `<ALERT_TO>` | ข้อ 5.1 ยังไม่จบ · Alertmanager โหลด config ไม่ผ่านแล้ว**ถอยไปใช้ของ chart** | กลับไปทำ 5.1 ให้ครบ แล้ว upgrade ใหม่ |
-| มีครบ ค่าจริงครบ แต่ยัง `null` | config ถูกปฏิเสธด้วยเหตุอื่น | ดู log ของ operator ข้างล่าง |
-
-```bash
-kubectl -n monitoring logs deploy/monitoring-kube-prometheus-operator --tail=80 | grep -iE 'alertmanager|invalid|error'
-```
-
-> **`null` ไม่ได้แปลว่า "ไม่มี config"** — มันคือชื่อ receiver ใน config **ตั้งต้นของ chart**
-> เห็นชื่อนี้ตัวเดียวเมื่อไร แปลว่า Alertmanager กำลังใช้ของตั้งต้นอยู่ ไม่ว่าจะเพราะ
-> ไฟล์ไม่ถึง หรือถึงแล้วแต่โหลดไม่ผ่าน — สองอย่างนี้หน้าตาเหมือนกันเป๊ะจากด่านตรวจนี้
-
-> **ทำไมไม่ `kubectl -n monitoring edit secret alertmanager-...`** วิธีนั้นมีผลทันทีจริง
-> แต่ `helm upgrade` รอบถัดไปจะเขียนทับ secret ทั้งก้อน ปลายทางที่แก้ไว้จะหายโดยไม่มีใครรู้
-> ใช้ได้เฉพาะตอนฉุกเฉินกลางดึก แล้วต้องย้ายกลับมาใส่ `alertmanager-config.yaml` ให้เสร็จวันรุ่งขึ้น
-
-### 5.3 ยิงของปลอมหนึ่งครั้ง — ห้ามข้าม
-
-**ทำที่:** 👑 master01 · **ต้องมีก่อน:** 5.2 `helm upgrade` จบและ Alertmanager `Running` · มีคนเปิดกล่องเมล
-`<ALERT_TO>` / `<ALERT_TO_CRITICAL>` รอดูอยู่ (ผลของข้อนี้อยู่ในกล่องเมล ไม่ใช่บนจอ)
-
-```bash
-kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 &
-sleep 3
-curl -s -XPOST http://localhost:9093/api/v2/alerts -H 'Content-Type: application/json' -d '[{
-  "labels": {"alertname":"TestAlert","severity":"warning"},
-  "annotations": {"summary":"ทดสอบว่า alert ส่งถึงจริง"}
-}]'
-kill %%
-```
-
-ทดสอบเส้นทาง critical อีกหนึ่งฉบับ (คนละปลายทางกัน ถ้าทีมแยกกลุ่ม on-call ไว้):
-```bash
-kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 &
-sleep 3
-curl -s -XPOST http://localhost:9093/api/v2/alerts -H 'Content-Type: application/json' -d '[{
-  "labels": {"alertname":"TestAlert","severity":"critical"},
-  "annotations": {"summary":"ทดสอบเส้นทาง critical"}
-}]'
-kill %%
-```
-
-**ต้องเห็นข้อความจริงเข้ามาที่ปลายทางทั้งสองฉบับ** ถ้าไม่เข้าให้แก้จนกว่าจะเข้า —
-ห้ามเดินไปข้อ 6 ก่อนที่เมลจะถึงมือคน · ของปลอมจะหายเองใน ~5 นาที (`resolve_timeout`)
-ไม่ต้องไปลบ
-
-**ถ้าเมลไม่เข้า ดูสาเหตุที่ log ของ Alertmanager** — มันบอกตรง ๆ ว่าติดตรงไหน:
-```bash
-kubectl -n monitoring logs sts/alertmanager-monitoring-kube-prometheus-alertmanager \
-  -c alertmanager --tail=50 | grep -iE 'notify|smtp|error'
-```
-
-| ข้อความที่เจอ | แปลว่า |
-|---|---|
-| `unencrypted connection` | เปิด auth ไว้แต่ `smtp_require_tls: false` — กลับไปทำข้อ 5.1 ขั้น A-ข |
-| `does not advertise the STARTTLS extension` | relay ไม่ให้ STARTTLS บนพอร์ตที่ตั้งไว้ (มักเจอบน 25) · ไปต่อที่ 5.3.1 |
-| `535` · `authentication failed` | user/รหัสผิด หรือ relay ไม่ยอมให้บัญชีนี้ส่งจากที่อยู่ผู้ส่งที่ตั้งไว้ |
-| `550` · `relay access denied` | relay ไม่รับเมลจาก IP ขาออกของ cluster — ให้ทีม mail เปิด allow-list |
-| `connection refused` · `i/o timeout` | ต่อพอร์ตนั้นไม่ได้ · **อย่าเพิ่งสรุปว่าไฟร์วอลล์บล็อก** ดู 5.3.3 |
-| ไม่มี error แต่เมลไม่เข้า | relay รับแล้วแต่ปลายทางกรองทิ้ง — ตามที่ทีม mail ไม่ใช่ที่ cluster |
-
-> **ถ้ายังไม่ได้ปลายทางจริงในวันนี้** ให้ใส่เมลของตัวเองไปก่อนแล้วเดินต่อได้
-> **แต่ห้ามย้าย workload เข้ามา** จนกว่าปลายทางจริงจะส่งถึงคนที่รับผิดชอบ
-
-#### 5.3.1 ถ้า log บอกว่า relay ไม่ประกาศ STARTTLS
-
-ดูว่า relay ประกาศอะไรบ้างบนพอร์ตที่ต่อได้จริง — **รันจาก pod** เพราะนั่นคือเส้นทางที่
-Alertmanager ใช้ และ **ห้ามใส่ `-it`** เพราะ TTY จะกลืน output ของ pipe จนเห็นแต่บรรทัด `220`:
-```bash
-kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
-  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" "$1"' "$H" "$P"
-```
-
-| relay ประกาศ | แปลว่า | ทางแก้ |
-|---|---|---|
-| มี `STARTTLS` | ใช้พอร์ตนั้นได้เลย | ตั้ง `smtp_smarthost` เป็นพอร์ตนั้น + `require_tls: true` |
-| ไม่มีทั้ง `STARTTLS` และ `AUTH` | relay รับจาก IP ที่อนุญาตโดยไม่ต้องล็อกอิน | ปิด auth ตามคำสั่งข้างล่าง แล้ว `helm upgrade` ซ้ำ |
-| มี `AUTH` แต่ไม่มี `STARTTLS` | **ยังไม่สรุป** — ประกาศ AUTH ไม่ได้แปลว่าบังคับ | ทดสอบต่อด้วยบล็อกถัดไปก่อนไปขอใคร |
-
-**ทดสอบว่า relay บังคับ auth จริงไหม** — คุยถึงขั้น `RCPT TO` แต่ไม่ส่ง `DATA`
-จึงไม่มีเมลออกไปจริงสักฉบับ (แทน `<...>` ด้วยที่อยู่จริงก่อนรัน):
-```bash
-kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
-  sh -c '(printf "EHLO myhr\r\n"; sleep 2; printf "MAIL FROM:<ผู้ส่ง>\r\n"; sleep 2; printf "RCPT TO:<ปลายทาง>\r\n"; sleep 3; printf "QUIT\r\n"; sleep 1) | nc -w 15 "$0" "$1"' "$H" "$P"
-```
-
-| บรรทัดหลัง `RCPT TO` | แปลว่า | ทางแก้ |
-|---|---|---|
-| `250 ... Ok` | ไม่บังคับ auth | ปิด auth ตามคำสั่งข้างล่าง แล้ว `helm upgrade` ซ้ำ — จบ |
-| `530 SMTP authentication is required` | บังคับ auth และไม่มี STARTTLS บนพอร์ตนี้ | ส่งตรงไม่ได้ → ไปที่ 5.3.2 |
-| `554` · `relay access denied` | relay ไม่ยอมส่งต่อออกนอกโดเมนให้ IP นี้ | ขอทีม mail ใส่ IP ขาออกของ cluster ใน allow-list |
-
-**ปิด auth ทั้งชุด** (สำหรับสองแถวที่บอกว่าไม่ต้องล็อกอิน):
-```bash
-cd /root/k8s/config/monitoring
-sed -i -E -e 's|^([[:space:]]*)(smtp_auth_)|\1# \2|' \
-          -e 's|smtp_require_tls: true|smtp_require_tls: false|' alertmanager-config.yaml
-grep -E '^[[:space:]]*smtp_' alertmanager-config.yaml
-```
-**ควรเห็น:** เหลือแค่ `smtp_smarthost` · `smtp_from` · `smtp_require_tls: false`
-แล้วกลับไปรัน `helm upgrade` ในข้อ 5.2 ซ้ำ · เมลที่ค้างคิว retry อยู่จะถูกส่งเองไม่ต้องยิงใหม่
-
-#### 5.3.2 relay บังคับ auth แต่พอร์ตที่ออกได้ไม่มี STARTTLS
-
-Alertmanager ส่งตรงไม่ได้แน่นอนในสภาพนี้ — มันปฏิเสธการส่งรหัสผ่านบนช่องที่ไม่เข้ารหัส
-แบบฮาร์ดโค้ด และนั่นถูกต้องแล้ว **มีสามทางออก เลือกได้ทันทีตามว่าอันไหนเป็นไปได้ก่อน**
-
-| ทางออก | ต้องพึ่งใคร | ได้เมื่อไร |
-|---|---|---|
-| ขอเปิดพอร์ตที่มี STARTTLS (มัก 587) | ทีม network **และ** relay ต้องเปิด 587 จริง | ต้องรอ |
-| ขอ allow-list ให้ส่งจาก IP ของ cluster โดยไม่ต้อง auth | ทีม mail | ต้องรอ |
-| **ตัวกลางในคลัสเตอร์ที่ยอมทำ auth บนพอร์ต 25 แทน** | ไม่ต้องพึ่งใคร | ทำเองได้วันนี้ → ข้อ 5.4 |
-
-**พอได้ 587 มาแล้ว อย่าเพิ่งเชื่อว่ามี STARTTLS** ตรวจก่อนหนึ่งครั้ง:
-```bash
-kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
-  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" 587' "$H"
-```
-เห็น `250-STARTTLS` แล้วค่อยกลับไปทำ 5.1 ขั้น A-ข ด้วยพอร์ต 587
-
-#### 5.3.3 ต่อพอร์ตไม่ได้ — แยกก่อนว่าใครดรอป
-
-`timeout` แปลว่า "ไม่มีใครตอบ" เท่านั้น **ไม่ได้แปลว่าไฟร์วอลล์ขององค์กรบล็อก** —
-ตัว relay เองไม่ได้เปิดพอร์ตนั้นแล้วดรอปทิ้งก็ให้อาการเดียวกันเป๊ะ ชนิดของ error
-ต่างหากที่บอกได้ และ **ห้ามใช้ `/dev/tcp` ของ bash ทดสอบ** — บนเครื่องที่ปิดฟีเจอร์นี้
-มันจะรายงานว่าทุกพอร์ตตัน รวมพอร์ตที่เปิดอยู่จริง (เจอมาแล้วกับ cluster ชุดนี้)
-
-**จาก node:**
-```bash
-python3 - <<'EOF'
-import socket
-for p in (25, 465, 587, 2525):
-    try:
-        s = socket.create_connection(('<IP ของ relay>', p), 5); print(p, 'เปิด'); s.close()
-    except Exception as e:
-        print(p, 'ไม่ได้ —', type(e).__name__, e)
-EOF
-```
-
-**จากเครื่องของคุณ** (คนละต้นทาง คนละกฎ — PowerShell):
-```bash
-foreach ($p in 25,465,587,2525) { $r = Test-NetConnection <IP ของ relay> -Port $p -WarningAction SilentlyContinue; "$p : $($r.TcpTestSucceeded)" }
-```
-
-| ที่เจอ | สรุปได้ว่า |
-|---|---|
-| `ConnectionRefusedError` (RST) | server ไม่ได้เปิดพอร์ตนั้น — ไม่เกี่ยวกับ network ขององค์กร ต้องคุยกับทีม mail |
-| `TimeoutError` ทั้งจาก cluster และจากเครื่องคุณ | ผลเหมือนกันสองต้นทาง → น่าจะเป็นฝั่ง relay/ผู้ให้บริการ ไม่ใช่กฎเฉพาะ cluster |
-| cluster timeout แต่เครื่องคุณต่อได้ | ตรงนี้ถึงจะเป็นกฎฝั่ง network จริง และมีหลักฐานให้ไปคุย |
-
-### 5.4 ทางอ้อมที่ใช้ได้จริง — ตัวกลางในคลัสเตอร์
-
-**ทำที่:** 👑 master01 (5.4.1 → 5.4.4 ตามลำดับ) · **ต้องมีก่อน:** 5.3.2 สรุปแล้วว่า relay บังคับ auth และ
-พอร์ตที่ออกได้ไม่มี STARTTLS · `/root/k8s/deployments/alert-mail-relay/` อยู่บนเครื่อง · **ถ้า 5.3 ผ่านแล้ว ข้ามข้อนี้ทั้งข้อ**
-
-ใช้ข้อนี้เมื่อ 5.3.2 สรุปว่า relay บังคับ auth และพอร์ตที่ออกได้ไม่มี STARTTLS
-กุญแจของทางนี้คือ **`smtplib` ของ Python ยอมทำ AUTH LOGIN บน plaintext** —
-สิ่งที่ Alertmanager ปฏิเสธ เราจึงเอา pod เล็ก ๆ มารับ webhook แล้วส่งเมลแทน
-
-ของทั้งชุดอยู่ที่ [`deployments/alert-mail-relay/`](../deployments/alert-mail-relay)
-แยกกันสามชิ้นโดยตั้งใจ:
-
-| ชิ้น | อยู่ที่ไหน | แก้บ่อยแค่ไหน |
-|---|---|---|
-| โค้ด `relay.py` | ConfigMap `alert-mail-relay-src` | แทบไม่แก้ |
-| ค่า `relay.conf` — smtp · ผู้รับ · รูปแบบข้อความ | ConfigMap `alert-mail-relay-conf` | **แก้ได้ตลอด ไม่ต้อง restart** |
-| user / รหัสผ่าน | Secret `alert-mail` | ตอนเปลี่ยนรหัส |
-
-> 🔴 **นี่คือทางอ้อมที่รู้ตัว ไม่ใช่ของถาวร** รหัสผ่านยังวิ่ง plaintext จากในคลัสเตอร์
-> ไปหา relay อยู่ดี (แค่ไม่ได้วิ่งจาก Alertmanager) ถ้าองค์กรรับความเสี่ยงนี้ไม่ได้
-> ต้องไปทางขอพอร์ตที่มี STARTTLS อย่างเดียว · วันที่ได้มาแล้วให้ถอดตามข้อ 5.4.6
-
-**5.4.1 พิสูจน์ก่อนว่าส่งผ่านพอร์ต 25 ได้จริง** — ถ้าข้อนี้ไม่ผ่าน เขียน pod ไปก็เท่านั้น
-```bash
-cat > /root/smtp25-test.py <<'EOF'
-import os, smtplib
-host, port = os.environ["SMTP_HOST"], int(os.environ.get("SMTP_PORT", "25"))
-user, pw, to = os.environ["SMTP_USER"], os.environ["SMTP_PASS"], os.environ["SMTP_TO"]
-s = smtplib.SMTP(host, port, timeout=15)
-s.ehlo(); s.login(user, pw)
-msg = (f"From: {user}\r\nTo: {to}\r\nSubject: k8s smtp port25 test\r\n"
-       "Content-Type: text/plain; charset=utf-8\r\n\r\ntest send via port 25\r\n")
-s.sendmail(user, [to], msg.encode("utf-8")); s.quit()
-print("=== SENT OK")
-EOF
-read -rp 'SMTP user: ' SU; read -rsp 'SMTP password: ' SP; echo; read -rp 'send to: ' TO
-SMTP_HOST="$H" SMTP_USER="$SU" SMTP_PASS="$SP" SMTP_TO="$TO" python3 /root/smtp25-test.py
-unset SU SP TO; rm -f /root/smtp25-test.py
-```
-
-> 🔴 **อย่าใส่ `s.set_debuglevel(1)`** ถ้าไม่จำเป็น — มันพิมพ์บรรทัด `AUTH LOGIN` ซึ่งมี
-> user กับรหัสผ่านเป็น base64 ออกมาบนจอ · base64 ไม่ใช่การเข้ารหัส ถอดได้ทันที
-> ถ้าเผลอเปิดไปแล้วให้ถือว่ารหัสรั่ว (ค้างใน scrollback / ภาพหน้าจอ) แล้วเปลี่ยนรหัส
->
-> และใช้ env แทน `input()` เพราะ `input()` ถอดรหัส stdin ตาม locale ของ session
-> ถ้า locale ไม่ใช่ UTF-8 จะได้ `UnicodeDecodeError` ทั้งที่ไม่เกี่ยวกับ SMTP เลย
-
-**5.4.2 เก็บ user/รหัสลง Secret** — ไม่ผ่าน helm values จึงไม่ไปโผล่ใน secret ของ release
-```bash
-read -rp 'SMTP user: ' SU; read -rsp 'SMTP password: ' SP; echo
-kubectl -n monitoring create secret generic alert-mail \
-  --from-literal=SMTP_USER="$SU" --from-literal=SMTP_PASS="$SP" \
-  --dry-run=client -o yaml | kubectl apply -f -
-unset SU SP
-```
-
-**5.4.3 ตั้งค่าใน `relay.conf` แล้ว apply**
-
-เปิด `deployments/alert-mail-relay/alert-mail-relay.yaml` แล้วแก้ในบล็อก `relay.conf`
-ค่าที่ต้องดูมีเท่านี้:
-
-| คีย์ | ใส่อะไร |
-|---|---|
-| `smtp_host` · `smtp_port` | relay ที่ทดสอบผ่านใน 5.4.1 |
-| `smtp_starttls` | `false` ตามสภาพที่เจอ · เปลี่ยนเป็น `true` เมื่อได้พอร์ตที่มี STARTTLS |
-| `mail_from` | ที่อยู่ผู้ส่ง — ต้องเป็นที่อยู่ที่บัญชีนี้ได้รับอนุญาตให้ส่ง |
-| `to_default` · `to_critical` | ผู้รับของแต่ละเส้นทาง · ใส่หลายคนได้ คั่นด้วยจุลภาค |
-| **`to_always`** | **ผู้รับกลาง — ได้ทุกฉบับไม่ว่ามาทางไหน** เช่นกล่องรวมของทีมไว้ย้อนดู · ปล่อยว่างได้ |
-| `format` | `text` (ค่าเริ่มต้น) หรือ `html` (มีตาราง อ่านบนมือถือดีกว่า) |
-| `subject` | หัวเรื่อง ใช้ตัวแปร `{status}` `{sev}` `{alertname}` `{count}` `{namespace}` |
-| `fields` | ฟิลด์ที่จะแสดงและลำดับของมัน — ตัดตัวที่ทีมไม่ได้ใช้ออกได้ |
-
-**เพิ่มเส้นทางใหม่ไม่ต้องแก้โค้ด** — ใส่คีย์ `to_<ชื่อ>` ลงไฟล์ แล้วชี้ webhook ไปที่
-`/alert?to=<ชื่อ>` ตัวกลางจะหาคีย์นั้นเอง ไม่เจอก็ตกมาที่ `to_default`
-
-```bash
-cd /root/k8s/deployments/alert-mail-relay
-grep -n '<[A-Z_]*>' alert-mail-relay.yaml          # ดูว่าเหลือช่องไหนยังไม่ได้แทน
-kubectl apply -f alert-mail-relay.yaml
-kubectl -n monitoring rollout status deploy/alert-mail-relay --timeout=180s
-```
-**ควรเห็น:** `deployment "alert-mail-relay" successfully rolled out`
-· ถ้าค้างที่ `ContainerCreating` นาน คือกำลังดึง image `python:3.12-alpine` รอบแรก
-
-**ตรวจว่ามันอ่านค่าไปแบบไหน** — endpoint นี้คืนค่าที่ใช้อยู่จริง และ**ไม่มีรหัสผ่านอยู่ในนั้น**
-เพราะรหัสอยู่ใน env ไม่ใช่ในไฟล์ config:
-```bash
-kubectl -n monitoring run conf-check --rm --attach --restart=Never --image=busybox:1.36 -- \
-  wget -qO- http://alert-mail-relay.monitoring.svc.cluster.local:8080/config
-```
-
-**5.4.4 สลับ Alertmanager มาใช้ตัวกลาง**
-
-ไฟล์ `config/monitoring/alertmanager-config.yaml` ในรีโปเป็น `webhook_configs` ให้แล้ว
-(ของเดิมที่เป็น `email_configs` ถูกคอมเมนต์ไว้ข้าง ๆ พร้อมกลับมาใช้) — ไฟล์อยู่บนเครื่องแล้ว
-จาก[บท 00](00-overview.md) · `helm upgrade` ตามข้อ 5.2 จากนั้นยิงของปลอมตามข้อ 5.3 ซ้ำ แล้วดูที่ตัวกลาง:
-```bash
-kubectl -n monitoring logs deploy/alert-mail-relay --tail=20
-```
-
-| ที่เห็นใน log | แปลว่า |
-|---|---|
-| `ส่งแล้ว: [k8s FIRING ...] -> to=default ...` | ส่งออกแล้ว บรรทัดนี้บอกปลายทางที่ใช้จริงของฉบับนั้น |
-| `ส่งไม่ผ่าน: SMTPAuthenticationError` | user/รหัสใน Secret ไม่ตรง |
-| `ส่งไม่ผ่าน: TimeoutError` | จาก pod ต่อ relay ไม่ได้ — ทดสอบเส้นทางตาม 5.3.3 |
-| `ไม่มีผู้รับสำหรับ to=...` | `to_default` ว่างใน `relay.conf` |
-
-ตอบไม่ใช่ 2xx ทุกครั้งที่ส่งไม่ผ่าน **โดยตั้งใจ** — Alertmanager จะ retry ให้เอง
-ไม่ใช่กลืนหายแล้วบอกว่าสำเร็จ
-
-**5.4.5 แก้ค่าทีหลัง — ไม่ต้อง restart**
-
-`relay.conf` ถูกอ่านใหม่ทุกครั้งที่มี alert เข้ามา แก้แล้ว apply ก็พอ:
-```bash
-kubectl apply -f /root/k8s/deployments/alert-mail-relay/alert-mail-relay.yaml
-```
-kubelet ใช้เวลาอัปเดตไฟล์ที่ mount ไว้ราว ๆ 1 นาที ยืนยันด้วย `/config` ข้างบนอีกครั้ง
-· ถ้าแก้ `relay.py` (ตัวโค้ด) ต้อง `kubectl -n monitoring rollout restart deploy/alert-mail-relay`
-
-**5.4.6 วิธีถอดออกเมื่อได้พอร์ตที่มี STARTTLS แล้ว**
-
-1. เปิด `email_configs` และ `smtp_*` ที่คอมเมนต์ไว้ใน `alertmanager-config.yaml` กลับ
-   แล้วลบ `webhook_configs` ออก
-2. `helm upgrade` ตามข้อ 5.2 · ยิงของปลอมตามข้อ 5.3 · **ยืนยันว่าเมลเข้าจริง**
-3. เมื่อยืนยันแล้วเท่านั้นค่อยลบตัวกลาง:
-```bash
-kubectl delete -f /root/k8s/deployments/alert-mail-relay/alert-mail-relay.yaml
-kubectl -n monitoring delete secret alert-mail
-```
-
-**ลำดับสำคัญ** — อย่าลบตัวกลางก่อนพิสูจน์ว่าทางตรงส่งได้จริง ไม่งั้นจะเหลือช่วงที่
-ไม่มีใครได้รับ alert เลยโดยไม่มีอะไรฟ้อง
+> **ทำไมไม่ `kubectl edit secret` ของ Alertmanager ตรง ๆ** — มีผลทันทีจริง แต่ `helm upgrade` รอบถัดไป
+> เขียนทับทั้งก้อน ปลายทางที่แก้ไว้จะหายโดยไม่มีใครรู้ · ใช้ได้เฉพาะฉุกเฉิน แล้วย้ายกลับมาใส่ไฟล์ให้เสร็จ
 
 ---
 
@@ -1165,8 +833,8 @@ app ที่ log ทุก request จะกินโควตาของท�
 - [ ] `curl .../api/v2/receivers` เห็น `myhr-default` กับ `myhr-critical` ไม่ใช่แค่ `null`
 - [ ] 🔴 **จำได้ว่า `helm upgrade` ต้องใส่ `-f` ทั้งสองไฟล์ และ `--version` ทุกครั้ง**
       ลืม `-f` = ปลายทางหาย · ลืม `--version` = อัป chart โดยไม่รู้ตัว
-- [ ] ถ้าใช้ทางอ้อมตามข้อ 5.4: `alert-mail-relay` 2 pod อยู่คนละ node และ log ขึ้น `ส่งแล้ว`
-- [ ] จดไว้ว่าทางอ้อมนี้ต้องถอดออกวันที่ได้พอร์ตที่มี STARTTLS (ขั้นตอนอยู่ที่ 5.4.6)
+- [ ] `alert-mail-relay` 2 pod อยู่คนละ node และ log ขึ้น `ส่งแล้ว` ทั้ง `to=default` และ `to=critical`
+- [ ] จดไว้ว่าตัวกลางนี้ต้องถอดออกวันที่ได้พอร์ตที่มี STARTTLS (ขั้นตอนอยู่ที่ภาคผนวกท้ายบท ข.3)
 - [ ] PrometheusRule ของ MyHR โหลดแล้วครบ 11 ข้อ
 - [ ] `NodeCountBelowExpected` มีตัวเลข node ตรงกับจำนวนเครื่องจริง (ตอนนี้ 6)
 - [ ] **ประกาศกฎ log 3 ข้อให้ทีม dev รู้แล้ว** (stdout เท่านั้น · JSON บรรทัดเดียว · มีเพดาน)
@@ -1175,3 +843,257 @@ app ที่ log ทุก request จะกินโควตาของท�
 **➡️ ต่อที่ [บทที่ 10 — Security Baseline](10-security.md)**
 
 > เก็บ [บทที่ 14](14-grafana-logs.md) ไว้เปิดตอนของพัง — เป็นบทที่ใช้ตอนมี incident ไม่ใช่ตอนติดตั้ง
+
+---
+
+## ภาคผนวก · ส่งเมลตรงจาก Alertmanager — วันที่ได้พอร์ตที่มี STARTTLS
+
+ข้อ 5 ใช้ตัวกลาง `alert-mail-relay` เพราะ relay ขององค์กรบังคับ AUTH บนพอร์ต 25 ที่ไม่มี STARTTLS
+ภาคผนวกนี้เก็บวิธีตรวจ relay และวิธีสลับไปส่งตรง สำหรับวันที่สภาพนั้นเปลี่ยน (ได้ 587 · ได้ allow-list)
+หรือสำหรับ cluster อื่นที่ relay ไม่เหมือนกัน · **ติดตั้งปกติไม่ต้องอ่าน**
+
+ทุกคำสั่งทำบน 👑 master01 · ตั้งค่า relay ที่จะตรวจก่อน (ใช้ต่อทุกบล็อกข้างล่าง):
+```bash
+H=mail.myhr.in.th; P=587
+```
+
+### ก · ทดสอบส่งด้วย user/รหัสจริงผ่านพอร์ตใดพอร์ตหนึ่ง
+
+ส่งเมลจริงหนึ่งฉบับจาก master01 ด้วย `smtplib` — พิสูจน์ user/รหัส และเส้นทางไป relay ในทีเดียว
+```bash
+cat > /root/smtp25-test.py <<'EOF'
+import os, smtplib
+host, port = os.environ["SMTP_HOST"], int(os.environ.get("SMTP_PORT", "25"))
+user, pw, to = os.environ["SMTP_USER"], os.environ["SMTP_PASS"], os.environ["SMTP_TO"]
+s = smtplib.SMTP(host, port, timeout=15)
+s.ehlo(); s.login(user, pw)
+msg = (f"From: {user}\r\nTo: {to}\r\nSubject: k8s smtp port25 test\r\n"
+       "Content-Type: text/plain; charset=utf-8\r\n\r\ntest send via port 25\r\n")
+s.sendmail(user, [to], msg.encode("utf-8")); s.quit()
+print("=== SENT OK")
+EOF
+read -rp 'SMTP user: ' SU; read -rsp 'SMTP password: ' SP; echo; read -rp 'send to: ' TO
+SMTP_HOST="$H" SMTP_USER="$SU" SMTP_PASS="$SP" SMTP_TO="$TO" python3 /root/smtp25-test.py
+unset SU SP TO; rm -f /root/smtp25-test.py
+```
+
+> 🔴 **อย่าใส่ `s.set_debuglevel(1)`** ถ้าไม่จำเป็น — มันพิมพ์บรรทัด `AUTH LOGIN` ซึ่งมี
+> user กับรหัสผ่านเป็น base64 ออกมาบนจอ · base64 ไม่ใช่การเข้ารหัส ถอดได้ทันที
+> ถ้าเผลอเปิดไปแล้วให้ถือว่ารหัสรั่ว (ค้างใน scrollback / ภาพหน้าจอ) แล้วเปลี่ยนรหัส
+>
+> และใช้ env แทน `input()` เพราะ `input()` ถอดรหัส stdin ตาม locale ของ session
+> ถ้า locale ไม่ใช่ UTF-8 จะได้ `UnicodeDecodeError` ทั้งที่ไม่เกี่ยวกับ SMTP เลย
+
+### ข · ตั้งค่าให้ Alertmanager ส่งตรง
+
+#### ข.1 แทนค่าในไฟล์ปลายทาง
+
+**ทำที่:** 👑 master01 (ไฟล์ `/root/k8s/config/monitoring/alertmanager-config.yaml`) · ค่าที่ต้องใช้ดูตารางข้างล่าง
+
+ค่าที่ต้องเตรียมก่อน — ถามทีม infra/mail ไว้ล่วงหน้า ไม่ใช่มานั่งหาตอนทำ:
+
+| ค่าที่ต้องแทน | คืออะไร |
+|---|---|
+| `<SMTP_HOST>` · `<SMTP_PORT>` | mail relay ภายในองค์กร · พอร์ต 25 มักไม่ต้องล็อกอิน · 587 เกือบทุกครั้งต้อง |
+| `<ALERT_FROM>` | ที่อยู่ผู้ส่ง เช่น `k8s-alert@บริษัท` — ต้องเป็นที่อยู่ที่ relay ยอมให้ส่ง |
+| `<ALERT_TO>` | ปลายทางของ alert ทั่วไป — ควรเป็น distribution list ไม่ใช่เมลคนเดียว |
+| `<ALERT_TO_CRITICAL>` | ปลายทางของ critical · ถ้ายังไม่มีกลุ่ม on-call ใส่ค่าเดียวกับข้างบนไปก่อน |
+| `<SMTP_USER>` · `<SMTP_PASSWORD>` | **เฉพาะเมื่อ relay ต้องล็อกอิน** — ตัดสินใจที่ขั้น A ข้างล่าง |
+
+**ขั้น A — ตัดสินก่อนว่า relay ต้องล็อกอินไหม** ไม่แน่ใจให้ถามทีม mail
+หรือดูว่า relay ประกาศ `AUTH` ไว้หรือเปล่า (ประกาศ ≠ บังคับ แต่ถ้าไม่ประกาศเลยแปลว่าไม่ต้องแน่ ๆ):
+**ใส่ชื่อ relay จริงที่ได้จากทีม mail ก่อน** (ไม่ใช่ `mail.example.co.th` — นั่นคือตัวอย่าง) · ค่า `H` กับ `P`
+ใช้ต่อในทุกคำสั่งทดสอบของข้อ 5 ถ้าเปิด shell ใหม่ต้องรันบรรทัดนี้ซ้ำ:
+```bash
+read -rp 'SMTP relay host (จากทีม mail): ' H; read -rp 'port [25]: ' P; P=${P:-25}; getent hosts "$H" || echo "❌ resolve $H ไม่ได้ — ชื่อผิดหรือ DNS ไม่รู้จัก"
+```
+**ควรเห็น:** IP ของ relay หนึ่งบรรทัด · ได้ `❌` = ชื่อผิด ถามทีม mail ใหม่ (ห้ามไปต่อ)
+
+แล้วถาม relay ว่าประกาศอะไร — ยิงจาก pod เพราะเป็นเส้นทางเดียวกับที่ Alertmanager ใช้:
+```bash
+kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
+  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" "$1"' "$H" "$P" | grep -iE '^2|AUTH|STARTTLS'
+```
+**ควรเห็น:** บรรทัด `220 ...` ตามด้วย `250-...` หลายบรรทัด · มี `AUTH` = relay รับล็อกอิน · ไม่มีเลย = ไม่ต้องล็อกอิน (A-ก)
+· ไม่มีอะไรออกมาเลย = ต่อไม่ติด → 5.3.3
+
+**A-ก · relay ไม่ต้องล็อกอิน** — ปิดสองบรรทัด auth ทิ้งไปเลย
+```bash
+cd /root/k8s/config/monitoring
+sed -i -E 's|^([[:space:]]*)(smtp_auth_)|\1# \2|' alertmanager-config.yaml
+grep -cE '^[[:space:]]*smtp_auth_' alertmanager-config.yaml
+```
+**ควรเห็น:** `0`
+
+> 🔴 **ห้ามปล่อยสองบรรทัดนั้นเปิดไว้ทั้งที่ยังเป็น `<SMTP_USER>`** — Alertmanager จะโหลด
+> config ไม่ผ่าน แล้ว**ถอยไปใช้ config เดิมของ chart** ผลคือหน้า `/api/v2/receivers`
+> ตอบ `null` มาตัวเดียว ทั้งที่ `helm upgrade` สำเร็จและ pod ยัง `Running` ทุกตัว
+
+**A-ข · relay ต้องล็อกอิน** — เปิด auth แล้วบังคับ TLS กับพอร์ตให้ถูกในทีเดียว
+```bash
+cd /root/k8s/config/monitoring
+read -rp 'พอร์ตที่ใช้กับ auth [587]: ' SPORT; SPORT=${SPORT:-587}
+sed -i -E "s|^([[:space:]]*)#[[:space:]]*(smtp_auth_)|\1\2|" alertmanager-config.yaml
+sed -i -E -e "s|(smtp_smarthost: \"[^\"]*):[0-9]+\"|\1:${SPORT}\"|" \
+          -e 's|smtp_require_tls: false|smtp_require_tls: true|' alertmanager-config.yaml
+grep -E 'smtp_(smarthost|require_tls)' alertmanager-config.yaml
+```
+**ควรเห็น:** พอร์ตเป็นเลขที่กรอก และ `smtp_require_tls: true`
+
+> 🔴 **เปิด auth แล้วต้องเปิด TLS เสมอ** — ไลบรารีที่ Alertmanager ใช้ปฏิเสธการส่งรหัสผ่าน
+> บนช่องที่ไม่เข้ารหัส ถ้าทิ้ง `smtp_require_tls: false` ไว้จะได้ error ทำนอง
+> `unencrypted connection` แล้วเมลไม่ออกเลย
+>
+> **แต่ TLS ไม่ได้ผูกกับพอร์ต 587** — `require_tls` คือ STARTTLS ซึ่ง relay หลายเจ้าก็ให้บน 25
+> ตัวตัดสินคือ relay ประกาศ `STARTTLS` บนพอร์ตนั้นหรือเปล่า ไม่ใช่เลขพอร์ต
+> ถ้าองค์กรบล็อก 587 ขาออก (เจอบ่อยเมื่อ relay อยู่นอกวง) ให้ลอง 25 ที่มี STARTTLS ก่อน
+
+**ขั้น B — แทนค่าทุกช่องที่เหลือ** บล็อกนี้ **รันซ้ำได้ไม่จำกัด** ถามเฉพาะช่องที่ยังว่างจริง
+ช่องที่เต็มแล้วจะขึ้น `✓ ... ไม่ถาม` และไม่แตะไฟล์ (ถ้าเลือก A-ก มันจะไม่ถาม user/password ให้เอง)
+```bash
+cd /root/k8s/config/monitoring
+for V in SMTP_HOST SMTP_PORT ALERT_FROM ALERT_TO ALERT_TO_CRITICAL SMTP_USER SMTP_PASSWORD; do
+    if grep -v '^[[:space:]]*#' alertmanager-config.yaml | grep -q "<${V}>"; then
+        if [ "$V" = SMTP_PASSWORD ]; then
+            read -rsp "ค่าของ ${V}: " NEW; echo " (รับมา ${#NEW} ตัว)"
+        else
+            read -rp "ค่าของ ${V}: " NEW
+        fi
+        if [ -n "$NEW" ]; then
+            sed -i "s|<${V}>|${NEW}|" alertmanager-config.yaml; echo "  ✓ แทน ${V} แล้ว"
+        else
+            echo "  ⚠ ข้าม ${V} — ค่าว่าง ยังต้องกลับมาทำ"
+        fi
+    else
+        echo "✓ ${V} แทนไปแล้ว ไม่ถาม"
+    fi
+done
+unset NEW
+chmod 600 alertmanager-config.yaml
+```
+
+> **ทำไมต้องเป็น loop ไม่ใช่ `read` เรียงกันแล้ว `sed` ทีเดียว** — แบบเรียงกันจะถามครบทุกช่อง
+> ทุกครั้งที่รัน แล้ว `sed` ไปไม่เจอ placeholder ที่รอบก่อนกินไปแล้ว
+> กลายเป็น "พิมพ์แล้วไม่มีอะไรเปลี่ยน" ซึ่งชวนให้เข้าใจว่าคำสั่งพัง
+> ขั้นตอนที่คนต้องรันซ้ำตอนตีสอง ต้องรันซ้ำได้จริง
+
+**ตรวจผลก่อนไปข้อ 5.2:**
+```bash
+cd /root/k8s/config/monitoring
+grep -v '^[[:space:]]*#' alertmanager-config.yaml | grep -c '<[A-Z_]*>'
+grep -E '^[[:space:]]*smtp_(smarthost|from|require_tls|auth_username)' alertmanager-config.yaml
+awk -F'"' '/^[[:space:]]*smtp_auth_password:/{print "smtp_auth_password ยาว " length($2) " ตัว"}' alertmanager-config.yaml
+```
+
+**ควรเห็น:** บรรทัดแรกเป็น `0` · ค่าที่ตั้งไว้ตรงกับที่ทีม mail ให้มา ·
+ถ้าเลือก A-ข ต้องเห็น `smtp_require_tls: true` และ `smtp_auth_password ยาว N ตัว` (N ตรงกับที่พิมพ์)
+· ถ้าเลือก A-ก สองบรรทัดสุดท้ายต้องไม่มีอะไรออกมาเลย
+
+> ที่ต้องตัดบรรทัดคอมเมนต์ออกก่อนนับ `<...>` เพราะในไฟล์ยังมี `<TEAMS_WEBHOOK_URL>`
+> ค้างอยู่ในคอมเมนต์ของทางเลือก Teams ที่ยังไม่ได้เปิดใช้ — ปกติ ไม่ต้องแทน
+>
+> **รหัส SMTP จะไปอยู่ในไฟล์บน master01 และใน secret ของ helm release** — ห้ามแทนค่าลงไฟล์
+> ชุดที่อยู่ใน repo บนเครื่องคุณ เพราะไฟล์นั้นถูก commit · จดไว้ที่ `secrets.env`
+> คีย์ `SMTP_PASSWORD` ด้วย จะได้ไม่ต้องไปขอใหม่ตอนสร้าง cluster รอบหน้า
+
+#### ข.2 ตรวจ relay ด้วยคำสั่งใน pod
+
+##### ข.2.1 ถ้า log บอกว่า relay ไม่ประกาศ STARTTLS
+
+ดูว่า relay ประกาศอะไรบ้างบนพอร์ตที่ต่อได้จริง — **รันจาก pod** เพราะนั่นคือเส้นทางที่
+Alertmanager ใช้ และ **ห้ามใส่ `-it`** เพราะ TTY จะกลืน output ของ pipe จนเห็นแต่บรรทัด `220`:
+```bash
+kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
+  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" "$1"' "$H" "$P"
+```
+
+| relay ประกาศ | แปลว่า | ทางแก้ |
+|---|---|---|
+| มี `STARTTLS` | ใช้พอร์ตนั้นได้เลย | ตั้ง `smtp_smarthost` เป็นพอร์ตนั้น + `require_tls: true` |
+| ไม่มีทั้ง `STARTTLS` และ `AUTH` | relay รับจาก IP ที่อนุญาตโดยไม่ต้องล็อกอิน | ปิด auth ตามคำสั่งข้างล่าง แล้ว `helm upgrade` ซ้ำ |
+| มี `AUTH` แต่ไม่มี `STARTTLS` | **ยังไม่สรุป** — ประกาศ AUTH ไม่ได้แปลว่าบังคับ | ทดสอบต่อด้วยบล็อกถัดไปก่อนไปขอใคร |
+
+**ทดสอบว่า relay บังคับ auth จริงไหม** — คุยถึงขั้น `RCPT TO` แต่ไม่ส่ง `DATA`
+จึงไม่มีเมลออกไปจริงสักฉบับ (แทน `<...>` ด้วยที่อยู่จริงก่อนรัน):
+```bash
+kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
+  sh -c '(printf "EHLO myhr\r\n"; sleep 2; printf "MAIL FROM:<ผู้ส่ง>\r\n"; sleep 2; printf "RCPT TO:<ปลายทาง>\r\n"; sleep 3; printf "QUIT\r\n"; sleep 1) | nc -w 15 "$0" "$1"' "$H" "$P"
+```
+
+| บรรทัดหลัง `RCPT TO` | แปลว่า | ทางแก้ |
+|---|---|---|
+| `250 ... Ok` | ไม่บังคับ auth | ปิด auth ตามคำสั่งข้างล่าง แล้ว `helm upgrade` ซ้ำ — จบ |
+| `530 SMTP authentication is required` | บังคับ auth และไม่มี STARTTLS บนพอร์ตนี้ | ส่งตรงไม่ได้ → ไปที่ 5.3.2 |
+| `554` · `relay access denied` | relay ไม่ยอมส่งต่อออกนอกโดเมนให้ IP นี้ | ขอทีม mail ใส่ IP ขาออกของ cluster ใน allow-list |
+
+**ปิด auth ทั้งชุด** (สำหรับสองแถวที่บอกว่าไม่ต้องล็อกอิน):
+```bash
+cd /root/k8s/config/monitoring
+sed -i -E -e 's|^([[:space:]]*)(smtp_auth_)|\1# \2|' \
+          -e 's|smtp_require_tls: true|smtp_require_tls: false|' alertmanager-config.yaml
+grep -E '^[[:space:]]*smtp_' alertmanager-config.yaml
+```
+**ควรเห็น:** เหลือแค่ `smtp_smarthost` · `smtp_from` · `smtp_require_tls: false`
+แล้วกลับไปรัน `helm upgrade` ในข้อ 5.2 ซ้ำ · เมลที่ค้างคิว retry อยู่จะถูกส่งเองไม่ต้องยิงใหม่
+
+##### ข.2.2 relay บังคับ auth แต่พอร์ตที่ออกได้ไม่มี STARTTLS
+
+Alertmanager ส่งตรงไม่ได้แน่นอนในสภาพนี้ — มันปฏิเสธการส่งรหัสผ่านบนช่องที่ไม่เข้ารหัส
+แบบฮาร์ดโค้ด และนั่นถูกต้องแล้ว **มีสามทางออก เลือกได้ทันทีตามว่าอันไหนเป็นไปได้ก่อน**
+
+| ทางออก | ต้องพึ่งใคร | ได้เมื่อไร |
+|---|---|---|
+| ขอเปิดพอร์ตที่มี STARTTLS (มัก 587) | ทีม network **และ** relay ต้องเปิด 587 จริง | ต้องรอ |
+| ขอ allow-list ให้ส่งจาก IP ของ cluster โดยไม่ต้อง auth | ทีม mail | ต้องรอ |
+| **ตัวกลางในคลัสเตอร์ที่ยอมทำ auth บนพอร์ต 25 แทน** | ไม่ต้องพึ่งใคร | ทำเองได้วันนี้ → ข้อ 5.4 |
+
+**พอได้ 587 มาแล้ว อย่าเพิ่งเชื่อว่ามี STARTTLS** ตรวจก่อนหนึ่งครั้ง:
+```bash
+kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
+  sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" 587' "$H"
+```
+เห็น `250-STARTTLS` แล้วค่อยกลับไปทำ 5.1 ขั้น A-ข ด้วยพอร์ต 587
+
+##### ข.2.3 ต่อพอร์ตไม่ได้ — แยกก่อนว่าใครดรอป
+
+`timeout` แปลว่า "ไม่มีใครตอบ" เท่านั้น **ไม่ได้แปลว่าไฟร์วอลล์ขององค์กรบล็อก** —
+ตัว relay เองไม่ได้เปิดพอร์ตนั้นแล้วดรอปทิ้งก็ให้อาการเดียวกันเป๊ะ ชนิดของ error
+ต่างหากที่บอกได้ และ **ห้ามใช้ `/dev/tcp` ของ bash ทดสอบ** — บนเครื่องที่ปิดฟีเจอร์นี้
+มันจะรายงานว่าทุกพอร์ตตัน รวมพอร์ตที่เปิดอยู่จริง (เจอมาแล้วกับ cluster ชุดนี้)
+
+**จาก node:**
+```bash
+python3 - <<'EOF'
+import socket
+for p in (25, 465, 587, 2525):
+    try:
+        s = socket.create_connection(('<IP ของ relay>', p), 5); print(p, 'เปิด'); s.close()
+    except Exception as e:
+        print(p, 'ไม่ได้ —', type(e).__name__, e)
+EOF
+```
+
+**จากเครื่องของคุณ** (คนละต้นทาง คนละกฎ — PowerShell):
+```bash
+foreach ($p in 25,465,587,2525) { $r = Test-NetConnection <IP ของ relay> -Port $p -WarningAction SilentlyContinue; "$p : $($r.TcpTestSucceeded)" }
+```
+
+| ที่เจอ | สรุปได้ว่า |
+|---|---|
+| `ConnectionRefusedError` (RST) | server ไม่ได้เปิดพอร์ตนั้น — ไม่เกี่ยวกับ network ขององค์กร ต้องคุยกับทีม mail |
+| `TimeoutError` ทั้งจาก cluster และจากเครื่องคุณ | ผลเหมือนกันสองต้นทาง → น่าจะเป็นฝั่ง relay/ผู้ให้บริการ ไม่ใช่กฎเฉพาะ cluster |
+| cluster timeout แต่เครื่องคุณต่อได้ | ตรงนี้ถึงจะเป็นกฎฝั่ง network จริง และมีหลักฐานให้ไปคุย |
+
+#### ข.3 ถอดตัวกลางออก
+
+1. เปิด `email_configs` และ `smtp_*` ที่คอมเมนต์ไว้ใน `alertmanager-config.yaml` กลับ
+   แล้วลบ `webhook_configs` ออก
+2. `helm upgrade` ตามข้อ 5.2 · ยิงของปลอมตามข้อ 5.3 · **ยืนยันว่าเมลเข้าจริง**
+3. เมื่อยืนยันแล้วเท่านั้นค่อยลบตัวกลาง:
+```bash
+kubectl delete -f /root/k8s/deployments/alert-mail-relay/alert-mail-relay.yaml
+kubectl -n monitoring delete secret alert-mail
+```
+
+**ลำดับสำคัญ** — อย่าลบตัวกลางก่อนพิสูจน์ว่าทางตรงส่งได้จริง ไม่งั้นจะเหลือช่วงที่
+ไม่มีใครได้รับ alert เลยโดยไม่มีอะไรฟ้อง
