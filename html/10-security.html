@@ -247,7 +247,7 @@ img{max-width:100%}
         <button id="reset" class="reset" type="button" title="ล้างสถานะของบทนี้">ล้าง</button>
       </div>
     </header>
-    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="ทำไมบทนี้ไม่ใช่ทางเลือก">ทำไมบทนี้ไม่ใช่ทางเลือก</option><option value="2" data-t="0 · ตรวจว่า config บนเครื่องตรงกับrepo">0 · ตรวจว่า config บนเครื่องตรงกับrepo</option><option value="3" data-t="1 · 🔴 etcd encryption at rest">1 · 🔴 etcd encryption at rest</option><option value="4" data-t="2 · Pod Security Admission">2 · Pod Security Admission</option><option value="5" data-t="3 · 🔴 NetworkPolicy default-deny">3 · 🔴 NetworkPolicy default-deny</option><option value="6" data-t="4 · RBAC ตามหน้าที่">4 · RBAC ตามหน้าที่</option><option value="7" data-t="5 · Audit log">5 · Audit log</option><option value="8" data-t="6 · หนี้เก่าที่ต้องจ่าย — หมุน credential">6 · หนี้เก่าที่ต้องจ่าย — หมุน credential</option><option value="9" data-t="7 · imagePullSecret — ให้ cluster ดึง image จาก private registry">7 · imagePullSecret — ให้ cluster ดึง image จาก private registry</option><option value="10" data-t="8 · ตรวจทั้งบทด้วยสคริปต์เดียว">8 · ตรวจทั้งบทด้วยสคริปต์เดียว</option><option value="11" data-t="✅ เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</option></select></div>
+    <div class="jump" id="jump"><label class="jump-l" for="jumpsel">ทางลัด</label><select class="jump-s" id="jumpsel"><option value="">— เลือกขั้นตอนที่จะไป —</option><option value="1" data-t="ทำไมบทนี้ไม่ใช่ทางเลือก">ทำไมบทนี้ไม่ใช่ทางเลือก</option><option value="2" data-t="0 · ตรวจว่า config บนเครื่องตรงกับrepo">0 · ตรวจว่า config บนเครื่องตรงกับrepo</option><option value="3" data-t="1 · 🔴 etcd encryption at rest">1 · 🔴 etcd encryption at rest</option><option value="4" data-t="2 · Pod Security Admission">2 · Pod Security Admission</option><option value="5" data-t="3 · 🔴 NetworkPolicy default-deny">3 · 🔴 NetworkPolicy default-deny</option><option value="6" data-t="4 · RBAC ตามหน้าที่">4 · RBAC ตามหน้าที่</option><option value="7" data-t="5 · Audit log — บันทึกว่าใครทำอะไรกับ cluster">5 · Audit log — บันทึกว่าใครทำอะไรกับ cluster</option><option value="8" data-t="6 · หนี้เก่าที่ต้องจ่าย — หมุน credential">6 · หนี้เก่าที่ต้องจ่าย — หมุน credential</option><option value="9" data-t="7 · imagePullSecret — ให้ cluster ดึง image จาก private registry">7 · imagePullSecret — ให้ cluster ดึง image จาก private registry</option><option value="10" data-t="8 · ตรวจทั้งบทด้วยสคริปต์เดียว">8 · ตรวจทั้งบทด้วยสคริปต์เดียว</option><option value="11" data-t="✅ เกณฑ์ผ่านของบทนี้">✅ เกณฑ์ผ่านของบทนี้</option></select></div>
   </div>
 
   <main>
@@ -1095,112 +1095,118 @@ oidc-groups-claim: "groups"
 <p><strong><a href="../config/security/rbac.yaml"><code>rbac.yaml</code></a> ไม่ต้องแก้เลยสักบรรทัด</strong> เพราะผูกกับชื่อ group ไม่ได้ผูกกับวิธี login
 — นั่นคือเหตุผลที่ตั้งชื่อ group ไว้แบบนี้ตั้งแต่ตอนที่ยังไม่มี OIDC</p>
 <hr />
-</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2 id="5--audit-log">5 · Audit log</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
-<p><strong>ทำที่:</strong> 🎩 master ทั้ง 3 <strong>ทีละเครื่อง</strong> (ssh เข้าแต่ละเครื่อง รอ apiserver กลับมาก่อนเครื่องถัดไป) · 5.3-5.4 บน 👑 master01
-· <strong>ต้องมีก่อน:</strong> ข้อ 0 (ไฟล์ตรง repo) · ข้อ 1 จบ apiserver ทั้ง 3 ปกติ — ข้อนี้จะ restart apiserver อีกรอบ</p>
-<p>audit <strong>ทำงานอยู่แล้วตั้งแต่บท 04</strong> — <code>kubeadm-config.yaml</code> ตั้ง <code>--audit-policy-file</code> + mount ไว้ และบท 04 ข้อ 2/4.2
-ติดตั้ง policy ชุดพื้นฐาน (<code>config/kubeadm/audit-policy.yaml</code>) บน master ทุกตัว · ข้อนี้<strong>เปลี่ยนเป็น policy ชุดเต็ม</strong>
-(<code>config/security/audit-policy.yaml</code> — เพิ่ม RBAC · <code>exec</code>/<code>attach</code>/<code>port-forward</code> แบบ <code>RequestResponse</code> และตัด scrape ของ Prometheus)</p>
-<blockquote>
-<p>🔴 <strong>ไม่ต้องแก้ <code>kube-apiserver.yaml</code></strong> — flag กับ volume มีอยู่แล้วจากบท 04 ใส่ซ้ำจะได้ volume ชื่อซ้ำ
-แล้ว apiserver ของเครื่องนั้นไม่ขึ้นเลย · apiserver อ่าน policy ตอนเริ่มเท่านั้น จึงต้อง restart หลังเปลี่ยนไฟล์</p>
-</blockquote>
-<p><strong>🎩 บนแต่ละ master ทีละตัว:</strong></p>
-<div class="cb"><pre><code class="language-bash">\cp -f /root/k8s/config/security/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
-chmod 600 /etc/kubernetes/audit-policy.yaml
-grep -c 'pods/exec' /etc/kubernetes/audit-policy.yaml
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>1</code> = ชุดเต็มลงแล้ว (ชุดพื้นฐานของบท 04 ไม่มีบรรทัดนี้ — ได้ <code>0</code> แปลว่า copy ไม่โดน)</p>
-<p><strong>restart apiserver ของเครื่องนี้</strong> — ย้าย manifest ออกแล้วกลับ kubelet จะสร้าง pod ใหม่ให้:</p>
-<div class="cb"><pre><code class="language-bash">mv /etc/kubernetes/manifests/kube-apiserver.yaml /root/ &amp;&amp; sleep 10 &amp;&amp; mv /root/kube-apiserver.yaml /etc/kubernetes/manifests/
-until curl -sk https://127.0.0.1:6443/healthz | grep -q ok; do sleep 3; done; echo "apiserver ของ $(hostname) ok"
-</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>apiserver ของ k8s-masterXX ok</code> ภายใน ~1 นาที → ค่อยไปเครื่องถัดไป
-(ระหว่างนั้น <code>kubectl</code> ผ่าน VIP ยังใช้ได้ — HAProxy ส่งไป master ที่เหลือ)</p>
-</div><div class="sub" data-machine="all"><h3 id="51-มันคืออะไร-และไฟล์อยู่ที่ไหน">5.1 มันคืออะไร และไฟล์อยู่ที่ไหน</h3>
-<p>apiserver เขียนบันทึกทุก request ที่เข้ามาหามันเป็น JSON บรรทัดละ event —
-<strong>ใคร ทำอะไร กับอะไร เมื่อไหร่ ผลเป็นยังไง</strong> เป็นที่เดียวในระบบที่ตอบได้ว่า
-ใครลบ deployment ตอนตีสอง · ใครอ่าน secret ของ HR · ใครเพิ่มสิทธิ์ให้ตัวเอง
-(log ของ pod ตอบไม่ได้ เพราะนั่นคือเสียงของแอป ไม่ใช่ของ Kubernetes)</p>
-<blockquote>
-<p>🔴 <strong>ไฟล์เป็นของแต่ละ master แยกกัน</strong> — <code>/var/log/kubernetes/audit.log</code> บนเครื่องนั้น ๆ
-request วิ่งผ่าน VIP แล้วตกที่ apiserver ตัวไหน event ก็ไปโผล่เครื่องนั้นเครื่องเดียว
-<strong>อย่าคาดหวังว่าทั้ง 3 เครื่องจะมีเนื้อหาเหมือนกัน</strong> ตอนสืบสวนต้องไล่ให้ครบทั้งสามเสมอ</p>
-</blockquote>
-</div><div class="sub" data-machine="all"><h3 id="52-อะไรถูกบันทึก-อะไรไม่ถูกบันทึก">5.2 อะไรถูกบันทึก อะไรไม่ถูกบันทึก</h3>
+</div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all masters"><div class="step-head"><h2 id="5--audit-log--บันทึกว่าใครทำอะไรกับ-cluster">5 · Audit log — บันทึกว่าใครทำอะไรกับ cluster</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
+<p><strong>ทำที่:</strong> 5.1 🎩 master ทั้ง 3 <strong>ทีละเครื่อง</strong> · 5.2-5.3 บน 👑 master01
+· <strong>ต้องมีก่อน:</strong> ข้อ 0 (ไฟล์ตรง repo) · ข้อ 1 จบ apiserver ทั้ง 3 ปกติ — 5.1 จะ restart apiserver อีกรอบ</p>
+<p><strong>audit log คืออะไร</strong> — กล้องวงจรปิดของ Kubernetes · ทุกคำสั่งที่ใครก็ตามส่งเข้า cluster (kubectl · Headlamp ·
+pod ที่เรียก API) apiserver จะจดลงไฟล์ <code>/var/log/kubernetes/audit.log</code> บรรทัดละเรื่อง:
+<strong>ใคร ทำอะไร กับอะไร เมื่อไหร่ ผลเป็นยังไง</strong> · เป็นที่เดียวที่ตอบได้ว่าใครลบ deployment ตอนตีสอง ·
+ใครอ่าน secret · ใครเพิ่มสิทธิ์ให้ตัวเอง (log ของ pod ตอบไม่ได้ — นั่นคือเสียงของแอป ไม่ใช่ของ Kubernetes)</p>
+<p><strong>ข้อนี้ทำอะไร</strong> — กล้องเปิดอยู่แล้วตั้งแต่บท 04 แต่ใช้ <strong>กฎชุดพื้นฐาน</strong> (<code>config/kubeadm/audit-policy.yaml</code>)
+ข้อนี้เปลี่ยนเป็น <strong>กฎชุดเต็ม</strong> (<code>config/security/audit-policy.yaml</code>) ซึ่งจดละเอียดขึ้นในเรื่องที่อันตราย
+และเลิกจดเรื่องที่ไม่มีประโยชน์:</p>
 <table>
 <thead>
 <tr>
-<th>ทำอะไร</th>
-<th>บันทึกไหม</th>
-<th><code>level</code></th>
-<th>เห็นอะไร</th>
+<th>เหตุการณ์</th>
+<th>จดไหม</th>
+<th>จดละเอียดแค่ไหน</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>อ่าน Secret</td>
 <td>✅</td>
-<td><code>Metadata</code></td>
-<td>รู้ว่าใครอ่าน แต่<strong>ไม่เก็บค่า secret</strong> — ถ้าเก็บ log จะกลายเป็นที่รั่วเสียเอง</td>
+<td>ใครอ่าน secret ไหน — <strong>ไม่จดค่าข้างใน</strong> (ถ้าจด ไฟล์ log จะกลายเป็นที่รั่วเสียเอง)</td>
 </tr>
 <tr>
-<td>แก้ RBAC</td>
+<td>แก้สิทธิ์ (RBAC)</td>
 <td>✅</td>
-<td><code>RequestResponse</code></td>
-<td>เห็นทั้งของที่ส่งไปและผลลัพธ์</td>
+<td>ละเอียดทั้งหมด — เห็นว่าเพิ่มสิทธิ์อะไรให้ใคร</td>
 </tr>
 <tr>
-<td><code>exec</code> · <code>attach</code> · <code>port-forward</code></td>
+<td><code>exec</code> · <code>attach</code> · <code>port-forward</code> เข้า pod</td>
 <td>✅</td>
-<td><code>RequestResponse</code></td>
-<td>ช่องอ้อมที่เอาข้อมูลออกได้โดยไม่แตะ API ตรง ๆ</td>
+<td>ละเอียดทั้งหมด — เป็นช่องแอบเอาข้อมูลออกได้</td>
 </tr>
 <tr>
-<td><code>create</code>/<code>update</code>/<code>delete</code> ทุกอย่าง</td>
+<td>สร้าง / แก้ / ลบ อะไรก็ตาม</td>
 <td>✅</td>
-<td><code>RequestResponse</code></td>
-<td>ทุกการเปลี่ยนแปลงสถานะ</td>
+<td>ละเอียดทั้งหมด</td>
 </tr>
 <tr>
-<td><code>get</code>/<code>list</code> pod · service · node</td>
+<td>ดู pod · service · node</td>
 <td>✅</td>
-<td><code>Metadata</code></td>
-<td>รู้ว่ามีคนดู ไม่เก็บเนื้อหา</td>
+<td>แค่ว่าใครดู</td>
 </tr>
 <tr>
-<td><code>/healthz</code> · <code>/metrics</code> · kubelet watch · Prometheus scrape</td>
+<td><code>/healthz</code> · <code>/metrics</code> · kubelet · Prometheus</td>
 <td>❌</td>
-<td><code>None</code></td>
-<td>ตัดทิ้งตั้งใจ — เกิดวินาทีละหลายครั้ง เก็บไปก็มีแต่ทำให้ disk เต็มและหาของจริงไม่เจอ</td>
+<td>ไม่จด — เกิดวินาทีละหลายครั้ง จดไปก็แค่ทำ disk เต็มและหาเรื่องจริงไม่เจอ</td>
 </tr>
 </tbody>
 </table>
-<p>rotate ไว้ที่ <strong>100 MB × 10 ไฟล์ เก็บ 30 วัน</strong>
-(ตั้งไว้ที่ <a href="../config/kubeadm/kubeadm-config.yaml"><code>kubeadm-config.yaml</code></a> ตั้งแต่บทที่ 04)</p>
-</div><div class="sub" data-machine="all"><h3 id="53-พิสูจน์ว่าบันทึกจริง">5.3 พิสูจน์ว่าบันทึกจริง</h3>
-<p>สร้าง event ที่รู้หน้าตาแน่ ๆ แล้วไปหามันให้เจอ:</p>
-<div class="cb"><pre><code class="language-bash">kubectl -n kube-system get secret &gt; /dev/null
-
-grep -h '"resource":"secrets"' /var/log/kubernetes/audit.log | tail -1 \
-  | jq '{level, user:.user.username, verb, resource:.objectRef.resource,
-         ns:.objectRef.namespace, time:.requestReceivedTimestamp}'
+<p>ไฟล์หมุนเก็บที่ 100 MB × 10 ไฟล์ · เก็บ 30 วัน (ตั้งไว้ใน <code>kubeadm-config.yaml</code> ตั้งแต่บท 04)</p>
+<blockquote>
+<p>🔴 <strong>ไฟล์เป็นของแต่ละ master แยกกัน</strong> — คำสั่งผ่าน VIP แล้วตกที่ apiserver เครื่องไหน ก็ถูกจดที่เครื่องนั้นเครื่องเดียว
+ทั้ง 3 เครื่องจึงมีเนื้อหาไม่เหมือนกัน · เวลาสืบว่าใครทำอะไร ต้องค้นให้ครบทั้งสามเครื่องเสมอ</p>
+</blockquote>
+</div><div class="sub" data-machine="masters"><h3 id="51-เปลี่ยนเป็นกฎชุดเต็ม---ทีละเครื่อง">5.1 เปลี่ยนเป็นกฎชุดเต็ม — 🎩 ทีละเครื่อง</h3>
+<p><strong>ทำที่:</strong> ssh เข้า master ทีละเครื่อง (master01 → 02 → 03) รอ <code>ok</code> ก่อนไปเครื่องถัดไป</p>
+<p>apiserver อ่านไฟล์กฎแค่ตอนเริ่ม จึงต้อง copy ไฟล์ แล้ว restart apiserver ของเครื่องนั้น — บล็อกเดียวจบ:</p>
+<div class="cb"><pre><code class="language-bash">\cp -f /root/k8s/config/security/audit-policy.yaml /etc/kubernetes/audit-policy.yaml &amp;&amp; chmod 600 /etc/kubernetes/audit-policy.yaml
+echo "กฎชุดเต็ม: $(grep -c 'pods/exec' /etc/kubernetes/audit-policy.yaml)"
+mv /etc/kubernetes/manifests/kube-apiserver.yaml /root/ &amp;&amp; sleep 10 &amp;&amp; mv /root/kube-apiserver.yaml /etc/kubernetes/manifests/
+until curl -sk https://127.0.0.1:6443/healthz | grep -q ok; do sleep 3; done; echo "apiserver ของ $(hostname) ok"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> JSON ที่มี <code>&quot;level&quot;: &quot;Metadata&quot;</code> · <code>&quot;verb&quot;: &quot;list&quot;</code> · <code>user</code> เป็นชื่อคุณ
-และ<strong>ต้องไม่มี</strong> <code>requestObject</code>/<code>responseObject</code> — นั่นคือหลักฐานว่าเนื้อ secret ไม่ได้ลงไฟล์</p>
-<p>ถ้าไม่เจอ ให้ตามหาที่ master อีกสองเครื่อง เพราะ request อาจตกที่นั่น:</p>
-<div class="cb"><pre><code class="language-bash">for ip in 101 102 103; do
-  printf "== .%s : " "$ip"
-  ssh root@192.168.50.$ip "grep -hc '\"resource\":\"secrets\"' /var/log/kubernetes/audit.log 2&gt;/dev/null || echo 0"
+<p><strong>ควรเห็น:</strong> <code>กฎชุดเต็ม: 1</code> แล้ว <code>apiserver ของ k8s-masterXX ok</code> ภายใน ~1 นาที
+· ได้ <code>กฎชุดเต็ม: 0</code> = copy ไม่โดน (<code>/root/k8s/config/security/</code> ยังเป็นไฟล์เก่า — กลับไปข้อ 0)</p>
+<p>(บรรทัด <code>mv</code> คือการ restart — ย้ายไฟล์ manifest ออก kubelet จะหยุด apiserver ย้ายกลับก็สร้างใหม่ให้ ·
+ระหว่างนั้น <code>kubectl</code> ผ่าน VIP ยังใช้ได้ เพราะ HAProxy ส่งไป master ที่เหลือ · ไม่ต้องแก้ <code>kube-apiserver.yaml</code>
+— การตั้งค่า audit อยู่ในนั้นแล้วตั้งแต่บท 04)</p>
+</div><div class="sub" data-machine="all"><h3 id="52-พิสูจน์ว่าจดจริง">5.2 พิสูจน์ว่าจดจริง</h3>
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> 5.1 ครบ 3 เครื่อง</p>
+<p>ทำอะไรสักอย่างที่รู้หน้าตาแน่ ๆ (อ่านรายชื่อ secret) แล้วไปหาบรรทัดนั้นในไฟล์ของทั้ง 3 เครื่อง:</p>
+<div class="cb"><pre><code class="language-bash">kubectl -n kube-system get secret &gt; /dev/null
+for ip in 101 102 103; do
+  echo "== .$ip"
+  ssh root@192.168.50.$ip "grep -h '\"resource\":\"secrets\"' /var/log/kubernetes/audit.log | tail -1" \
+    | jq -c '{level, user:.user.username, verb, ns:.objectRef.namespace, body:(.requestObject // .responseObject // "ไม่มี")}'
 done
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> มีอย่างน้อยหนึ่งเครื่องที่ไม่ใช่ <code>0</code></p>
-<p><strong>ทดสอบด้านกลับ — เสียงรบกวนต้องไม่อยู่ในไฟล์:</strong></p>
+<p><strong>ควรเห็น:</strong> อย่างน้อยหนึ่งเครื่องขึ้นบรรทัดประมาณ
+<code>{&quot;level&quot;:&quot;Metadata&quot;,&quot;user&quot;:&quot;kubernetes-admin&quot;,&quot;verb&quot;:&quot;list&quot;,&quot;ns&quot;:&quot;kube-system&quot;,&quot;body&quot;:&quot;ไม่มี&quot;}</code></p>
+<table>
+<thead>
+<tr>
+<th>ส่วน</th>
+<th>บอกอะไร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>user</code></td>
+<td>ใครทำ — คนที่ใช้ kubeconfig จากข้อ 4.1 จะเห็นเป็นชื่อในช่อง <code>CN</code> ของ cert</td>
+</tr>
+<tr>
+<td><code>verb</code> · <code>ns</code></td>
+<td>ทำอะไร ที่ namespace ไหน (<code>list</code> = ดูรายชื่อ)</td>
+</tr>
+<tr>
+<td><code>level: Metadata</code> + <code>body: ไม่มี</code></td>
+<td>จดแค่ว่ามีคนอ่าน <strong>ไม่ได้จดค่า secret</strong> — ตรงตามกฎ ✅</td>
+</tr>
+</tbody>
+</table>
+<p>(เครื่องที่ขึ้นว่าง = คำสั่งนั้นไม่ได้ตกที่เครื่องนั้น ปกติ)</p>
+<p><strong>ด้านกลับ — เรื่องที่ไม่ควรจดต้องไม่อยู่ในไฟล์:</strong></p>
 <div class="cb"><pre><code class="language-bash">grep -c '"/healthz' /var/log/kubernetes/audit.log
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p><strong>ควรเห็น:</strong> <code>0</code> — ถ้าได้เลขเยอะแปลว่า policy ไม่ถูกโหลด apiserver กำลังบันทึกทุกอย่าง
-แบบ default แล้ว disk จะเต็มใน 2-3 วัน</p>
-</div><div class="sub" data-machine="all"><h3 id="54-เอาไปใช้ตอนสืบสวน">5.4 เอาไปใช้ตอนสืบสวน</h3>
+<p><strong>ควรเห็น:</strong> <code>0</code> — ได้เลขเยอะ = กฎชุดเต็มไม่ถูกโหลด (apiserver ยังไม่ได้ restart หลัง copy) disk จะเต็มใน 2-3 วัน → ทำ 5.1 เครื่องนั้นใหม่</p>
+</div><div class="sub" data-machine="all"><h3 id="53-เอาไปใช้ตอนสืบสวน">5.3 เอาไปใช้ตอนสืบสวน</h3>
+<p><strong>ทำที่:</strong> master เครื่องไหนก็ได้ — <strong>ต้องรันครบทั้ง 3 เครื่อง</strong> เพราะแต่ละเครื่องจดคนละส่วน
+(หรือรันจากเครื่องคุณด้วย <code>ssh root@192.168.50.10X '&lt;คำสั่ง&gt;'</code> ทีละเครื่อง)</p>
+<p>ใครลบอะไรไปบ้าง:</p>
 <div class="cb"><pre><code class="language-bash">jq -r 'select(.verb=="delete")
        | "\(.requestReceivedTimestamp) \(.user.username) ลบ \(.objectRef.resource)/\(.objectRef.name)"' \
   /var/log/kubernetes/audit.log | tail -20

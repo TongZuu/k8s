@@ -790,90 +790,88 @@ AD ของบริษัท ──→ OIDC provider ──→ apiserver
 
 ---
 
-## 5 · Audit log
+## 5 · Audit log — บันทึกว่าใครทำอะไรกับ cluster
 
-**ทำที่:** 🎩 master ทั้ง 3 **ทีละเครื่อง** (ssh เข้าแต่ละเครื่อง รอ apiserver กลับมาก่อนเครื่องถัดไป) · 5.3-5.4 บน 👑 master01
-· **ต้องมีก่อน:** ข้อ 0 (ไฟล์ตรง repo) · ข้อ 1 จบ apiserver ทั้ง 3 ปกติ — ข้อนี้จะ restart apiserver อีกรอบ
+**ทำที่:** 5.1 🎩 master ทั้ง 3 **ทีละเครื่อง** · 5.2-5.3 บน 👑 master01
+· **ต้องมีก่อน:** ข้อ 0 (ไฟล์ตรง repo) · ข้อ 1 จบ apiserver ทั้ง 3 ปกติ — 5.1 จะ restart apiserver อีกรอบ
 
-audit **ทำงานอยู่แล้วตั้งแต่บท 04** — `kubeadm-config.yaml` ตั้ง `--audit-policy-file` + mount ไว้ และบท 04 ข้อ 2/4.2
-ติดตั้ง policy ชุดพื้นฐาน (`config/kubeadm/audit-policy.yaml`) บน master ทุกตัว · ข้อนี้**เปลี่ยนเป็น policy ชุดเต็ม**
-(`config/security/audit-policy.yaml` — เพิ่ม RBAC · `exec`/`attach`/`port-forward` แบบ `RequestResponse` และตัด scrape ของ Prometheus)
+**audit log คืออะไร** — กล้องวงจรปิดของ Kubernetes · ทุกคำสั่งที่ใครก็ตามส่งเข้า cluster (kubectl · Headlamp ·
+pod ที่เรียก API) apiserver จะจดลงไฟล์ `/var/log/kubernetes/audit.log` บรรทัดละเรื่อง:
+**ใคร ทำอะไร กับอะไร เมื่อไหร่ ผลเป็นยังไง** · เป็นที่เดียวที่ตอบได้ว่าใครลบ deployment ตอนตีสอง ·
+ใครอ่าน secret · ใครเพิ่มสิทธิ์ให้ตัวเอง (log ของ pod ตอบไม่ได้ — นั่นคือเสียงของแอป ไม่ใช่ของ Kubernetes)
 
-> 🔴 **ไม่ต้องแก้ `kube-apiserver.yaml`** — flag กับ volume มีอยู่แล้วจากบท 04 ใส่ซ้ำจะได้ volume ชื่อซ้ำ
-> แล้ว apiserver ของเครื่องนั้นไม่ขึ้นเลย · apiserver อ่าน policy ตอนเริ่มเท่านั้น จึงต้อง restart หลังเปลี่ยนไฟล์
+**ข้อนี้ทำอะไร** — กล้องเปิดอยู่แล้วตั้งแต่บท 04 แต่ใช้ **กฎชุดพื้นฐาน** (`config/kubeadm/audit-policy.yaml`)
+ข้อนี้เปลี่ยนเป็น **กฎชุดเต็ม** (`config/security/audit-policy.yaml`) ซึ่งจดละเอียดขึ้นในเรื่องที่อันตราย
+และเลิกจดเรื่องที่ไม่มีประโยชน์:
 
-**🎩 บนแต่ละ master ทีละตัว:**
+| เหตุการณ์ | จดไหม | จดละเอียดแค่ไหน |
+|---|---|---|
+| อ่าน Secret | ✅ | ใครอ่าน secret ไหน — **ไม่จดค่าข้างใน** (ถ้าจด ไฟล์ log จะกลายเป็นที่รั่วเสียเอง) |
+| แก้สิทธิ์ (RBAC) | ✅ | ละเอียดทั้งหมด — เห็นว่าเพิ่มสิทธิ์อะไรให้ใคร |
+| `exec` · `attach` · `port-forward` เข้า pod | ✅ | ละเอียดทั้งหมด — เป็นช่องแอบเอาข้อมูลออกได้ |
+| สร้าง / แก้ / ลบ อะไรก็ตาม | ✅ | ละเอียดทั้งหมด |
+| ดู pod · service · node | ✅ | แค่ว่าใครดู |
+| `/healthz` · `/metrics` · kubelet · Prometheus | ❌ | ไม่จด — เกิดวินาทีละหลายครั้ง จดไปก็แค่ทำ disk เต็มและหาเรื่องจริงไม่เจอ |
+
+ไฟล์หมุนเก็บที่ 100 MB × 10 ไฟล์ · เก็บ 30 วัน (ตั้งไว้ใน `kubeadm-config.yaml` ตั้งแต่บท 04)
+
+> 🔴 **ไฟล์เป็นของแต่ละ master แยกกัน** — คำสั่งผ่าน VIP แล้วตกที่ apiserver เครื่องไหน ก็ถูกจดที่เครื่องนั้นเครื่องเดียว
+> ทั้ง 3 เครื่องจึงมีเนื้อหาไม่เหมือนกัน · เวลาสืบว่าใครทำอะไร ต้องค้นให้ครบทั้งสามเครื่องเสมอ
+
+### 5.1 เปลี่ยนเป็นกฎชุดเต็ม — 🎩 ทีละเครื่อง
+
+**ทำที่:** ssh เข้า master ทีละเครื่อง (master01 → 02 → 03) รอ `ok` ก่อนไปเครื่องถัดไป
+
+apiserver อ่านไฟล์กฎแค่ตอนเริ่ม จึงต้อง copy ไฟล์ แล้ว restart apiserver ของเครื่องนั้น — บล็อกเดียวจบ:
 ```bash
-\cp -f /root/k8s/config/security/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
-chmod 600 /etc/kubernetes/audit-policy.yaml
-grep -c 'pods/exec' /etc/kubernetes/audit-policy.yaml
-```
-**ควรเห็น:** `1` = ชุดเต็มลงแล้ว (ชุดพื้นฐานของบท 04 ไม่มีบรรทัดนี้ — ได้ `0` แปลว่า copy ไม่โดน)
-
-**restart apiserver ของเครื่องนี้** — ย้าย manifest ออกแล้วกลับ kubelet จะสร้าง pod ใหม่ให้:
-```bash
+\cp -f /root/k8s/config/security/audit-policy.yaml /etc/kubernetes/audit-policy.yaml && chmod 600 /etc/kubernetes/audit-policy.yaml
+echo "กฎชุดเต็ม: $(grep -c 'pods/exec' /etc/kubernetes/audit-policy.yaml)"
 mv /etc/kubernetes/manifests/kube-apiserver.yaml /root/ && sleep 10 && mv /root/kube-apiserver.yaml /etc/kubernetes/manifests/
 until curl -sk https://127.0.0.1:6443/healthz | grep -q ok; do sleep 3; done; echo "apiserver ของ $(hostname) ok"
 ```
-**ควรเห็น:** `apiserver ของ k8s-masterXX ok` ภายใน ~1 นาที → ค่อยไปเครื่องถัดไป
-(ระหว่างนั้น `kubectl` ผ่าน VIP ยังใช้ได้ — HAProxy ส่งไป master ที่เหลือ)
+**ควรเห็น:** `กฎชุดเต็ม: 1` แล้ว `apiserver ของ k8s-masterXX ok` ภายใน ~1 นาที
+· ได้ `กฎชุดเต็ม: 0` = copy ไม่โดน (`/root/k8s/config/security/` ยังเป็นไฟล์เก่า — กลับไปข้อ 0)
 
-### 5.1 มันคืออะไร และไฟล์อยู่ที่ไหน
+(บรรทัด `mv` คือการ restart — ย้ายไฟล์ manifest ออก kubelet จะหยุด apiserver ย้ายกลับก็สร้างใหม่ให้ ·
+ระหว่างนั้น `kubectl` ผ่าน VIP ยังใช้ได้ เพราะ HAProxy ส่งไป master ที่เหลือ · ไม่ต้องแก้ `kube-apiserver.yaml`
+— การตั้งค่า audit อยู่ในนั้นแล้วตั้งแต่บท 04)
 
-apiserver เขียนบันทึกทุก request ที่เข้ามาหามันเป็น JSON บรรทัดละ event —
-**ใคร ทำอะไร กับอะไร เมื่อไหร่ ผลเป็นยังไง** เป็นที่เดียวในระบบที่ตอบได้ว่า
-ใครลบ deployment ตอนตีสอง · ใครอ่าน secret ของ HR · ใครเพิ่มสิทธิ์ให้ตัวเอง
-(log ของ pod ตอบไม่ได้ เพราะนั่นคือเสียงของแอป ไม่ใช่ของ Kubernetes)
+### 5.2 พิสูจน์ว่าจดจริง
 
-> 🔴 **ไฟล์เป็นของแต่ละ master แยกกัน** — `/var/log/kubernetes/audit.log` บนเครื่องนั้น ๆ
-> request วิ่งผ่าน VIP แล้วตกที่ apiserver ตัวไหน event ก็ไปโผล่เครื่องนั้นเครื่องเดียว
-> **อย่าคาดหวังว่าทั้ง 3 เครื่องจะมีเนื้อหาเหมือนกัน** ตอนสืบสวนต้องไล่ให้ครบทั้งสามเสมอ
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** 5.1 ครบ 3 เครื่อง
 
-### 5.2 อะไรถูกบันทึก อะไรไม่ถูกบันทึก
-
-| ทำอะไร | บันทึกไหม | `level` | เห็นอะไร |
-|---|---|---|---|
-| อ่าน Secret | ✅ | `Metadata` | รู้ว่าใครอ่าน แต่**ไม่เก็บค่า secret** — ถ้าเก็บ log จะกลายเป็นที่รั่วเสียเอง |
-| แก้ RBAC | ✅ | `RequestResponse` | เห็นทั้งของที่ส่งไปและผลลัพธ์ |
-| `exec` · `attach` · `port-forward` | ✅ | `RequestResponse` | ช่องอ้อมที่เอาข้อมูลออกได้โดยไม่แตะ API ตรง ๆ |
-| `create`/`update`/`delete` ทุกอย่าง | ✅ | `RequestResponse` | ทุกการเปลี่ยนแปลงสถานะ |
-| `get`/`list` pod · service · node | ✅ | `Metadata` | รู้ว่ามีคนดู ไม่เก็บเนื้อหา |
-| `/healthz` · `/metrics` · kubelet watch · Prometheus scrape | ❌ | `None` | ตัดทิ้งตั้งใจ — เกิดวินาทีละหลายครั้ง เก็บไปก็มีแต่ทำให้ disk เต็มและหาของจริงไม่เจอ |
-
-rotate ไว้ที่ **100 MB × 10 ไฟล์ เก็บ 30 วัน**
-(ตั้งไว้ที่ [`kubeadm-config.yaml`](../config/kubeadm/kubeadm-config.yaml) ตั้งแต่บทที่ 04)
-
-### 5.3 พิสูจน์ว่าบันทึกจริง
-
-สร้าง event ที่รู้หน้าตาแน่ ๆ แล้วไปหามันให้เจอ:
+ทำอะไรสักอย่างที่รู้หน้าตาแน่ ๆ (อ่านรายชื่อ secret) แล้วไปหาบรรทัดนั้นในไฟล์ของทั้ง 3 เครื่อง:
 ```bash
 kubectl -n kube-system get secret > /dev/null
-
-grep -h '"resource":"secrets"' /var/log/kubernetes/audit.log | tail -1 \
-  | jq '{level, user:.user.username, verb, resource:.objectRef.resource,
-         ns:.objectRef.namespace, time:.requestReceivedTimestamp}'
-```
-**ควรเห็น:** JSON ที่มี `"level": "Metadata"` · `"verb": "list"` · `user` เป็นชื่อคุณ
-และ**ต้องไม่มี** `requestObject`/`responseObject` — นั่นคือหลักฐานว่าเนื้อ secret ไม่ได้ลงไฟล์
-
-ถ้าไม่เจอ ให้ตามหาที่ master อีกสองเครื่อง เพราะ request อาจตกที่นั่น:
-```bash
 for ip in 101 102 103; do
-  printf "== .%s : " "$ip"
-  ssh root@192.168.50.$ip "grep -hc '\"resource\":\"secrets\"' /var/log/kubernetes/audit.log 2>/dev/null || echo 0"
+  echo "== .$ip"
+  ssh root@192.168.50.$ip "grep -h '\"resource\":\"secrets\"' /var/log/kubernetes/audit.log | tail -1" \
+    | jq -c '{level, user:.user.username, verb, ns:.objectRef.namespace, body:(.requestObject // .responseObject // "ไม่มี")}'
 done
 ```
-**ควรเห็น:** มีอย่างน้อยหนึ่งเครื่องที่ไม่ใช่ `0`
+**ควรเห็น:** อย่างน้อยหนึ่งเครื่องขึ้นบรรทัดประมาณ
+`{"level":"Metadata","user":"kubernetes-admin","verb":"list","ns":"kube-system","body":"ไม่มี"}`
 
-**ทดสอบด้านกลับ — เสียงรบกวนต้องไม่อยู่ในไฟล์:**
+| ส่วน | บอกอะไร |
+|---|---|
+| `user` | ใครทำ — คนที่ใช้ kubeconfig จากข้อ 4.1 จะเห็นเป็นชื่อในช่อง `CN` ของ cert |
+| `verb` · `ns` | ทำอะไร ที่ namespace ไหน (`list` = ดูรายชื่อ) |
+| `level: Metadata` + `body: ไม่มี` | จดแค่ว่ามีคนอ่าน **ไม่ได้จดค่า secret** — ตรงตามกฎ ✅ |
+
+(เครื่องที่ขึ้นว่าง = คำสั่งนั้นไม่ได้ตกที่เครื่องนั้น ปกติ)
+
+**ด้านกลับ — เรื่องที่ไม่ควรจดต้องไม่อยู่ในไฟล์:**
 ```bash
 grep -c '"/healthz' /var/log/kubernetes/audit.log
 ```
-**ควรเห็น:** `0` — ถ้าได้เลขเยอะแปลว่า policy ไม่ถูกโหลด apiserver กำลังบันทึกทุกอย่าง
-แบบ default แล้ว disk จะเต็มใน 2-3 วัน
+**ควรเห็น:** `0` — ได้เลขเยอะ = กฎชุดเต็มไม่ถูกโหลด (apiserver ยังไม่ได้ restart หลัง copy) disk จะเต็มใน 2-3 วัน → ทำ 5.1 เครื่องนั้นใหม่
 
-### 5.4 เอาไปใช้ตอนสืบสวน
+### 5.3 เอาไปใช้ตอนสืบสวน
 
+**ทำที่:** master เครื่องไหนก็ได้ — **ต้องรันครบทั้ง 3 เครื่อง** เพราะแต่ละเครื่องจดคนละส่วน
+(หรือรันจากเครื่องคุณด้วย `ssh root@192.168.50.10X '<คำสั่ง>'` ทีละเครื่อง)
+
+ใครลบอะไรไปบ้าง:
 ```bash
 jq -r 'select(.verb=="delete")
        | "\(.requestReceivedTimestamp) \(.user.username) ลบ \(.objectRef.resource)/\(.objectRef.name)"' \
