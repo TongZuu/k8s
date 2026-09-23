@@ -496,6 +496,32 @@ Sep 24 10:15:02.341: myhr-prod/nptest:48212 (ID:31807) <> 192.168.50.101:6443 (k
 | `exit=28` แต่ไม่มีบรรทัด DROPPED เลย | Hubble เครื่องนั้นไม่ทำงาน → เช็กข้างล่าง |
 | บรรทัดขึ้น `... to-stack FORWARDED` / ไม่มี `Policy denied` | policy ยังไม่ถูกบังคับใช้ → กลับข้อ 3.2 |
 
+#### policy บล็อก หรือ network เสีย — แยกด้วย Hubble
+
+`exit=28` จาก curl มีได้สองสาเหตุที่หน้าตาเหมือนกันเป๊ะ — **policy ทิ้ง** กับ **ปลายทางไม่ตอบ**
+ดู curl อย่างเดียวแยกไม่ออก ต้องดูว่า Hubble เห็นอะไร:
+
+| สถานการณ์ | Hubble เห็นอะไร | curl ได้ |
+|---|---|---|
+| **policy บล็อก** | `Policy denied DROPPED` | `exit=28` |
+| **ปลายทางไม่ตอบ** (เครื่องดับ · firewall ปลายทางทิ้ง · router ไม่ส่งต่อ) | ขาออก `FORWARDED` (SYN) ซ้ำหลายครั้ง **ไม่มีขากลับ** ไม่มีคำว่า DROPPED | `exit=28` |
+| **ปลายทางปฏิเสธ** (พอร์ตไม่ได้เปิด) | ขาออก `FORWARDED` แล้วมีขากลับ `TCP Flags: RST` | `exit=7` |
+| **Cilium ทิ้งด้วยเหตุอื่น** | `DROPPED` แต่เหตุผลไม่ใช่ `Policy denied` เช่น `No route to host` · `Stale or unroutable IP` · `Invalid source ip` | `exit=28` / `7` |
+| **DNS พัง** | ไม่มี flow ไปปลายทางเลย — ไปไม่ถึงขั้นต่อ | `exit=6` |
+
+- มี `Policy denied` = เรื่องของเรา → เขียน rule เปิดทาง
+- `FORWARDED` แต่ไม่มีขากลับ = packet ออกจาก cluster ไปแล้ว → ปัญหาอยู่นอก cluster ไล่ที่ network/ปลายทาง **ไม่ต้องแตะ policy**
+
+คำสั่งข้างบนกรอง `--verdict DROPPED` จึงไม่เห็นกรณี `FORWARDED` — ถ้าจะดูครบทุกกรณี
+ถอด `--verdict` ออกแล้วระบุ IP ปลายทางด้วย `--ip` (จับทั้งสองทิศ — เห็นขาออก ขากลับ และตัวที่ถูกทิ้ง):
+```bash
+for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    hubble observe --namespace myhr-prod --ip 192.168.50.101 --since 2m 2>/dev/null
+done
+```
+(เปลี่ยน `192.168.50.101` เป็น IP ปลายทางที่สงสัย · รันทันทีหลังยิงทดสอบ เหมือนบล็อกข้างบน)
+
 **เช็กว่า Hubble ทำงานอยู่จริง:**
 ```bash
 for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do

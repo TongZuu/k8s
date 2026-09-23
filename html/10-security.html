@@ -753,6 +753,57 @@ done
 </tr>
 </tbody>
 </table>
+<h4 id="policy-บล็อก-หรือ-network-เสีย--แยกด้วย-hubble">policy บล็อก หรือ network เสีย — แยกด้วย Hubble</h4>
+<p><code>exit=28</code> จาก curl มีได้สองสาเหตุที่หน้าตาเหมือนกันเป๊ะ — <strong>policy ทิ้ง</strong> กับ <strong>ปลายทางไม่ตอบ</strong>
+ดู curl อย่างเดียวแยกไม่ออก ต้องดูว่า Hubble เห็นอะไร:</p>
+<table>
+<thead>
+<tr>
+<th>สถานการณ์</th>
+<th>Hubble เห็นอะไร</th>
+<th>curl ได้</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>policy บล็อก</strong></td>
+<td><code>Policy denied DROPPED</code></td>
+<td><code>exit=28</code></td>
+</tr>
+<tr>
+<td><strong>ปลายทางไม่ตอบ</strong> (เครื่องดับ · firewall ปลายทางทิ้ง · router ไม่ส่งต่อ)</td>
+<td>ขาออก <code>FORWARDED</code> (SYN) ซ้ำหลายครั้ง <strong>ไม่มีขากลับ</strong> ไม่มีคำว่า DROPPED</td>
+<td><code>exit=28</code></td>
+</tr>
+<tr>
+<td><strong>ปลายทางปฏิเสธ</strong> (พอร์ตไม่ได้เปิด)</td>
+<td>ขาออก <code>FORWARDED</code> แล้วมีขากลับ <code>TCP Flags: RST</code></td>
+<td><code>exit=7</code></td>
+</tr>
+<tr>
+<td><strong>Cilium ทิ้งด้วยเหตุอื่น</strong></td>
+<td><code>DROPPED</code> แต่เหตุผลไม่ใช่ <code>Policy denied</code> เช่น <code>No route to host</code> · <code>Stale or unroutable IP</code> · <code>Invalid source ip</code></td>
+<td><code>exit=28</code> / <code>7</code></td>
+</tr>
+<tr>
+<td><strong>DNS พัง</strong></td>
+<td>ไม่มี flow ไปปลายทางเลย — ไปไม่ถึงขั้นต่อ</td>
+<td><code>exit=6</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>มี <code>Policy denied</code> = เรื่องของเรา → เขียน rule เปิดทาง</li>
+<li><code>FORWARDED</code> แต่ไม่มีขากลับ = packet ออกจาก cluster ไปแล้ว → ปัญหาอยู่นอก cluster ไล่ที่ network/ปลายทาง <strong>ไม่ต้องแตะ policy</strong></li>
+</ul>
+<p>คำสั่งข้างบนกรอง <code>--verdict DROPPED</code> จึงไม่เห็นกรณี <code>FORWARDED</code> — ถ้าจะดูครบทุกกรณี
+ถอด <code>--verdict</code> ออกแล้วระบุ IP ปลายทางด้วย <code>--ip</code> (จับทั้งสองทิศ — เห็นขาออก ขากลับ และตัวที่ถูกทิ้ง):</p>
+<div class="cb"><pre><code class="language-bash">for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
+  kubectl -n kube-system exec "$p" -c cilium-agent -- \
+    hubble observe --namespace myhr-prod --ip 192.168.50.101 --since 2m 2&gt;/dev/null
+done
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p>(เปลี่ยน <code>192.168.50.101</code> เป็น IP ปลายทางที่สงสัย · รันทันทีหลังยิงทดสอบ เหมือนบล็อกข้างบน)</p>
 <p><strong>เช็กว่า Hubble ทำงานอยู่จริง:</strong></p>
 <div class="cb"><pre><code class="language-bash">for p in $(kubectl -n kube-system get pod -l k8s-app=cilium -o name); do
   echo "== $p"
