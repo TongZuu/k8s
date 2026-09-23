@@ -862,21 +862,11 @@ done
            | (.subjects // [])[] | "\($n)\t\(.kind)/\(.name)"'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ทบทวนรายชื่อนี้ทุกไตรมาส</strong> และลบคนที่ไม่ได้อยู่แล้วออก</p>
-<p><strong>ทดสอบว่า RBAC ทำงานจริง:</strong></p>
-<blockquote>
-<p>🔴 <strong>ต้องสวมรอยเป็น group ไม่ใช่ ServiceAccount</strong> — <a href="../config/security/rbac.yaml"><code>rbac.yaml</code></a>
-ผูกสิทธิ์ไว้กับ Group <code>myhr:developers</code> / <code>myhr:operators</code> (มาจากช่อง <code>O</code> ของ client cert)
-ไม่ได้ผูกกับ ServiceAccount ตัวไหนเลย · ถ้าทดสอบด้วย
-<code>--as=system:serviceaccount:myhr-prod:developer</code> จะได้ <code>no</code> <strong>เสมอ</strong>
-ไม่ว่า RBAC จะถูกหรือผิด แล้วจะแปลผลผิดว่า &quot;ปิดแน่นดี&quot; ทั้งที่ไม่ได้ทดสอบอะไรเลย
-· <code>--as-group</code> ต้องมาคู่กับ <code>--as</code> เพราะ apiserver ต้องการชื่อ user ด้วย</p>
-</blockquote>
-<blockquote>
-<p>🔴 <strong>subresource ต้องใช้ <code>--subresource</code> ห้ามเขียน <code>pods/exec</code> ติดกัน</strong>
-kubectl ตีความ <code>pods/exec</code> เป็นรูปแบบ TYPE/NAME คือ &quot;resource <code>pods</code> ที่ชื่อ <code>exec</code>&quot;
-ไม่ใช่ subresource · มันจะไปถามว่า &quot;create pods ได้ไหม&quot; ซึ่งเป็นคนละคำถาม
-แล้วมักได้ <code>no</code> ออกมาพอดี ทำให้ดูเหมือนทดสอบผ่านทั้งที่ไม่ได้ทดสอบสิ่งที่ตั้งใจเลย</p>
-</blockquote>
+<p><strong>ทดสอบว่า RBAC ทำงานจริง</strong></p>
+<p><code>kubectl auth can-i</code> ถาม apiserver ว่า &quot;คนนี้ทำสิ่งนี้ได้ไหม&quot; <strong>โดยไม่ได้ทำจริง</strong> ·
+<code>--as=tester --as-group=myhr:developers</code> คือให้ root <strong>สวมรอย</strong>เป็น user <code>tester</code> ในกลุ่ม <code>myhr:developers</code>
+— ตัวตนเดียวกับที่คนจะได้จาก kubeconfig ในข้อ 4.1 (ช่อง <code>O=myhr:developers</code> ใน cert)
+จึงทดสอบสิทธิ์ได้โดยไม่ต้องออก cert จริง</p>
 <div class="cb"><pre><code class="language-bash">kubectl auth can-i get pods    --as=tester --as-group=myhr:developers -n myhr-prod
 kubectl auth can-i get secrets --as=tester --as-group=myhr:developers -n myhr-prod
 kubectl auth can-i create pods --subresource=exec \
@@ -887,47 +877,77 @@ kubectl auth can-i get pods    --as=tester --as-group=myhr:developers -n myhr-ua
 kubectl auth can-i delete nodes --as=tester --as-group=myhr:developers
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็นเรียงลงมา:</strong> <code>yes</code> <code>no</code> <code>no</code> <code>yes</code> <code>no</code> <code>no</code></p>
+<p>ทีละบรรทัด — สิทธิ์มาจาก ClusterRole <code>myhr:developer</code> ใน <a href="../config/security/rbac.yaml"><code>rbac.yaml</code></a>
+ซึ่งผูกกับกลุ่มนี้ด้วย RoleBinding <strong>ใน <code>myhr-prod</code> เท่านั้น</strong>:</p>
 <table>
 <thead>
 <tr>
-<th>ทดสอบ</th>
-<th>ต้องได้</th>
-<th>เพราะ</th>
+<th>#</th>
+<th>ถามว่า</th>
+<th>ได้</th>
+<th>ทำไม</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>get pods -n myhr-prod</code></td>
+<td>1</td>
+<td>ดู pod ใน prod</td>
 <td><code>yes</code></td>
-<td>RoleBinding <code>myhr-developers</code> อยู่ใน namespace นี้</td>
+<td>role ให้ <code>get/list/watch</code> pods</td>
 </tr>
 <tr>
-<td><code>get secrets</code></td>
+<td>2</td>
+<td>อ่าน secret ใน prod</td>
 <td><code>no</code></td>
-<td>ตั้งใจไม่ให้ — กันการดูดค่า secret</td>
+<td><strong>ตั้งใจไม่ให้</strong> — secret มีรหัสฐานข้อมูลของแอป dev ไม่ควรเห็น</td>
 </tr>
 <tr>
-<td><code>create pods --subresource=exec</code></td>
+<td>3</td>
+<td><code>exec</code> เข้า pod ใน prod</td>
 <td><code>no</code></td>
-<td>ตั้งใจไม่ให้ — <code>exec</code> คืออ่าน secret ทางอ้อมโดยไม่โผล่ใน audit log</td>
+<td><strong>ตั้งใจไม่ให้</strong> — exec เข้าไปแล้วอ่าน env หรือไฟล์ secret ที่ mount อยู่ได้ = อ่าน secret ทางอ้อม และ audit log จะไม่บันทึกว่าเป็นการอ่าน secret</td>
 </tr>
 <tr>
-<td><code>get pods --subresource=log</code></td>
+<td>4</td>
+<td>ดู log ของ pod ใน prod</td>
 <td><code>yes</code></td>
-<td>ดู log ได้ เป็นงานประจำของ dev</td>
+<td>role ให้ <code>pods/log</code> — dev ต้องใช้ไล่ปัญหาแอป</td>
 </tr>
 <tr>
-<td><code>get pods -n myhr-uat</code></td>
+<td>5</td>
+<td>ดู pod ใน <strong>uat</strong></td>
 <td><code>no</code></td>
-<td>binding ผูกไว้เฉพาะ <code>myhr-prod</code></td>
+<td>RoleBinding ผูกไว้แค่ <code>myhr-prod</code> · role เดียวกันแต่ไม่ได้ผูกใน uat ก็ไม่มีสิทธิ์ที่นั่น</td>
 </tr>
 <tr>
-<td><code>delete nodes</code></td>
+<td>6</td>
+<td>ลบ node</td>
 <td><code>no</code></td>
-<td>คนละ role กัน</td>
+<td>dev ไม่มีสิทธิ์ระดับ cluster เลย</td>
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><code>Warning: resource 'nodes' is not namespace scoped</code> ใต้บรรทัดสุดท้าย <strong>ไม่ใช่ error</strong> — node ไม่อยู่ใน
+namespace ไหน แต่ kubectl แนบ namespace <code>default</code> จาก kubeconfig มาให้เอง เลยเตือนว่าค่านั้นไม่มีผล
+· ผล <code>no</code> ยังถูกต้อง</p>
+</blockquote>
+<blockquote>
+<p>อยากให้ dev ดู uat ได้ด้วย (บรรทัด 5 เป็น <code>yes</code>) → เพิ่ม RoleBinding ตัวที่สองใน <code>myhr-uat</code>
+— ผูกได้ทีละ namespace เหมือน NetworkPolicy</p>
+</blockquote>
+<p><strong>ถ้าผลไม่ตรง — กับดักสองข้อที่ทำให้ทดสอบผิดโดยไม่รู้ตัว:</strong></p>
+<blockquote>
+<p>🔴 <strong>ต้องสวมรอยเป็น group ไม่ใช่ ServiceAccount</strong> — <code>rbac.yaml</code> ผูกสิทธิ์ไว้กับ Group
+<code>myhr:developers</code> / <code>myhr:operators</code> ไม่ได้ผูกกับ ServiceAccount ตัวไหนเลย · ถ้าทดสอบด้วย
+<code>--as=system:serviceaccount:myhr-prod:developer</code> จะได้ <code>no</code> <strong>เสมอ</strong> ไม่ว่า RBAC จะถูกหรือผิด
+แล้วจะแปลผลผิดว่า &quot;ปิดแน่นดี&quot; · <code>--as-group</code> ต้องมาคู่กับ <code>--as</code> เพราะ apiserver ต้องการชื่อ user ด้วย</p>
+</blockquote>
+<blockquote>
+<p>🔴 <strong>subresource ต้องใช้ <code>--subresource</code> ห้ามเขียน <code>pods/exec</code> ติดกัน</strong> — kubectl ตีความ <code>pods/exec</code>
+เป็น &quot;resource <code>pods</code> ที่ชื่อ <code>exec</code>&quot; แล้วไปถามว่า &quot;create pods ได้ไหม&quot; ซึ่งเป็นคนละคำถาม
+และมักได้ <code>no</code> ออกมาพอดี ดูเหมือนผ่านทั้งที่ไม่ได้ทดสอบสิ่งที่ตั้งใจ</p>
+</blockquote>
 <p><strong>ฝั่ง ops:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl auth can-i get nodes    --as=tester --as-group=myhr:operators
 kubectl auth can-i create pods  --subresource=eviction \

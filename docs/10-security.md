@@ -566,19 +566,12 @@ kubectl get clusterrolebinding -o json \
 ```
 **ทบทวนรายชื่อนี้ทุกไตรมาส** และลบคนที่ไม่ได้อยู่แล้วออก
 
-**ทดสอบว่า RBAC ทำงานจริง:**
+**ทดสอบว่า RBAC ทำงานจริง**
 
-> 🔴 **ต้องสวมรอยเป็น group ไม่ใช่ ServiceAccount** — [`rbac.yaml`](../config/security/rbac.yaml)
-> ผูกสิทธิ์ไว้กับ Group `myhr:developers` / `myhr:operators` (มาจากช่อง `O` ของ client cert)
-> ไม่ได้ผูกกับ ServiceAccount ตัวไหนเลย · ถ้าทดสอบด้วย
-> `--as=system:serviceaccount:myhr-prod:developer` จะได้ `no` **เสมอ**
-> ไม่ว่า RBAC จะถูกหรือผิด แล้วจะแปลผลผิดว่า "ปิดแน่นดี" ทั้งที่ไม่ได้ทดสอบอะไรเลย
-> · `--as-group` ต้องมาคู่กับ `--as` เพราะ apiserver ต้องการชื่อ user ด้วย
-
-> 🔴 **subresource ต้องใช้ `--subresource` ห้ามเขียน `pods/exec` ติดกัน**
-> kubectl ตีความ `pods/exec` เป็นรูปแบบ TYPE/NAME คือ "resource `pods` ที่ชื่อ `exec`"
-> ไม่ใช่ subresource · มันจะไปถามว่า "create pods ได้ไหม" ซึ่งเป็นคนละคำถาม
-> แล้วมักได้ `no` ออกมาพอดี ทำให้ดูเหมือนทดสอบผ่านทั้งที่ไม่ได้ทดสอบสิ่งที่ตั้งใจเลย
+`kubectl auth can-i` ถาม apiserver ว่า "คนนี้ทำสิ่งนี้ได้ไหม" **โดยไม่ได้ทำจริง** ·
+`--as=tester --as-group=myhr:developers` คือให้ root **สวมรอย**เป็น user `tester` ในกลุ่ม `myhr:developers`
+— ตัวตนเดียวกับที่คนจะได้จาก kubeconfig ในข้อ 4.1 (ช่อง `O=myhr:developers` ใน cert)
+จึงทดสอบสิทธิ์ได้โดยไม่ต้องออก cert จริง
 
 ```bash
 kubectl auth can-i get pods    --as=tester --as-group=myhr:developers -n myhr-prod
@@ -592,14 +585,35 @@ kubectl auth can-i delete nodes --as=tester --as-group=myhr:developers
 ```
 **ควรเห็นเรียงลงมา:** `yes` `no` `no` `yes` `no` `no`
 
-| ทดสอบ | ต้องได้ | เพราะ |
-|---|---|---|
-| `get pods -n myhr-prod` | `yes` | RoleBinding `myhr-developers` อยู่ใน namespace นี้ |
-| `get secrets` | `no` | ตั้งใจไม่ให้ — กันการดูดค่า secret |
-| `create pods --subresource=exec` | `no` | ตั้งใจไม่ให้ — `exec` คืออ่าน secret ทางอ้อมโดยไม่โผล่ใน audit log |
-| `get pods --subresource=log` | `yes` | ดู log ได้ เป็นงานประจำของ dev |
-| `get pods -n myhr-uat` | `no` | binding ผูกไว้เฉพาะ `myhr-prod` |
-| `delete nodes` | `no` | คนละ role กัน |
+ทีละบรรทัด — สิทธิ์มาจาก ClusterRole `myhr:developer` ใน [`rbac.yaml`](../config/security/rbac.yaml)
+ซึ่งผูกกับกลุ่มนี้ด้วย RoleBinding **ใน `myhr-prod` เท่านั้น**:
+
+| # | ถามว่า | ได้ | ทำไม |
+|---|---|---|---|
+| 1 | ดู pod ใน prod | `yes` | role ให้ `get/list/watch` pods |
+| 2 | อ่าน secret ใน prod | `no` | **ตั้งใจไม่ให้** — secret มีรหัสฐานข้อมูลของแอป dev ไม่ควรเห็น |
+| 3 | `exec` เข้า pod ใน prod | `no` | **ตั้งใจไม่ให้** — exec เข้าไปแล้วอ่าน env หรือไฟล์ secret ที่ mount อยู่ได้ = อ่าน secret ทางอ้อม และ audit log จะไม่บันทึกว่าเป็นการอ่าน secret |
+| 4 | ดู log ของ pod ใน prod | `yes` | role ให้ `pods/log` — dev ต้องใช้ไล่ปัญหาแอป |
+| 5 | ดู pod ใน **uat** | `no` | RoleBinding ผูกไว้แค่ `myhr-prod` · role เดียวกันแต่ไม่ได้ผูกใน uat ก็ไม่มีสิทธิ์ที่นั่น |
+| 6 | ลบ node | `no` | dev ไม่มีสิทธิ์ระดับ cluster เลย |
+
+> `Warning: resource 'nodes' is not namespace scoped` ใต้บรรทัดสุดท้าย **ไม่ใช่ error** — node ไม่อยู่ใน
+> namespace ไหน แต่ kubectl แนบ namespace `default` จาก kubeconfig มาให้เอง เลยเตือนว่าค่านั้นไม่มีผล
+> · ผล `no` ยังถูกต้อง
+
+> อยากให้ dev ดู uat ได้ด้วย (บรรทัด 5 เป็น `yes`) → เพิ่ม RoleBinding ตัวที่สองใน `myhr-uat`
+> — ผูกได้ทีละ namespace เหมือน NetworkPolicy
+
+**ถ้าผลไม่ตรง — กับดักสองข้อที่ทำให้ทดสอบผิดโดยไม่รู้ตัว:**
+
+> 🔴 **ต้องสวมรอยเป็น group ไม่ใช่ ServiceAccount** — `rbac.yaml` ผูกสิทธิ์ไว้กับ Group
+> `myhr:developers` / `myhr:operators` ไม่ได้ผูกกับ ServiceAccount ตัวไหนเลย · ถ้าทดสอบด้วย
+> `--as=system:serviceaccount:myhr-prod:developer` จะได้ `no` **เสมอ** ไม่ว่า RBAC จะถูกหรือผิด
+> แล้วจะแปลผลผิดว่า "ปิดแน่นดี" · `--as-group` ต้องมาคู่กับ `--as` เพราะ apiserver ต้องการชื่อ user ด้วย
+
+> 🔴 **subresource ต้องใช้ `--subresource` ห้ามเขียน `pods/exec` ติดกัน** — kubectl ตีความ `pods/exec`
+> เป็น "resource `pods` ที่ชื่อ `exec`" แล้วไปถามว่า "create pods ได้ไหม" ซึ่งเป็นคนละคำถาม
+> และมักได้ `no` ออกมาพอดี ดูเหมือนผ่านทั้งที่ไม่ได้ทดสอบสิ่งที่ตั้งใจ
 
 **ฝั่ง ops:**
 ```bash
