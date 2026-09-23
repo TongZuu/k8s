@@ -574,6 +574,7 @@ Alertmanager ไม่ยอมส่งรหัสบนช่องไม่�
 <p>🔴 ส่งซ้ำ<strong>หลัง</strong> 5.2 จะทับผู้รับที่กรอกไว้บน master01 กลับเป็น <code>&lt;ALERT_TO&gt;</code> — ต้องทำ 5.2 ใหม่</p>
 </blockquote>
 </div><div class="sub" data-machine="all"><h3 id="51-เก็บ-userรหัส-smtp-ลง-secret">5.1 เก็บ user/รหัส SMTP ลง Secret</h3>
+<p><strong>ทำที่:</strong> 👑 ssh เข้า master01 · <strong>ต้องมีก่อน:</strong> 5.0 ผ่าน · user/รหัสของ <code>myhr-notification@myhr.in.th</code> อยู่ในมือ</p>
 <p>รหัสอยู่ใน Secret เท่านั้น — ไม่อยู่ในไฟล์ในrepo และไม่ผ่าน helm values:</p>
 <div class="cb"><pre><code class="language-bash">read -rp 'SMTP user: ' SU; read -rsp 'SMTP password: ' SP; echo " (รับมา ${#SP} ตัว)"
 kubectl -n monitoring create secret generic alert-mail \
@@ -583,6 +584,8 @@ unset SU SP
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> <code>(รับมา N ตัว)</code> ที่ N ไม่เป็น 0 · แล้ว <code>secret/alert-mail created</code></p>
 </div><div class="sub" data-machine="all"><h3 id="52-ใส่ผู้รับ-แล้ว-deploy-ตัวกลาง">5.2 ใส่ผู้รับ แล้ว deploy ตัวกลาง</h3>
+<p><strong>ทำที่:</strong> 👑 master01 (ต่อจาก 5.1 หน้าต่างเดิมได้) · <strong>ต้องมีก่อน:</strong> 5.0 (ไฟล์อยู่ที่ <code>/root/k8s/deployments/alert-mail-relay/</code>)
+· 5.1 (Secret <code>alert-mail</code> มีแล้ว — pod อ่านรหัสจากมันตอนเริ่ม)</p>
 <div class="cb"><pre><code class="language-bash">cd /root/k8s/deployments/alert-mail-relay
 read -rp 'ผู้รับ alert ทั่วไป (คั่นด้วย , ได้): ' TO; read -rp 'ผู้รับ critical [เหมือนข้างบน]: ' TOC; TOC=${TOC:-$TO}
 sed -i "s|&lt;ALERT_TO&gt;|$TO|; s|&lt;ALERT_TO_CRITICAL&gt;|$TOC|" alert-mail-relay.yaml
@@ -597,6 +600,7 @@ kubectl apply -f alert-mail-relay.yaml &amp;&amp; kubectl -n monitoring rollout 
 ไม่ต้อง restart (kubelet sync ไฟล์ราว 1 นาที)</p>
 </blockquote>
 </div><div class="sub" data-machine="all"><h3 id="53-ชี้-alertmanager-มาที่ตัวกลาง">5.3 ชี้ Alertmanager มาที่ตัวกลาง</h3>
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> 5.2 <code>successfully rolled out</code> (ถ้า Alertmanager ชี้มาก่อนตัวกลางขึ้น alert จะส่งไม่ถึง)</p>
 <p>🔴 <strong>นับจากนี้ <code>helm upgrade</code> ของ <code>monitoring</code> ต้องมี <code>-f</code> สองไฟล์และ <code>--version</code> ทุกครั้ง</strong> —
 ลืมไฟล์ที่สอง ปลายทาง alert หายเงียบ ๆ · ลืม <code>--version</code> = อัป chart ทั้งชุดโดยไม่ตั้งใจ</p>
 <div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
@@ -616,6 +620,7 @@ kill %%
 <p><strong>ควรเห็น:</strong> <code>null</code> · <code>myhr-default</code> · <code>myhr-critical</code> — ได้ <code>null</code> ตัวเดียว = ยังใช้ config ตั้งต้นของ chart
 → ตาราง &quot;ถ้าไม่ผ่าน&quot; ท้ายข้อ</p>
 </div><div class="sub" data-machine="all"><h3 id="54-ยิง-alert-ปลอม--ห้ามข้าม">5.4 ยิง alert ปลอม — ห้ามข้าม</h3>
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> 5.3 เห็น <code>myhr-default</code> · <code>myhr-critical</code> · มีคนเปิดกล่องเมลของผู้รับรอดู</p>
 <p>มีคนเปิดกล่องเมลผู้รับรอดูอยู่ — ผลของข้อนี้อยู่ในกล่องเมล ไม่ใช่บนจอ:</p>
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093 &gt;/dev/null 2&gt;&amp;1 &amp;
 sleep 3

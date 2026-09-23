@@ -395,6 +395,8 @@ cd /d/workspace/k8s && tar cf - deployments/alert-mail-relay config/monitoring/a
 
 ### 5.1 เก็บ user/รหัส SMTP ลง Secret
 
+**ทำที่:** 👑 ssh เข้า master01 · **ต้องมีก่อน:** 5.0 ผ่าน · user/รหัสของ `myhr-notification@myhr.in.th` อยู่ในมือ
+
 รหัสอยู่ใน Secret เท่านั้น — ไม่อยู่ในไฟล์ในrepo และไม่ผ่าน helm values:
 ```bash
 read -rp 'SMTP user: ' SU; read -rsp 'SMTP password: ' SP; echo " (รับมา ${#SP} ตัว)"
@@ -406,6 +408,9 @@ unset SU SP
 **ควรเห็น:** `(รับมา N ตัว)` ที่ N ไม่เป็น 0 · แล้ว `secret/alert-mail created`
 
 ### 5.2 ใส่ผู้รับ แล้ว deploy ตัวกลาง
+
+**ทำที่:** 👑 master01 (ต่อจาก 5.1 หน้าต่างเดิมได้) · **ต้องมีก่อน:** 5.0 (ไฟล์อยู่ที่ `/root/k8s/deployments/alert-mail-relay/`)
+· 5.1 (Secret `alert-mail` มีแล้ว — pod อ่านรหัสจากมันตอนเริ่ม)
 
 ```bash
 cd /root/k8s/deployments/alert-mail-relay
@@ -422,6 +427,8 @@ kubectl apply -f alert-mail-relay.yaml && kubectl -n monitoring rollout status d
 > ไม่ต้อง restart (kubelet sync ไฟล์ราว 1 นาที)
 
 ### 5.3 ชี้ Alertmanager มาที่ตัวกลาง
+
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** 5.2 `successfully rolled out` (ถ้า Alertmanager ชี้มาก่อนตัวกลางขึ้น alert จะส่งไม่ถึง)
 
 🔴 **นับจากนี้ `helm upgrade` ของ `monitoring` ต้องมี `-f` สองไฟล์และ `--version` ทุกครั้ง** —
 ลืมไฟล์ที่สอง ปลายทาง alert หายเงียบ ๆ · ลืม `--version` = อัป chart ทั้งชุดโดยไม่ตั้งใจ
@@ -446,6 +453,8 @@ kill %%
 → ตาราง "ถ้าไม่ผ่าน" ท้ายข้อ
 
 ### 5.4 ยิง alert ปลอม — ห้ามข้าม
+
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** 5.3 เห็น `myhr-default` · `myhr-critical` · มีคนเปิดกล่องเมลของผู้รับรอดู
 
 มีคนเปิดกล่องเมลผู้รับรอดูอยู่ — ผลของข้อนี้อยู่ในกล่องเมล ไม่ใช่บนจอ:
 ```bash
