@@ -903,7 +903,7 @@ unset SU SP TO; rm -f /root/smtp25-test.py
 **ขั้น A — ตัดสินก่อนว่า relay ต้องล็อกอินไหม** ไม่แน่ใจให้ถามทีม mail
 หรือดูว่า relay ประกาศ `AUTH` ไว้หรือเปล่า (ประกาศ ≠ บังคับ แต่ถ้าไม่ประกาศเลยแปลว่าไม่ต้องแน่ ๆ):
 **ใส่ชื่อ relay จริงที่ได้จากทีม mail ก่อน** (ไม่ใช่ `mail.example.co.th` — นั่นคือตัวอย่าง) · ค่า `H` กับ `P`
-ใช้ต่อในทุกคำสั่งทดสอบของข้อ 5 ถ้าเปิด shell ใหม่ต้องรันบรรทัดนี้ซ้ำ:
+ใช้ต่อในทุกคำสั่งทดสอบของภาคผนวกนี้ ถ้าเปิด shell ใหม่ต้องรันบรรทัดนี้ซ้ำ:
 ```bash
 read -rp 'SMTP relay host (จากทีม mail): ' H; read -rp 'port [25]: ' P; P=${P:-25}; getent hosts "$H" || echo "❌ resolve $H ไม่ได้ — ชื่อผิดหรือ DNS ไม่รู้จัก"
 ```
@@ -915,7 +915,7 @@ kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybo
   sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" "$1"' "$H" "$P" | grep -iE '^2|AUTH|STARTTLS'
 ```
 **ควรเห็น:** บรรทัด `220 ...` ตามด้วย `250-...` หลายบรรทัด · มี `AUTH` = relay รับล็อกอิน · ไม่มีเลย = ไม่ต้องล็อกอิน (A-ก)
-· ไม่มีอะไรออกมาเลย = ต่อไม่ติด → 5.3.3
+· ไม่มีอะไรออกมาเลย = ต่อไม่ติด → ข.2.3
 
 **A-ก · relay ไม่ต้องล็อกอิน** — ปิดสองบรรทัด auth ทิ้งไปเลย
 ```bash
@@ -977,7 +977,7 @@ chmod 600 alertmanager-config.yaml
 > กลายเป็น "พิมพ์แล้วไม่มีอะไรเปลี่ยน" ซึ่งชวนให้เข้าใจว่าคำสั่งพัง
 > ขั้นตอนที่คนต้องรันซ้ำตอนตีสอง ต้องรันซ้ำได้จริง
 
-**ตรวจผลก่อนไปข้อ 5.2:**
+**ตรวจผลก่อน `helm upgrade` (ข้อ 5.3):**
 ```bash
 cd /root/k8s/config/monitoring
 grep -v '^[[:space:]]*#' alertmanager-config.yaml | grep -c '<[A-Z_]*>'
@@ -1023,7 +1023,7 @@ kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybo
 | บรรทัดหลัง `RCPT TO` | แปลว่า | ทางแก้ |
 |---|---|---|
 | `250 ... Ok` | ไม่บังคับ auth | ปิด auth ตามคำสั่งข้างล่าง แล้ว `helm upgrade` ซ้ำ — จบ |
-| `530 SMTP authentication is required` | บังคับ auth และไม่มี STARTTLS บนพอร์ตนี้ | ส่งตรงไม่ได้ → ไปที่ 5.3.2 |
+| `530 SMTP authentication is required` | บังคับ auth และไม่มี STARTTLS บนพอร์ตนี้ | ส่งตรงไม่ได้ → ไปที่ ข.2.2 |
 | `554` · `relay access denied` | relay ไม่ยอมส่งต่อออกนอกโดเมนให้ IP นี้ | ขอทีม mail ใส่ IP ขาออกของ cluster ใน allow-list |
 
 **ปิด auth ทั้งชุด** (สำหรับสองแถวที่บอกว่าไม่ต้องล็อกอิน):
@@ -1034,7 +1034,7 @@ sed -i -E -e 's|^([[:space:]]*)(smtp_auth_)|\1# \2|' \
 grep -E '^[[:space:]]*smtp_' alertmanager-config.yaml
 ```
 **ควรเห็น:** เหลือแค่ `smtp_smarthost` · `smtp_from` · `smtp_require_tls: false`
-แล้วกลับไปรัน `helm upgrade` ในข้อ 5.2 ซ้ำ · เมลที่ค้างคิว retry อยู่จะถูกส่งเองไม่ต้องยิงใหม่
+แล้วกลับไปรัน `helm upgrade` ในข้อ 5.3 ซ้ำ · เมลที่ค้างคิว retry อยู่จะถูกส่งเองไม่ต้องยิงใหม่
 
 ##### ข.2.2 relay บังคับ auth แต่พอร์ตที่ออกได้ไม่มี STARTTLS
 
@@ -1045,14 +1045,14 @@ Alertmanager ส่งตรงไม่ได้แน่นอนในสภ�
 |---|---|---|
 | ขอเปิดพอร์ตที่มี STARTTLS (มัก 587) | ทีม network **และ** relay ต้องเปิด 587 จริง | ต้องรอ |
 | ขอ allow-list ให้ส่งจาก IP ของ cluster โดยไม่ต้อง auth | ทีม mail | ต้องรอ |
-| **ตัวกลางในคลัสเตอร์ที่ยอมทำ auth บนพอร์ต 25 แทน** | ไม่ต้องพึ่งใคร | ทำเองได้วันนี้ → ข้อ 5.4 |
+| **ตัวกลางในคลัสเตอร์ที่ยอมทำ auth บนพอร์ต 25 แทน** | ไม่ต้องพึ่งใคร | ทำเองได้วันนี้ → ข้อ 5 (ทางหลักของ cluster นี้) |
 
 **พอได้ 587 มาแล้ว อย่าเพิ่งเชื่อว่ามี STARTTLS** ตรวจก่อนหนึ่งครั้ง:
 ```bash
 kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
   sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" 587' "$H"
 ```
-เห็น `250-STARTTLS` แล้วค่อยกลับไปทำ 5.1 ขั้น A-ข ด้วยพอร์ต 587
+เห็น `250-STARTTLS` แล้วค่อยกลับไปทำ ข.1 ขั้น A-ข ด้วยพอร์ต 587
 
 ##### ข.2.3 ต่อพอร์ตไม่ได้ — แยกก่อนว่าใครดรอป
 
@@ -1088,7 +1088,7 @@ foreach ($p in 25,465,587,2525) { $r = Test-NetConnection <IP ของ relay> -
 
 1. เปิด `email_configs` และ `smtp_*` ที่คอมเมนต์ไว้ใน `alertmanager-config.yaml` กลับ
    แล้วลบ `webhook_configs` ออก
-2. `helm upgrade` ตามข้อ 5.2 · ยิงของปลอมตามข้อ 5.3 · **ยืนยันว่าเมลเข้าจริง**
+2. `helm upgrade` ตามข้อ 5.3 · ยิงของปลอมตามข้อ 5.4 · **ยืนยันว่าเมลเข้าจริง**
 3. เมื่อยืนยันแล้วเท่านั้นค่อยลบตัวกลาง:
 ```bash
 kubectl delete -f /root/k8s/deployments/alert-mail-relay/alert-mail-relay.yaml

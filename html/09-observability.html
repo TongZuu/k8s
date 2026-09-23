@@ -1212,7 +1212,7 @@ user กับรหัสผ่านเป็น base64 ออกมาบน�
 <p><strong>ขั้น A — ตัดสินก่อนว่า relay ต้องล็อกอินไหม</strong> ไม่แน่ใจให้ถามทีม mail
 หรือดูว่า relay ประกาศ <code>AUTH</code> ไว้หรือเปล่า (ประกาศ ≠ บังคับ แต่ถ้าไม่ประกาศเลยแปลว่าไม่ต้องแน่ ๆ):
 <strong>ใส่ชื่อ relay จริงที่ได้จากทีม mail ก่อน</strong> (ไม่ใช่ <code>mail.example.co.th</code> — นั่นคือตัวอย่าง) · ค่า <code>H</code> กับ <code>P</code>
-ใช้ต่อในทุกคำสั่งทดสอบของข้อ 5 ถ้าเปิด shell ใหม่ต้องรันบรรทัดนี้ซ้ำ:</p>
+ใช้ต่อในทุกคำสั่งทดสอบของภาคผนวกนี้ ถ้าเปิด shell ใหม่ต้องรันบรรทัดนี้ซ้ำ:</p>
 <div class="cb"><pre><code class="language-bash">read -rp 'SMTP relay host (จากทีม mail): ' H; read -rp 'port [25]: ' P; P=${P:-25}; getent hosts "$H" || echo "❌ resolve $H ไม่ได้ — ชื่อผิดหรือ DNS ไม่รู้จัก"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> IP ของ relay หนึ่งบรรทัด · ได้ <code>❌</code> = ชื่อผิด ถามทีม mail ใหม่ (ห้ามไปต่อ)</p>
@@ -1221,7 +1221,7 @@ user กับรหัสผ่านเป็น base64 ออกมาบน�
   sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" "$1"' "$H" "$P" | grep -iE '^2|AUTH|STARTTLS'
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> บรรทัด <code>220 ...</code> ตามด้วย <code>250-...</code> หลายบรรทัด · มี <code>AUTH</code> = relay รับล็อกอิน · ไม่มีเลย = ไม่ต้องล็อกอิน (A-ก)
-· ไม่มีอะไรออกมาเลย = ต่อไม่ติด → 5.3.3</p>
+· ไม่มีอะไรออกมาเลย = ต่อไม่ติด → ข.2.3</p>
 <p><strong>A-ก · relay ไม่ต้องล็อกอิน</strong> — ปิดสองบรรทัด auth ทิ้งไปเลย</p>
 <div class="cb"><pre><code class="language-bash">cd /root/k8s/config/monitoring
 sed -i -E 's|^([[:space:]]*)(smtp_auth_)|\1# \2|' alertmanager-config.yaml
@@ -1278,7 +1278,7 @@ chmod 600 alertmanager-config.yaml
 กลายเป็น &quot;พิมพ์แล้วไม่มีอะไรเปลี่ยน&quot; ซึ่งชวนให้เข้าใจว่าคำสั่งพัง
 ขั้นตอนที่คนต้องรันซ้ำตอนตีสอง ต้องรันซ้ำได้จริง</p>
 </blockquote>
-<p><strong>ตรวจผลก่อนไปข้อ 5.2:</strong></p>
+<p><strong>ตรวจผลก่อน <code>helm upgrade</code> (ข้อ 5.3):</strong></p>
 <div class="cb"><pre><code class="language-bash">cd /root/k8s/config/monitoring
 grep -v '^[[:space:]]*#' alertmanager-config.yaml | grep -c '&lt;[A-Z_]*&gt;'
 grep -E '^[[:space:]]*smtp_(smarthost|from|require_tls|auth_username)' alertmanager-config.yaml
@@ -1349,7 +1349,7 @@ Alertmanager ใช้ และ <strong>ห้ามใส่ <code>-it</code><
 <tr>
 <td><code>530 SMTP authentication is required</code></td>
 <td>บังคับ auth และไม่มี STARTTLS บนพอร์ตนี้</td>
-<td>ส่งตรงไม่ได้ → ไปที่ 5.3.2</td>
+<td>ส่งตรงไม่ได้ → ไปที่ ข.2.2</td>
 </tr>
 <tr>
 <td><code>554</code> · <code>relay access denied</code></td>
@@ -1365,7 +1365,7 @@ sed -i -E -e 's|^([[:space:]]*)(smtp_auth_)|\1# \2|' \
 grep -E '^[[:space:]]*smtp_' alertmanager-config.yaml
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>ควรเห็น:</strong> เหลือแค่ <code>smtp_smarthost</code> · <code>smtp_from</code> · <code>smtp_require_tls: false</code>
-แล้วกลับไปรัน <code>helm upgrade</code> ในข้อ 5.2 ซ้ำ · เมลที่ค้างคิว retry อยู่จะถูกส่งเองไม่ต้องยิงใหม่</p>
+แล้วกลับไปรัน <code>helm upgrade</code> ในข้อ 5.3 ซ้ำ · เมลที่ค้างคิว retry อยู่จะถูกส่งเองไม่ต้องยิงใหม่</p>
 <h5 id="ข22-relay-บังคับ-auth-แต่พอร์ตที่ออกได้ไม่มี-starttls">ข.2.2 relay บังคับ auth แต่พอร์ตที่ออกได้ไม่มี STARTTLS</h5>
 <p>Alertmanager ส่งตรงไม่ได้แน่นอนในสภาพนี้ — มันปฏิเสธการส่งรหัสผ่านบนช่องที่ไม่เข้ารหัส
 แบบฮาร์ดโค้ด และนั่นถูกต้องแล้ว <strong>มีสามทางออก เลือกได้ทันทีตามว่าอันไหนเป็นไปได้ก่อน</strong></p>
@@ -1391,7 +1391,7 @@ grep -E '^[[:space:]]*smtp_' alertmanager-config.yaml
 <tr>
 <td><strong>ตัวกลางในคลัสเตอร์ที่ยอมทำ auth บนพอร์ต 25 แทน</strong></td>
 <td>ไม่ต้องพึ่งใคร</td>
-<td>ทำเองได้วันนี้ → ข้อ 5.4</td>
+<td>ทำเองได้วันนี้ → ข้อ 5 (ทางหลักของ cluster นี้)</td>
 </tr>
 </tbody>
 </table>
@@ -1399,7 +1399,7 @@ grep -E '^[[:space:]]*smtp_' alertmanager-config.yaml
 <div class="cb"><pre><code class="language-bash">kubectl -n monitoring run smtp-test --rm --attach --restart=Never --image=busybox:1.36 -- \
   sh -c '(printf "EHLO myhr\r\n"; sleep 4; printf "QUIT\r\n"; sleep 1) | nc -w 10 "$0" 587' "$H"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
-<p>เห็น <code>250-STARTTLS</code> แล้วค่อยกลับไปทำ 5.1 ขั้น A-ข ด้วยพอร์ต 587</p>
+<p>เห็น <code>250-STARTTLS</code> แล้วค่อยกลับไปทำ ข.1 ขั้น A-ข ด้วยพอร์ต 587</p>
 <h5 id="ข23-ต่อพอร์ตไม่ได้--แยกก่อนว่าใครดรอป">ข.2.3 ต่อพอร์ตไม่ได้ — แยกก่อนว่าใครดรอป</h5>
 <p><code>timeout</code> แปลว่า &quot;ไม่มีใครตอบ&quot; เท่านั้น <strong>ไม่ได้แปลว่าไฟร์วอลล์ขององค์กรบล็อก</strong> —
 ตัว relay เองไม่ได้เปิดพอร์ตนั้นแล้วดรอปทิ้งก็ให้อาการเดียวกันเป๊ะ ชนิดของ error
@@ -1444,7 +1444,7 @@ EOF
 <ol>
 <li>เปิด <code>email_configs</code> และ <code>smtp_*</code> ที่คอมเมนต์ไว้ใน <code>alertmanager-config.yaml</code> กลับ
 แล้วลบ <code>webhook_configs</code> ออก</li>
-<li><code>helm upgrade</code> ตามข้อ 5.2 · ยิงของปลอมตามข้อ 5.3 · <strong>ยืนยันว่าเมลเข้าจริง</strong></li>
+<li><code>helm upgrade</code> ตามข้อ 5.3 · ยิงของปลอมตามข้อ 5.4 · <strong>ยืนยันว่าเมลเข้าจริง</strong></li>
 <li>เมื่อยืนยันแล้วเท่านั้นค่อยลบตัวกลาง:</li>
 </ol>
 <div class="cb"><pre><code class="language-bash">kubectl delete -f /root/k8s/deployments/alert-mail-relay/alert-mail-relay.yaml
