@@ -1,14 +1,15 @@
 # =============================================================================
-#  PrometheusRule เฉพาะของ MyHR
+#  PrometheusRule เฉพาะของ MyHR — 11 alert ที่ chart มาตรฐานไม่มี
 # =============================================================================
-#  11 ข้อนี้ไม่มีใน chart มาตรฐาน เพราะมันมาจากข้อจำกัดที่เราเลือกเอง:
-#    - ไม่มี GitOps  → ไม่มีอะไรบังคับให้ manifest มี PDB
-#    - ไม่มี Ksplice → ต้อง drain ทุก 1-2 เดือน จึงต้องเผื่อ capacity N+1
-#    - Oracle Linux ให้ kernel สองตัว → node อาจบูตคนละตัวโดยไม่มีใครรู้
-#    - cluster เดิมตายเพราะ cert หมดอายุ → ต้องเตือนล่วงหน้าหลายเดือน
-#    - drain บ่อย → node อาจถูกถอนแล้วลืมใส่คืน โดยที่ทุกหน้าจอยังเขียว
-#    - ไม่มี CSI → monitoring ทั้งชุดฝากชีวิตไว้กับ root partition ของ worker03
-#    - Loki มีเพดาน ingestion → log หายได้เงียบ ๆ โดยไม่มีอะไรพัง
+#  แต่ละข้อมาจากลักษณะของ cluster นี้:
+#    - ไม่มี GitOps        → ไม่มีอะไรบังคับให้ Deployment มี PDB / replica ≥ 2
+#    - ไม่มี Ksplice       → drain ทุก node ทุก 1-2 เดือน ต้องเหลือ capacity พอเมื่อขาด worker 1 เครื่อง
+#    - Oracle Linux        → มี kernel สองสาย (UEK / RHCK) node อาจบูตคนละสาย
+#    - cert ของ kubeadm    → อายุ 1 ปี หมดแล้ว apiserver ปฏิเสธทุก component
+#    - node ถูกถอดได้      → node object หายไป alert ราย node จะไม่มีอะไรให้ประเมิน
+#    - ไม่มี CSI           → Prometheus / Loki / Grafana เก็บข้อมูลบน root partition ของ worker03
+#    - Loki มีเพดาน        → เกินเพดาน log ถูกทิ้งโดยไม่มี error ที่ไหน
+#  คำอธิบายเต็มและสิ่งที่ต้องทำเมื่อดัง: บทที่ 09 หัวข้อ 6
 # =============================================================================
 
 apiVersion: monitoring.coreos.com/v1
@@ -17,28 +18,22 @@ metadata:
   name: myhr-cluster-rules
   namespace: monitoring
   labels:
-    release: monitoring          # ต้องมี label นี้ Prometheus ถึงจะเก็บไป
+    release: monitoring          # ต้องมี label นี้ Prometheus ถึงจะโหลด rule
 spec:
   groups:
     # =========================================================================
     - name: myhr.node-inventory
       rules:
 
-        # --- node หายไปจากทะเบียนของ cluster ---------------------------------
-        # KubeNodeNotReady ของ chart จับได้เฉพาะ "node ที่ยังอยู่แต่ป่วย"
-        # ถ้า node object หายไปเลย (kubectl delete node, ถอนเครื่องหลัง drain แล้วลืมใส่คืน,
-        # หรือ VM ถูกลบทิ้งที่ vCenter) series ของเครื่องนั้นหายทั้งชุด
-        # → ไม่เหลืออะไรให้ KubeNodeNotReady ประเมิน มันจึงหยุดดังแทนที่จะดัง
-        # และ desired ของ DaemonSet ก็ลดตามจำนวน node ที่เหลือ
-        # → CiliumAgentDown กับ AlloyDaemonSetIncomplete ก็เงียบตามไปด้วย
-        # ผลคือ cluster เล็กลงหนึ่งเครื่องโดยที่ทุกหน้าจอเป็นสีเขียว
+        # --- จำนวน node ต่ำกว่าที่ควรมี ---------------------------------------
+        # จับ: node object หายไปจาก cluster (kubectl delete node · VM ถูกลบ · ถอดแล้วไม่ใส่คืน)
+        # ทำไมต้องมี: KubeNodeNotReady ของ chart ประเมินเฉพาะ node ที่ยังอยู่ · node ที่หายไป
+        #   ไม่มี series ให้ประเมิน และ desired ของ DaemonSet ลดตาม จึงไม่มี alert ไหนดังเลย
+        # ถ้าไม่มี: cluster เหลือ node น้อยลง capacity ลดลง โดยไม่มีการแจ้งเตือน
+        # เงื่อนไขที่ 2 (absent): kube-state-metrics ไม่ส่งค่า = นับ node ไม่ได้ ให้ดังด้วย
         - alert: NodeCountBelowExpected
-          # 6 = master 3 + worker 3 ตรงกับ ansible/inventory.ini
-          # 🔴 ถ้าเพิ่มหรือถอน node ถาวร ต้องแก้เลขนี้ ไม่งั้น alert จะดังค้างตลอด
-          #
-          # arm ที่สอง (absent) ดักตอน kube-state-metrics ตาย ซึ่งทำให้ count()
-          # ไม่คืนอะไรเลย — ถ้ามีแต่ arm แรก ช่วงนั้นจะ "นับ node ไม่ได้" แบบเงียบ ๆ
-          # ซึ่งเป็นอาการเดียวกับที่ alert ข้อนี้ตั้งใจกำจัด
+          # 6 = master 3 + worker 3 ตาม ansible/inventory.ini
+          # 🔴 เพิ่มหรือถอด node ถาวร ต้องแก้เลขนี้ ไม่งั้น alert ดังค้าง
           expr: |
             count(kube_node_info) < 6
             or
@@ -59,7 +54,8 @@ spec:
       rules:
 
         # --- Deployment ที่ไม่มี PDB ----------------------------------------
-        # ถ้า drain node ที่มี pod ของ Deployment นี้อยู่ จะดับทันที
+        # จับ: Deployment นอก namespace ระบบ ใน namespace ที่ไม่มี PodDisruptionBudget เลย
+        # ถ้าปล่อย: drain node ไล่ pod ของ Deployment นี้ออกได้ทั้งหมดพร้อมกัน → service ดับระหว่าง drain
         - alert: DeploymentWithoutPDB
           expr: |
             count by (namespace, deployment) (
@@ -77,11 +73,12 @@ spec:
               Deployment ที่ไม่มี PDB จะดับตอน drain
               แก้โดยเพิ่ม PDB (minAvailable: 1) และตั้ง replica >= 2
 
-        # --- replica เดียว = drain แล้วดับแน่นอน ----------------------------
-        # 🔴 รายการ namespace ที่ยกเว้นต้องตรงกับ DeploymentWithoutPDB ข้างบนเสมอ
-        #    ถ้าไม่ตรง จะได้ alert ที่ขัดกันเอง: เตือนว่า Deployment ของ envoy-gateway-system
-        #    มี replica เดียว แต่ไม่เตือนว่ามันไม่มี PDB ทั้งที่เป็นเรื่องเดียวกัน
-        #    (เจอจริงตอนต่อเมลได้ครั้งแรก — envoy-gateway-system ดังข้อเดียวโดด ๆ)
+        # --- Deployment มี replica เดียว ---------------------------------------
+        # จับ: Deployment นอก namespace ระบบที่ replicas = 1
+        # ถ้าปล่อย: drain เครื่องที่ pod อยู่ = service ดับจนกว่า pod ใหม่จะขึ้นบนเครื่องอื่น
+        #   (PDB ป้องกันไม่ได้ — PDB ที่ห้ามไล่ตัวเดียวจะทำให้ drain ค้างแทน)
+        # 🔴 รายการ namespace ที่ยกเว้นต้องตรงกับ DeploymentWithoutPDB ข้างบน
+        #    ไม่ตรง = สอง alert รายงานเรื่องเดียวกันไม่ตรงกัน
         - alert: DeploymentSingleReplica
           expr: |
             kube_deployment_spec_replicas{namespace!~"kube-system|monitoring|cert-manager|envoy-gateway-system"} == 1
@@ -92,11 +89,11 @@ spec:
             summary: "{{ $labels.namespace }}/{{ $labels.deployment }} มี replica เดียว"
             description: "PDB ช่วยไม่ได้ถ้ามี replica เดียว — ต้องมีอย่างน้อย 2"
 
-        # --- capacity ใกล้ชนเพดาน N+1 ---------------------------------------
-        # worker 3 เครื่อง รวม 48 vCPU / 144 GB
-        # แต่ตอน drain เหลือ 2 เครื่อง → เพดานจริงคือ 32 vCPU / 96 GB
+        # --- requests รวมใกล้เพดานตอนขาด worker 1 เครื่อง -----------------------
+        # worker 3 เครื่อง รวม 48 vCPU / 144 GB · ระหว่าง drain เหลือ 2 เครื่อง = 32 vCPU / 96 GB
+        # จับ: requests รวมบน worker เกิน 90% ของ 32 vCPU หรือ 96 GB
+        # ถ้าปล่อย: drain แล้ว pod ที่ถูกไล่ไม่มีที่ลง ค้าง Pending และ drain ไม่จบ
         - alert: ClusterCapacityNearNPlusOneLimit
-          # เพดาน N+1: CPU 32 core · MEM 96 GiB — เตือนที่ 90% ของทั้งคู่
           expr: |
             sum(kube_pod_container_resource_requests{resource="cpu", node=~"k8s-worker.*"}) > (32 * 0.9)
             or
@@ -115,6 +112,9 @@ spec:
       rules:
 
         # --- node บูตคนละ kernel --------------------------------------------
+        # จับ: node_uname_info มี release มากกว่า 1 ค่าใน cluster
+        # ถ้าปล่อย: node ต่างเครื่องต่าง kernel → eBPF ของ Cilium และ network ทำงานไม่เหมือนกัน
+        #   ปัญหาเกิดเฉพาะบางเครื่อง · ดังชั่วคราวระหว่าง rolling reboot เป็นปกติ
         - alert: NodeKernelVersionMismatch
           expr: count(count by (release) (node_uname_info)) > 1
           for: 10m
@@ -123,16 +123,19 @@ spec:
           annotations:
             summary: "node ใน cluster บูต kernel คนละเวอร์ชัน"
             description: >-
-              Oracle Linux ให้ kernel มาสองตัว (UEK และ RHCK) การผสมกันทำให้เกิด
-              อาการ network ที่ต่างกันเป็นราย node ซึ่งหาสาเหตุยากมาก
+              Oracle Linux มี kernel สองสาย (UEK และ RHCK) ถ้า node บูตคนละตัว
+              network และ Cilium จะทำงานต่างกันเป็นรายเครื่อง
               ตรวจด้วย `uname -r` ทุกเครื่อง และยืนยันว่า dnf versionlock ยังอยู่
-              หมายเหตุ: ระหว่าง rolling reboot alert นี้จะดังชั่วคราวเป็นเรื่องปกติ
+              ระหว่าง rolling reboot alert นี้ดังชั่วคราวได้ เป็นเรื่องปกติ
 
     # =========================================================================
     - name: myhr.certificates
       rules:
 
-        # --- cert ของ cluster ใกล้หมดอายุ ------------------------------------
+        # --- cert ที่ client ใช้เข้า apiserver ใกล้หมดอายุ --------------------------
+        # จับ: client cert ที่ยังมีการใช้งาน เหลืออายุน้อยกว่า 60 วัน
+        # ถ้าปล่อย: cert ของ kubeadm อายุ 1 ปี · หมดแล้ว apiserver ปฏิเสธ kubelet · controller ·
+        #   scheduler · kubectl ของ admin → node NotReady ทั้ง cluster สั่งงานอะไรไม่ได้
         - alert: KubeCertificateExpiringSoon
           expr: |
             (apiserver_client_certificate_expiration_seconds_count > 0)
@@ -146,7 +149,8 @@ spec:
           annotations:
             summary: "certificate ของ cluster เหลืออายุน้อยกว่า 60 วัน"
             description: >-
-              นี่คือสาเหตุที่ cluster เดิมเดินต่อไม่ได้
+              ถ้าหมดอายุ apiserver จะปฏิเสธ kubelet และ component ของ control plane
+              node จะ NotReady และสั่ง kubectl ไม่ได้
               ตรวจด้วย `kubeadm certs check-expiration` บนทุก master
               แล้วต่ออายุด้วย `kubeadm certs renew all` (ดูบทที่ 12)
 
@@ -154,7 +158,10 @@ spec:
     - name: myhr.cilium
       rules:
 
-        # --- Cilium ล่ม = pod network + Service + LoadBalancer ดับพร้อมกัน ----
+        # --- Cilium agent ไม่ครบทุก node --------------------------------------
+        # จับ: DaemonSet cilium มี pod พร้อมใช้น้อยกว่าที่ควรมี
+        # ถ้าปล่อย: node ที่ไม่มี agent ไม่มี pod network · Service · LoadBalancer IP
+        #   และไม่มี kube-proxy สำรอง (ไม่ได้ติดตั้ง)
         - alert: CiliumAgentDown
           expr: |
             kube_daemonset_status_number_ready{daemonset="cilium", namespace="kube-system"}
@@ -174,10 +181,10 @@ spec:
       rules:
 
         # --- Loki ทิ้ง log เพราะชนเพดาน --------------------------------------
-        # loki-values.yaml ตั้ง ingestion_rate_mb: 10 และ per_stream_rate_limit: 3MB ไว้
-        # ซึ่งจำเป็น — ไม่งั้น app ที่ log รัวจะกิน root partition ของ worker03 จนเต็ม
-        # แต่เวลาเพดานทำงาน Loki ตอบ 429 แล้ว Alloy retry จนยอมแพ้แล้วทิ้งแบบ "เงียบ"
-        # ทีม dev จะเห็นแค่ "log บางช่วงหาย" แล้วสรุปว่าระบบ log เชื่อไม่ได้
+        # loki-values.yaml ตั้ง ingestion_rate_mb: 10 และ per_stream_rate_limit: 3MB
+        # (กันไม่ให้ app ที่ log เยอะเขียน root partition ของ worker03 จนเต็ม)
+        # จับ: Loki ทิ้ง log (loki_discarded_samples_total เพิ่มขึ้น)
+        # ถ้าปล่อย: log ช่วงนั้นหายถาวร · Loki ตอบ 429 ให้ Alloy ซึ่ง retry แล้วทิ้ง ไม่มี error ที่อื่น
         - alert: LokiDiscardingLogs
           expr: |
             sum by (reason) (rate(loki_discarded_samples_total[10m])) > 0
@@ -187,15 +194,15 @@ spec:
           annotations:
             summary: "Loki กำลังทิ้ง log · เหตุผล: {{ $labels.reason }}"
             description: >-
-              log หายโดยไม่มีใครรู้ ถ้า reason เป็น rate_limited หรือ per_stream_rate_limit
-              แปลว่ามี app log รัวเกินโควตา — ไปหาตัวต้นเหตุด้วย
+              log ช่วงนี้หายถาวร ถ้า reason เป็น rate_limited หรือ per_stream_rate_limit
+              แปลว่ามี app log เกินโควตา — หาตัวต้นเหตุด้วย
               topk(5, sum by (namespace, app) (rate({namespace=~".+"}[5m]))) ใน Grafana
               แล้วแก้ที่ app ก่อน ค่อยพิจารณาขยายเพดานใน loki-values.yaml
 
-        # --- ไม่มี log เข้าเลย ------------------------------------------------
-        # ดักกรณี Alloy พัง, NODE_NAME ไม่ถูกส่งเข้าไปจน selectors ไม่ match อะไรเลย,
-        # หรือ Loki ไม่รับ — ทั้งสามอย่างให้ผลเหมือนกันคือ "หน้าจอ log ว่างเปล่า"
-        # ซึ่งดูเหมือนระบบเงียบสงบ ทั้งที่จริงคือระบบเก็บ log ตายไปแล้ว
+        # --- Loki ไม่ได้รับ log เลย ------------------------------------------
+        # จับ: ไม่มี log เข้า Loki 15 นาที
+        # สาเหตุที่เป็นไปได้: Alloy ไม่ทำงาน · NODE_NAME ไม่ถูกส่งเข้า Alloy (selector ไม่ match) · Loki ไม่รับ
+        # ถ้าปล่อย: ไม่มี log ของช่วงนั้นให้ค้นย้อนหลัง · หน้า log ใน Grafana ว่างโดยไม่มี error
         - alert: LokiNotReceivingLogs
           expr: |
             sum(rate(loki_distributor_lines_received_total[15m])) == 0
@@ -210,7 +217,9 @@ spec:
               3) Loki pod ขึ้นหรือเปล่า (อยู่บน worker03 — ถ้าเครื่องนั้น reboot อยู่ถือว่าปกติ)
 
         # --- Alloy ไม่ครบทุก node --------------------------------------------
-        # node ที่ไม่มี Alloy = log ของเครื่องนั้นหายไปเงียบ ๆ โดยที่ Loki ยังดูปกติ
+        # จับ: DaemonSet alloy มี pod พร้อมใช้น้อยกว่าที่ควรมี
+        # ถ้าปล่อย: log ของ node ที่ไม่มี Alloy ไม่เข้า Loki · LokiNotReceivingLogs ไม่ดัง
+        #   เพราะ node อื่นยังส่งอยู่
         - alert: AlloyDaemonSetIncomplete
           expr: |
             kube_daemonset_status_number_ready{daemonset="alloy", namespace="monitoring"}
@@ -228,7 +237,10 @@ spec:
     - name: myhr.disk
       rules:
 
-        # --- monitoring กิน root partition จนเต็ม ----------------------------
+        # --- root partition ของ worker03 ใกล้เต็ม -----------------------------
+        # จับ: / ของ worker03 (.106) เหลือว่างน้อยกว่า 20%
+        # ถ้าปล่อย: /var/lib/monitoring อยู่บน root ร่วมกับ OS และ log · เต็มแล้ว node NotReady
+        #   Prometheus · Loki · Grafana หยุดทั้งหมด
         - alert: MonitoringDiskFillingUp
           expr: |
             (
