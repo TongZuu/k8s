@@ -588,6 +588,7 @@ systemctl daemon-reload &amp;&amp; systemctl restart kubelet
 kubectl uncordon "$NODE"
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
 <p><strong>อัปเดต <code>versions.env</code> แล้ว <code>dnf versionlock</code> ใหม่ทุกเครื่อง</strong></p>
+<p>เมล <code>KubernetesPatchAvailable</code> (<a href="09-observability.html">บท 09 ข้อ 6.1</a>) หยุดเองภายใน 26 ชม. หลัง upgrade ไม่ต้องทำอะไร</p>
 </div><div class="sub" data-machine="all"><h3 id="minor-upgrade-136--137--ต้องวางแผน">Minor upgrade (1.36 → 1.37) — ต้องวางแผน</h3>
 <blockquote>
 <p>🔴 <strong>อ่าน release note ของเวอร์ชันปลายทางก่อนเสมอ</strong> ไม่ใช่ทำตามแบบปิดตา
@@ -602,6 +603,28 @@ dnf clean all &amp;&amp; dnf makecache
 
 # 3. ที่เหลือเหมือน patch upgrade
 </code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>4. เลื่อนวันแจ้งเตือนหมด support ไปสายใหม่</strong> — ทำใน repo บนเครื่องคุณ แล้วส่งขึ้นตามบท 09 ข้อ 6.1:</p>
+<table>
+<thead>
+<tr>
+<th>แก้ที่</th>
+<th>เป็น</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docs/versions.env</code> <code>K8S_VERSION</code> · <code>K8S_REPO_MINOR</code> · <code>K8S_MINOR_EOL</code></td>
+<td>เวอร์ชันใหม่ และวัน End of Life ของสายใหม่จาก <a href="https://kubernetes.io/releases/">kubernetes.io/releases</a></td>
+</tr>
+<tr>
+<td><code>config/monitoring/myhr-alerts.yaml</code> — <code>KubernetesNearEndOfLife</code> · <code>KubernetesEndOfLife</code></td>
+<td>epoch ของ (EOL − 90 วัน) และ EOL · regex <code>v1\\.37\\..*</code> ทั้ง 2 ที่</td>
+</tr>
+</tbody>
+</table>
+<p>หา epoch: <code>date -u -d 2027-10-28 +%s</code> (EOL) · <code>date -u -d '2027-10-28 -90 days' +%s</code> (เตือนล่วงหน้า)
+แล้ว <code>bash config/validate-repo.sh</code> — ข้อ 10 ต้องขึ้น <code>ok</code> · จากนั้น <code>kubectl apply -f myhr-alerts.yaml</code>
+ถ้าลืมขั้นนี้ alert วันหมด support จะเงียบตลอดไป เพราะ regex ยังหา <code>v1.36</code> ซึ่งไม่มีแล้ว</p>
 <p><strong>ตรวจหลัง upgrade:</strong></p>
 <div class="cb"><pre><code class="language-bash">kubectl get nodes            # version ต้องตรงกันทั้ง 6
 kubeadm certs check-expiration   # upgrade ต่ออายุ cert ให้อัตโนมัติ — ควรกลับเป็น ~364 วัน

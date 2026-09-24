@@ -1,5 +1,5 @@
 # =============================================================================
-#  PrometheusRule เฉพาะของ MyHR — 11 alert ที่ chart มาตรฐานไม่มี
+#  PrometheusRule เฉพาะของ MyHR — 14 alert ที่ chart มาตรฐานไม่มี
 # =============================================================================
 #  แต่ละข้อมาจากลักษณะของ cluster นี้:
 #    - ไม่มี GitOps        → ไม่มีอะไรบังคับให้ Deployment มี PDB / replica ≥ 2
@@ -9,6 +9,7 @@
 #    - node ถูกถอดได้      → node object หายไป alert ราย node จะไม่มีอะไรให้ประเมิน
 #    - ไม่มี CSI           → Prometheus / Loki / Grafana เก็บข้อมูลบน root partition ของ worker03
 #    - Loki มีเพดาน        → เกินเพดาน log ถูกทิ้งโดยไม่มี error ที่ไหน
+#    - Kubernetes มีอายุ support ~14 เดือนต่อ minor → ต้องรู้ก่อนหมด และรู้เมื่อมี patch ใหม่
 #  คำอธิบายเต็มและสิ่งที่ต้องทำเมื่อดัง: บทที่ 09 หัวข้อ 6
 # =============================================================================
 
@@ -232,6 +233,67 @@ spec:
             description: >-
               ต้องได้ครบ 6 ตัว รวม master ทั้ง 3 ด้วย
               ถ้าขาดเฉพาะ master ให้ตรวจ tolerations ใน alloy-values.yaml
+
+    # =========================================================================
+    - name: myhr.upgrade
+      rules:
+
+        # --- สาย Kubernetes ที่รันอยู่ใกล้หมด support ---------------------------
+        # จับ: cluster ยังรัน v1.36.x และวันนี้เลย 90 วันก่อนวันหมด support ของ 1.36 (2027-06-28)
+        # ถ้าปล่อย: หลังวันหมด support ไม่มี security patch ของสายนี้อีก · minor upgrade ต้องทำทีละขั้น
+        #   (1.36 → 1.37 → 1.38) ยิ่งช้ายิ่งต้องทำหลายรอบ
+        # 🔴 ตัวเลขและ regex ผูกกับ K8S_VERSION / K8S_MINOR_EOL ใน docs/versions.env
+        #    minor upgrade แล้วต้องแก้ทั้ง 2 alert ข้างล่าง (บทที่ 12 หัวข้อ 5) · validate-repo.sh ตรวจให้
+        #    1806364800 = 2027-03-30 00:00 UTC (EOL − 90 วัน) · 1814140800 = 2027-06-28 00:00 UTC (EOL)
+        - alert: KubernetesNearEndOfLife
+          expr: |
+            time() > 1806364800
+            and on ()
+            count(kubernetes_build_info{job="apiserver", git_version=~"v1\\.36\\..*"}) > 0
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Kubernetes 1.36 จะหมด support 2027-06-28 — เหลือไม่ถึง 90 วัน"
+            description: >-
+              วางแผน minor upgrade เป็น 1.37 ตามบทที่ 12 หัวข้อ 5 (Minor upgrade)
+              อ่าน release note ของ 1.37 ก่อน · หลัง upgrade แก้ K8S_MINOR_EOL ใน versions.env
+              และตัวเลขใน alert นี้ให้เป็นของสายใหม่
+
+        # --- สาย Kubernetes ที่รันอยู่หมด support แล้ว ----------------------------
+        # จับ: cluster ยังรัน v1.36.x หลัง 2027-06-28
+        # ถ้าปล่อย: ช่องโหว่ที่พบหลังจากนี้ไม่มี patch ให้ cluster นี้
+        - alert: KubernetesEndOfLife
+          expr: |
+            time() > 1814140800
+            and on ()
+            count(kubernetes_build_info{job="apiserver", git_version=~"v1\\.36\\..*"}) > 0
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "Kubernetes 1.36 หมด support แล้ว (2027-06-28)"
+            description: >-
+              ไม่มี security patch สำหรับสายนี้อีก — minor upgrade ตามบทที่ 12 หัวข้อ 5
+
+        # --- CronJob version-check ไม่สำเร็จเกิน 3 วัน ----------------------------
+        # จับ: version-check (version-check.yaml) ไม่มีรอบที่สำเร็จเกิน 3 วัน หรือไม่มี CronJob เลย
+        # ถ้าปล่อย: มี patch ใหม่แล้ว KubernetesPatchAvailable ไม่ดัง เพราะไม่มีตัวไปตรวจ
+        - alert: VersionCheckNotRunning
+          expr: |
+            time() - kube_cronjob_status_last_successful_time{namespace="monitoring", cronjob="version-check"} > 3 * 86400
+            or
+            absent(kube_cronjob_info{namespace="monitoring", cronjob="version-check"})
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "version-check ไม่ได้ตรวจ version ของ Kubernetes มาเกิน 3 วัน"
+            description: >-
+              ดู log รอบล่าสุด: kubectl -n monitoring logs job/$(kubectl -n monitoring get job
+              -l batch.kubernetes.io/cronjob-name=version-check -o name | tail -1 | cut -d/ -f2)
+              ส่วนใหญ่คือ pod ออก https://dl.k8s.io ไม่ได้ (DNS / ขาออกอินเทอร์เน็ต)
+              ถ้าไม่มี CronJob เลย: kubectl apply -f /root/k8s/config/monitoring/version-check.yaml
 
     # =========================================================================
     - name: myhr.disk

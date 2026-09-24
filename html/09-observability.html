@@ -705,10 +705,10 @@ sleep 40; kubectl -n monitoring logs deploy/alert-mail-relay --tail=10
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="6"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-7" data-step="7" data-machines="all"><div class="step-head"><h2 id="6---alert-ขั้นต่ำที่ต้องมี">6 · 🔴 Alert ขั้นต่ำที่ต้องมี</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 5 — test alert ถึงกล่องเมลจริงทั้ง warning และ critical</p>
-<p>chart มาพร้อม alert ของ Kubernetes พื้นฐานแล้ว แต่ <strong>ขาดอีก 11 ข้อที่เฉพาะกับ cluster ชุดนี้</strong>
+<p>chart มาพร้อม alert ของ Kubernetes พื้นฐานแล้ว แต่ <strong>ขาดอีก 14 ข้อที่เฉพาะกับ cluster ชุดนี้</strong>
 ซึ่งมาจากข้อจำกัดที่เราเลือกไว้เอง</p>
 <blockquote>
-<p><strong>ต้องผ่านข้อ 5 มาก่อน</strong> — rule 11 ข้อนี้มีค่าเท่ากับปลายทางที่มันไปถึง
+<p><strong>ต้องผ่านข้อ 5 มาก่อน</strong> — rule 14 ข้อนี้มีค่าเท่ากับปลายทางที่มันไปถึง
 ถ้าปลายทางยังไม่ทำงาน สิ่งที่ได้จากข้อนี้คือแถบสีแดงในหน้าเว็บที่ไม่มีใครเปิดดู</p>
 </blockquote>
 <div class="cb"><pre><code class="language-bash">kubectl apply -f /root/k8s/config/monitoring/myhr-alerts.yaml
@@ -777,6 +777,21 @@ kubectl -n monitoring get prometheusrule
 <td>🔴 <strong><code>AlloyDaemonSetIncomplete</code></strong></td>
 <td>warning · 15m</td>
 <td>node ที่ไม่มี Alloy = log ของเครื่องนั้นหายโดย Loki ยังดูปกติ</td>
+</tr>
+<tr>
+<td><strong><code>KubernetesNearEndOfLife</code></strong></td>
+<td>warning · 1h</td>
+<td>สาย 1.36 เหลือไม่ถึง 90 วันก่อนหมด support (2027-06-28) — วางแผน minor upgrade</td>
+</tr>
+<tr>
+<td><strong><code>KubernetesEndOfLife</code></strong></td>
+<td>critical · 1h</td>
+<td>สาย 1.36 หมด support แล้ว — ไม่มี security patch อีก</td>
+</tr>
+<tr>
+<td><strong><code>VersionCheckNotRunning</code></strong></td>
+<td>warning · 1h</td>
+<td>CronJob ตรวจ patch ใหม่ (6.1) ไม่สำเร็จเกิน 3 วัน — patch ใหม่จะไม่ถูกแจ้ง</td>
 </tr>
 </tbody>
 </table>
@@ -977,6 +992,87 @@ kill %%
 แล้วดูว่า alert ดังตามตารางข้างบนจริงไหม ถ้ามีตัวไหนไม่ดังแปลว่า rule นั้นไม่ได้โหลด
 — รู้ตอนนี้ดีกว่ารู้ตอนของจริง · ปลายทางพร้อมตั้งแต่ข้อ 5 แล้ว การซ้อมรอบนี้จึงวัดได้ทั้งเส้น
 ตั้งแต่ node ดับจนถึงข้อความที่เข้ามือคน</p>
+</div><div class="sub" data-machine="all"><h3 id="61-แจ้งรอบ-upgrade-ของ-kubernetes">6.1 แจ้งรอบ upgrade ของ Kubernetes</h3>
+<p><strong>ทำที่:</strong> 👑 master01 · <strong>ต้องมีก่อน:</strong> ข้อ 5 จบ (เมลออกได้) · <code>myhr-alerts.yaml</code> apply แล้ว (ข้างบน)
+· pod ใน namespace <code>monitoring</code> ออก <code>https://dl.k8s.io</code> ได้</p>
+<p>แจ้ง 2 แบบ:</p>
+<table>
+<thead>
+<tr>
+<th>แจ้งอะไร</th>
+<th>ใครแจ้ง</th>
+<th>ความถี่ในกล่องเมล</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>มี patch ใหม่ในสายที่ใช้อยู่</strong> (เช่น 1.36.3 → 1.36.5) — <code>KubernetesPatchAvailable</code> · info</td>
+<td>CronJob <code>version-check</code> วันละครั้ง 08:00 อ่าน <code>dl.k8s.io/release/stable-1.36.txt</code> เทียบกับที่รันอยู่</td>
+<td>สัปดาห์ละครั้งจนกว่าจะ upgrade · patch ออกราวเดือนละครั้ง</td>
+</tr>
+<tr>
+<td><strong>สายที่ใช้ใกล้หมด support</strong> — <code>KubernetesNearEndOfLife</code> / <code>EndOfLife</code></td>
+<td>rule ใน <code>myhr-alerts.yaml</code> ตามวันใน <code>versions.env</code> (<code>K8S_MINOR_EOL</code>)</td>
+<td>ตั้งแต่ 90 วันก่อนหมด (2027-03-30) · ไม่ต้องต่ออินเทอร์เน็ต</td>
+</tr>
+</tbody>
+</table>
+<p><strong>1 · ส่งไฟล์ที่เปลี่ยนขึ้น master01</strong> — จากเครื่องคุณ ที่ root ของ repo:</p>
+<div class="cb"><pre><code class="language-bash">cd /d/workspace/k8s &amp;&amp; tar cf - docs/versions.env config/monitoring | ssh root@192.168.50.101 'tar xf - -C /root/k8s &amp;&amp; mv /root/k8s/docs/versions.env /root/k8s/versions.env &amp;&amp; ls /root/k8s/config/monitoring/version-check.yaml'
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>/root/k8s/config/monitoring/version-check.yaml</code></p>
+<blockquote>
+<p>⚠️ <code>alertmanager-config.yaml</code> บน master01 ถูกแทนค่าไว้ในข้อ 5 (ถ้าใช้ทางส่งตรง) — ไฟล์จาก repo
+จะทับค่านั้น · ทางหลักของข้อ 5 (ตัวกลาง <code>alert-mail-relay</code>) ไม่มีค่าที่แทนในไฟล์นี้ ทับได้เลย</p>
+</blockquote>
+<p><strong>2 · ติดตั้ง CronJob · rule ชุดใหม่ · route ใหม่ของ Alertmanager:</strong></p>
+<div class="cb"><pre><code class="language-bash">set -a &amp;&amp; source /root/k8s/versions.env &amp;&amp; set +a
+kubectl apply -f /root/k8s/config/monitoring/version-check.yaml
+kubectl apply -f /root/k8s/config/monitoring/myhr-alerts.yaml
+helm upgrade monitoring prometheus-community/kube-prometheus-stack -n monitoring --version "${KUBE_PROM_STACK_CHART}" \
+  -f /root/k8s/config/monitoring/kube-prometheus-values.yaml -f /root/k8s/config/monitoring/alertmanager-config.yaml
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>serviceaccount/version-check created</code> · <code>configmap/version-check-script created</code> ·
+<code>cronjob.batch/version-check created</code> · <code>prometheusrule... configured</code> · helm <code>STATUS: deployed</code></p>
+<p>(<code>helm upgrade</code> เพิ่ม route ให้ <code>KubernetesPatchAvailable</code> ย้ำสัปดาห์ละครั้งแทนทุก 4 ชม. และตัด <code>InfoInhibitor</code>
+ของ chart ทิ้ง — ไม่ทำขั้นนี้ เมลจะมาทุก 4 ชม. และมีเมล <code>InfoInhibitor</code> เปล่า ๆ ตามมาด้วย)</p>
+<p><strong>3 · สั่งรันทันที ไม่ต้องรอ 08:00:</strong></p>
+<div class="cb"><pre><code class="language-bash">kubectl -n monitoring create job vc-now --from=cronjob/version-check
+kubectl -n monitoring wait --for=condition=complete job/vc-now --timeout=5m; kubectl -n monitoring logs job/vc-now
+</code></pre><div class="cb-bar"><span class="cb-lang">bash</span><button class="cb-copy" type="button">คัดลอก</button></div></div>
+<p><strong>ควรเห็น:</strong> <code>รันอยู่ v1.36.3 · patch ล่าสุดของสาย v1.36.x · minor ล่าสุด v1.xx.x</code> แล้ว</p>
+<ul>
+<li>มี patch ใหม่ → <code>ส่ง alert แล้ว: v1.36.x &gt; v1.36.3</code> และเมล <code>Kubernetes v1.36.x ออกแล้ว</code> เข้ากล่องใน ~1 นาที</li>
+<li>เป็นตัวล่าสุดแล้ว → <code>เป็นเวอร์ชันล่าสุดของสายแล้ว ไม่แจ้ง</code></li>
+</ul>
+<p>เก็บกวาด: <code>kubectl -n monitoring delete job vc-now</code></p>
+<table>
+<thead>
+<tr>
+<th>log ขึ้น</th>
+<th>แปลว่า</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>curl: (6) Could not resolve host: dl.k8s.io</code> ซ้ำ แล้ว <code>อ่าน stable-1.36.txt ไม่ได้</code></td>
+<td>pod ออกอินเทอร์เน็ตไม่ได้ / DNS ภายนอกหลุด — job ล้มโดยไม่ส่ง alert ผิด ๆ · ล้มติดกัน 3 วัน <code>VersionCheckNotRunning</code> ดัง</td>
+</tr>
+<tr>
+<td><code>อ่านเวอร์ชันจาก apiserver ไม่ได้</code></td>
+<td>pod คุยกับ apiserver ไม่ได้ — ตรวจ NetworkPolicy ของ namespace <code>monitoring</code></td>
+</tr>
+<tr>
+<td><code>ส่ง alert แล้ว</code> แต่ไม่มีเมล</td>
+<td>route ยังไม่เข้า — ทำขั้น 2 บรรทัด <code>helm upgrade</code> · หรือดูเส้นทางเมลตามข้อ 5</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>หลัง upgrade</strong> — patch upgrade: ไม่ต้องทำอะไร job รอบถัดไปไม่ส่ง alert แล้วมันหายเองภายใน 26 ชม. ·
+minor upgrade (1.36 → 1.37): ต้องแก้ <code>K8S_MINOR_EOL</code> ใน <code>versions.env</code> และตัวเลขใน 2 alert วันหมด support
+ตาม<a href="12-day2-operations.html">บทที่ 12 หัวข้อ 5</a> — <code>validate-repo.sh</code> ข้อ 10 ไม่ให้ผ่านถ้าลืม</p>
+</blockquote>
 <hr />
 </div></div><div class="step-foot"><button class="done-btn" type="button" data-step="7"><span class="tick">✓</span><span class="lbl">ทำแล้ว</span></button></div></section><section class="step" id="step-8" data-step="8" data-machines="all"><div class="step-head"><h2 id="7--กันไม่ให้-monitoring-กิน-disk-จนเต็ม">7 · กันไม่ให้ monitoring กิน disk จนเต็ม</h2><span class="head-tick" title="ทำแล้ว">✓</span></div><div class="step-body"><div class="sub" data-machine="all">
 <p><strong>ทำที่:</strong> 👑 master01 (บรรทัด <code>ssh</code> ไป worker03 รันจากที่ไหนก็ได้ที่มี key) · <strong>ต้องมีก่อน:</strong> ข้อ 2-3 รันมาแล้ว
@@ -1153,7 +1249,8 @@ app ที่ log ทุก request จะกินโควตาของท�
 ลืม <code>-f</code> = ปลายทางหาย · ลืม <code>--version</code> = อัป chart โดยไม่รู้ตัว</li>
 <li>[ ] <code>alert-mail-relay</code> 2 pod อยู่คนละ node และ log ขึ้น <code>ส่งแล้ว</code> ทั้ง <code>to=default</code> และ <code>to=critical</code></li>
 <li>[ ] จดไว้ว่าตัวกลางนี้ต้องถอดออกวันที่ได้พอร์ตที่มี STARTTLS (ขั้นตอนอยู่ที่ภาคผนวกท้ายบท ข.3)</li>
-<li>[ ] PrometheusRule ของ MyHR โหลดแล้วครบ 11 ข้อ</li>
+<li>[ ] PrometheusRule ของ MyHR โหลดแล้วครบ 14 ข้อ</li>
+<li>[ ] <code>version-check</code> รันได้ · log ขึ้น <code>รันอยู่ ... · patch ล่าสุดของสาย ...</code> (6.1)</li>
 <li>[ ] <code>NodeCountBelowExpected</code> มีตัวเลข node ตรงกับจำนวนเครื่องจริง (ตอนนี้ 6)</li>
 <li>[ ] <strong>ประกาศกฎ log 3 ข้อให้ทีม dev รู้แล้ว</strong> (stdout เท่านั้น · JSON บรรทัดเดียว · มีเพดาน)</li>
 <li>[ ] จด disk usage เริ่มต้นไว้เป็น baseline</li>

@@ -464,7 +464,7 @@ metrics-server ไม่ตรวจ cert ของ kubelet เลย เพร�
 <li>[ ] ทำบท 09 observability — metrics-server · Prometheus · Loki · Alloy</li>
 <li>[ ] ทำบท 10 security — etcd encryption · PSA · NetworkPolicy (<code>default-deny</code> + <code>allow-dns</code> คู่กันเสมอ) · RBAC · audit</li>
 <li>[ ] ทำบท 12 day-2 — <strong>etcd backup CronJob ต้องทำงานจริง + ทดสอบ restore หนึ่งรอบ</strong></li>
-<li>[ ] alert 11 ข้อใน <code>myhr-alerts.yaml</code> ยิงถึงปลายทางจริง (ทดสอบด้วยของปลอมหนึ่งครั้ง)</li>
+<li>[ ] alert 14 ข้อใน <code>myhr-alerts.yaml</code> ยิงถึงปลายทางจริง (ทดสอบด้วยของปลอมหนึ่งครั้ง)</li>
 <li>[ ] ตรวจว่า PVC ของ monitoring <strong>ผูก PV ถูกก้อน</strong> (ดูคอลัมน์ <code>VOL</code> ไม่ใช่แค่คำว่า <code>Bound</code>)</li>
 <li>[ ] ตรวจว่า <strong>Alloy ไม่เก็บ log ซ้ำ</strong> — บรรทัดเดียวกันต้องโผล่ครั้งเดียว ไม่ใช่ 6 ครั้ง</li>
 <li>[ ] ประกาศ <strong>กฎ log 3 ข้อ</strong> ให้ทีม dev (stdout เท่านั้น · JSON บรรทัดเดียว · มีเพดาน 10 MB/s)</li>

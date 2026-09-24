@@ -369,6 +369,8 @@ kubectl uncordon "$NODE"
 
 **อัปเดต `versions.env` แล้ว `dnf versionlock` ใหม่ทุกเครื่อง**
 
+เมล `KubernetesPatchAvailable` ([บท 09 ข้อ 6.1](09-observability.md)) หยุดเองภายใน 26 ชม. หลัง upgrade ไม่ต้องทำอะไร
+
 ### Minor upgrade (1.36 → 1.37) — ต้องวางแผน
 
 > 🔴 **อ่าน release note ของเวอร์ชันปลายทางก่อนเสมอ** ไม่ใช่ทำตามแบบปิดตา
@@ -385,6 +387,17 @@ dnf clean all && dnf makecache
 
 # 3. ที่เหลือเหมือน patch upgrade
 ```
+
+**4. เลื่อนวันแจ้งเตือนหมด support ไปสายใหม่** — ทำใน repo บนเครื่องคุณ แล้วส่งขึ้นตามบท 09 ข้อ 6.1:
+
+| แก้ที่ | เป็น |
+|---|---|
+| `docs/versions.env` `K8S_VERSION` · `K8S_REPO_MINOR` · `K8S_MINOR_EOL` | เวอร์ชันใหม่ และวัน End of Life ของสายใหม่จาก [kubernetes.io/releases](https://kubernetes.io/releases/) |
+| `config/monitoring/myhr-alerts.yaml` — `KubernetesNearEndOfLife` · `KubernetesEndOfLife` | epoch ของ (EOL − 90 วัน) และ EOL · regex `v1\\.37\\..*` ทั้ง 2 ที่ |
+
+หา epoch: `date -u -d 2027-10-28 +%s` (EOL) · `date -u -d '2027-10-28 -90 days' +%s` (เตือนล่วงหน้า)
+แล้ว `bash config/validate-repo.sh` — ข้อ 10 ต้องขึ้น `ok` · จากนั้น `kubectl apply -f myhr-alerts.yaml`
+ถ้าลืมขั้นนี้ alert วันหมด support จะเงียบตลอดไป เพราะ regex ยังหา `v1.36` ซึ่งไม่มีแล้ว
 
 **ตรวจหลัง upgrade:**
 ```bash

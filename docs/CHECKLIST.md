@@ -219,7 +219,7 @@
 - [ ] ทำบท 09 observability — metrics-server · Prometheus · Loki · Alloy
 - [ ] ทำบท 10 security — etcd encryption · PSA · NetworkPolicy (`default-deny` + `allow-dns` คู่กันเสมอ) · RBAC · audit
 - [ ] ทำบท 12 day-2 — **etcd backup CronJob ต้องทำงานจริง + ทดสอบ restore หนึ่งรอบ**
-- [ ] alert 11 ข้อใน `myhr-alerts.yaml` ยิงถึงปลายทางจริง (ทดสอบด้วยของปลอมหนึ่งครั้ง)
+- [ ] alert 14 ข้อใน `myhr-alerts.yaml` ยิงถึงปลายทางจริง (ทดสอบด้วยของปลอมหนึ่งครั้ง)
 - [ ] ตรวจว่า PVC ของ monitoring **ผูก PV ถูกก้อน** (ดูคอลัมน์ `VOL` ไม่ใช่แค่คำว่า `Bound`)
 - [ ] ตรวจว่า **Alloy ไม่เก็บ log ซ้ำ** — บรรทัดเดียวกันต้องโผล่ครั้งเดียว ไม่ใช่ 6 ครั้ง
 - [ ] ประกาศ **กฎ log 3 ข้อ** ให้ทีม dev (stdout เท่านั้น · JSON บรรทัดเดียว · มีเพดาน 10 MB/s)

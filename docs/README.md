@@ -104,7 +104,8 @@ config/
 │   ├── kube-prometheus-values.yaml
 │   ├── loki-values.yaml
 │   ├── alloy-values.yaml
-│   ├── myhr-alerts.yaml                   alert 11 ข้อที่เฉพาะกับ cluster นี้
+│   ├── myhr-alerts.yaml                   alert 14 ข้อที่เฉพาะกับ cluster นี้
+│   ├── version-check.yaml                 CronJob แจ้ง patch ใหม่ของ Kubernetes (บท 09 ข้อ 6.1)
 │   ├── alertmanager-config.yaml           ปลายทางของ alert · values ชิ้นที่ 2 ของ chart
 │   └── grafana-route.yaml
 ├── security/                              บท 10

@@ -365,7 +365,7 @@ sum by (node) (rate({namespace="myhr-prod"} |~ "(?i)(error|timeout|refused)" [5m
 
 ## 8 · จาก alert ที่ดัง ไปถึง log ใน 3 คลิก
 
-alert 11 ข้อในบทที่ 09 บอกว่า "มีอะไรผิด" แต่ไม่ได้บอกว่า "ทำไม" — เส้นทางไปหาคำตอบ:
+alert 14 ข้อในบทที่ 09 บอกว่า "มีอะไรผิด" แต่ไม่ได้บอกว่า "ทำไม" — เส้นทางไปหาคำตอบ:
 
 1. Grafana → **Alerting → Alert rules** → กดข้อที่กำลังดัง อ่าน label `namespace` / `pod` / `node` ที่ติดมากับมัน
 2. เปิด **Explore** → Loki → ใส่ label ที่ได้มาลงไปตรง ๆ

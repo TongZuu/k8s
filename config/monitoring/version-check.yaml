@@ -1,0 +1,111 @@
+# =============================================================================
+#  version-check — แจ้งเมื่อ Kubernetes มี patch ใหม่ในสายที่ใช้อยู่
+# =============================================================================
+#  CronJob วันละครั้ง (08:00 เวลาไทย):
+#    1. ถาม apiserver ว่ารันเวอร์ชันอะไร (เช่น v1.36.3)
+#    2. อ่าน patch ล่าสุดของสายนั้นจาก https://dl.k8s.io/release/stable-1.36.txt
+#    3. ถ้าใหม่กว่า → ส่ง alert KubernetesPatchAvailable (severity: info) เข้า Alertmanager
+#       ออกเมลทางเดียวกับ alert อื่น · ย้ำสัปดาห์ละครั้งจนกว่าจะ upgrade (route ใน alertmanager-config.yaml)
+#  alert อยู่ได้ 26 ชม. ต่อการส่งหนึ่งครั้ง — upgrade แล้ว job หยุดส่ง alert หายเองภายในวันถัดไป
+#
+#  อ่านเลขไม่ได้ (เน็ต/DNS หลุด) → job ล้ม ไม่ส่ง alert · ล้มติดกันเกิน 3 วัน
+#  → VersionCheckNotRunning ใน myhr-alerts.yaml ดัง
+#
+#  ต้องการ: pod ใน namespace monitoring ออก https://dl.k8s.io ได้
+#  สั่งรันทันทีไม่ต้องรอรอบ:  kubectl -n monitoring create job vc-now --from=cronjob/version-check
+#  (บทที่ 09 หัวข้อ 6.1)
+# =============================================================================
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: version-check
+  namespace: monitoring
+# ไม่ต้องผูก Role — /version อ่านได้ทุก account ที่ login แล้ว (system:public-info-viewer)
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: version-check-script
+  namespace: monitoring
+data:
+  check.sh: |
+    #!/bin/sh
+    set -u
+    SA=/var/run/secrets/kubernetes.io/serviceaccount
+    AM=http://monitoring-kube-prometheus-alertmanager.monitoring.svc:9093
+    NET="--retry 5 --retry-delay 10 --retry-all-errors --max-time 30"
+
+    # 1 · เวอร์ชันที่รันอยู่
+    cur=$(curl -fsS $NET --cacert "$SA/ca.crt" -H "Authorization: Bearer $(cat "$SA/token")" \
+            https://kubernetes.default.svc/version | sed -n 's/.*"gitVersion": *"\(v[0-9.]*\)".*/\1/p')
+    case "$cur" in v[0-9]*.[0-9]*.[0-9]*) ;; *) echo "อ่านเวอร์ชันจาก apiserver ไม่ได้: [$cur]"; exit 1 ;; esac
+    minor=${cur%.*}                                  # v1.36
+
+    # 2 · patch ล่าสุดของสายเดียวกัน · และ minor ล่าสุดของ Kubernetes (ไว้แสดงในเมล)
+    latest=$(curl -fsSL $NET "https://dl.k8s.io/release/stable-${minor#v}.txt")
+    case "$latest" in "$minor".[0-9]*) ;; *) echo "อ่าน stable-${minor#v}.txt ไม่ได้: [$latest]"; exit 1 ;; esac
+    newest=$(curl -fsSL $NET https://dl.k8s.io/release/stable.txt || echo "อ่านไม่ได้")
+
+    echo "รันอยู่ $cur · patch ล่าสุดของสาย $latest · minor ล่าสุด $newest"
+    [ "${latest##*.}" -gt "${cur##*.}" ] || { echo "เป็นเวอร์ชันล่าสุดของสายแล้ว ไม่แจ้ง"; exit 0; }
+
+    # 3 · ส่ง alert — อยู่ได้ 26 ชม. job รอบถัดไปส่งซ้ำถ้ายังไม่ upgrade
+    ends=$(date -u -d "@$(( $(date +%s) + 93600 ))" +%Y-%m-%dT%H:%M:%SZ)
+    curl -fsS $NET -XPOST "$AM/api/v2/alerts" -H 'Content-Type: application/json' -d "[{
+      \"labels\": {\"alertname\":\"KubernetesPatchAvailable\",\"severity\":\"info\",\"namespace\":\"kube-system\"},
+      \"annotations\": {
+        \"summary\": \"Kubernetes $latest ออกแล้ว (cluster รัน $cur)\",
+        \"description\": \"มี patch ใหม่ในสาย $minor — upgrade ตามบทที่ 12 หัวข้อ 5 (Patch upgrade) พร้อมรอบ rolling reboot ถัดไป · minor ล่าสุดของ Kubernetes ตอนนี้คือ $newest\"
+      },
+      \"endsAt\": \"$ends\"
+    }]" && echo "ส่ง alert แล้ว: $latest > $cur"
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: version-check
+  namespace: monitoring
+spec:
+  schedule: "0 8 * * *"
+  timeZone: "Asia/Bangkok"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        spec:
+          serviceAccountName: version-check
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: check
+              image: curlimages/curl:8.11.1
+              command: ["sh", "/scripts/check.sh"]
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 16Mi
+                limits:
+                  memory: 64Mi
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+          volumes:
+            - name: script
+              configMap:
+                name: version-check-script

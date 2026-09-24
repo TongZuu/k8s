@@ -516,10 +516,10 @@ sleep 40; kubectl -n monitoring logs deploy/alert-mail-relay --tail=10
 
 **ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 5 — test alert ถึงกล่องเมลจริงทั้ง warning และ critical
 
-chart มาพร้อม alert ของ Kubernetes พื้นฐานแล้ว แต่ **ขาดอีก 11 ข้อที่เฉพาะกับ cluster ชุดนี้**
+chart มาพร้อม alert ของ Kubernetes พื้นฐานแล้ว แต่ **ขาดอีก 14 ข้อที่เฉพาะกับ cluster ชุดนี้**
 ซึ่งมาจากข้อจำกัดที่เราเลือกไว้เอง
 
-> **ต้องผ่านข้อ 5 มาก่อน** — rule 11 ข้อนี้มีค่าเท่ากับปลายทางที่มันไปถึง
+> **ต้องผ่านข้อ 5 มาก่อน** — rule 14 ข้อนี้มีค่าเท่ากับปลายทางที่มันไปถึง
 > ถ้าปลายทางยังไม่ทำงาน สิ่งที่ได้จากข้อนี้คือแถบสีแดงในหน้าเว็บที่ไม่มีใครเปิดดู
 
 ```bash
@@ -540,6 +540,9 @@ kubectl -n monitoring get prometheusrule
 | 🔴 **`LokiDiscardingLogs`** | warning · 15m | เพดาน ingestion ทำงานแล้ว log จะหาย**เงียบ ๆ** ถ้าไม่มีข้อนี้ไม่มีใครรู้ |
 | 🔴 **`LokiNotReceivingLogs`** | critical · 20m | ระบบเก็บ log ตายจะดู "เงียบสงบ" เหมือนไม่มีอะไรผิด |
 | 🔴 **`AlloyDaemonSetIncomplete`** | warning · 15m | node ที่ไม่มี Alloy = log ของเครื่องนั้นหายโดย Loki ยังดูปกติ |
+| **`KubernetesNearEndOfLife`** | warning · 1h | สาย 1.36 เหลือไม่ถึง 90 วันก่อนหมด support (2027-06-28) — วางแผน minor upgrade |
+| **`KubernetesEndOfLife`** | critical · 1h | สาย 1.36 หมด support แล้ว — ไม่มี security patch อีก |
+| **`VersionCheckNotRunning`** | warning · 1h | CronJob ตรวจ patch ใหม่ (6.1) ไม่สำเร็จเกิน 3 วัน — patch ใหม่จะไม่ถูกแจ้ง |
 
 > **3 ข้อล่างมาจากธรรมชาติของระบบ log:** ความผิดพลาดของมันไม่ทำให้อะไรพัง
 > มันแค่ทำให้ข้อมูล**หายไปเฉย ๆ** ซึ่งจะรู้ตัวก็ตอนที่ต้องใช้ — คือตอน incident พอดี
@@ -712,6 +715,62 @@ kill %%
 — รู้ตอนนี้ดีกว่ารู้ตอนของจริง · ปลายทางพร้อมตั้งแต่ข้อ 5 แล้ว การซ้อมรอบนี้จึงวัดได้ทั้งเส้น
 ตั้งแต่ node ดับจนถึงข้อความที่เข้ามือคน
 
+### 6.1 แจ้งรอบ upgrade ของ Kubernetes
+
+**ทำที่:** 👑 master01 · **ต้องมีก่อน:** ข้อ 5 จบ (เมลออกได้) · `myhr-alerts.yaml` apply แล้ว (ข้างบน)
+· pod ใน namespace `monitoring` ออก `https://dl.k8s.io` ได้
+
+แจ้ง 2 แบบ:
+
+| แจ้งอะไร | ใครแจ้ง | ความถี่ในกล่องเมล |
+|---|---|---|
+| **มี patch ใหม่ในสายที่ใช้อยู่** (เช่น 1.36.3 → 1.36.5) — `KubernetesPatchAvailable` · info | CronJob `version-check` วันละครั้ง 08:00 อ่าน `dl.k8s.io/release/stable-1.36.txt` เทียบกับที่รันอยู่ | สัปดาห์ละครั้งจนกว่าจะ upgrade · patch ออกราวเดือนละครั้ง |
+| **สายที่ใช้ใกล้หมด support** — `KubernetesNearEndOfLife` / `EndOfLife` | rule ใน `myhr-alerts.yaml` ตามวันใน `versions.env` (`K8S_MINOR_EOL`) | ตั้งแต่ 90 วันก่อนหมด (2027-03-30) · ไม่ต้องต่ออินเทอร์เน็ต |
+
+**1 · ส่งไฟล์ที่เปลี่ยนขึ้น master01** — จากเครื่องคุณ ที่ root ของ repo:
+```bash
+cd /d/workspace/k8s && tar cf - docs/versions.env config/monitoring | ssh root@192.168.50.101 'tar xf - -C /root/k8s && mv /root/k8s/docs/versions.env /root/k8s/versions.env && ls /root/k8s/config/monitoring/version-check.yaml'
+```
+**ควรเห็น:** `/root/k8s/config/monitoring/version-check.yaml`
+
+> ⚠️ `alertmanager-config.yaml` บน master01 ถูกแทนค่าไว้ในข้อ 5 (ถ้าใช้ทางส่งตรง) — ไฟล์จาก repo
+> จะทับค่านั้น · ทางหลักของข้อ 5 (ตัวกลาง `alert-mail-relay`) ไม่มีค่าที่แทนในไฟล์นี้ ทับได้เลย
+
+**2 · ติดตั้ง CronJob · rule ชุดใหม่ · route ใหม่ของ Alertmanager:**
+```bash
+set -a && source /root/k8s/versions.env && set +a
+kubectl apply -f /root/k8s/config/monitoring/version-check.yaml
+kubectl apply -f /root/k8s/config/monitoring/myhr-alerts.yaml
+helm upgrade monitoring prometheus-community/kube-prometheus-stack -n monitoring --version "${KUBE_PROM_STACK_CHART}" \
+  -f /root/k8s/config/monitoring/kube-prometheus-values.yaml -f /root/k8s/config/monitoring/alertmanager-config.yaml
+```
+**ควรเห็น:** `serviceaccount/version-check created` · `configmap/version-check-script created` ·
+`cronjob.batch/version-check created` · `prometheusrule... configured` · helm `STATUS: deployed`
+
+(`helm upgrade` เพิ่ม route ให้ `KubernetesPatchAvailable` ย้ำสัปดาห์ละครั้งแทนทุก 4 ชม. และตัด `InfoInhibitor`
+ของ chart ทิ้ง — ไม่ทำขั้นนี้ เมลจะมาทุก 4 ชม. และมีเมล `InfoInhibitor` เปล่า ๆ ตามมาด้วย)
+
+**3 · สั่งรันทันที ไม่ต้องรอ 08:00:**
+```bash
+kubectl -n monitoring create job vc-now --from=cronjob/version-check
+kubectl -n monitoring wait --for=condition=complete job/vc-now --timeout=5m; kubectl -n monitoring logs job/vc-now
+```
+**ควรเห็น:** `รันอยู่ v1.36.3 · patch ล่าสุดของสาย v1.36.x · minor ล่าสุด v1.xx.x` แล้ว
+- มี patch ใหม่ → `ส่ง alert แล้ว: v1.36.x > v1.36.3` และเมล `Kubernetes v1.36.x ออกแล้ว` เข้ากล่องใน ~1 นาที
+- เป็นตัวล่าสุดแล้ว → `เป็นเวอร์ชันล่าสุดของสายแล้ว ไม่แจ้ง`
+
+เก็บกวาด: `kubectl -n monitoring delete job vc-now`
+
+| log ขึ้น | แปลว่า |
+|---|---|
+| `curl: (6) Could not resolve host: dl.k8s.io` ซ้ำ แล้ว `อ่าน stable-1.36.txt ไม่ได้` | pod ออกอินเทอร์เน็ตไม่ได้ / DNS ภายนอกหลุด — job ล้มโดยไม่ส่ง alert ผิด ๆ · ล้มติดกัน 3 วัน `VersionCheckNotRunning` ดัง |
+| `อ่านเวอร์ชันจาก apiserver ไม่ได้` | pod คุยกับ apiserver ไม่ได้ — ตรวจ NetworkPolicy ของ namespace `monitoring` |
+| `ส่ง alert แล้ว` แต่ไม่มีเมล | route ยังไม่เข้า — ทำขั้น 2 บรรทัด `helm upgrade` · หรือดูเส้นทางเมลตามข้อ 5 |
+
+> **หลัง upgrade** — patch upgrade: ไม่ต้องทำอะไร job รอบถัดไปไม่ส่ง alert แล้วมันหายเองภายใน 26 ชม. ·
+> minor upgrade (1.36 → 1.37): ต้องแก้ `K8S_MINOR_EOL` ใน `versions.env` และตัวเลขใน 2 alert วันหมด support
+> ตาม[บทที่ 12 หัวข้อ 5](12-day2-operations.md) — `validate-repo.sh` ข้อ 10 ไม่ให้ผ่านถ้าลืม
+
 ---
 
 ## 7 · กันไม่ให้ monitoring กิน disk จนเต็ม
@@ -861,7 +920,8 @@ app ที่ log ทุก request จะกินโควตาของท�
       ลืม `-f` = ปลายทางหาย · ลืม `--version` = อัป chart โดยไม่รู้ตัว
 - [ ] `alert-mail-relay` 2 pod อยู่คนละ node และ log ขึ้น `ส่งแล้ว` ทั้ง `to=default` และ `to=critical`
 - [ ] จดไว้ว่าตัวกลางนี้ต้องถอดออกวันที่ได้พอร์ตที่มี STARTTLS (ขั้นตอนอยู่ที่ภาคผนวกท้ายบท ข.3)
-- [ ] PrometheusRule ของ MyHR โหลดแล้วครบ 11 ข้อ
+- [ ] PrometheusRule ของ MyHR โหลดแล้วครบ 14 ข้อ
+- [ ] `version-check` รันได้ · log ขึ้น `รันอยู่ ... · patch ล่าสุดของสาย ...` (6.1)
 - [ ] `NodeCountBelowExpected` มีตัวเลข node ตรงกับจำนวนเครื่องจริง (ตอนนี้ 6)
 - [ ] **ประกาศกฎ log 3 ข้อให้ทีม dev รู้แล้ว** (stdout เท่านั้น · JSON บรรทัดเดียว · มีเพดาน)
 - [ ] จด disk usage เริ่มต้นไว้เป็น baseline

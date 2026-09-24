@@ -62,6 +62,19 @@ alertmanager:
           matchers:
             - 'alertname = "Watchdog"'
 
+        # InfoInhibitor ของ chart ดังทุกครั้งที่มี alert severity: info อยู่ลำพัง
+        # ไม่มีข้อมูลให้คนอ่าน — ตัดทิ้งเหมือน Watchdog
+        - receiver: "null"
+          matchers:
+            - 'alertname = "InfoInhibitor"'
+
+        # patch ใหม่ของ Kubernetes (config/monitoring/version-check.yaml) — ย้ำสัปดาห์ละครั้ง
+        # ไม่ใช่ทุก 4 ชม. เพราะทำตามรอบ rolling reboot ไม่ใช่งานด่วน
+        - receiver: myhr-default
+          matchers:
+            - 'alertname = "KubernetesPatchAvailable"'
+          repeat_interval: 168h
+
         # critical ย้ำถี่กว่า และแยกปลายทางได้ถ้าทีมมีกลุ่ม on-call
         - receiver: myhr-critical
           matchers:

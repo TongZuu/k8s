@@ -336,6 +336,25 @@ else
     echo "  ข้าม  (ไม่มี python + pyyaml)"
 fi
 
+echo "10 · alert วันหมด support ต้องตรงกับ K8S_VERSION / K8S_MINOR_EOL"
+# ตัวเลข epoch กับ regex ของสายใน myhr-alerts.yaml เขียนมือ — minor upgrade แล้วลืมแก้
+# alert จะเงียบไปตลอด (regex ไม่ match สายใหม่) หรือดังผิดวัน
+A=config/monitoring/myhr-alerts.yaml
+if [ -n "${K8S_MINOR_EOL:-}" ] && [ -n "${K8S_VERSION:-}" ]; then
+    EOL=$(date -u -d "$K8S_MINOR_EOL" +%s 2>/dev/null)
+    WARN=$(( EOL - 90 * 86400 ))
+    MAJ=${K8S_VERSION%%.*}; MNR=$(echo "$K8S_VERSION" | cut -d. -f2)
+    NEEDLE=$(printf 'git_version=~"v%s\\\\.%s\\\\..*"' "$MAJ" "$MNR")   # = git_version=~"v1\\.36\\..*" ตามที่เขียนในไฟล์
+    EOLBAD=0
+    grep -q "time() > $EOL\$"  "$A" || { fail "$A: KubernetesEndOfLife ไม่ใช่ time() > $EOL ($K8S_MINOR_EOL)"; EOLBAD=1; }
+    grep -q "time() > $WARN\$" "$A" || { fail "$A: KubernetesNearEndOfLife ไม่ใช่ time() > $WARN ($K8S_MINOR_EOL − 90 วัน)"; EOLBAD=1; }
+    n=$(grep -cF "$NEEDLE" "$A")
+    [ "$n" -eq 2 ] || { fail "$A: regex git_version ของสาย $K8S_VERSION ไม่ครบ 2 ที่ (เจอ $n)"; EOLBAD=1; }
+    [ $EOLBAD -eq 0 ] && ok "EOL $K8S_MINOR_EOL · สาย ${K8S_VERSION%.*} ตรงกันใน $A" || FAILED=1
+else
+    fail "docs/versions.env ไม่มี K8S_MINOR_EOL หรือ K8S_VERSION"
+fi
+
 echo
 if [ $FAILED -eq 0 ]; then
     echo "ผ่านหมด — commit ได้"
